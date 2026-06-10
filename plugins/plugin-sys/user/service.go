@@ -157,10 +157,12 @@ func UserPage(c *gin.Context, p *UserPageParam) {
 	if p.Current < 1 {
 		p.Current = 1
 	}
-	if p.Size < 1 || p.Size > 100 {
+	if p.Size < 1 {
 		p.Size = 10
 	}
-
+	if p.Size > 100 {
+		p.Size = 100
+	}
 	q := db.DB.WithContext(ctx).Model(&SysUser{})
 	if p.Keyword != "" {
 		like := "%" + p.Keyword + "%"
@@ -199,7 +201,8 @@ func UserCreate(c *gin.Context, v *UserVO) {
 		var cnt int64
 		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", *v.Username).Count(&cnt)
 		if cnt > 0 {
-			panic(exception.NewBusinessError("账号已存在", 400))
+			result.WriteError(c, exception.NewBusinessError("账号已存在", 400))
+			return
 		}
 	}
 
@@ -213,21 +216,25 @@ func UserCreate(c *gin.Context, v *UserVO) {
 	}
 
 	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
-		panic(exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
+		return
 	}
 }
 
 func UserDetail(c *gin.Context, id string) *UserVO {
 	if id == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return nil
 	}
 	ctx := c.Request.Context()
 	var e SysUser
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("数据不存在", 400))
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
+			return nil
 		}
-		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
+		return nil
 	}
 	vo := SysUserToUserVO(&e)
 	enrichNames([]*UserVO{vo})
@@ -240,21 +247,25 @@ func UserDetail(c *gin.Context, id string) *UserVO {
 func UserModify(c *gin.Context, v *UserVO) {
 	ctx := c.Request.Context()
 	if v.ID == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return
 	}
 	var old SysUser
 	if err := db.DB.WithContext(ctx).First(&old, "id = ?", v.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("数据不存在", 400))
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
+			return
 		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		return
 	}
 	up := map[string]interface{}{}
 	if v.Username != nil {
-		var c int64
-		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ? AND id != ?", *v.Username, v.ID).Count(&c)
-		if c > 0 {
-			panic(exception.NewBusinessError("账号已存在", 400))
+		var cnt int64
+		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ? AND id != ?", *v.Username, v.ID).Count(&cnt)
+		if cnt > 0 {
+			result.WriteError(c, exception.NewBusinessError("账号已存在", 400))
+			return
 		}
 		up["username"] = *v.Username
 	}
@@ -310,40 +321,48 @@ func UserModify(c *gin.Context, v *UserVO) {
 func UserRemove(c *gin.Context, p *utils.IdsParam) {
 	ids := p.IDs
 	if len(ids) == 0 {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户角色关联失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除用户角色关联失败: "+err.Error(), 500))
+		return
 	}
 	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserPermission{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户权限关联失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除用户权限关联失败: "+err.Error(), 500))
+		return
 	}
 	if err := tx.Where("user_id IN ?", ids).Delete(&SysQuickAction{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除快捷操作失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除快捷操作失败: "+err.Error(), 500))
+		return
 	}
 	if err := tx.Where("id IN ?", ids).Delete(&SysUser{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
+		return
 	}
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		return
 	}
 }
 
 func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	if p.UserID == "" {
-		panic(exception.NewBusinessError("用户ID不能为空", 400))
+		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
+		return
 	}
 	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除已有角色失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除已有角色失败: "+err.Error(), 500))
+		return
 	}
 	seen := make(map[string]bool)
 	batch := make([]RelUserRole, 0)
@@ -356,23 +375,27 @@ func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	if len(batch) > 0 {
 		if err := tx.Create(&batch).Error; err != nil {
 			tx.Rollback()
-			panic(exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
+			result.WriteError(c, exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
+			return
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		return
 	}
 }
 
 func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	if p.UserID == "" {
-		panic(exception.NewBusinessError("用户ID不能为空", 400))
+		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
+		return
 	}
 	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserPermission{}).Error; err != nil {
 		tx.Rollback()
-		panic(exception.NewBusinessError("删除已有权限失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除已有权限失败: "+err.Error(), 500))
+		return
 	}
 	batch := make([]RelUserPermission, len(p.Permissions))
 	for i, pi := range p.Permissions {
@@ -388,16 +411,19 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	if len(batch) > 0 {
 		if err := tx.Create(&batch).Error; err != nil {
 			tx.Rollback()
-			panic(exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
+			result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
+			return
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		return
 	}
 }
 
 func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	if len(p.IDs) == 0 {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 	db.DB.Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
@@ -432,7 +458,8 @@ func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface
 func UserUpdateProfile(c *gin.Context, p *UpdateProfileParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
-		panic(exception.NewBusinessError("用户未登录", 401))
+		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
+		return
 	}
 	up := map[string]interface{}{}
 	if p.Username != nil {
@@ -467,43 +494,53 @@ func UserUpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	avatar := p.Avatar
 	if uid == "" {
-		panic(exception.NewBusinessError("用户未登录", 401))
+		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
+		return
 	}
 	if avatar == "" {
-		panic(exception.NewBusinessError("头像不能为空", 400))
+		result.WriteError(c, exception.NewBusinessError("头像不能为空", 400))
+		return
 	}
 	avatar = utils.CompressBase64Image(avatar, 512, 512, 80)
 	ctx := c.Request.Context()
 	var entity SysUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", uid).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("用户不存在", 404))
+			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
+			return
 		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		return
 	}
 	if err := db.DB.WithContext(ctx).Model(&entity).Update("avatar", avatar).Error; err != nil {
-		panic(exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
+		return
 	}
 }
 
 func UserUpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
-		panic(exception.NewBusinessError("用户未登录", 401))
+		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
+		return
 	}
 	ctx := c.Request.Context()
 	var e SysUser
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", uid).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("用户不存在", 404))
+			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
+			return
 		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+		return
 	}
 	if e.Password == nil || *e.Password == "" {
-		panic(exception.NewBusinessError("未设置密码，无法修改", 400))
+		result.WriteError(c, exception.NewBusinessError("未设置密码，无法修改", 400))
+		return
 	}
 	if bcrypt.CompareHashAndPassword([]byte(*e.Password), []byte(utils.Decrypt(p.CurrentPassword))) != nil {
-		panic(exception.NewBusinessError("当前密码不正确", 400))
+		result.WriteError(c, exception.NewBusinessError("当前密码不正确", 400))
+		return
 	}
 	h, _ := bcrypt.GenerateFromPassword([]byte(utils.Decrypt(p.NewPassword)), bcrypt.DefaultCost)
 	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", uid).Update("password", string(h))

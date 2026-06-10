@@ -2,6 +2,7 @@ package result
 
 import (
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/exception"
 
 	"github.com/gin-gonic/gin"
 )
@@ -49,6 +50,9 @@ func httpStatus(code int) int {
 
 // OK writes a successful response with HTTP 200.
 func (r *Responder) OK(data any) {
+	if r.c.IsAborted() {
+		return
+	}
 	r.c.JSON(200, gin.H{
 		"code":     200,
 		"message":  "请求成功",
@@ -60,6 +64,9 @@ func (r *Responder) OK(data any) {
 
 // Fail writes an error response with proper HTTP status code.
 func (r *Responder) Fail(msg string, code int) {
+	if r.c.IsAborted() {
+		return
+	}
 	r.c.JSON(httpStatus(code), gin.H{
 		"code":     code,
 		"message":  msg,
@@ -80,6 +87,9 @@ type PageData struct {
 
 // Page writes a paginated success response.
 func (r *Responder) Page(records any, total int64, page, size int) {
+	if r.c.IsAborted() {
+		return
+	}
 	pages := 0
 	if size > 0 {
 		pages = int((total + int64(size) - 1) / int64(size))
@@ -114,4 +124,18 @@ func Failure(c *gin.Context, message string, code int) {
 // PageDataResult writes a paginated response.
 func PageDataResult(c *gin.Context, records any, total int64, page, size int) {
 	Wrap(c).Page(records, total, page, size)
+}
+
+// WriteError writes a BusinessError or generic server error to the response.
+// This replaces panic(exception.NewBusinessError(...)) patterns in service layers.
+func WriteError(c *gin.Context, err error) {
+	if err == nil || c.IsAborted() {
+		return
+	}
+	if be, ok := err.(*exception.BusinessError); ok {
+		Failure(c, be.Message, be.Code)
+	} else {
+		Failure(c, "服务器内部错误", 500)
+	}
+	c.Abort()
 }

@@ -1,9 +1,5 @@
 package role
 
-import (
-	"hei-gin/sdk/utils"
-)
-
 // RoleVO is the view object for a role, used for create/modify requests and API responses.
 type RoleVO struct {
 	ID          string  `json:"id"`
@@ -42,33 +38,9 @@ type GrantPermissionParam struct {
 	Permissions []PermissionItem `json:"permissions"`
 }
 
-// ButtonPermissionScope represents a button permission with data scope.
-type ButtonPermissionScope struct {
-	PermissionCode      string  `json:"permission_code"`
-	Scope               string  `json:"scope"`
-	CustomScopeGroupIds *string `json:"custom_scope_group_ids"`
-	CustomScopeOrgIds   *string `json:"custom_scope_org_ids"`
-}
-
 // GrantResourceParam holds the parameters for granting resources to a role.
 type GrantResourceParam struct {
-	RoleID      string                  `json:"role_id"`
-	ResourceIDs []string                `json:"resource_ids"`
-	Permissions []ButtonPermissionScope `json:"permissions"`
+	RoleID      string           `json:"role_id"`
+	ResourceIDs []string         `json:"resource_ids"`
+	Permissions []PermissionItem `json:"permissions"`
 }
-
-
-func toVO(entity *SysRole) *RoleVO {
-	if entity == nil { return nil }
-	return &RoleVO{
-		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
-		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
-		Extra: entity.Extra, CreatedAt: utils.FormatDateTimePtr(entity.CreatedAt),
-		CreatedBy: entity.CreatedBy, UpdatedAt: utils.FormatDateTimePtr(entity.UpdatedAt),
-		UpdatedBy: entity.UpdatedBy,
-	}
-}
-
-
-func (p *RolePageParam) GetCurrent() int { return p.Current }
-func (p *RolePageParam) GetSize() int    { return p.Size }

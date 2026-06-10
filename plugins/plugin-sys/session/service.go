@@ -11,6 +11,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/result"
 	userModel "hei-gin/plugins/plugin-sys/user"
 
 	"github.com/gin-gonic/gin"
@@ -128,7 +129,7 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 	return daily
 }
 
-func Page(c *gin.Context, param *SessionPageParam) gin.H {
+func Page(c *gin.Context, param *SessionPageParam) {
 	ctx := c.Request.Context()
 	sessions, err := collectSessions(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS, constants.TOKEN_PREFIX_BUSINESS, param.Keyword)
 	if err != nil || sessions == nil {
@@ -149,7 +150,6 @@ func Page(c *gin.Context, param *SessionPageParam) gin.H {
 		size = 10
 	}
 
-	pages := (total + size - 1) / size
 	start := (current - 1) * size
 	var pageRecords []*SessionPageResult
 	if start >= total {
@@ -162,16 +162,7 @@ func Page(c *gin.Context, param *SessionPageParam) gin.H {
 		pageRecords = sessions[start:end]
 	}
 
-	return gin.H{
-		"code": 200, "message": "请求成功", "success": true,
-		"data": gin.H{
-			"records": pageRecords,
-			"total":   total,
-			"current": current,
-			"size":    size,
-			"pages":   pages,
-		},
-	}
+	result.PageDataResult(c, pageRecords, int64(total), current, size)
 }
 
 func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, tokenPrefix, keyword string) ([]*SessionPageResult, error) {
@@ -266,8 +257,8 @@ func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, to
 	return result, nil
 }
 
-func Exit(c *gin.Context, userID string) {
-	auth.Kickout(userID)
+func Exit(c *gin.Context, param *SessionExitParam) {
+	auth.Kickout(param.UserID)
 }
 
 func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
@@ -310,8 +301,8 @@ func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	return results
 }
 
-func ExitToken(c *gin.Context, userID, token string) {
-	auth.KickoutToken(userID, token)
+func ExitToken(c *gin.Context, param *SessionExitTokenParam) {
+	auth.KickoutToken(param.UserID, param.Token)
 }
 
 func ChartData(c *gin.Context) *SessionChartData {
@@ -378,9 +369,3 @@ func lastNDays(n int) []string {
 	return days
 }
 
-func safeStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}

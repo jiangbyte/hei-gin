@@ -1,7 +1,7 @@
 package v1
 
 import (
-		"hei-gin/sdk/result"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	session "hei-gin/plugins/plugin-sys/session"
 
@@ -13,48 +13,51 @@ func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/session/analysis
 	r.GET("/api/v1/sys/session/analysis",
 		registry.Perm("sys:session:page", "会话分页"),
-		sessionAnalysis,
+		analysisHandler,
 	)
 
 	// GET /api/v1/sys/session/page
 	r.GET("/api/v1/sys/session/page",
 		registry.Perm("sys:session:page", "会话分页"),
-		sessionPage,
+		pageHandler,
 	)
 
 	// POST /api/v1/sys/session/exit
 	r.POST("/api/v1/sys/session/exit",
 		registry.Perm("sys:session:exit", "强退会话"),
-		sessionExit,
+		exitHandler,
 	)
 
 	// GET /api/v1/sys/session/tokens
 	r.GET("/api/v1/sys/session/tokens",
 		registry.Perm("sys:session:page", "会话分页"),
-		sessionTokens,
+		tokensHandler,
 	)
 
 	// POST /api/v1/sys/session/exit-token
 	r.POST("/api/v1/sys/session/exit-token",
 		registry.Perm("sys:session:exit", "强退会话"),
-		sessionExitToken,
+		exitTokenHandler,
 	)
 
 	// GET /api/v1/sys/session/chart-data
 	r.GET("/api/v1/sys/session/chart-data",
 		registry.Perm("sys:session:page", "会话分页"),
-		sessionChartData,
+		chartDataHandler,
 	)
 }
 
-// sessionAnalysis handles GET /api/v1/sys/session/analysis
-func sessionAnalysis(c *gin.Context) {
-	data := session.Analysis(c)
-	result.Success(c, data)
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }
 
-// sessionPage handles GET /api/v1/sys/session/page
-func sessionPage(c *gin.Context) {
+// analysisHandler handles GET /api/v1/sys/session/analysis
+func analysisHandler(c *gin.Context) {
+	result.Success(c, session.Analysis(c))
+}
+
+// pageHandler handles GET /api/v1/sys/session/page
+func pageHandler(c *gin.Context) {
 	var param session.SessionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
@@ -64,49 +67,37 @@ func sessionPage(c *gin.Context) {
 	session.Page(c, &param)
 }
 
-// sessionExit handles POST /api/v1/sys/session/exit
-func sessionExit(c *gin.Context) {
+// exitHandler handles POST /api/v1/sys/session/exit
+func exitHandler(c *gin.Context) {
 	var param session.SessionExitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	session.Exit(c, param.UserID)
+	session.Exit(c, &param)
 	result.Success(c, nil)
 }
 
-// sessionTokens handles GET /api/v1/sys/session/tokens
-func sessionTokens(c *gin.Context) {
-	var param struct {
-		UserID string `form:"user_id"`
-	}
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	data := session.TokenList(c, param.UserID)
+// tokensHandler handles GET /api/v1/sys/session/tokens
+func tokensHandler(c *gin.Context) {
+	data := session.TokenList(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
-// sessionExitToken handles POST /api/v1/sys/session/exit-token
-func sessionExitToken(c *gin.Context) {
+// exitTokenHandler handles POST /api/v1/sys/session/exit-token
+func exitTokenHandler(c *gin.Context) {
 	var param session.SessionExitTokenParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	session.ExitToken(c, param.UserID, param.Token)
+	session.ExitToken(c, &param)
 	result.Success(c, nil)
 }
 
-// sessionChartData handles GET /api/v1/sys/session/chart-data
-func sessionChartData(c *gin.Context) {
-	data := session.ChartData(c)
-	result.Success(c, data)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
+// chartDataHandler handles GET /api/v1/sys/session/chart-data
+func chartDataHandler(c *gin.Context) {
+	result.Success(c, session.ChartData(c))
 }

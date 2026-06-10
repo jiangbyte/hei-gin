@@ -1,8 +1,4 @@
-﻿package position
-
-import (
-	"hei-gin/sdk/utils"
-)
+package position
 
 type PositionVO struct {
 	ID          string   `json:"id"`
@@ -30,18 +26,3 @@ type PositionPageParam struct {
 	Category string `json:"category" form:"category"`
 	OrgID    string `json:"org_id" form:"org_id"`
 }
-
-
-func toVO(entity *SysPosition) *PositionVO {
-	if entity == nil { return nil }
-	return &PositionVO{
-		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
-		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
-		Extra: entity.Extra, CreatedAt: utils.FormatDateTimePtr(entity.CreatedAt),
-		CreatedBy: entity.CreatedBy, UpdatedAt: utils.FormatDateTimePtr(entity.UpdatedAt),
-		UpdatedBy: entity.UpdatedBy,
-	}
-}
-
-func (p *PositionPageParam) GetCurrent() int { return p.Current }
-func (p *PositionPageParam) GetSize() int    { return p.Size }
