@@ -11,6 +11,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/result"
 	cliUser "hei-gin/plugins/plugin-client/user"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,9 @@ func scanKeys(ctx context.Context, redis *redis.Client, pattern string) ([]strin
 	return keys, nil
 }
 
-func Analysis(c *gin.Context) *SessionAnalysisResult {
+// ===== Analysis =====
+
+func SessionAnalysis(c *gin.Context) *SessionAnalysisResult {
 	bKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
 	cKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 
@@ -128,8 +131,10 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 	return daily
 }
 
-func Page(c *gin.Context, param *SessionPageParam) gin.H {
-	sessions, err := collectSessions(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER, constants.TOKEN_PREFIX_CONSUMER, param.Keyword)
+// ===== Page =====
+
+func SessionPage(c *gin.Context, p *SessionPageParam) {
+	sessions, err := collectSessions(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER, constants.TOKEN_PREFIX_CONSUMER, p.Keyword)
 	if err != nil || sessions == nil {
 		sessions = []*SessionPageResult{}
 	}
@@ -139,42 +144,29 @@ func Page(c *gin.Context, param *SessionPageParam) gin.H {
 	})
 
 	total := len(sessions)
-	current := param.Current
-	if current < 1 {
-		current = 1
+	if p.Current < 1 {
+		p.Current = 1
 	}
-	size := param.Size
-	if size < 1 {
-		size = 10
+	if p.Size < 1 {
+		p.Size = 10
 	}
 
-	pages := (total + size - 1) / size
-	start := (current - 1) * size
+	start := (p.Current - 1) * p.Size
 	var pageRecords []*SessionPageResult
 	if start >= total {
 		pageRecords = []*SessionPageResult{}
 	} else {
-		end := start + size
+		end := start + p.Size
 		if end > total {
 			end = total
 		}
 		pageRecords = sessions[start:end]
 	}
-
-	return gin.H{
-		"code": 200, "message": "请求成功", "success": true,
-		"data": gin.H{
-			"records": pageRecords,
-			"total":   total,
-			"current": current,
-			"size":    size,
-			"pages":   pages,
-		},
-	}
+	result.PageDataResult(c, pageRecords, int64(total), p.Current, p.Size)
 }
 
 func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, tokenPrefix, keyword string) ([]*SessionPageResult, error) {
-	sessionKeys, err := scanKeys(ctx, redis, sessionPrefix+"*")
+	sessionKeys, err := scanKeys(ctx, redis, sessionPrefix + "*")
 	if err != nil {
 		return nil, err
 	}
@@ -192,15 +184,14 @@ func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, to
 
 		// Session key is a Redis SET (stores token members via SAdd), NOT a String.
 		// Do NOT redis.Get() it — that causes WRONGTYPE error.
-		// Instead, read token data to derive session info.
+		// Instead, read token data to derive session info from the earliest token.
 		tokens, err := redis.SMembers(ctx, sessionKey).Result()
-		if err != nil {
+		if err != nil || len(tokens) == 0 {
 			continue
 		}
-		tokenCount := len(tokens)
 
-		sessionCreateTime := ""
-		username := ""
+		var minCreatedAt time.Time
+		hasCreatedAt := false
 		for _, token := range tokens {
 			tokenKey := tokenPrefix + token
 			data, err := redis.Get(ctx, tokenKey).Result()
@@ -211,62 +202,55 @@ func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, to
 			if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
 				continue
 			}
-			ct, _ := tokenData["created_at"].(string)
-			if ct != "" && (sessionCreateTime == "" || ct < sessionCreateTime) {
-				sessionCreateTime = ct
-			}
-			if ext, ok := tokenData["extra"].(map[string]any); ok {
-				if un, _ := ext["username"].(string); un != "" && username == "" {
-					username = un
+			createdAtStr, _ := tokenData["created_at"].(string)
+			if createdAtStr != "" {
+				createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtStr)
+				if err == nil && (!hasCreatedAt || createdAt.Before(minCreatedAt)) {
+					minCreatedAt = createdAt
+					hasCreatedAt = true
 				}
 			}
-			break
-		}
-
-		ttl, err := redis.TTL(ctx, sessionKey).Result()
-		timeoutSeconds := -1
-		if err == nil {
-			timeoutSeconds = int(ttl.Seconds())
 		}
 
 		user, ok := userCache[userID]
 		if !ok {
 			var u cliUser.ClientUser
-			err := db.DB.WithContext(ctx).First(&u, "id = ?", userID).Error
-			if err == nil {
+			if err := db.DB.First(&u, "id = ?", userID).Error; err != nil {
+				userCache[userID] = nil
+			} else {
 				user = &u
 				userCache[userID] = user
 			}
 		}
 
-		sr := &SessionPageResult{
-			UserID: userID, TokenCount: tokenCount,
-			SessionCreateTime: sessionCreateTime,
-			SessionTimeout:    formatTimeout(timeoutSeconds), SessionTimeoutSeconds: timeoutSeconds,
-		}
-		if username != "" {
-			sr.Username = &username
+		item := &SessionPageResult{
+			UserID:     userID,
+			TokenCount: len(tokens),
 		}
 		if user != nil {
-			sr.Nickname = user.Nickname
-			sr.Avatar = user.Avatar
-			sr.Status = &user.Status
-			sr.LastLoginIP = user.LastLoginIP
-			if user.LastLoginAt != nil {
-				sr.LastLoginTime = user.LastLoginAt.Format("2006-01-02 15:04:05")
-			}
+			item.Username = user.Username
+			item.Nickname = user.Nickname
+			item.Avatar = user.Avatar
+			item.Status = &user.Status
+			item.LastLoginIP = user.LastLoginIP
 		}
-
-		result = append(result, sr)
+		if hasCreatedAt {
+			item.SessionCreateTime = minCreatedAt.Format("2006-01-02 15:04:05")
+		}
+		result = append(result, item)
 	}
 	return result, nil
 }
 
-func Exit(c *gin.Context, userID string) {
+// ===== Exit =====
+
+func SessionExit(c *gin.Context, userID string) {
 	auth.Consumer.Kickout(userID)
 }
 
-func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
+// ===== TokenList =====
+
+func SessionTokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	sessionKey := constants.SESSION_PREFIX_CONSUMER + userID
 	tokens, err := db.Redis.SMembers(svcCtx, sessionKey).Result()
 	if err != nil || len(tokens) == 0 {
@@ -305,11 +289,15 @@ func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	return results
 }
 
-func ExitToken(c *gin.Context, userID, token string) {
+// ===== ExitToken =====
+
+func SessionExitToken(c *gin.Context, userID, token string) {
 	auth.Consumer.KickoutToken(userID, token)
 }
 
-func ChartData(c *gin.Context) *SessionChartData {
+// ===== ChartData =====
+
+func SessionChart(c *gin.Context) *SessionChartData {
 	cKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 	cTotal, _, _ := countTokens(svcCtx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
 	cDaily := countDaily(svcCtx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
@@ -361,11 +349,4 @@ func lastNDays(n int) []string {
 		days[i] = now.AddDate(0, 0, -(n - 1 - i)).Format("2006-01-02")
 	}
 	return days
-}
-
-func safeStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

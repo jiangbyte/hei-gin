@@ -1,13 +1,12 @@
 package username_api
 
 import (
-	"github.com/gin-gonic/gin"
-
+	"hei-gin/plugins/plugin-client/auth/username"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-
-	"hei-gin/plugins/plugin-client/auth/username"
 	"hei-gin/sdk/registry"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterRoutes registers consumer username-based auth routes (login/register/logout).
@@ -23,6 +22,7 @@ func RegisterRoutes(r *gin.Engine) {
 		username.DoLogout,
 	)
 }
+
 func init() {
 	registry.RegisterRoute(RegisterRoutes)
 }

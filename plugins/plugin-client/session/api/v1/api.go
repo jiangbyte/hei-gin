@@ -47,9 +47,13 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}
+
 // analysisHandler handles GET /api/v1/client/session/analysis
 func analysisHandler(c *gin.Context) {
-	data := clientsession.Analysis(c)
+	data := clientsession.SessionAnalysis(c)
 	result.Success(c, data)
 }
 
@@ -61,7 +65,7 @@ func pageHandler(c *gin.Context) {
 		return
 	}
 
-	clientsession.Page(c, &param)
+	clientsession.SessionPage(c, &param)
 }
 
 // exitHandler handles POST /api/v1/client/session/exit
@@ -72,21 +76,13 @@ func exitHandler(c *gin.Context) {
 		return
 	}
 
-	clientsession.Exit(c, param.UserID)
+	clientsession.SessionExit(c, param.UserID)
 	result.Success(c, nil)
 }
 
 // tokensHandler handles GET /api/v1/client/session/tokens
 func tokensHandler(c *gin.Context) {
-	var param struct {
-		UserID string `form:"user_id"`
-	}
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	data := clientsession.TokenList(c, param.UserID)
+	data := clientsession.SessionTokenList(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
@@ -98,15 +94,12 @@ func exitTokenHandler(c *gin.Context) {
 		return
 	}
 
-	clientsession.ExitToken(c, param.UserID, param.Token)
+	clientsession.SessionExitToken(c, param.UserID, param.Token)
 	result.Success(c, nil)
 }
 
 // chartDataHandler handles GET /api/v1/client/session/chart-data
 func chartDataHandler(c *gin.Context) {
-	data := clientsession.ChartData(c)
+	data := clientsession.SessionChart(c)
 	result.Success(c, data)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
 }

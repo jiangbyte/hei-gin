@@ -1,8 +1,6 @@
-﻿package username
+package username
 
 import (
-	"time"
-
 	"golang.org/x/crypto/bcrypt"
 
 	"hei-gin/sdk/auth"
@@ -19,54 +17,63 @@ import (
 	"gorm.io/gorm"
 )
 
+// DoLogin handles consumer username/password login.
 func DoLogin(c *gin.Context) {
 	ctx := c.Request.Context()
 	var param UsernameLoginParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		panic(exception.NewBusinessError("请求参数错误", 400))
+		result.WriteError(c, exception.NewBusinessError("请求参数错误", 400))
+		return
 	}
 
-	
-
 	if err := captcha.CCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
-		panic(exception.NewBusinessError(err.Error(), 400))
+		result.WriteError(c, exception.NewBusinessError(err.Error(), 400))
+		return
 	}
 
 	var user cliUser.ClientUser
 	if err := db.DB.WithContext(ctx).Where("username = ?", param.Username).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("用户名或密码错误", 400))
+			result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+			return
 		}
-		panic(exception.NewBusinessError("系统异常", 500))
+		result.WriteError(c, exception.NewBusinessError("系统异常", 500))
+		return
 	}
 
 	status := user.Status
 	switch status {
 	case string(enums.UserStatusLocked):
-		panic(exception.NewBusinessError("账号已被锁定", 400))
+		result.WriteError(c, exception.NewBusinessError("账号已被锁定", 400))
+		return
 	case string(enums.UserStatusInactive):
-		panic(exception.NewBusinessError("账号已停用", 400))
+		result.WriteError(c, exception.NewBusinessError("账号已停用", 400))
+		return
 	default:
 		if status != string(enums.UserStatusActive) {
-			panic(exception.NewBusinessError("账号状态异常", 400))
+			result.WriteError(c, exception.NewBusinessError("账号状态异常", 400))
+			return
 		}
 	}
 
 	rawPwd := utils.Decrypt(param.Password)
 	if rawPwd == "" {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
 	if user.Password == nil {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(rawPwd)); err != nil {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
 
 	ua := c.GetHeader("User-Agent")
 	extra := map[string]any{
-		"username":    safeStr(user.Username),
-		"nickname":    safeStr(user.Nickname),
+		"username":    utils.SafeStrPtr(user.Username),
+		"nickname":    utils.SafeStrPtr(user.Nickname),
 		"status":      status,
 		"device_type": utils.GetBrowser(ua),
 		"device_id":   param.DeviceID,
@@ -75,63 +82,63 @@ func DoLogin(c *gin.Context) {
 	clientAuth := auth.Consumer
 	token, err := clientAuth.Login(c, user.ID, extra)
 	if err != nil {
-		panic(exception.NewBusinessError("登录失败", 500))
+		result.WriteError(c, exception.NewBusinessError("登录失败", 500))
+		return
 	}
 
-	now := time.Now()
 	ip := utils.GetClientIP(c)
 	db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
-		"last_login_at": now,
 		"last_login_ip": ip,
 		"login_count":   gorm.Expr("login_count + 1"),
 	})
 
-	username := safeStr(user.Username)
+	username := utils.SafeStrPtr(user.Username)
 	log.RecordAuthLog(c, "登录", "LOGIN", "SUCCESS", "", username)
 
 	result.Success(c, UsernameLoginResult{Token: token})
 }
 
+// DoRegister handles consumer user registration.
 func DoRegister(c *gin.Context) {
 	ctx := c.Request.Context()
 	var param UsernameRegisterParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		panic(exception.NewBusinessError("请求参数错误", 400))
+		result.WriteError(c, exception.NewBusinessError("请求参数错误", 400))
+		return
 	}
 
-	ctx = c.Request.Context()
-
 	if err := captcha.CCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
-		panic(exception.NewBusinessError(err.Error(), 400))
+		result.WriteError(c, exception.NewBusinessError(err.Error(), 400))
+		return
 	}
 
 	var count int64
 	db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).Where("username = ?", param.Username).Count(&count)
 	if count > 0 {
-		panic(exception.NewBusinessError("用户名已存在", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名已存在", 400))
+		return
 	}
 
 	rawPwd := utils.Decrypt(param.Password)
 	if rawPwd == "" {
-		panic(exception.NewBusinessError("密码解密失败", 400))
+		result.WriteError(c, exception.NewBusinessError("密码解密失败", 400))
+		return
 	}
 
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
 	if err != nil {
-		panic(exception.NewBusinessError("密码加密失败", 500))
+		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
+		return
 	}
 
-	userID := utils.GenerateID()
-	now := time.Now()
 	hashedPwdStr := string(hashedPwd)
-
 	entity := cliUser.ClientUser{
-		ID: userID, Username: &param.Username, Password: &hashedPwdStr,
+		Username: &param.Username, Password: &hashedPwdStr,
 		Nickname: &param.Username, Status: string(enums.UserStatusActive),
-		CreatedAt: &now, CreatedBy: &userID,
 	}
 	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("注册失败", 500))
+		result.WriteError(c, exception.NewBusinessError("注册失败", 500))
+		return
 	}
 
 	log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
@@ -139,21 +146,17 @@ func DoRegister(c *gin.Context) {
 	result.Success(c, UsernameRegisterResult{Message: "注册成功"})
 }
 
+// DoLogout handles consumer user logout.
 func DoLogout(c *gin.Context) {
 	clientAuth := auth.Consumer
 	userID := clientAuth.GetLoginIDDefaultNull(c)
 	if userID != "" {
 		var user cliUser.ClientUser
 		if err := db.DB.First(&user, "id = ?", userID).Error; err == nil {
-			username := safeStr(user.Username)
+			username := utils.SafeStrPtr(user.Username)
 			log.RecordAuthLog(c, "登出", "LOGOUT", "SUCCESS", "", username)
 		}
 	}
 	clientAuth.Logout(c)
 	result.Success(c, UsernameLogoutResult{Message: "登出成功"})
-}
-
-func safeStr(s *string) string {
-	if s == nil { return "" }
-	return *s
 }
