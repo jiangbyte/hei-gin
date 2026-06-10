@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
@@ -39,7 +38,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/notice/remove",
 		registry.Perm("sys:notice:remove", "删除通知"),
 		log.SysLog("删除通知"),
-		deleteHandler,
+		removeHandler,
 	)
 
 	// GET /api/v1/sys/notice/detail
@@ -47,66 +46,6 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:notice:detail", "通知详情"),
 		detailHandler,
 	)
-}
-
-// pageHandler handles GET /api/v1/sys/notice/page
-func pageHandler(c *gin.Context) {
-	var param notice.NoticePageParam
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	notice.Page(c, &param)
-}
-
-// createHandler handles POST /api/v1/sys/notice/create
-func createHandler(c *gin.Context) {
-	var vo notice.NoticeVO
-	if err := c.ShouldBindJSON(&vo); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	userID := auth.GetLoginIDDefaultNull(c)
-	notice.Create(c, &vo, userID)
-	result.Success(c, nil)
-}
-
-// modifyHandler handles POST /api/v1/sys/notice/modify
-func modifyHandler(c *gin.Context) {
-	var vo notice.NoticeVO
-	if err := c.ShouldBindJSON(&vo); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	userID := auth.GetLoginIDDefaultNull(c)
-	notice.Modify(c, &vo, userID)
-	result.Success(c, nil)
-}
-
-// deleteHandler handles POST /api/v1/sys/notice/remove
-func deleteHandler(c *gin.Context) {
-	var param utils.IdsParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-
-	notice.Remove(c, param.IDs)
-	result.Success(c, nil)
-}
-
-// detailHandler handles GET /api/v1/sys/notice/detail
-func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := notice.Detail(c, id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
-	result.Success(c, vo)
 }
 
 // RegisterPublicRoutes registers public notice routes (no auth required).
@@ -121,6 +60,64 @@ func RegisterPublicRoutes(r *gin.Engine) {
 	r.GET("/api/v1/public/c/notice/detail", detailPublicHandler)
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterPublicRoutes)
+}
+
+// pageHandler handles GET /api/v1/sys/notice/page
+func pageHandler(c *gin.Context) {
+	var param notice.NoticePageParam
+	if err := c.ShouldBindQuery(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	notice.NoticePage(c, &param)
+}
+
+// createHandler handles POST /api/v1/sys/notice/create
+func createHandler(c *gin.Context) {
+	var vo notice.NoticeVO
+	if err := c.ShouldBindJSON(&vo); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	notice.NoticeCreate(c, &vo)
+	result.Success(c, nil)
+}
+
+// modifyHandler handles POST /api/v1/sys/notice/modify
+func modifyHandler(c *gin.Context) {
+	var vo notice.NoticeVO
+	if err := c.ShouldBindJSON(&vo); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	notice.NoticeModify(c, &vo)
+	result.Success(c, nil)
+}
+
+// removeHandler handles POST /api/v1/sys/notice/remove
+func removeHandler(c *gin.Context) {
+	var param utils.IdsParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	notice.NoticeRemove(c, &param)
+	result.Success(c, nil)
+}
+
+// detailHandler handles GET /api/v1/sys/notice/detail
+func detailHandler(c *gin.Context) {
+	vo := notice.NoticeDetail(c, c.Query("id"))
+	result.Success(c, vo)
+}
+
 // pagePublicHandler handles GET /api/v1/public/c/notice/page
 func pagePublicHandler(c *gin.Context) {
 	var param notice.NoticePageParam
@@ -128,17 +125,12 @@ func pagePublicHandler(c *gin.Context) {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	notice.PublicPage(c, &param)
+	notice.NoticePublicPage(c, &param)
 }
 
 // detailPublicHandler handles GET /api/v1/public/c/notice/detail
 func detailPublicHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := notice.PublicDetail(c, id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
+	vo := notice.NoticePublicDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -149,16 +141,6 @@ func latestHandler(c *gin.Context) {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	if param.Size < 1 {
-		param.Size = 5
-	}
-	if param.Size > 20 {
-		param.Size = 20
-	}
-	data := notice.Latest(c, &param)
-	result.Success(c, data)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
-	registry.RegisterRoute(RegisterPublicRoutes)
+
+	result.Success(c, notice.NoticeLatest(c, &param))
 }

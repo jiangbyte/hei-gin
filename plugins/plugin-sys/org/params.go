@@ -1,9 +1,5 @@
 package org
 
-import (
-	"hei-gin/sdk/utils"
-)
-
 type OrgVO struct {
 	ID          string  `json:"id"`
 	Code        string  `json:"code"`
@@ -30,27 +26,3 @@ type OrgPageParam struct {
 type OrgTreeParam struct {
 	Category string `json:"category" form:"category"`
 }
-
-
-func toVO(entity *SysOrg) *OrgVO {
-	if entity == nil { return nil }
-	return &OrgVO{
-		ID:          entity.ID,
-		Code:        entity.Code,
-		Name:        entity.Name,
-		Category:    entity.Category,
-		ParentID:    entity.ParentID,
-		Description: entity.Description,
-		Status:      entity.Status,
-		SortCode:    entity.SortCode,
-		Extra:       entity.Extra,
-		CreatedAt:   utils.FormatDateTimePtr(entity.CreatedAt),
-		CreatedBy:   entity.CreatedBy,
-		UpdatedAt:   utils.FormatDateTimePtr(entity.UpdatedAt),
-		UpdatedBy:   entity.UpdatedBy,
-	}
-}
-
-
-func (p *OrgPageParam) GetCurrent() int { return p.Current }
-func (p *OrgPageParam) GetSize() int    { return p.Size }

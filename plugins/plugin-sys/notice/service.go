@@ -1,119 +1,101 @@
 package notice
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/crud"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func parseTime(s *string) *time.Time {
-	if s == nil || *s == "" {
-		return nil
+func NoticePage(c *gin.Context, p *NoticePageParam) {
+	ctx := c.Request.Context()
+	if p.Current < 1 {
+		p.Current = 1
 	}
-	t, err := time.Parse("2006-01-02 15:04:05", *s)
-	if err != nil {
-		return nil
+	if p.Size < 1 {
+		p.Size = 10
 	}
-	return &t
+	if p.Size > 100 {
+		p.Size = 100
+	}
+
+	q := db.DB.WithContext(ctx).Model(&SysNotice{})
+	if p.Keyword != "" {
+		q = q.Where("title LIKE ?", "%"+p.Keyword+"%")
+	}
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
+	}
+	if p.Status != "" {
+		q = q.Where("status = ?", p.Status)
+	}
+
+	var total int64
+	q.Count(&total)
+
+	var rows []SysNotice
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+
+	vos := make([]*NoticeVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysNoticeToNoticeVO(&r)
+	}
+	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func Page(c *gin.Context, param *NoticePageParam) {
-	crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
-		if param.Keyword != "" {
-			q = q.Where("title LIKE ?", "%"+param.Keyword+"%")
-		}
-		if param.Category != "" {
-			q = q.Where("category = ?", param.Category)
-		}
-		if param.Status != "" {
-			q = q.Where("status = ?", param.Status)
-		}
-		return q
-	}, "created_at DESC", func(e *SysNotice) any { return entToVO(e) })
-}
-
-func Detail(c *gin.Context, id string) *NoticeVO {
+func NoticeDetail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	var entity SysNotice
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
+	var e SysNotice
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
 		}
-		panic(exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+		return nil
 	}
-	return entToVO(&entity)
+	return SysNoticeToNoticeVO(&e)
 }
 
-func Create(c *gin.Context, vo *NoticeVO, userID string) {
+func NoticeCreate(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
-	now := time.Now()
-	entity := SysNotice{
-		ID:        utils.GenerateID(),
-		Title:     vo.Title,
-		Category:  vo.Category,
-		Type:      vo.Type,
-		SortCode:  vo.SortCode,
-		CreatedAt: &now,
-		CreatedBy: &userID,
-		UpdatedAt: &now,
-		UpdatedBy: &userID,
-	}
-	if vo.Summary != nil {
-		entity.Summary = vo.Summary
-	}
-	if vo.Content != nil {
-		entity.Content = vo.Content
-	}
-	if vo.Cover != nil {
-		entity.Cover = vo.Cover
-	}
-	if vo.Level != "" {
-		entity.Level = vo.Level
-	}
-	if vo.Status != "" {
-		entity.Status = vo.Status
-	}
-	if vo.IsTop != "" {
-		entity.IsTop = vo.IsTop
-	}
-	if vo.Author != nil {
-		entity.Author = vo.Author
-	}
-	if vo.PublishAt != nil {
-		entity.PublishAt = parseTime(vo.PublishAt)
-	}
-	if vo.ExpireAt != nil {
-		entity.ExpireAt = parseTime(vo.ExpireAt)
-	}
-	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("添加通知失败: "+err.Error(), 500))
+
+	e := NoticeVOToSysNotice(vo)
+	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("添加通知失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func Modify(c *gin.Context, vo *NoticeVO, userID string) {
+func NoticeModify(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
-	var entity SysNotice
-	if err := db.DB.WithContext(ctx).Where("id = ?", vo.ID).First(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("通知不存在: "+err.Error(), 500))
+	if vo.ID == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return
 	}
-	now := time.Now()
-	up := map[string]any{
-		"title":      vo.Title,
-		"category":   vo.Category,
-		"type":       vo.Type,
-		"sort_code":  vo.SortCode,
-		"updated_at": now,
-		"updated_by": userID,
+
+	var e SysNotice
+	if err := db.DB.WithContext(ctx).Where("id = ?", vo.ID).First(&e).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
+			return
+		}
+		result.WriteError(c, exception.NewBusinessError("查询通知失败: "+err.Error(), 500))
+		return
+	}
+
+	up := map[string]interface{}{
+		"title": vo.Title, "category": vo.Category, "type": vo.Type,
+		"sort_code": vo.SortCode,
 	}
 	if vo.Summary != nil {
 		up["summary"] = *vo.Summary
@@ -137,124 +119,123 @@ func Modify(c *gin.Context, vo *NoticeVO, userID string) {
 		up["author"] = *vo.Author
 	}
 	if vo.PublishAt != nil {
-		up["publish_at"] = parseTime(vo.PublishAt)
+		up["publish_at"] = utils.ParseDateTimePtr(vo.PublishAt)
 	}
 	if vo.ExpireAt != nil {
-		up["expire_at"] = parseTime(vo.ExpireAt)
+		up["expire_at"] = utils.ParseDateTimePtr(vo.ExpireAt)
 	}
-	if err := db.DB.WithContext(ctx).Model(&entity).Updates(up).Error; err != nil {
-		panic(exception.NewBusinessError("编辑通知失败: "+err.Error(), 500))
+	if err := db.DB.WithContext(ctx).Model(&SysNotice{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("编辑通知失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func Remove(c *gin.Context, ids []string) {
-	crud.Remove(c, &SysNotice{}, ids)
-}
-
-func Options(c *gin.Context) []any {
-	return crud.Options(c, &SysNotice{}, "sort_code ASC", func(e *SysNotice) any { return entToVO(e) })
-}
-
-func DetailByID(c *gin.Context, id string) *NoticeVO {
-	if id == "" {
-		return nil
+func NoticeRemove(c *gin.Context, param *utils.IdsParam) {
+	ids := param.IDs
+	if len(ids) == 0 {
+		return
 	}
 	ctx := c.Request.Context()
-	var entity SysNotice
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
-		panic(exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysNotice{}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("删除通知失败: "+err.Error(), 500))
+		return
 	}
-	return entToVO(&entity)
 }
 
-func Latest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
+func NoticeOptions(c *gin.Context) []any {
 	ctx := c.Request.Context()
-	var records []SysNotice
-	db.DB.WithContext(ctx).
-		Where("status = ?", "ENABLED").
-		Order("is_top DESC, sort_code DESC, created_at DESC").
-		Limit(param.Size).
-		Find(&records)
-	vos := make([]*NoticeVO, len(records))
-	for i, r := range records {
-		vos[i] = entToVO(&r)
+	var rows []SysNotice
+	db.DB.WithContext(ctx).Model(&SysNotice{}).Order("sort_code ASC").Find(&rows)
+	vos := make([]any, len(rows))
+	for i, r := range rows {
+		vos[i] = SysNoticeToNoticeVO(&r)
 	}
 	return vos
 }
 
-func entToVO(entity *SysNotice) *NoticeVO {
-	vo := &NoticeVO{
-		ID: entity.ID, Title: entity.Title, Category: entity.Category,
-		Type: entity.Type, SortCode: entity.SortCode,
-	}
-	if entity.Summary != nil {
-		vo.Summary = entity.Summary
-	}
-	if entity.Content != nil {
-		vo.Content = entity.Content
-	}
-	if entity.Cover != nil {
-		vo.Cover = entity.Cover
-	}
-	if entity.Level != "" {
-		vo.Level = entity.Level
-	}
-	if entity.Status != "" {
-		vo.Status = entity.Status
-	}
-	if entity.IsTop != "" {
-		vo.IsTop = entity.IsTop
-	}
-	if entity.Author != nil {
-		vo.Author = entity.Author
-	}
-	if entity.PublishAt != nil {
-		s := entity.PublishAt.Format("2006-01-02 15:04:05")
-		vo.PublishAt = &s
-	}
-	if entity.ExpireAt != nil {
-		s := entity.ExpireAt.Format("2006-01-02 15:04:05")
-		vo.ExpireAt = &s
-	}
-	if entity.CreatedAt != nil {
-		vo.CreatedAt = entity.CreatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.CreatedBy != nil {
-		vo.CreatedBy = entity.CreatedBy
-	}
-	if entity.UpdatedAt != nil {
-		vo.UpdatedAt = entity.UpdatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.UpdatedBy != nil {
-		vo.UpdatedBy = entity.UpdatedBy
-	}
-	return vo
-}
-
-func PublicPage(c *gin.Context, param *NoticePageParam) {
-	crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
-		q = q.Where("status = ?", "ENABLED")
-		if param.Keyword != "" {
-			q = q.Where("title LIKE ?", "%"+param.Keyword+"%")
-		}
-		if param.Category != "" {
-			q = q.Where("category = ?", param.Category)
-		}
-		return q
-	}, "is_top DESC, sort_code DESC, created_at DESC", func(e *SysNotice) any { return entToVO(e) })
-}
-
-func PublicDetail(c *gin.Context, id string) *NoticeVO {
+func NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	var entity SysNotice
-	if err := db.DB.WithContext(ctx).Where("id = ? AND status = ?", id, "ENABLED").First(&entity).Error; err != nil {
+	var e SysNotice
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+		return nil
+	}
+	return SysNoticeToNoticeVO(&e)
+}
+
+func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
+	if param.Size < 1 {
+		param.Size = 5
+	}
+	if param.Size > 20 {
+		param.Size = 20
+	}
+
+	ctx := c.Request.Context()
+	var rows []SysNotice
+	db.DB.WithContext(ctx).
+		Where("status = ?", string(enums.StatusEnabled)).
+		Order("is_top DESC, sort_code DESC, created_at DESC").
+		Limit(param.Size).
+		Find(&rows)
+	vos := make([]*NoticeVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysNoticeToNoticeVO(&r)
+	}
+	return vos
+}
+
+func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
+	ctx := c.Request.Context()
+	if p.Current < 1 {
+		p.Current = 1
+	}
+	if p.Size < 1 {
+		p.Size = 10
+	}
+	if p.Size > 100 {
+		p.Size = 100
+	}
+
+	q := db.DB.WithContext(ctx).Model(&SysNotice{}).Where("status = ?", string(enums.StatusEnabled))
+	if p.Keyword != "" {
+		q = q.Where("title LIKE ?", "%"+p.Keyword+"%")
+	}
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
+	}
+
+	var total int64
+	q.Count(&total)
+
+	var rows []SysNotice
+	q.Order("is_top DESC, sort_code DESC, created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+
+	vos := make([]*NoticeVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysNoticeToNoticeVO(&r)
+	}
+	result.PageDataResult(c, vos, total, p.Current, p.Size)
+}
+
+func NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
+	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return nil
+	}
+	ctx := c.Request.Context()
+	var e SysNotice
+	if err := db.DB.WithContext(ctx).Where("id = ? AND status = ?", id, string(enums.StatusEnabled)).First(&e).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
 		}
-		panic(exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
+		return nil
 	}
-	return entToVO(&entity)
+	return SysNoticeToNoticeVO(&e)
 }

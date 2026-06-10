@@ -1,6 +1,6 @@
 # Plugin 代码风格约定
 
-参考 `plugins/plugin-sys/user`、`plugins/plugin-sys/role`、`plugins/plugin-sys/resource` 对齐后的模式。
+参考 `plugins/plugin-sys/user`、`plugins/plugin-sys/role`、`plugins/plugin-sys/resource` 等已对齐模块。
 
 ---
 
@@ -25,7 +25,7 @@
 - 统一 `*Handler` 后缀（`pageHandler`、`createHandler`、`detailHandler`）
 
 **`init()` 位置**
-- 紧跟在 `RegisterRoutes()` 之后
+- 紧跟在 `RegisterRoutes()` 之后（如有多个 Register 函数，在所有 Register 之后）
 
 **参数传递**
 - 参数传指针结构体，不在 handler 层拆字段
@@ -59,14 +59,14 @@ result.Success(c, vo)
 
 **校验**
 - 参数绑定错误（`ShouldBindJSON` / `ShouldBindQuery` 失败）在 handler 用 `result.Failure` 返回
-- 业务校验（空 ID、数据不存在等）在 service 层用 `result.WriteError` 处理
+- 业务校验（空 ID、数据不存在、必填字段等）在 service 层用 `result.WriteError` 处理
 
 ---
 
 ### 2. service.go
 
 **函数命名**
-- 统一 `{Module}{Action}` 格式（`RolePage`、`UserCreate`、`PositionModify`、`ResourceRemove`）
+- 统一 `{Module}{Action}` 格式（`RolePage`、`UserCreate`、`PositionModify`、`NoticeRemove`）
 
 **分页**
 - 手写，不使用 `crud` 包
@@ -85,7 +85,6 @@ func RolePage(c *gin.Context, p *RolePageParam) {
     }
 
     q := db.DB.WithContext(ctx).Model(&SysRole{})
-    // 条件拼装...
     if p.Keyword != "" {
         q = q.Where("name LIKE ? OR code LIKE ?", like, like)
     }
@@ -212,12 +211,14 @@ func RoleRemove(c *gin.Context, param *utils.IdsParam) {
 
 - 纯结构体定义，不包含辅助方法
 - 无 `toVO()`、`GetCurrent()` / `GetSize()` 等
+- 如模块无需参数（如 permission），整个文件可移除
 
 ---
 
 ### 4. mapper.go
 
-- `SysXxxToXxxVO` — Entity → VO，处理 `*time.Time → string` 转换
+- 转换函数命名：`SysXxxToXxxVO`（Entity → VO）、`XxxVOToSysXxx`（VO → Entity）
+- 时间类型转换统一使用 `utils` 包的工具函数，不手动 format / parse
 
 ```go
 func SysRoleToRoleVO(src *SysRole) *RoleVO {
@@ -225,24 +226,37 @@ func SysRoleToRoleVO(src *SysRole) *RoleVO {
     dst := &RoleVO{}
     dst.ID = src.ID
     // ... 逐字段赋值
+
+    // *time.Time → string / *string 统一用 utils
     dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
     dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
     return dst
 }
-```
 
-- `XxxVOToSysXxx` — VO → Entity，处理 `string → *time.Time` 转换
-
-```go
 func RoleVOToSysRole(src *RoleVO) *SysRole {
     if src == nil { return nil }
     dst := &SysRole{}
     dst.ID = src.ID
     // ... 逐字段赋值
+
+    // string / *string → *time.Time 统一用 utils
     dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
     dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
     return dst
 }
+```
+
+**VO 中 `*string` 类型的时间字段**（如通知的 `PublishAt` / `ExpireAt`）：
+
+```go
+// Entity → VO（*time.Time → *string）
+s := utils.FormatDateTimePtr(src.PublishAt)
+if s != "" {
+    dst.PublishAt = &s
+}
+
+// VO → Entity（*string → *time.Time）
+dst.PublishAt = utils.ParseDateTimePtr(src.PublishAt)
 ```
 
 ---
@@ -280,7 +294,7 @@ func RoleCreate(c *gin.Context, vo *RoleVO) {
 }
 ```
 
-空值校验也用 WriteError，不用 return nil：
+空值/必填校验也用 WriteError：
 
 ```go
 func RoleDetail(c *gin.Context, id string) *RoleVO {

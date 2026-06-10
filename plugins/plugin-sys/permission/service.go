@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ListModules returns sorted permission module names from Redis.
-func ListModules(c *gin.Context) []string {
+// PermissionListModules returns sorted permission module names from Redis.
+func PermissionListModules(c *gin.Context) []string {
 	ctx := c.Request.Context()
 	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 	if err != nil {
@@ -29,8 +29,8 @@ func ListModules(c *gin.Context) []string {
 	return modules
 }
 
-// ListByModule returns permission list for a specific module from Redis.
-func ListByModule(c *gin.Context, module string) []interface{} {
+// PermissionListByModule returns permission list for a specific module from Redis.
+func PermissionListByModule(c *gin.Context, module string) []interface{} {
 	ctx := c.Request.Context()
 	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 	if err != nil {
