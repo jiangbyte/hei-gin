@@ -1,9 +1,6 @@
-﻿package group
+package group
 
-import (
-	"hei-gin/sdk/utils"
-)
-
+// GroupVO 用户组视图对象
 type GroupVO struct {
 	ID          string   `json:"id"`
 	Code        string   `json:"code"`
@@ -22,6 +19,7 @@ type GroupVO struct {
 	UpdatedBy   *string  `json:"updated_by"`
 }
 
+// GroupPageParam 用户组分页参数
 type GroupPageParam struct {
 	Current  int    `json:"current" form:"current"`
 	Size     int    `json:"size" form:"size"`
@@ -30,23 +28,8 @@ type GroupPageParam struct {
 	OrgID    string `json:"org_id" form:"org_id"`
 }
 
+// GroupTreeParam 用户组树查询参数
 type GroupTreeParam struct {
 	Category string `json:"category" form:"category"`
 	OrgID    string `json:"org_id" form:"org_id"`
 }
-
-
-func toVO(entity *SysGroup) *GroupVO {
-	if entity == nil { return nil }
-	return &GroupVO{
-		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
-		ParentID: entity.ParentID, OrgID: entity.OrgID, Description: entity.Description,
-		Status: entity.Status, SortCode: entity.SortCode, Extra: entity.Extra,
-		CreatedAt: utils.FormatDateTimePtr(entity.CreatedAt), CreatedBy: entity.CreatedBy,
-		UpdatedAt: utils.FormatDateTimePtr(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
-	}
-}
-
-
-func (p *GroupPageParam) GetCurrent() int { return p.Current }
-func (p *GroupPageParam) GetSize() int    { return p.Size }

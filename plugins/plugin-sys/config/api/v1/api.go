@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
@@ -39,7 +38,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/config/remove",
 		registry.Perm("sys:config:remove", "删除配置"),
 		log.SysLog("删除配置"),
-		deleteHandler,
+		removeHandler,
 	)
 
 	r.GET("/api/v1/sys/config/detail",
@@ -62,88 +61,89 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}
+
+// pageHandler handles GET /api/v1/sys/config/page
 func pageHandler(c *gin.Context) {
 	var param config.ConfigPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	config.Page(c, &param)
+
+	config.ConfigPage(c, &param)
 }
 
+// listByCategoryHandler handles GET /api/v1/sys/config/list-by-category
 func listByCategoryHandler(c *gin.Context) {
-	var param config.ConfigListParam
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	vos := config.ListByCategory(c, param.Category)
+	vos := config.ConfigListByCategory(c, c.Query("category"))
 	result.Success(c, vos)
 }
 
+// createHandler handles POST /api/v1/sys/config/create
 func createHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.GetLoginIDDefaultNull(c)
-	config.Create(c, &vo, userID)
+
+	config.ConfigCreate(c, &vo)
 	result.Success(c, nil)
 }
 
+// modifyHandler handles POST /api/v1/sys/config/modify
 func modifyHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.GetLoginIDDefaultNull(c)
-	config.Modify(c, &vo, userID)
+
+	config.ConfigModify(c, &vo)
 	result.Success(c, nil)
 }
 
-func deleteHandler(c *gin.Context) {
+// removeHandler handles POST /api/v1/sys/config/remove
+func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	config.Remove(c, param.IDs)
+
+	config.ConfigRemove(c, &param)
 	result.Success(c, nil)
 }
 
+// detailHandler handles GET /api/v1/sys/config/detail
 func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := config.Detail(c, id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
+	vo := config.ConfigDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
+// editBatchHandler handles POST /api/v1/sys/config/edit-batch
 func editBatchHandler(c *gin.Context) {
 	var param config.ConfigBatchEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.GetLoginIDDefaultNull(c)
-	config.EditBatch(c, &param, userID)
+
+	config.ConfigEditBatch(c, &param)
 	result.Success(c, nil)
 }
 
+// editByCategoryHandler handles POST /api/v1/sys/config/edit-by-category
 func editByCategoryHandler(c *gin.Context) {
 	var param config.ConfigCategoryEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.GetLoginIDDefaultNull(c)
-	config.EditByCategory(c, &param, userID)
+
+	config.ConfigEditByCategory(c, &param)
 	result.Success(c, nil)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
 }

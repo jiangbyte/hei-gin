@@ -6,97 +6,112 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
-
-	"github.com/gin-gonic/gin"
+	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	resModel "hei-gin/plugins/plugin-sys/resource"
+
+	"github.com/gin-gonic/gin"
 )
 
 func HomeGet(c *gin.Context) *HomeVO {
 	userID := auth.GetLoginIDDefaultNull(c)
-	result := &HomeVO{
+	vo := &HomeVO{
 		QuickActions:       make([]QuickActionVO, 0),
 		AvailableResources: make([]QuickActionVO, 0),
 		Notices:            make([]HomeNotice, 0),
-		Stats:              HomeStats{},
 	}
 	if userID != "" {
-		result.QuickActions = findQuickActionsByUserID(c.Request.Context(), userID)
-		result.AvailableResources = getAvailableResources(c.Request.Context(), userID)
+		vo.QuickActions = findQuickActionsByUserID(c.Request.Context(), userID)
+		vo.AvailableResources = getAvailableResources(c.Request.Context(), userID)
 	}
-	result.Notices = getNotices(c.Request.Context())
-	result.Stats.TotalUsers = getUserCount(c.Request.Context())
-	return result
+	vo.Notices = getNotices(c.Request.Context())
+	vo.Stats.TotalUsers = getUserCount(c.Request.Context())
+	return vo
 }
+
 func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
+		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
 	}
 	ctx := c.Request.Context()
+
 	var count int64
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ? AND resource_id = ?", userID, param.ResourceID).Count(&count)
 	if count > 0 {
 		return
 	}
+
 	var actionCount int64
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ?", userID).Count(&actionCount)
-	now := time.Now()
 	entity := SysQuickAction{
-		ID: utils.GenerateID(), UserID: userID, ResourceID: param.ResourceID,
-		SortCode: int(actionCount+1) * 10, CreatedAt: &now, UpdatedAt: &now,
+		UserID: userID, ResourceID: param.ResourceID,
+		SortCode: int(actionCount+1) * 10,
 	}
-	entity.CreatedBy = &userID
-	entity.UpdatedBy = &userID
-	db.DB.WithContext(ctx).Create(&entity)
+	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("添加快捷方式失败: "+err.Error(), 500))
+		return
+	}
 }
-func HomeRemoveQuickAction(c *gin.Context, param *RemoveQuickActionParam) {
+
+func HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
+		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
 	}
 	ctx := c.Request.Context()
-	db.DB.WithContext(ctx).Delete(&SysQuickAction{}, "id = ?", param.ID)
+	if err := db.DB.WithContext(ctx).Where("id IN ?", param.IDs).Delete(&SysQuickAction{}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("移除快捷方式失败: "+err.Error(), 500))
+		return
+	}
 }
-func HomeSortQuickActions(c *gin.Context, param *SortQuickActionParam) {
+
+func HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
+		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
 	}
 	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	for idx, id := range param.IDs {
-		if err := tx.Model(&SysQuickAction{}).Where("id = ?", id).Updates(map[string]interface{}{
-			"sort_code": (idx + 1) * 10,
-		}).Error; err != nil {
+		if err := tx.Model(&SysQuickAction{}).Where("id = ?", id).Update("sort_code", (idx+1)*10).Error; err != nil {
 			tx.Rollback()
+			result.WriteError(c, exception.NewBusinessError("排序快捷方式失败: "+err.Error(), 500))
 			return
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("排序快捷方式提交事务失败: "+err.Error(), 500))
 		return
 	}
 }
+
 func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
-	
 	var actions []SysQuickAction
 	db.DB.WithContext(ctx).Where("user_id = ?", userID).Order("sort_code ASC, created_at ASC").Find(&actions)
 	if len(actions) == 0 {
 		return make([]QuickActionVO, 0)
 	}
+
 	resourceIDs := make([]string, len(actions))
 	for i, a := range actions {
 		resourceIDs[i] = a.ResourceID
 	}
+
 	var resources []resModel.SysResource
 	db.DB.WithContext(ctx).Where("id IN ?", resourceIDs).Find(&resources)
 	resourceMap := make(map[string]resModel.SysResource)
 	for _, r := range resources {
 		resourceMap[r.ID] = r
 	}
+
 	vos := make([]QuickActionVO, 0, len(actions))
 	for _, a := range actions {
-		vo := QuickActionVO{ID: a.ID, ResourceID: a.ResourceID, SortCode: a.SortCode}
+		vo := SysQuickActionToQuickActionVO(&a)
 		if r, ok := resourceMap[a.ResourceID]; ok {
 			vo.Name = r.Name
 			vo.Type = r.Type
@@ -110,20 +125,23 @@ func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionV
 				vo.ParentID = *r.ParentID
 			}
 		}
-		vos = append(vos, vo)
+		vos = append(vos, *vo)
 	}
 	return vos
 }
+
 func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
-	
 	var actionIDs []string
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ?", userID).Select("resource_id").Find(&actionIDs)
-	var resources []resModel.SysResource
-	query := db.DB.WithContext(ctx).Model(&resModel.SysResource{}).Where("category IN ? AND status = ?", []string{"BACKEND_MENU", "FRONTEND_MENU"}, "ENABLED")
+
+	q := db.DB.WithContext(ctx).Model(&resModel.SysResource{}).Where("category IN ? AND status = ?", []string{"BACKEND_MENU", "FRONTEND_MENU"}, "ENABLED")
 	if len(actionIDs) > 0 {
-		query = query.Where("id NOT IN ?", actionIDs)
+		q = q.Where("id NOT IN ?", actionIDs)
 	}
-	query.Order("sort_code ASC").Find(&resources)
+
+	var resources []resModel.SysResource
+	q.Order("sort_code ASC").Find(&resources)
+
 	vos := make([]QuickActionVO, len(resources))
 	for i, r := range resources {
 		vos[i] = QuickActionVO{
@@ -141,8 +159,8 @@ func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
 	}
 	return vos
 }
+
 func getNotices(ctx context.Context) []HomeNotice {
-	
 	type noticeRow struct {
 		ID        string
 		Title     string
@@ -157,21 +175,18 @@ func getNotices(ctx context.Context) []HomeNotice {
 		Select("id, title, level, created_at").
 		Limit(5).
 		Find(&rows)
+
 	results := make([]HomeNotice, len(rows))
 	for i, r := range rows {
-		notice := HomeNotice{ID: r.ID, Title: r.Title, Level: r.Level}
-		if r.CreatedAt != nil {
-			notice.CreatedAt = r.CreatedAt.Format("2006-01-02 15:04:05")
+		results[i] = HomeNotice{
+			ID: r.ID, Title: r.Title, Level: r.Level,
+			CreatedAt: utils.FormatDateTimePtr(r.CreatedAt),
 		}
-		results[i] = notice
 	}
 	return results
 }
+
 func getUserCount(ctx context.Context) int {
-	
-	// This references the user model
-	type _user struct{}
-	_ = _user{}
 	var count int64
 	db.DB.WithContext(ctx).Table("sys_user").Count(&count)
 	return int(count)

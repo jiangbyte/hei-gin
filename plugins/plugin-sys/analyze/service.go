@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"runtime"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
+	"hei-gin/sdk/result"
 	logModel "hei-gin/plugins/plugin-sys/log"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Server start time, used for computing uptime/runtime display
@@ -27,10 +27,7 @@ func getServerIP() string {
 	}
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			ip := ipnet.IP.String()
-			if ip != "0.0.0.0" && !strings.HasPrefix(ip, "169.254") {
-				return ip
-			}
+			return ipnet.IP.String()
 		}
 	}
 	return ""
@@ -49,43 +46,40 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%d分钟", mins)
 }
 
+// ===== Page =====
 
-func Page(c *gin.Context, param *logModel.LogPageParam) gin.H {
+func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 	ctx := c.Request.Context()
-	if param.Current < 1 {
-		param.Current = 1
+	if p.Current < 1 {
+		p.Current = 1
 	}
-	if param.Size < 1 {
-		param.Size = 10
+	if p.Size < 1 {
+		p.Size = 10
 	}
-	if param.Size > 100 {
-		param.Size = 100
+	if p.Size > 100 {
+		p.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&logModel.SysLog{})
-	if param.Category != "" {
-		query = query.Where("category = ?", param.Category)
+	q := db.DB.WithContext(ctx).Model(&logModel.SysLog{})
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
 	}
-	if param.Keyword != "" {
-		kw := "%" + param.Keyword + "%"
-		query = query.Where("name LIKE ? OR op_user LIKE ? OR op_ip LIKE ?", kw, kw, kw)
+	if p.Keyword != "" {
+		kw := "%" + p.Keyword + "%"
+		q = q.Where("name LIKE ? OR op_user LIKE ? OR op_ip LIKE ?", kw, kw, kw)
 	}
 
 	var total int64
-	query.Count(&total)
+	q.Count(&total)
 
-	var records []logModel.SysLog
-	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return gin.H{
-		"code": 200, "message": "请求成功", "success": true,
-		"data": gin.H{
-			"records": records, "total": total, "current": param.Current,
-			"size": param.Size, "pages": int((total + int64(param.Size) - 1) / int64(param.Size)),
-		},
-	}
+	var rows []logModel.SysLog
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	result.PageDataResult(c, rows, total, p.Current, p.Size)
 }
 
-func LoginAnalysis(c *gin.Context) *LogAnalysisData {
+// ===== LoginAnalysis =====
+
+func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 
 	var loginTotal int64
@@ -109,7 +103,9 @@ func LoginAnalysis(c *gin.Context) *LogAnalysisData {
 	}
 }
 
-func LogAnalysis(c *gin.Context) *LogAnalysisData {
+// ===== LogAnalysis =====
+
+func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 
 	var logTotal int64
@@ -131,7 +127,9 @@ func LogAnalysis(c *gin.Context) *LogAnalysisData {
 	}
 }
 
-func Dashboard(c *gin.Context) *DashboardVO {
+// ===== Dashboard =====
+
+func AnalyzeDashboard(c *gin.Context) *DashboardVO {
 	ctx := c.Request.Context()
 	stats := DashboardStats{}
 

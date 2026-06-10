@@ -88,3 +88,11 @@ func findFieldByNameOrTag(typ reflect.Type, name string) *reflect.StructField {
 	}
 	return nil
 }
+
+// SafeStrPtr returns the string value from a string pointer, or "" if nil.
+func SafeStrPtr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}

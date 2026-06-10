@@ -1,9 +1,6 @@
 package config
 
-import (
-	"hei-gin/sdk/utils"
-)
-
+// ConfigVO 配置视图对象
 type ConfigVO struct {
 	ID          string  `json:"id"`
 	ConfigKey   *string `json:"config_key"`
@@ -18,6 +15,7 @@ type ConfigVO struct {
 	UpdatedBy   *string `json:"updated_by"`
 }
 
+// ConfigPageParam 配置分页参数
 type ConfigPageParam struct {
 	Current  int    `json:"current" form:"current"`
 	Size     int    `json:"size" form:"size"`
@@ -25,9 +23,12 @@ type ConfigPageParam struct {
 	Keyword  string `json:"keyword" form:"keyword"`
 }
 
+// ConfigListParam 配置列表查询参数
 type ConfigListParam struct {
 	Category string `json:"category" form:"category"`
 }
+
+// ConfigBatchEditItem 批量编辑配置项
 type ConfigBatchEditItem struct {
 	ID          string  `json:"id"`
 	ConfigKey   *string `json:"config_key"`
@@ -35,43 +36,16 @@ type ConfigBatchEditItem struct {
 	Remark      *string `json:"remark"`
 	SortCode    int     `json:"sort_code"`
 }
+
+// ConfigBatchEditParam 批量编辑配置参数
 type ConfigBatchEditParam struct {
 	Configs []ConfigBatchEditItem `json:"configs"`
 }
+
+// ConfigCategoryEditParam 按分类编辑配置参数
 type ConfigCategoryEditParam struct {
 	Category    string  `json:"category"`
 	ConfigKey   *string `json:"config_key"`
 	ConfigValue *string `json:"config_value"`
 	Remark      *string `json:"remark"`
 }
-
-
-func toVO(e *SysConfig) *ConfigVO {
-	v := &ConfigVO{
-		ID: e.ID, SortCode: e.SortCode,
-		CreatedAt: utils.FormatDateTime(*e.CreatedAt),
-		UpdatedAt: utils.FormatDateTime(*e.UpdatedAt),
-	}
-	if e.ConfigKey != nil { v.ConfigKey = e.ConfigKey }
-	if e.ConfigValue != nil { v.ConfigValue = e.ConfigValue }
-	if e.Category != nil { v.Category = e.Category }
-	if e.Remark != nil { v.Remark = e.Remark }
-	if e.Extra != nil { v.Extra = e.Extra }
-	if e.CreatedBy != nil { v.CreatedBy = e.CreatedBy }
-	if e.UpdatedBy != nil { v.UpdatedBy = e.UpdatedBy }
-	return v
-}
-
-func toVOList(records []SysConfig) []ConfigVO {
-	result := make([]ConfigVO, len(records))
-	for i, r := range records {
-		v := toVO(&r)
-		if v != nil {
-			result[i] = *v
-		}
-	}
-	return result
-}
-
-func (p *ConfigPageParam) GetCurrent() int { return p.Current }
-func (p *ConfigPageParam) GetSize() int    { return p.Size }

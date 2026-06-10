@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
@@ -40,7 +39,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/banner/remove",
 		registry.Perm("sys:banner:remove", "删除横幅"),
 		log.SysLog("删除Banner"),
-		deleteHandler,
+		removeHandler,
 	)
 
 	// GET /api/v1/sys/banner/detail
@@ -48,6 +47,10 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:banner:detail", "横幅详情"),
 		detailHandler,
 	)
+}
+
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }
 
 // pageHandler handles GET /api/v1/sys/banner/page
@@ -58,7 +61,7 @@ func pageHandler(c *gin.Context) {
 		return
 	}
 
-	banner.Page(c, &param)
+	banner.BannerPage(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/banner/create
@@ -69,8 +72,7 @@ func createHandler(c *gin.Context) {
 		return
 	}
 
-	userID := auth.GetLoginIDDefaultNull(c)
-	banner.Create(c, &vo, userID)
+	banner.BannerCreate(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -82,33 +84,24 @@ func modifyHandler(c *gin.Context) {
 		return
 	}
 
-	userID := auth.GetLoginIDDefaultNull(c)
-	banner.Modify(c, &vo, userID)
+	banner.BannerModify(c, &vo)
 	result.Success(c, nil)
 }
 
-// deleteHandler handles POST /api/v1/sys/banner/remove
-func deleteHandler(c *gin.Context) {
+// removeHandler handles POST /api/v1/sys/banner/remove
+func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	banner.Remove(c, param.IDs)
+	banner.BannerRemove(c, &param)
 	result.Success(c, nil)
 }
 
 // detailHandler handles GET /api/v1/sys/banner/detail
 func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := banner.Detail(c, id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
+	vo := banner.BannerDetail(c, c.Query("id"))
 	result.Success(c, vo)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
 }

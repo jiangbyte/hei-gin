@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
@@ -17,7 +16,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/dict/page
 	r.GET("/api/v1/sys/dict/page",
 		registry.Perm("sys:dict:page", "字典分页"),
-		dictPage,
+		pageHandler,
 	)
 
 	// POST /api/v1/sys/dict/create
@@ -25,66 +24,70 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:dict:create", "添加字典"),
 		log.SysLog("添加字典"),
 		middleware.NoRepeat(3000),
-		dictCreate,
+		createHandler,
 	)
 
 	// POST /api/v1/sys/dict/modify
 	r.POST("/api/v1/sys/dict/modify",
 		registry.Perm("sys:dict:modify", "编辑字典"),
 		log.SysLog("编辑字典"),
-		dictModify,
+		modifyHandler,
 	)
 
 	// POST /api/v1/sys/dict/remove
 	r.POST("/api/v1/sys/dict/remove",
 		registry.Perm("sys:dict:remove", "删除字典"),
 		log.SysLog("删除字典"),
-		dictRemove,
+		removeHandler,
 	)
 
 	// GET /api/v1/sys/dict/detail
 	r.GET("/api/v1/sys/dict/detail",
 		registry.Perm("sys:dict:detail", "字典详情"),
-		dictDetail,
+		detailHandler,
 	)
 
 	// GET /api/v1/sys/dict/list
 	r.GET("/api/v1/sys/dict/list",
 		registry.Perm("sys:dict:list", "字典列表"),
-		dictList,
+		listHandler,
 	)
 
 	// GET /api/v1/sys/dict/tree
 	r.GET("/api/v1/sys/dict/tree",
-		dictTree,
+		treeHandler,
 	)
 
 	// GET /api/v1/sys/dict/get-label
 	r.GET("/api/v1/sys/dict/get-label",
 		registry.Perm("sys:dict:get-label", "字典标签"),
-		dictGetLabel,
+		getLabelHandler,
 	)
 
 	// GET /api/v1/sys/dict/get-children
 	r.GET("/api/v1/sys/dict/get-children",
 		registry.Perm("sys:dict:get-children", "字典子项"),
-		dictGetChildren,
+		getChildrenHandler,
 	)
 }
 
-// dictPage handles GET /api/v1/sys/dict/page
-func dictPage(c *gin.Context) {
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}
+
+// pageHandler handles GET /api/v1/sys/dict/page
+func pageHandler(c *gin.Context) {
 	var param dict.DictPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	dict.Page(c, &param)
+	dict.DictPage(c, &param)
 }
 
-// dictList handles GET /api/v1/sys/dict/list
-func dictList(c *gin.Context) {
+// listHandler handles GET /api/v1/sys/dict/list
+func listHandler(c *gin.Context) {
 	var param dict.DictListParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
@@ -95,97 +98,68 @@ func dictList(c *gin.Context) {
 	result.Success(c, data)
 }
 
-// dictTree handles GET /api/v1/sys/dict/tree
-func dictTree(c *gin.Context) {
+// treeHandler handles GET /api/v1/sys/dict/tree
+func treeHandler(c *gin.Context) {
 	var param dict.DictTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := dict.Tree(c, &param)
+	data := dict.DictTree(c, &param)
 	result.Success(c, data)
 }
 
-// dictCreate handles POST /api/v1/sys/dict/create
-func dictCreate(c *gin.Context) {
+// createHandler handles POST /api/v1/sys/dict/create
+func createHandler(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	userID := auth.GetLoginIDDefaultNull(c)
-	dict.Create(c, &vo, userID)
+	dict.DictCreate(c, &vo)
 	result.Success(c, nil)
 }
 
-// dictModify handles POST /api/v1/sys/dict/modify
-func dictModify(c *gin.Context) {
+// modifyHandler handles POST /api/v1/sys/dict/modify
+func modifyHandler(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	if vo.ID == "" {
-		result.Failure(c, "ID不能为空", 400)
-		return
-	}
 
-	userID := auth.GetLoginIDDefaultNull(c)
-	dict.Modify(c, &vo, userID)
+	dict.DictModify(c, &vo)
 	result.Success(c, nil)
 }
 
-// dictRemove handles POST /api/v1/sys/dict/remove
-func dictRemove(c *gin.Context) {
+// removeHandler handles POST /api/v1/sys/dict/remove
+func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	if len(param.IDs) == 0 {
-		result.Failure(c, "ids不能为空", 400)
-		return
-	}
 
-	dict.Remove(c, param.IDs)
+	dict.DictRemove(c, &param)
 	result.Success(c, nil)
 }
 
-// dictDetail handles GET /api/v1/sys/dict/detail
-func dictDetail(c *gin.Context) {
-	id := c.Query("id")
-	if id == "" {
-		result.Failure(c, "id不能为空", 400)
-		return
-	}
-
-	vo := dict.Detail(c, id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
+// detailHandler handles GET /api/v1/sys/dict/detail
+func detailHandler(c *gin.Context) {
+	vo := dict.DictDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
-// dictGetLabel handles GET /api/v1/sys/dict/get-label
-func dictGetLabel(c *gin.Context) {
-	typeCode := c.Query("type_code")
-	value := c.Query("value")
-
-	data := dict.DictGetLabel(c, typeCode, value)
-	c.JSON(200, data)
-}
-
-// dictGetChildren handles GET /api/v1/sys/dict/get-children
-func dictGetChildren(c *gin.Context) {
-	typeCode := c.Query("type_code")
-
-	data := dict.DictGetChildren(c, typeCode)
+// getLabelHandler handles GET /api/v1/sys/dict/get-label
+func getLabelHandler(c *gin.Context) {
+	data := dict.DictGetLabel(c, c.Query("type_code"), c.Query("value"))
 	result.Success(c, data)
 }
 
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
+// getChildrenHandler handles GET /api/v1/sys/dict/get-children
+func getChildrenHandler(c *gin.Context) {
+	data := dict.DictGetChildren(c, c.Query("type_code"))
+	result.Success(c, data)
 }

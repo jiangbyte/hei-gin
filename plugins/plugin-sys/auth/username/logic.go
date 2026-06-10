@@ -1,10 +1,6 @@
-﻿package username
-
+package username
 import (
-	"time"
-
 	"golang.org/x/crypto/bcrypt"
-
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/captcha"
 	"hei-gin/sdk/db"
@@ -14,141 +10,128 @@ import (
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	userModel "hei-gin/plugins/plugin-sys/user"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
+// DoLogin handles username/password login.
 func DoLogin(c *gin.Context) {
 	var param UsernameLoginParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		panic(exception.NewBusinessError("请求参数错误", 400))
+		result.WriteError(c, exception.NewBusinessError("请求参数错误", 400))
+		return
 	}
-
 	ctx := c.Request.Context()
-
 	if err := captcha.BCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
-		panic(exception.NewBusinessError(err.Error(), 400))
+		result.WriteError(c, exception.NewBusinessError(err.Error(), 400))
+		return
 	}
-
 	var user userModel.SysUser
 	if err := db.DB.WithContext(ctx).Where("username = ?", param.Username).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			panic(exception.NewBusinessError("用户名或密码错误", 400))
+			result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+			return
 		}
-		panic(exception.NewBusinessError("系统异常", 500))
+		result.WriteError(c, exception.NewBusinessError("系统异常", 500))
+		return
 	}
-
 	switch user.Status {
 	case string(enums.UserStatusLocked):
-		panic(exception.NewBusinessError("账号已被锁定", 400))
+		result.WriteError(c, exception.NewBusinessError("账号已被锁定", 400))
+		return
 	case string(enums.UserStatusInactive):
-		panic(exception.NewBusinessError("账号已停用", 400))
+		result.WriteError(c, exception.NewBusinessError("账号已停用", 400))
+		return
 	default:
 		if user.Status != string(enums.UserStatusActive) {
-			panic(exception.NewBusinessError("账号状态异常", 400))
+			result.WriteError(c, exception.NewBusinessError("账号状态异常", 400))
+			return
 		}
 	}
-
 	rawPwd := utils.Decrypt(param.Password)
 	if rawPwd == "" {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
 	if user.Password == nil {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(rawPwd)); err != nil {
-		panic(exception.NewBusinessError("用户名或密码错误", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名或密码错误", 400))
+		return
 	}
-
 	ua := c.GetHeader("User-Agent")
 	extra := map[string]any{
-		"username":    safeStr(user.Username),
-		"nickname":    safeStr(user.Nickname),
+		"username":    utils.SafeStrPtr(user.Username),
+		"nickname":    utils.SafeStrPtr(user.Nickname),
 		"status":      user.Status,
 		"device_type": utils.GetBrowser(ua),
 		"device_id":   param.DeviceID,
 	}
-
-	token, err := auth.Login(c, user.ID, extra)
+	tokenStr, err := auth.Login(c, user.ID, extra)
 	if err != nil {
-		panic(exception.NewBusinessError("登录失败", 500))
+		result.WriteError(c, exception.NewBusinessError("登录失败", 500))
+		return
 	}
-
-	now := time.Now()
 	ip := utils.GetClientIP(c)
 	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
-		"last_login_at": now,
 		"last_login_ip": ip,
 		"login_count":   gorm.Expr("login_count + 1"),
 	})
-
-	username := safeStr(user.Username)
+	username := utils.SafeStrPtr(user.Username)
 	log.RecordAuthLog(c, "登录", "LOGIN", "SUCCESS", "", username)
-
-	result.Success(c, UsernameLoginResult{Token: token})
+	result.Success(c, UsernameLoginResult{Token: tokenStr})
 }
-
+// DoRegister handles user registration.
 func DoRegister(c *gin.Context) {
 	var param UsernameRegisterParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		panic(exception.NewBusinessError("请求参数错误", 400))
+		result.WriteError(c, exception.NewBusinessError("请求参数错误", 400))
+		return
 	}
-
 	ctx := c.Request.Context()
-
 	if err := captcha.BCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
-		panic(exception.NewBusinessError(err.Error(), 400))
+		result.WriteError(c, exception.NewBusinessError(err.Error(), 400))
+		return
 	}
-
 	var count int64
 	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).Where("username = ?", param.Username).Count(&count)
 	if count > 0 {
-		panic(exception.NewBusinessError("用户名已存在", 400))
+		result.WriteError(c, exception.NewBusinessError("用户名已存在", 400))
+		return
 	}
-
 	rawPwd := utils.Decrypt(param.Password)
 	if rawPwd == "" {
-		panic(exception.NewBusinessError("密码解密失败", 400))
+		result.WriteError(c, exception.NewBusinessError("密码解密失败", 400))
+		return
 	}
-
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
 	if err != nil {
-		panic(exception.NewBusinessError("密码加密失败", 500))
+		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
+		return
 	}
-
-	userID := utils.GenerateID()
-	now := time.Now()
 	hashedPwdStr := string(hashedPwd)
-
 	entity := userModel.SysUser{
-		ID: userID, Username: &param.Username, Password: &hashedPwdStr,
+		Username: &param.Username, Password: &hashedPwdStr,
 		Nickname: &param.Username, Status: string(enums.UserStatusActive),
-		CreatedAt: &now, CreatedBy: &userID,
 	}
 	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("注册失败", 500))
+		result.WriteError(c, exception.NewBusinessError("注册失败", 500))
+		return
 	}
-
 	log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
-
 	result.Success(c, UsernameRegisterResult{Message: "注册成功"})
 }
-
+// DoLogout handles user logout.
 func DoLogout(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID != "" {
 		var user userModel.SysUser
 		if err := db.DB.First(&user, "id = ?", userID).Error; err == nil {
-			username := safeStr(user.Username)
+			username := utils.SafeStrPtr(user.Username)
 			log.RecordAuthLog(c, "登出", "LOGOUT", "SUCCESS", "", username)
 		}
 	}
 	auth.Logout(c)
 	result.Success(c, UsernameLogoutResult{Message: "登出成功"})
-}
-
-func safeStr(s *string) string {
-	if s == nil { return "" }
-	return *s
 }

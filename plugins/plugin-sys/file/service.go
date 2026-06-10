@@ -13,6 +13,7 @@ import (
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
@@ -84,66 +85,78 @@ func newHashReader(reader io.Reader) *hashReader {
 	return &hashReader{reader: reader, hash: sha256.New()}
 }
 
-// ===== CRUD =====
+// ===== Page =====
 
-func Page(c *gin.Context, param *FilePageParam) {
+func FilePage(c *gin.Context, p *FilePageParam) {
 	ctx := c.Request.Context()
-	if param.Current < 1 {
-		param.Current = 1
+	if p.Current < 1 {
+		p.Current = 1
 	}
-	if param.Size < 1 {
-		param.Size = 10
+	if p.Size < 1 {
+		p.Size = 10
 	}
-	if param.Size > 100 {
-		param.Size = 100
+	if p.Size > 100 {
+		p.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&SysFile{})
-	if param.Engine != "" {
-		query = query.Where("engine = ?", param.Engine)
+	q := db.DB.WithContext(ctx).Model(&SysFile{})
+	if p.Engine != "" {
+		q = q.Where("engine = ?", p.Engine)
 	}
-	if param.Bucket != "" {
-		query = query.Where("bucket = ?", param.Bucket)
+	if p.Bucket != "" {
+		q = q.Where("bucket = ?", p.Bucket)
 	}
-	if param.Keyword != "" {
-		kw := "%" + param.Keyword + "%"
-		query = query.Where("original_name LIKE ? OR original_name LIKE ?", kw, kw)
+	if p.Keyword != "" {
+		kw := "%" + p.Keyword + "%"
+		q = q.Where("name LIKE ? OR name LIKE ?", kw, kw)
 	}
 
 	var total int64
-	query.Count(&total)
+	q.Count(&total)
 
-	var records []SysFile
-	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+	var rows []SysFile
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 
-	vos := make([]*FileVO, len(records))
-	for i := range records {
-		vos[i] = records[i].ToVO()
+	vos := make([]*FileVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysFileToFileVO(&r)
 	}
-	result.PageDataResult(c, vos, total, param.Current, param.Size)
+	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func Detail(c *gin.Context, id string) *FileVO {
+// ===== Detail =====
+
+func FileDetail(c *gin.Context, id string) *FileVO {
 	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
-	var entity SysFile
-	if err := db.DB.WithContext(c.Request.Context()).First(&entity, "id = ?", id).Error; err != nil {
+	ctx := c.Request.Context()
+	var e SysFile
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("文件不存在", 400))
 		return nil
 	}
-	return entity.ToVO()
+	return SysFileToFileVO(&e)
 }
 
-func Remove(c *gin.Context, ids []string) error {
+// ===== Remove =====
+
+func FileRemove(c *gin.Context, param *utils.IdsParam) {
+	ids := param.IDs
 	if len(ids) == 0 {
-		return nil
+		return
 	}
-	return db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysFile{}).Error
+	if err := db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysFile{}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("删除文件失败: "+err.Error(), 500))
+		return
+	}
 }
 
-func RemoveAbsolute(c *gin.Context, ids []string) error {
+func FileRemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
+	ids := param.IDs
 	if len(ids) == 0 {
-		return nil
+		return
 	}
 	ctx := c.Request.Context()
 	var files []SysFile
@@ -155,12 +168,15 @@ func RemoveAbsolute(c *gin.Context, ids []string) error {
 			}
 		}
 	}
-	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error
+	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("删除文件失败: "+err.Error(), 500))
+		return
+	}
 }
 
 // ===== Single-file Upload (streaming) =====
 
-func Upload(c *gin.Context) (*FileUploadResult, error) {
+func FileUpload(c *gin.Context) (*FileUploadResult, error) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		return nil, fmt.Errorf("上传文件失败: %w", err)
@@ -209,14 +225,14 @@ func Upload(c *gin.Context) (*FileUploadResult, error) {
 	}
 
 	entity := SysFile{
-		ID:           utils.GenerateID(),
+
 		Engine:       engineType,
 		Bucket:       bucket,
 		FileKey:      fileKey,
 		ObjName:      fileKey,
-		Name: header.Filename,
-		Suffix:   ext,
-		SizeKb:   fileSizeKb,
+		Name:         header.Filename,
+		Suffix:       ext,
+		SizeKb:       fileSizeKb,
 		SizeInfo:     sizeInfo,
 		StoragePath:  storagePath,
 		DownloadPath: downloadPath,
@@ -226,7 +242,7 @@ func Upload(c *gin.Context) (*FileUploadResult, error) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := db.DB.Create(&entity).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("保存文件记录失败: %w", err)
 	}
 
@@ -235,18 +251,18 @@ func Upload(c *gin.Context) (*FileUploadResult, error) {
 		Engine:       entity.Engine,
 		Bucket:       entity.Bucket,
 		FileKey:      entity.FileKey,
-		Name: entity.Name,
-		Suffix:   entity.Suffix,
-		SizeKb:   entity.SizeKb,
+		Name:         entity.Name,
+		Suffix:       entity.Suffix,
+		SizeKb:       entity.SizeKb,
 		SizeInfo:     entity.SizeInfo,
 		DownloadPath: entity.DownloadPath,
 		Thumbnail:    entity.Thumbnail,
 	}, nil
 }
 
-// ===== Chunked Upload =====
+// ===== Chunk Upload =====
 
-func InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
+func FileInitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
 	engineType := param.Engine
 	if engineType == "" {
 		engineType = "LOCAL"
@@ -256,49 +272,46 @@ func InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadR
 		bucket = "DEFAULT"
 	}
 
+	ext := filepath.Ext(param.FileName)
+	fileKey := utils.GenerateID() + ext
+
 	eng := storage.GetStorage(engineType)
 	if eng == nil {
 		return nil, fmt.Errorf("不支持的存储类型: %s", engineType)
 	}
 
-	ext := filepath.Ext(param.FileName)
-	fileKey := utils.GenerateID() + ext
-
-	var uploadID string
 	if cu, ok := eng.(storage.ChunkedUploader); ok {
-		id, err := cu.InitChunkUpload(bucket, fileKey, param.TotalChunks)
+		uploadID, err := cu.InitChunkUpload(bucket, fileKey, param.TotalChunks)
 		if err != nil {
-			return nil, fmt.Errorf("初始化分片上传失败: %w", err)
+			return nil, fmt.Errorf("分片上传初始化失败: %w", err)
 		}
-		uploadID = id
-	} else {
-		uploadID = utils.GenerateID()
-		tmpDir := filepath.Join(os.TempDir(), "chunk_"+uploadID)
-		if err := os.MkdirAll(tmpDir, 0755); err != nil {
-			return nil, fmt.Errorf("创建临时目录失败: %w", err)
-		}
+		return &ChunkUploadResult{
+			UploadID:    uploadID,
+			FileKey:     fileKey,
+			ChunkSize:   5 << 20,
+			TotalChunks: param.TotalChunks,
+		}, nil
 	}
 
-	chunkSize := param.FileSize / int64(param.TotalChunks)
-	if param.FileSize%int64(param.TotalChunks) != 0 {
-		chunkSize++
+	// Fallback: create temp directory for local chunk storage
+	tmpDir := filepath.Join(os.TempDir(), "chunk_"+fileKey)
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return nil, fmt.Errorf("创建临时目录失败: %w", err)
 	}
 
 	return &ChunkUploadResult{
-		UploadID:    uploadID,
+		UploadID:    fileKey,
 		FileKey:     fileKey,
-		ChunkSize:   chunkSize,
+		ChunkSize:   5 << 20, // 5MB default chunk size
 		TotalChunks: param.TotalChunks,
 	}, nil
 }
 
-func UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
-	engineType, _ := c.Get("_chunk_engine")
-	engineStr, _ := engineType.(string)
-	if engineStr == "" {
-		engineStr = c.PostForm("engine")
-		if engineStr == "" {
-			engineStr = "LOCAL"
+func FileUploadChunk(c *gin.Context, param *ChunkUploadParam) error {
+	engineStr := "LOCAL"
+	if v, exists := c.Get("_chunk_engine"); exists {
+		if s, ok := v.(string); ok {
+			engineStr = s
 		}
 	}
 	bucket, _ := c.Get("_chunk_bucket")
@@ -342,7 +355,7 @@ func UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
 	return nil
 }
 
-func CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
+func FileCompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
 	engineType := param.Engine
 	if engineType == "" {
 		engineType = "LOCAL"
@@ -391,14 +404,13 @@ func CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUpload
 	fileSizeKb, sizeInfo := formatFileSize(param.FileSize)
 
 	entity := SysFile{
-		ID:           utils.GenerateID(),
 		Engine:       engineType,
 		Bucket:       bucket,
 		FileKey:      param.FileKey,
 		ObjName:      param.FileKey,
-		Name: param.Name,
-		Suffix:   ext,
-		SizeKb:   fileSizeKb,
+		Name:         param.Name,
+		Suffix:       ext,
+		SizeKb:       fileSizeKb,
 		SizeInfo:     sizeInfo,
 		StoragePath:  storagePath,
 		DownloadPath: downloadPath,
@@ -415,16 +427,16 @@ func CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUpload
 		Engine:       entity.Engine,
 		Bucket:       entity.Bucket,
 		FileKey:      entity.FileKey,
-		Name: entity.Name,
-		Suffix:   entity.Suffix,
-		SizeKb:   entity.SizeKb,
+		Name:         entity.Name,
+		Suffix:       entity.Suffix,
+		SizeKb:       entity.SizeKb,
 		SizeInfo:     entity.SizeInfo,
 		DownloadPath: entity.DownloadPath,
 		Thumbnail:    entity.Thumbnail,
 	}, nil
 }
 
-func AbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
+func FileAbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
 	engineType := param.Engine
 	if engineType == "" {
 		engineType = "LOCAL"
@@ -474,11 +486,9 @@ func mergeAndStore(eng storage.Engine, bucket, fileKey, tmpDir string) (string, 
 	return eng.StoreStream(bucket, fileKey, pr)
 }
 
-// If storage provides a URL, use it; otherwise auto-construct from the request.
-
 // ===== Download =====
 
-func Download(c *gin.Context, id string) error {
+func FileDownload(c *gin.Context, id string) error {
 	var entity SysFile
 	if err := db.DB.WithContext(c.Request.Context()).First(&entity, "id = ?", id).Error; err != nil {
 		return fmt.Errorf("文件不存在")

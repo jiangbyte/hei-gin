@@ -33,10 +33,3 @@ type AddQuickActionParam struct {
 	ResourceID string `json:"resource_id"`
 }
 
-type RemoveQuickActionParam struct {
-	ID string `json:"id"`
-}
-
-type SortQuickActionParam struct {
-	IDs []string `json:"ids"`
-}

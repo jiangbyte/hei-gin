@@ -1,89 +1,105 @@
 package config
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/crud"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Page(c *gin.Context, param *ConfigPageParam) {
-	crud.Page(c, &SysConfig{}, param, func(q *gorm.DB) *gorm.DB {
-		if param.Keyword != "" {
-			like := "%" + param.Keyword + "%"
-			q = q.Where("config_key LIKE ? OR remark LIKE ?", like, like)
-		}
-		if param.Category != "" {
-			q = q.Where("category = ?", param.Category)
-		}
-		return q
-	}, "sort_code ASC", func(e *SysConfig) any { return toVO(e) })
+// ===== Page =====
+
+func ConfigPage(c *gin.Context, p *ConfigPageParam) {
+	ctx := c.Request.Context()
+	if p.Current < 1 {
+		p.Current = 1
+	}
+	if p.Size < 1 {
+		p.Size = 10
+	}
+	if p.Size > 100 {
+		p.Size = 100
+	}
+
+	q := db.DB.WithContext(ctx).Model(&SysConfig{})
+	if p.Keyword != "" {
+		like := "%" + p.Keyword + "%"
+		q = q.Where("config_key LIKE ? OR remark LIKE ?", like, like)
+	}
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
+	}
+
+	var total int64
+	q.Count(&total)
+
+	var rows []SysConfig
+	q.Order("sort_code ASC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+
+	vos := make([]*ConfigVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysConfigToConfigVO(&r)
+	}
+	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func Detail(c *gin.Context, id string) *ConfigVO {
+// ===== Detail =====
+
+func ConfigDetail(c *gin.Context, id string) *ConfigVO {
 	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	var entity SysConfig
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
+	var e SysConfig
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
 		}
-		panic(exception.NewBusinessError("查询配置详情失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询配置详情失败: "+err.Error(), 500))
+		return nil
 	}
-	return toVO(&entity)
+	return SysConfigToConfigVO(&e)
 }
 
-func Create(c *gin.Context, vo *ConfigVO, userID string) {
+// ===== Create =====
+
+func ConfigCreate(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
-	now := time.Now()
-	entity := SysConfig{
-		ID:        utils.GenerateID(),
-		SortCode:  vo.SortCode,
-		CreatedAt: &now,
-		UpdatedAt: &now,
-	}
-	if vo.ConfigKey != nil {
-		entity.ConfigKey = vo.ConfigKey
-	}
-	if vo.ConfigValue != nil {
-		entity.ConfigValue = vo.ConfigValue
-	}
-	if vo.Remark != nil {
-		entity.Remark = vo.Remark
-	}
-	if vo.Category != nil {
-		entity.Category = vo.Category
-	}
-	if userID != "" {
-		entity.CreatedBy = &userID
-		entity.UpdatedBy = &userID
-	}
-	if vo.Extra != nil {
-		entity.Extra = vo.Extra
-	}
-	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("添加配置失败: "+err.Error(), 500))
+
+	e := ConfigVOToSysConfig(vo)
+	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("添加配置失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func Modify(c *gin.Context, vo *ConfigVO, userID string) {
+// ===== Modify =====
+
+func ConfigModify(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
-	var entity SysConfig
-	if err := db.DB.WithContext(ctx).Where("id = ?", vo.ID).First(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("配置不存在: "+err.Error(), 500))
+	if vo.ID == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return
 	}
-	now := time.Now()
-	up := map[string]any{
-		"sort_code":  vo.SortCode,
-		"updated_at": now,
+
+	var e SysConfig
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
+			return
+		}
+		result.WriteError(c, exception.NewBusinessError("查询配置失败: "+err.Error(), 500))
+		return
+	}
+
+	up := map[string]interface{}{
+		"sort_code": vo.SortCode,
 	}
 	if vo.ConfigKey != nil {
 		up["config_key"] = *vo.ConfigKey
@@ -100,35 +116,58 @@ func Modify(c *gin.Context, vo *ConfigVO, userID string) {
 	if vo.Extra != nil {
 		up["extra"] = *vo.Extra
 	}
-	if userID != "" {
-		up["updated_by"] = userID
-	}
-	if err := db.DB.WithContext(ctx).Model(&entity).Updates(up).Error; err != nil {
-		panic(exception.NewBusinessError("编辑配置失败: "+err.Error(), 500))
+	if err := db.DB.WithContext(ctx).Model(&SysConfig{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("编辑配置失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func Remove(c *gin.Context, ids []string) {
-	crud.Remove(c, &SysConfig{}, ids)
+// ===== Remove =====
+
+func ConfigRemove(c *gin.Context, param *utils.IdsParam) {
+	ids := param.IDs
+	if len(ids) == 0 {
+		return
+	}
+	if err := db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysConfig{}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("删除配置失败: "+err.Error(), 500))
+		return
+	}
 }
 
-func Options(c *gin.Context) []any {
-	return crud.Options(c, &SysConfig{}, "sort_code ASC", func(e *SysConfig) any { return toVO(e) })
-}
+// ===== Options =====
 
-func ListByCategory(c *gin.Context, category string) []ConfigVO {
+func ConfigOptions(c *gin.Context) []*ConfigVO {
 	ctx := c.Request.Context()
-	var records []SysConfig
-	db.DB.WithContext(ctx).Where("category = ?", category).Order("sort_code ASC").Find(&records)
-	return toVOList(records)
+	var rows []SysConfig
+	db.DB.WithContext(ctx).Model(&SysConfig{}).Order("sort_code ASC").Find(&rows)
+	vos := make([]*ConfigVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysConfigToConfigVO(&r)
+	}
+	return vos
 }
 
-func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
+// ===== ListByCategory =====
+
+func ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
 	ctx := c.Request.Context()
-	now := time.Now()
+	var rows []SysConfig
+	db.DB.WithContext(ctx).Where("category = ?", category).Order("sort_code ASC").Find(&rows)
+	vos := make([]*ConfigVO, len(rows))
+	for i, r := range rows {
+		vos[i] = SysConfigToConfigVO(&r)
+	}
+	return vos
+}
+
+// ===== EditBatch =====
+
+func ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
+	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	for _, item := range param.Configs {
-		up := map[string]interface{}{"updated_at": now}
+		up := map[string]interface{}{}
 		if item.ConfigKey != nil {
 			up["config_key"] = *item.ConfigKey
 		}
@@ -141,23 +180,27 @@ func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
 		if item.SortCode != 0 {
 			up["sort_code"] = item.SortCode
 		}
-		if userID != "" {
-			up["updated_by"] = userID
+		if len(up) == 0 {
+			continue
 		}
 		if err := tx.Model(&SysConfig{}).Where("id = ?", item.ID).Updates(up).Error; err != nil {
 			tx.Rollback()
-			panic(exception.NewBusinessError("批量编辑配置失败: "+err.Error(), 500))
+			result.WriteError(c, exception.NewBusinessError("批量编辑配置失败: "+err.Error(), 500))
+			return
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func EditByCategory(c *gin.Context, param *ConfigCategoryEditParam, userID string) {
+// ===== EditByCategory =====
+
+func ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
 	ctx := c.Request.Context()
-	now := time.Now()
-	up := map[string]interface{}{"updated_at": now}
+
+	up := map[string]interface{}{}
 	if param.ConfigKey != nil {
 		up["config_key"] = *param.ConfigKey
 	}
@@ -167,10 +210,11 @@ func EditByCategory(c *gin.Context, param *ConfigCategoryEditParam, userID strin
 	if param.Remark != nil {
 		up["remark"] = *param.Remark
 	}
-	if userID != "" {
-		up["updated_by"] = userID
+	if len(up) == 0 {
+		return
 	}
 	if err := db.DB.WithContext(ctx).Model(&SysConfig{}).Where("category = ?", param.Category).Updates(up).Error; err != nil {
-		panic(exception.NewBusinessError("按分类编辑配置失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("按分类编辑配置失败: "+err.Error(), 500))
+		return
 	}
 }
