@@ -232,7 +232,7 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 		Where("conversation_id = ? AND (sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)",
 			conversationID, currentUserID, currentUserID, currentUserID)
 	if cursor != "" {
-		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}

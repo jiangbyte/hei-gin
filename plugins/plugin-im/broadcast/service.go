@@ -63,7 +63,7 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 
 	q := db.DB.Model(&imModel.Broadcast{})
 	if cursor != "" {
-		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}

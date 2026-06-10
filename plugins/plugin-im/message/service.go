@@ -280,7 +280,7 @@ func Search(c *gin.Context, userID string, param *SearchParam) ([]MessageVO, boo
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("(sender_id = ? OR receiver_id = ?) AND content LIKE ?", userID, userID, "%"+param.Keyword+"%")
 	if param.Cursor != "" {
-		if t, err := utils.ParseDateTimeLocal(param.Cursor); err == nil {
+		if t, err := utils.ParseDateTime(param.Cursor); err == nil {
 			query = query.Where("created_at < ?", t)
 		}
 	}

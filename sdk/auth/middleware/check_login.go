@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"context"
+
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/db"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -10,23 +13,29 @@ import (
 // HeiCheckLogin returns a middleware that checks if the user is logged in.
 // loginType defaults to "BUSINESS". Pass "CONSUMER" for client-side users.
 // Sets "loginUser" in the Gin context for downstream audit logging.
+// Injects the user ID into c.Request.Context() so GORM hooks can auto-fill CreatedBy/UpdatedBy.
 func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		lt := "BUSINESS"
 		if len(loginType) > 0 {
 			lt = loginType[0]
 		}
-		var isLogin bool
+
+		var uid string
 		if lt == "CONSUMER" {
-			tool := auth.Consumer
-			isLogin = tool.IsLogin(c)
+			if !auth.Consumer.IsLogin(c) {
+				c.Abort()
+				result.Failure(c, "未授权/未登录", 401)
+				return
+			}
+			uid = auth.Consumer.GetLoginIDDefaultNull(c)
 		} else {
-			isLogin = auth.IsLogin(c)
-		}
-		if !isLogin {
-			c.Abort()
-			result.Failure(c, "未授权/未登录", 401)
-			return
+			if !auth.IsLogin(c) {
+				c.Abort()
+				result.Failure(c, "未授权/未登录", 401)
+				return
+			}
+			uid = auth.GetLoginIDDefaultNull(c)
 		}
 
 		// Set loginUser for downstream audit logging
@@ -34,6 +43,12 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 			if u, ok := username.(string); ok && u != "" {
 				c.Set("loginUser", u)
 			}
+		}
+
+		// Inject user ID into request context for GORM global callback
+		if uid != "" {
+			ctx := context.WithValue(c.Request.Context(), db.CtxKeyLoginID{}, uid)
+			c.Request = c.Request.WithContext(ctx)
 		}
 
 		c.Next()

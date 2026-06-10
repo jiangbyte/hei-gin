@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/registry"
 	middleware "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
@@ -118,6 +117,10 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}
+
 // pageHandler handles GET /api/v1/sys/user/page
 func pageHandler(c *gin.Context) {
 	var param user.UserPageParam
@@ -136,9 +139,7 @@ func createHandler(c *gin.Context) {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-
-	userID := auth.GetLoginIDDefaultNull(c)
-	user.UserCreate(c, &vo, userID)
+	user.UserCreate(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -149,9 +150,7 @@ func modifyHandler(c *gin.Context) {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-
-	userID := auth.GetLoginIDDefaultNull(c)
-	user.UserModify(c, &vo, userID)
+	user.UserModify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -163,14 +162,13 @@ func removeHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserRemove(c, param.IDs)
+	user.UserRemove(c, &param)
 	result.Success(c, nil)
 }
 
 // detailHandler handles GET /api/v1/sys/user/detail
 func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := user.UserDetail(c, id)
+	vo := user.UserDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -181,9 +179,7 @@ func grantRoleHandler(c *gin.Context) {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-
-	userID := auth.GetLoginIDDefaultNull(c)
-	user.UserGrantRoles(c, param.UserID, param.RoleIDs, userID)
+	user.UserGrantRole(c, &param)
 	result.Success(c, nil)
 }
 
@@ -195,43 +191,37 @@ func grantPermissionHandler(c *gin.Context) {
 		return
 	}
 
-	userID := auth.GetLoginIDDefaultNull(c)
-	user.UserGrantPermissions(c, param.UserID, param.Permissions, userID)
+	user.UserGrantPermission(c, &param)
 	result.Success(c, nil)
 }
 
 // ownPermissionDetailHandler handles GET /api/v1/sys/user/own-permission-detail
 func ownPermissionDetailHandler(c *gin.Context) {
-	userID := c.Query("user_id")
-	data := user.UserOwnPermissionDetails(c, userID)
+	data := user.UserOwnPermissionDetails(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
 // ownRolesHandler handles GET /api/v1/sys/user/own-roles
 func ownRolesHandler(c *gin.Context) {
-	userID := c.Query("user_id")
-	data := user.UserOwnRoles(c, userID)
+	data := user.UserOwnRoles(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
 // currentHandler handles GET /api/v1/sys/user/current
 func currentHandler(c *gin.Context) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	vo := user.UserCurrent(c, userID)
+	vo := user.UserCurrent(c)
 	result.Success(c, vo)
 }
 
 // menusHandler handles GET /api/v1/sys/user/menus
 func menusHandler(c *gin.Context) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	data := user.UserMenus(c, userID)
+	data := user.UserMenus(c)
 	result.Success(c, data)
 }
 
 // permissionsHandler handles GET /api/v1/sys/user/permissions
 func permissionsHandler(c *gin.Context) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	data := user.UserPermissions(c, userID)
+	data := user.UserPermissions(c)
 	result.Success(c, data)
 }
 
@@ -243,7 +233,7 @@ func updateProfileHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdateProfile(c, auth.GetLoginIDDefaultNull(c), &param)
+	user.UserUpdateProfile(c, &param)
 	result.Success(c, nil)
 }
 
@@ -255,7 +245,7 @@ func updateAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdateAvatar(c, auth.GetLoginIDDefaultNull(c), param.Avatar)
+	user.UserUpdateAvatar(c, &param)
 	result.Success(c, nil)
 }
 
@@ -267,9 +257,6 @@ func updatePasswordHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdatePassword(c, auth.GetLoginIDDefaultNull(c), &param)
+	user.UserUpdatePassword(c, &param)
 	result.Success(c, nil)
-}
-func init() {
-	registry.RegisterRoute(RegisterRoutes)
 }

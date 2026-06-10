@@ -8,6 +8,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
+	"hei-gin/sdk/utils"
 )
 
 func init() {
@@ -35,10 +37,11 @@ func seedAdminUser() error {
 	}
 
 	user := SysUser{
+		ID:         utils.GenerateID(),
 		Username:   strPtr("admin"),
 		Password:   strPtr(string(hashed)),
 		Nickname:   strPtr("超管"),
-		Status:     "ACTIVE",
+		Status:     string(enums.UserStatusActive),
 		LoginCount: 0,
 		CreatedAt:  &now,
 		UpdatedAt:  &now,

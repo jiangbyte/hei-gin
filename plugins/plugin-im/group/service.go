@@ -708,7 +708,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("group_id = ?", groupID)
 	if cursor != "" {
-		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -758,7 +758,7 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Where("group_id = ? AND content LIKE ? AND msg_type != ?", groupID, "%"+keyword+"%", imModel.MsgTypeSystem)
 	if cursor != "" {
-		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}

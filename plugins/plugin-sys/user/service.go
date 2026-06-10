@@ -12,8 +12,8 @@ import (
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/auth"
 
-	"hei-gin/sdk/config"
 	"hei-gin/sdk/constants"
 
 	"github.com/gin-gonic/gin"
@@ -31,24 +31,17 @@ type cacheGroup struct {
 	ParentID *string
 }
 
+type nameEntry struct {
+	Name     string
+	ParentID *string
+}
+
 var (
 	cachedOrgs   []cacheOrg
 	cachedGroups []cacheGroup
 	cacheMu      sync.RWMutex
 	cacheExpiry  time.Time
 )
-
-
-func parseDate(s string) *time.Time {
-	if s == "" {
-		return nil
-	}
-	t, err := time.Parse("2006-01-02", s)
-	if err != nil {
-		return nil
-	}
-	return &t
-}
 
 func batchRoleIDs(uids []string) map[string][]string {
 	if len(uids) == 0 {
@@ -62,6 +55,61 @@ func batchRoleIDs(uids []string) map[string][]string {
 		m[r.UserID] = append(m[r.UserID], r.RoleID)
 	}
 	return m
+}
+
+func loadNameCache(ctx context.Context) {
+	cacheMu.RLock()
+	if time.Since(cacheExpiry) <= 5*time.Minute {
+		cacheMu.RUnlock()
+		return
+	}
+	cacheMu.RUnlock()
+
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	if time.Since(cacheExpiry) <= 5*time.Minute {
+		return
+	}
+	db.DB.WithContext(ctx).Table("sys_org").Select("id,name,parent_id").Find(&cachedOrgs)
+	db.DB.WithContext(ctx).Table("sys_group").Select("id,name,parent_id").Find(&cachedGroups)
+	cacheExpiry = time.Now()
+}
+
+func buildNameMaps() (map[string]nameEntry, map[string]nameEntry) {
+	cacheMu.RLock()
+	defer cacheMu.RUnlock()
+	orgMap := make(map[string]nameEntry, len(cachedOrgs))
+	for _, o := range cachedOrgs {
+		orgMap[o.ID] = nameEntry{o.Name, o.ParentID}
+	}
+	grpMap := make(map[string]nameEntry, len(cachedGroups))
+	for _, g := range cachedGroups {
+		grpMap[g.ID] = nameEntry{g.Name, g.ParentID}
+	}
+	return orgMap, grpMap
+}
+
+func resolvePath(id *string, m map[string]nameEntry) []string {
+	if id == nil || *id == "" {
+		return nil
+	}
+	var path []string
+	cur := *id
+	for {
+		n, ok := m[cur]
+		if !ok {
+			break
+		}
+		path = append(path, n.Name)
+		if n.ParentID == nil || *n.ParentID == "" {
+			break
+		}
+		cur = *n.ParentID
+	}
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
+	}
+	return path
 }
 
 func enrichNames(vos []*UserVO) {
@@ -78,73 +126,16 @@ func enrichNames(vos []*UserVO) {
 	}
 	pn := make(map[string]string)
 	if len(pids) > 0 {
-		type pr struct{ ID, Name string }
-		var ps []pr
+		type positionRow struct{ ID, Name string }
+		var ps []positionRow
 		db.DB.WithContext(ctx).Table("sys_position").Where("id IN ?", pids).Find(&ps)
 		for _, p := range ps {
 			pn[p.ID] = p.Name
 		}
 	}
 
-	cacheMu.RLock()
-	if time.Since(cacheExpiry) > 5*time.Minute {
-		cacheMu.RUnlock()
-		cacheMu.Lock()
-		if time.Since(cacheExpiry) > 5*time.Minute {
-			db.DB.WithContext(ctx).Table("sys_org").Select("id,name,parent_id").Find(&cachedOrgs)
-			db.DB.WithContext(ctx).Table("sys_group").Select("id,name,parent_id").Find(&cachedGroups)
-			cacheExpiry = time.Now()
-		}
-		cacheMu.Unlock()
-		cacheMu.RLock()
-	}
-	orgMap := make(map[string]struct {
-		N string
-		P *string
-	})
-	for _, o := range cachedOrgs {
-		orgMap[o.ID] = struct {
-			N string
-			P *string
-		}{o.Name, o.ParentID}
-	}
-	grpMap := make(map[string]struct {
-		N string
-		P *string
-	})
-	for _, g := range cachedGroups {
-		grpMap[g.ID] = struct {
-			N string
-			P *string
-		}{g.Name, g.ParentID}
-	}
-	cacheMu.RUnlock()
-
-	resolve := func(id *string, m map[string]struct {
-		N string
-		P *string
-	}) []string {
-		if id == nil || *id == "" {
-			return nil
-		}
-		var path []string
-		cur := *id
-		for {
-			n, ok := m[cur]
-			if !ok {
-				break
-			}
-			path = append(path, n.N)
-			if n.P == nil || *n.P == "" {
-				break
-			}
-			cur = *n.P
-		}
-		for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
-			path[i], path[j] = path[j], path[i]
-		}
-		return path
-	}
+	loadNameCache(ctx)
+	orgMap, grpMap := buildNameMaps()
 
 	for _, v := range vos {
 		if v.PositionID != nil {
@@ -153,10 +144,10 @@ func enrichNames(vos []*UserVO) {
 			}
 		}
 		if v.OrgID != nil {
-			v.OrgNames = resolve(v.OrgID, orgMap)
+			v.OrgNames = resolvePath(v.OrgID, orgMap)
 		}
 		if v.GroupID != nil {
-			v.GroupNames = resolve(v.GroupID, grpMap)
+			v.GroupNames = resolvePath(v.GroupID, grpMap)
 		}
 	}
 }
@@ -187,79 +178,40 @@ func UserPage(c *gin.Context, p *UserPageParam) {
 
 	vos := make([]*UserVO, len(rows))
 	for i, r := range rows {
-		vos[i] = toVO(&r)
+		vos[i] = SysUserToUserVO(&r)
 	}
 	enrichNames(vos)
-	rm := batchRoleIDs(func() []string {
-		ids := make([]string, len(rows))
-		for i, r := range rows {
-			ids[i] = r.ID
-		}
-		return ids
-	}())
+	uids := make([]string, len(rows))
+	for i, r := range rows {
+		uids[i] = r.ID
+	}
+	rm := batchRoleIDs(uids)
 	for _, v := range vos {
 		v.RoleIDs = rm[v.ID]
 	}
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func UserCreate(c *gin.Context, v *UserVO, uid string) {
+func UserCreate(c *gin.Context, v *UserVO) {
 	ctx := c.Request.Context()
-	now := time.Now()
-	e := SysUser{ID: utils.GenerateID(), Status: string(enums.UserStatusActive), CreatedAt: &now, UpdatedAt: &now}
+
 	if v.Username != nil {
-		var c int64
-		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", *v.Username).Count(&c)
-		if c > 0 {
+		var cnt int64
+		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", *v.Username).Count(&cnt)
+		if cnt > 0 {
 			panic(exception.NewBusinessError("账号已存在", 400))
 		}
-		e.Username = v.Username
 	}
+
+	e := UserVOToSysUser(v)
+	e.Status = string(enums.UserStatusActive)
+
 	if v.Password != nil {
 		h, _ := bcrypt.GenerateFromPassword([]byte(*v.Password), bcrypt.DefaultCost)
 		s := string(h)
 		e.Password = &s
 	}
-	if v.Nickname != nil {
-		e.Nickname = v.Nickname
-	}
-	if v.Avatar != nil {
-		e.Avatar = v.Avatar
-	}
-	if v.Motto != nil {
-		e.Motto = v.Motto
-	}
-	if v.Gender != nil {
-		e.Gender = v.Gender
-	}
-	if v.Birthday != "" {
-		e.Birthday = parseDate(v.Birthday)
-	}
-	if v.Email != nil {
-		e.Email = v.Email
-	}
-	if v.Github != nil {
-		e.Github = v.Github
-	}
-	if v.Phone != nil {
-		e.Phone = v.Phone
-	}
-	if v.OrgID != nil {
-		e.OrgID = v.OrgID
-	}
-	if v.PositionID != nil {
-		e.PositionID = v.PositionID
-	}
-	if v.GroupID != nil {
-		e.GroupID = v.GroupID
-	}
-	if v.Status != "" {
-		e.Status = v.Status
-	}
-	if uid != "" {
-		e.CreatedBy = &uid
-		e.UpdatedBy = &uid
-	}
+
 	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
 		panic(exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
 	}
@@ -267,17 +219,17 @@ func UserCreate(c *gin.Context, v *UserVO, uid string) {
 
 func UserDetail(c *gin.Context, id string) *UserVO {
 	if id == "" {
-		return nil
+		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
 	ctx := c.Request.Context()
 	var e SysUser
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil
+			panic(exception.NewBusinessError("数据不存在", 400))
 		}
 		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 	}
-	vo := toVO(&e)
+	vo := SysUserToUserVO(&e)
 	enrichNames([]*UserVO{vo})
 	if rm := batchRoleIDs([]string{e.ID}); rm != nil {
 		vo.RoleIDs = rm[e.ID]
@@ -285,7 +237,7 @@ func UserDetail(c *gin.Context, id string) *UserVO {
 	return vo
 }
 
-func UserModify(c *gin.Context, v *UserVO, uid string) {
+func UserModify(c *gin.Context, v *UserVO) {
 	ctx := c.Request.Context()
 	if v.ID == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
@@ -319,7 +271,7 @@ func UserModify(c *gin.Context, v *UserVO, uid string) {
 		up["gender"] = *v.Gender
 	}
 	if v.Birthday != "" {
-		up["birthday"] = parseDate(v.Birthday)
+		up["birthday"] = utils.ParseDateTimePtr(&v.Birthday)
 	}
 	if v.Email != nil {
 		up["email"] = *v.Email
@@ -349,13 +301,14 @@ func UserModify(c *gin.Context, v *UserVO, uid string) {
 		up["status"] = v.Status
 	}
 	up["updated_at"] = time.Now()
-	if uid != "" {
+	if uid := auth.GetLoginIDDefaultNull(c); uid != "" {
 		up["updated_by"] = uid
 	}
 	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", v.ID).Updates(up)
 }
 
-func UserRemove(c *gin.Context, ids []string) {
+func UserRemove(c *gin.Context, p *utils.IdsParam) {
+	ids := p.IDs
 	if len(ids) == 0 {
 		return
 	}
@@ -382,36 +335,6 @@ func UserRemove(c *gin.Context, ids []string) {
 	}
 }
 
-func UserResetPassword(c *gin.Context, id string) {
-	if id == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
-	}
-	ctx := c.Request.Context()
-	rawPwd := config.C.User.ResetPassword
-	if rawPwd == "" {
-		rawPwd = generateRandomPassword()
-	}
-	h, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
-	if err != nil {
-		panic(exception.NewBusinessError("密码加密失败", 500))
-	}
-	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"password":   string(h),
-		"updated_at": time.Now(),
-	})
-}
-
-
-// generateRandomPassword generates a random password using a unique ID.
-func generateRandomPassword() string {
-	// Use utils.GenerateID which is already based on snowflake + crypto/rand
-	id := utils.GenerateID()
-	if len(id) > 16 {
-		return id[:16]
-	}
-	return id
-}
-
 func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	if p.UserID == "" {
 		panic(exception.NewBusinessError("用户ID不能为空", 400))
@@ -427,7 +350,7 @@ func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	for _, id := range p.RoleIDs {
 		if !seen[id] {
 			seen[id] = true
-			batch = append(batch, RelUserRole{ID: utils.GenerateID(), UserID: p.UserID, RoleID: id})
+			batch = append(batch, RelUserRole{UserID: p.UserID, RoleID: id})
 		}
 	}
 	if len(batch) > 0 {
@@ -453,7 +376,7 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	}
 	batch := make([]RelUserPermission, len(p.Permissions))
 	for i, pi := range p.Permissions {
-		r := RelUserPermission{ID: utils.GenerateID(), UserID: p.UserID, PermissionCode: pi.PermissionCode, Scope: pi.Scope}
+		r := RelUserPermission{UserID: p.UserID, PermissionCode: pi.PermissionCode, Scope: pi.Scope}
 		if pi.CustomScopeGroupIds != nil {
 			r.CustomScopeGroupIds = pi.CustomScopeGroupIds
 		}
@@ -473,50 +396,12 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	}
 }
 
-func UserBatchImport(c *gin.Context, p *BatchImportParam) {
-	if len(p.Users) == 0 {
-		return
-	}
-	ctx := c.Request.Context()
-	now := time.Now()
-	batch := make([]SysUser, 0, len(p.Users))
-	for _, u := range p.Users {
-		e := SysUser{ID: utils.GenerateID(), Status: "ACTIVE", CreatedAt: &now, UpdatedAt: &now}
-		if u.Username != nil {
-			e.Username = u.Username
-		}
-		if u.Nickname != nil {
-			e.Nickname = u.Nickname
-		}
-		if u.Phone != nil {
-			e.Phone = u.Phone
-		}
-		if u.Email != nil {
-			e.Email = u.Email
-		}
-		if u.Gender != nil {
-			e.Gender = u.Gender
-		}
-		batch = append(batch, e)
-	}
-	if len(batch) > 0 {
-		tx := db.DB.WithContext(ctx).Begin()
-		if err := tx.Create(&batch).Error; err != nil {
-			tx.Rollback()
-			panic(exception.NewBusinessError("批量导入失败: "+err.Error(), 500))
-		}
-		if err := tx.Commit().Error; err != nil {
-			panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-		}
-	}
-}
-
 func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	if len(p.IDs) == 0 {
 		return
 	}
 	db.DB.Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
-		map[string]interface{}{"status": p.Status, "updated_at": time.Now()})
+		map[string]interface{}{"status": p.Status})
 }
 
 func UserOwnRoleIDs(c *gin.Context, uid string) []string {
@@ -535,44 +420,17 @@ func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface
 	r := make([]map[string]interface{}, len(pp))
 	for i, p := range pp {
 		r[i] = map[string]interface{}{
-			"permission_code": p.PermissionCode, "scope": p.Scope,
-			"custom_scope_group_ids": p.CustomScopeGroupIds, "custom_scope_org_ids": p.CustomScopeOrgIds,
+			"permission_code": p.PermissionCode,
+			"scope":           p.Scope,
+			"custom_scope_group_ids": p.CustomScopeGroupIds,
+			"custom_scope_org_ids":   p.CustomScopeOrgIds,
 		}
 	}
 	return r
 }
 
-func UserExport(c *gin.Context, p *UserPageParam) []*UserVO {
-	ctx := c.Request.Context()
-	q := db.DB.WithContext(ctx).Model(&SysUser{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
-	}
-	if p.Status != "" {
-		q = q.Where("status = ?", p.Status)
-	}
-	var rows []SysUser
-	q.Order("created_at DESC").Find(&rows)
-	vos := make([]*UserVO, len(rows))
-	for i, r := range rows {
-		vos[i] = toVO(&r)
-	}
-	enrichNames(vos)
-	rm := batchRoleIDs(func() []string {
-		ids := make([]string, len(rows))
-		for i, r := range rows {
-			ids[i] = r.ID
-		}
-		return ids
-	}())
-	for _, v := range vos {
-		v.RoleIDs = rm[v.ID]
-	}
-	return vos
-}
-
-func UserUpdateProfile(c *gin.Context, uid string, p *UpdateProfileParam) {
+func UserUpdateProfile(c *gin.Context, p *UpdateProfileParam) {
+	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
@@ -590,7 +448,7 @@ func UserUpdateProfile(c *gin.Context, uid string, p *UpdateProfileParam) {
 		up["gender"] = *p.Gender
 	}
 	if p.Birthday != "" {
-		up["birthday"] = parseDate(p.Birthday)
+		up["birthday"] = utils.ParseDateTimePtr(&p.Birthday)
 	}
 	if p.Email != nil {
 		up["email"] = *p.Email
@@ -605,7 +463,9 @@ func UserUpdateProfile(c *gin.Context, uid string, p *UpdateProfileParam) {
 	db.DB.Model(&SysUser{}).Where("id = ?", uid).Updates(up)
 }
 
-func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
+func UserUpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
+	uid := auth.GetLoginIDDefaultNull(c)
+	avatar := p.Avatar
 	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
@@ -626,7 +486,8 @@ func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
 	}
 }
 
-func UserUpdatePassword(c *gin.Context, uid string, p *UpdatePasswordParam) {
+func UserUpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
+	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
@@ -670,38 +531,37 @@ type rawResource struct {
 	Status        string
 }
 
-func UserGrantRoles(c *gin.Context, userID string, roleIDs []string, loginUserID string) {
-	UserGrantRole(c, &GrantRoleParam{
-		UserID:  userID,
-		RoleIDs: roleIDs,
-	})
-}
-
-func UserGrantPermissions(c *gin.Context, userID string, permissions []PermissionItem, loginUserID string) {
-	UserGrantPermission(c, &GrantUserPermissionParam{
-		UserID:      userID,
-		Permissions: permissions,
-	})
+func buildResourceTree(resources []rawResource) []map[string]interface{} {
+	cm := make(map[string][]rawResource)
+	for _, r := range resources {
+		pid := ""
+		if r.ParentID != nil && *r.ParentID != "" {
+			pid = *r.ParentID
+		}
+		cm[pid] = append(cm[pid], r)
+	}
+	return buildUserMenuTree(cm, "")
 }
 
 func UserOwnRoles(c *gin.Context, uid string) gin.H {
 	roleIDs := UserOwnRoleIDs(c, uid)
-	return gin.H{"code": 200, "message": "璇锋眰鎴愬姛", "success": true, "data": roleIDs}
+	return gin.H{"code": 200, "message": "请求成功", "success": true, "data": roleIDs}
 }
 
-func UserCurrent(c *gin.Context, userID string) *UserVO {
+func UserCurrent(c *gin.Context) *UserVO {
+	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return nil
 	}
 	return UserDetail(c, userID)
 }
 
-func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
+func UserMenus(c *gin.Context) []map[string]interface{} {
+	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]map[string]interface{}, 0)
 	}
 
-	// Super admin: return all enabled resources
 	roleIDs := UserOwnRoleIDs(c, userID)
 	isSuperAdmin := false
 	if len(roleIDs) > 0 {
@@ -717,15 +577,7 @@ func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
 	if isSuperAdmin {
 		var resources []rawResource
 		db.DB.Table("sys_resource").Where("status = ?", string(enums.StatusEnabled)).Order("sort_code ASC").Find(&resources)
-		cm := make(map[string][]rawResource)
-		for _, r := range resources {
-			pid := ""
-			if r.ParentID != nil && *r.ParentID != "" {
-				pid = *r.ParentID
-			}
-			cm[pid] = append(cm[pid], r)
-		}
-		return buildUserMenuTree(cm, "")
+		return buildResourceTree(resources)
 	}
 
 	if len(roleIDs) == 0 {
@@ -745,16 +597,7 @@ func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
 
 	var resources []rawResource
 	db.DB.Table("sys_resource").Where("id IN ? AND status = ?", resourceIDs, string(enums.StatusEnabled)).Order("sort_code ASC").Find(&resources)
-
-	cm := make(map[string][]rawResource)
-	for _, r := range resources {
-		pid := ""
-		if r.ParentID != nil && *r.ParentID != "" {
-			pid = *r.ParentID
-		}
-		cm[pid] = append(cm[pid], r)
-	}
-	return buildUserMenuTree(cm, "")
+	return buildResourceTree(resources)
 }
 
 func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]interface{} {
@@ -782,7 +625,8 @@ func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]int
 	return r
 }
 
-func UserPermissions(c *gin.Context, userID string) []string {
+func UserPermissions(c *gin.Context) []string {
+	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]string, 0)
 	}
@@ -806,4 +650,3 @@ func UserPermissions(c *gin.Context, userID string) []string {
 
 	return permCodes
 }
-
