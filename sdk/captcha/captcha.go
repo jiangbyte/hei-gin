@@ -1,6 +1,8 @@
 package captcha
 
 import (
+	"hei-gin/sdk/db"
+	"hei-gin/sdk/plugin"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -263,3 +265,18 @@ var (
 	BCaptcha = NewCaptchaService(constants.CAPTCHA_BUSINESS_CACHE_KEY)
 	CCaptcha = NewCaptchaService(constants.CAPTCHA_CONSUMER_CACHE_KEY)
 )
+
+
+// ---- plugin registration ----
+
+type captchaPlugin struct{ plugin.NoopPlugin }
+
+func (m *captchaPlugin) Name() string { return "captcha" }
+
+func (m *captchaPlugin) Init() error {
+	BCaptcha.Init(db.Redis)
+	CCaptcha.Init(db.Redis)
+	return nil
+}
+
+func init() { plugin.Register(&captchaPlugin{}) }

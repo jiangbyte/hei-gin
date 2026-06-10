@@ -89,7 +89,7 @@ func DoLogin(c *gin.Context) {
 	username := safeStr(user.Username)
 	log.RecordAuthLog(c, "登录", "LOGIN", "SUCCESS", "", username)
 
-	c.JSON(200, result.Success(c, UsernameLoginResult{Token: token}))
+	result.Success(c, UsernameLoginResult{Token: token})
 }
 
 func DoRegister(c *gin.Context) {
@@ -136,7 +136,7 @@ func DoRegister(c *gin.Context) {
 
 	log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
 
-	c.JSON(200, result.Success(c, UsernameRegisterResult{Message: "注册成功"}))
+	result.Success(c, UsernameRegisterResult{Message: "注册成功"})
 }
 
 func DoLogout(c *gin.Context) {
@@ -150,7 +150,7 @@ func DoLogout(c *gin.Context) {
 		}
 	}
 	clientAuth.Logout(c)
-	c.JSON(200, result.Success(c, UsernameLogoutResult{Message: "登出成功"}))
+	result.Success(c, UsernameLogoutResult{Message: "登出成功"})
 }
 
 func safeStr(s *string) string {

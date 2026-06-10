@@ -43,43 +43,43 @@ func RegisterRoutes(r *gin.Engine) {
 // homeGet handles GET /api/v1/sys/home
 func homeGet(c *gin.Context) {
 	data := home.HomeGet(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // homeAddQuickAction handles POST /api/v1/sys/home/quick-actions/add
 func homeAddQuickAction(c *gin.Context) {
 	var param home.AddQuickActionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	home.HomeAddQuickAction(c, &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // homeRemoveQuickAction handles POST /api/v1/sys/home/quick-actions/remove
 func homeRemoveQuickAction(c *gin.Context) {
 	var param home.RemoveQuickActionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	home.HomeRemoveQuickAction(c, &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // homeSortQuickActions handles POST /api/v1/sys/home/quick-actions/sort
 func homeSortQuickActions(c *gin.Context) {
 	var param home.SortQuickActionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	home.HomeSortQuickActions(c, &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

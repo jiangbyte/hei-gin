@@ -171,14 +171,14 @@ func cmdScaffold(repoRoot, name string) {
 var pluginGoTmpl = `package @PKG@
 
 import (
-	"hei-gin/api"
-	"hei-gin/sdk/module"
+	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/plugin"
 )
 
 type @PASCAL@Plugin struct{}
 
-func (p *@PASCAL@Plugin) Info() api.PluginInfo {
-	return api.PluginInfo{
+func (p *@PASCAL@Plugin) Info() plugin.PluginInfo {
+	return plugin.PluginInfo{
 		Name:        "@NAME@",
 		Version:     "1.0.0",
 		Description: "@NAME@ plugin",
@@ -190,7 +190,7 @@ func (p *@PASCAL@Plugin) Start() error { return nil }
 func (p *@PASCAL@Plugin) Stop() error  { return nil }
 
 func init() {
-	module.Register(&@PASCAL@Plugin{})
+	plugin.Register(&@PASCAL@Plugin{})
 }
 `
 

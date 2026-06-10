@@ -9,7 +9,7 @@ import (
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	imModel "hei-gin/plugins/plugin-im/model"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
@@ -152,7 +152,7 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 			OtherUserID:      otherID,
 			OtherUserType:    otherType,
 			LastContent:      r.Content,
-			LastTime:         pojo.FormatDateTime(r.CreatedAt),
+			LastTime:         utils.FormatDateTime(r.CreatedAt),
 			UnreadCount:      unreadMap[r.ConversationID],
 		}
 	}
@@ -232,7 +232,7 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 		Where("conversation_id = ? AND (sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)",
 			conversationID, currentUserID, currentUserID, currentUserID)
 	if cursor != "" {
-		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -259,7 +259,7 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
 			Status: m.Status,
 			FileURL: fileURL,
-			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(m.CreatedAt),
 		}
 	}
 	return result, hasMore

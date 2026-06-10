@@ -8,7 +8,6 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-im/ws"
 )
@@ -64,7 +63,7 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 
 	q := db.DB.Model(&imModel.Broadcast{})
 	if cursor != "" {
-		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -81,7 +80,7 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 		result[i] = BroadcastVO{
 			ID: b.ID, Title: b.Title, Content: b.Content,
 			Scope: b.Scope, SenderID: b.SenderID,
-			CreatedAt: pojo.FormatDateTimePtr(b.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
 		}
 	}
 	return result, hasMore
@@ -110,10 +109,10 @@ func UnreadList(userID, userType string) ([]BroadcastVO, bool) {
 			ID: b.ID, Title: b.Title,
 			Content: b.Content,
 			Scope: b.Scope, Read: read,
-			CreatedAt: pojo.FormatDateTimePtr(b.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
 		}
 		if read && readAt != nil {
-			s := pojo.FormatDateTime(*readAt)
+			s := utils.FormatDateTime(*readAt)
 			vo.ReadAt = s
 		}
 		result = append(result, vo)
@@ -148,6 +147,6 @@ func Detail(id string) *BroadcastVO {
 	return &BroadcastVO{
 		ID: b.ID, Title: b.Title, Content: b.Content,
 		Scope: b.Scope, SenderID: b.SenderID,
-		CreatedAt: pojo.FormatDateTimePtr(b.CreatedAt),
+		CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
 	}
 }

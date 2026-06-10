@@ -1,7 +1,7 @@
 package user
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 
@@ -86,11 +86,11 @@ func toVO(e *SysUser) *UserVO {
 	}
 	return &UserVO{
 		ID: e.ID, Username: e.Username, Nickname: e.Nickname, Avatar: e.Avatar,
-		Motto: e.Motto, Gender: e.Gender, Birthday: pojo.FormatDatePtr(e.Birthday),
+		Motto: e.Motto, Gender: e.Gender, Birthday: utils.FormatDatePtr(e.Birthday),
 		Email: e.Email, Github: e.Github, Phone: e.Phone,
 		OrgID: e.OrgID, PositionID: e.PositionID, GroupID: e.GroupID,
-		Status: e.Status, LastLoginAt: pojo.FormatDateTimePtr(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
-		LoginCount: e.LoginCount, CreatedAt: pojo.FormatDateTimePtr(e.CreatedAt), CreatedBy: e.CreatedBy,
-		UpdatedAt: pojo.FormatDateTimePtr(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
+		Status: e.Status, LastLoginAt: utils.FormatDateTimePtr(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
+		LoginCount: e.LoginCount, CreatedAt: utils.FormatDateTimePtr(e.CreatedAt), CreatedBy: e.CreatedBy,
+		UpdatedAt: utils.FormatDateTimePtr(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
 	}
 }

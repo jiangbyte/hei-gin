@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Page(c *gin.Context, param *ConfigPageParam) gin.H {
-	return crud.Page(c, &SysConfig{}, param, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, param *ConfigPageParam) {
+	crud.Page(c, &SysConfig{}, param, func(q *gorm.DB) *gorm.DB {
 		if param.Keyword != "" {
 			like := "%" + param.Keyword + "%"
 			q = q.Where("config_key LIKE ? OR remark LIKE ?", like, like)

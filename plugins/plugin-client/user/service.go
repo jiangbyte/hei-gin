@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func ClientUserPage(c *gin.Context, param *ClientUserPageParam) gin.H {
+func ClientUserPage(c *gin.Context, param *ClientUserPageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -44,7 +44,7 @@ func ClientUserPage(c *gin.Context, param *ClientUserPageParam) gin.H {
 		vos[i] = toVO(&r)
 	}
 
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
 func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {

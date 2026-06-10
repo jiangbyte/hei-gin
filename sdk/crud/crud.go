@@ -31,7 +31,7 @@ func pageNum(p PageParam) (current, size int) {
 // Page executes a standard paginated query.
 // model: pointer type (e.g. &SysBanner{})
 // toVO: func(entity *T) any
-func Page[T any, P any](c *gin.Context, model T, param *P, buildQuery func(q *gorm.DB) *gorm.DB, order string, toVO func(entity T) any) gin.H {
+func Page[T any, P any](c *gin.Context, model T, param *P, buildQuery func(q *gorm.DB) *gorm.DB, order string, toVO func(entity T) any) {
 	ctx := c.Request.Context()
 	// P must be *T-like for crud.PageParams, so use type assertion
 	var pp PageParam
@@ -63,7 +63,7 @@ func Page[T any, P any](c *gin.Context, model T, param *P, buildQuery func(q *go
 	for i := range records {
 		vos[i] = toVO(records[i])
 	}
-	return result.PageDataResult(c, vos, total, current, size)
+	result.PageDataResult(c, vos, total, current, size)
 }
 
 // Detail retrieves a single record by ID.

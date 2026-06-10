@@ -25,13 +25,13 @@ func Recovery() gin.HandlerFunc {
 				switch e := rec.(type) {
 				case *exception.BusinessError:
 					// Business errors: no stack trace, just return JSON
-					c.JSON(200, result.Failure(c, e.Message, e.Code, nil))
+					result.Failure(c, e.Message, e.Code)
 				case error:
 					log.Printf("[PANIC] %v\n%s", e, string(debug.Stack()))
-					c.JSON(200, result.Failure(c, "服务器内部错误", 500, nil))
+					result.Failure(c, "服务器内部错误", 500)
 				default:
 					log.Printf("[PANIC] %v\n%s", rec, string(debug.Stack()))
-					c.JSON(200, result.Failure(c, "服务器内部错误", 500, nil))
+					result.Failure(c, "服务器内部错误", 500)
 				}
 				c.Abort()
 			}
@@ -40,7 +40,7 @@ func Recovery() gin.HandlerFunc {
 		c.Next()
 
 		if err := c.Errors.Last(); err != nil {
-			c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+			result.Failure(c, err.Error(), 400)
 			c.Abort()
 		}
 	}
@@ -84,4 +84,27 @@ func SafeCallCtx(fn func(ctx *gin.Context) error, c *gin.Context) (err error) {
 		}
 	}()
 	return fn(c)
+}
+
+// GoSafe executes fn with panic recovery in a goroutine.
+// Unlike SafeCall, it re-panics non-business errors so the top-level Recovery
+// middleware (which only covers gin handler goroutines) is NOT available here.
+// Instead, GoSafe logs all panics and only suppresses BusinessError.
+// Use GoSafe for background goroutines (event bus subscribers, timers, etc.)
+func GoSafe(fn func()) {
+	go func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				switch e := rec.(type) {
+				case *exception.BusinessError:
+					log.Printf("[GoSafe] BusinessError suppressed: %v", e)
+				case error:
+					log.Printf("[GoSafe] Panic recovered: %v\n%s", e, string(debug.Stack()))
+				default:
+					log.Printf("[GoSafe] Panic recovered: %v\n%s", rec, string(debug.Stack()))
+				}
+			}
+		}()
+		fn()
+	}()
 }

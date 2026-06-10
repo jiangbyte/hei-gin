@@ -1,15 +1,14 @@
 package auth
 
 import (
+	"hei-gin/sdk/result"
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/result"
 )
 
 func getLoginID(c *gin.Context, loginType string) string {
@@ -97,7 +96,7 @@ func HasPermission(c *gin.Context, permission, loginType string) bool {
 
 func CheckPermission(c *gin.Context, permission, loginType string) {
 	if !HasPermission(c, permission, loginType) {
-		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403, nil))
+		result.Wrap(c).Fail( fmt.Sprintf("缺少权限: %s", permission), 403)
 	}
 }
 
@@ -112,7 +111,7 @@ func HasPermissionAnd(c *gin.Context, loginType string, permissions ...string) b
 func CheckPermissionAnd(c *gin.Context, loginType string, permissions ...string) {
 	for _, permission := range permissions {
 		if !HasPermission(c, permission, loginType) {
-			c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403, nil))
+			result.Wrap(c).Fail( fmt.Sprintf("缺少权限: %s", permission), 403)
 			return
 		}
 	}
@@ -128,7 +127,7 @@ func HasPermissionOr(c *gin.Context, loginType string, permissions ...string) bo
 
 func CheckPermissionOr(c *gin.Context, loginType string, permissions ...string) {
 	if !HasPermissionOr(c, loginType, permissions...) {
-		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %v", permissions), 403, nil))
+		result.Wrap(c).Fail( fmt.Sprintf("缺少权限: %v", permissions), 403)
 	}
 }
 
@@ -147,7 +146,7 @@ func HasRole(c *gin.Context, role, loginType string) bool {
 
 func CheckRole(c *gin.Context, role, loginType string) {
 	if !HasRole(c, role, loginType) {
-		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403, nil))
+		result.Wrap(c).Fail( fmt.Sprintf("缺少角色: %s", role), 403)
 	}
 }
 
@@ -171,7 +170,7 @@ func HasRoleAnd(c *gin.Context, loginType string, roles ...string) bool {
 func CheckRoleAnd(c *gin.Context, loginType string, roles ...string) {
 	for _, role := range roles {
 		if !HasRole(c, role, loginType) {
-			c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403, nil))
+			result.Wrap(c).Fail( fmt.Sprintf("缺少角色: %s", role), 403)
 			return
 		}
 	}
@@ -196,7 +195,7 @@ func HasRoleOr(c *gin.Context, loginType string, roles ...string) bool {
 
 func CheckRoleOr(c *gin.Context, loginType string, roles ...string) {
 	if !HasRoleOr(c, loginType, roles...) {
-		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %v", roles), 403, nil))
+		result.Wrap(c).Fail( fmt.Sprintf("缺少角色: %v", roles), 403)
 	}
 }
 

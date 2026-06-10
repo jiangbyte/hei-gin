@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +43,7 @@ func heiCheckRoleInner(loginType string, roles []string, mode string) gin.Handle
 		}
 		if !isLogin {
 			c.Abort()
-			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
+			result.Failure(c, "未授权/未登录", 401)
 			return
 		}
 
@@ -50,13 +51,13 @@ func heiCheckRoleInner(loginType string, roles []string, mode string) gin.Handle
 		if mode == "OR" {
 			if !auth.HasRoleOr(c, loginType, roles...) {
 				c.Abort()
-				c.JSON(200, gin.H{"code": 403, "message": "缺少角色: " + strings.Join(roles, ","), "success": false})
+				result.Failure(c, "缺少角色: "+strings.Join(roles, ","), 403)
 				return
 			}
 		} else {
 			if !auth.HasRoleAnd(c, loginType, roles...) {
 				c.Abort()
-				c.JSON(200, gin.H{"code": 403, "message": "缺少角色: " + strings.Join(roles, ","), "success": false})
+				result.Failure(c, "缺少角色: "+strings.Join(roles, ","), 403)
 				return
 			}
 		}

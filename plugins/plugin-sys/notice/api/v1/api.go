@@ -4,7 +4,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	notice "hei-gin/plugins/plugin-sys/notice"
@@ -53,50 +53,49 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param notice.NoticePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := notice.Page(c, &param)
-	c.JSON(200, data)
+	notice.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/notice/create
 func createHandler(c *gin.Context) {
 	var vo notice.NoticeVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	notice.Create(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // modifyHandler handles POST /api/v1/sys/notice/modify
 func modifyHandler(c *gin.Context) {
 	var vo notice.NoticeVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	notice.Modify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // deleteHandler handles POST /api/v1/sys/notice/remove
 func deleteHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	notice.Remove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // detailHandler handles GET /api/v1/sys/notice/detail
@@ -104,10 +103,10 @@ func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := notice.Detail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 // RegisterPublicRoutes registers public notice routes (no auth required).
@@ -126,11 +125,10 @@ func RegisterPublicRoutes(r *gin.Engine) {
 func pagePublicHandler(c *gin.Context) {
 	var param notice.NoticePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	data := notice.PublicPage(c, &param)
-	c.JSON(200, data)
+	notice.PublicPage(c, &param)
 }
 
 // detailPublicHandler handles GET /api/v1/public/c/notice/detail
@@ -138,17 +136,17 @@ func detailPublicHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := notice.PublicDetail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 // latestHandler handles GET /api/v1/public/c/notice/latest
 func latestHandler(c *gin.Context) {
 	var param notice.NoticeLatestParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	if param.Size < 1 {
@@ -158,7 +156,7 @@ func latestHandler(c *gin.Context) {
 		param.Size = 20
 	}
 	data := notice.Latest(c, &param)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

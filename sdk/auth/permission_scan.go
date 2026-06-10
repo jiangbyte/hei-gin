@@ -7,7 +7,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	"hei-gin/sdk/config"
 	"hei-gin/sdk/constants"
 	"hei-gin/sdk/db"
 )
@@ -15,7 +17,16 @@ import (
 // permissionCacheTTL is the TTL for the Redis permission cache.
 // 0 = no expiration; cache persists until server restart.
 // To force a cache refresh, use Redis DEL on the cache key or restart the server.
-const permissionCacheTTL = 0
+// permissionCacheTTL returns the TTL for the Redis permission cache.
+// Reads from config.C.Raw["permission_cache_ttl"] if set, defaults to 300 seconds.
+func permissionCacheTTL() time.Duration {
+	if v, ok := config.C.Raw["permission_cache_ttl"]; ok {
+		if ttl, ok := v.(int); ok && ttl >= 0 {
+			return time.Duration(ttl) * time.Second
+		}
+	}
+	return 300 * time.Second
+}
 
 // PermissionEntry represents a scanned permission entry.
 type PermissionEntry struct {
@@ -59,7 +70,7 @@ func RunPermissionScan() error {
 	}
 
 	ctx := context.Background()
-	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), permissionCacheTTL).Err(); err != nil {
+	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), permissionCacheTTL()).Err(); err != nil {
 		log.Printf("[PermissionScan] Failed to store permission cache in Redis: %v", err)
 		return err
 	}

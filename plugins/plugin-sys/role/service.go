@@ -17,8 +17,8 @@ import (
 )
 
 
-func RolePage(c *gin.Context, p *RolePageParam) gin.H {
-	return crud.Page(c, &SysRole{}, p, func(q *gorm.DB) *gorm.DB {
+func RolePage(c *gin.Context, p *RolePageParam) {
+	crud.Page(c, &SysRole{}, p, func(q *gorm.DB) *gorm.DB {
 		if p.Keyword != "" {
 			like := "%" + p.Keyword + "%"
 			q = q.Where("name LIKE ? OR code LIKE ?", like, like)

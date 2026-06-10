@@ -1,7 +1,7 @@
 package org
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 type OrgVO struct {
@@ -44,9 +44,9 @@ func toVO(entity *SysOrg) *OrgVO {
 		Status:      entity.Status,
 		SortCode:    entity.SortCode,
 		Extra:       entity.Extra,
-		CreatedAt:   pojo.FormatDateTimePtr(entity.CreatedAt),
+		CreatedAt:   utils.FormatDateTimePtr(entity.CreatedAt),
 		CreatedBy:   entity.CreatedBy,
-		UpdatedAt:   pojo.FormatDateTimePtr(entity.UpdatedAt),
+		UpdatedAt:   utils.FormatDateTimePtr(entity.UpdatedAt),
 		UpdatedBy:   entity.UpdatedBy,
 	}
 }

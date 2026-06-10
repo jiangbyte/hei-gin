@@ -9,9 +9,8 @@ import (
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/pojo"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/result"
 	"hei-gin/plugins/plugin-im/ws"
 	imModel "hei-gin/plugins/plugin-im/model"
 
@@ -25,11 +24,11 @@ func toVO(e *imModel.Message) *MessageVO {
 		SenderID: e.SenderID, SenderType: e.SenderType,
 		ReceiverID: e.ReceiverID, ReceiverType: e.ReceiverType,
 		Status: e.Status,
-		CreatedAt: pojo.FormatDateTimePtr(e.CreatedAt),
-		UpdatedAt: pojo.FormatDateTimePtr(e.UpdatedAt),
+		CreatedAt: utils.FormatDateTimePtr(e.CreatedAt),
+		UpdatedAt: utils.FormatDateTimePtr(e.UpdatedAt),
 	}
 	if e.ReadAt != nil {
-		s := pojo.FormatDateTime(*e.ReadAt)
+		s := utils.FormatDateTime(*e.ReadAt)
 		v.ReadAt = &s
 	}
 	return v
@@ -120,7 +119,7 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 				Extra:          param.Extra,
 				SenderID:       senderID,
 				SenderType:     senderType,
-				CreatedAt:      pojo.FormatDateTime(now),
+				CreatedAt:      utils.FormatDateTime(now),
 			},
 		}
 		if receiverType == string(enums.LoginTypeConsumer) {
@@ -138,7 +137,7 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 
 // ==================== Page ====================
 
-func Page(c *gin.Context, userID string, param *MessagePageParam) gin.H {
+func Page(c *gin.Context, userID string, param *MessagePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -160,7 +159,7 @@ func Page(c *gin.Context, userID string, param *MessagePageParam) gin.H {
 
 	var records []imModel.Message
 	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return result.PageDataResult(c, toVOList(records), total, param.Current, param.Size)
+	result.PageDataResult(c, toVOList(records), total, param.Current, param.Size)
 }
 
 // ==================== UnreadCount ====================
@@ -281,7 +280,7 @@ func Search(c *gin.Context, userID string, param *SearchParam) ([]MessageVO, boo
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("(sender_id = ? OR receiver_id = ?) AND content LIKE ?", userID, userID, "%"+param.Keyword+"%")
 	if param.Cursor != "" {
-		if t, err := pojo.ParseDateTimeLocal(param.Cursor); err == nil {
+		if t, err := utils.ParseDateTimeLocal(param.Cursor); err == nil {
 			query = query.Where("created_at < ?", t)
 		}
 	}

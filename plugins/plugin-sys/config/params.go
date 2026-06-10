@@ -1,7 +1,7 @@
 package config
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 type ConfigVO struct {
@@ -49,8 +49,8 @@ type ConfigCategoryEditParam struct {
 func toVO(e *SysConfig) *ConfigVO {
 	v := &ConfigVO{
 		ID: e.ID, SortCode: e.SortCode,
-		CreatedAt: pojo.FormatDateTime(*e.CreatedAt),
-		UpdatedAt: pojo.FormatDateTime(*e.UpdatedAt),
+		CreatedAt: utils.FormatDateTime(*e.CreatedAt),
+		UpdatedAt: utils.FormatDateTime(*e.UpdatedAt),
 	}
 	if e.ConfigKey != nil { v.ConfigKey = e.ConfigKey }
 	if e.ConfigValue != nil { v.ConfigValue = e.ConfigValue }

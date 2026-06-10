@@ -5,7 +5,7 @@ import (
 
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	file "hei-gin/plugins/plugin-sys/file"
@@ -76,82 +76,81 @@ func RegisterClientRoutes(r *gin.Engine) {
 func fileUpload(c *gin.Context) {
 	data, err := file.Upload(c)
 	if err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func clientFileUpload(c *gin.Context) {
 	data, err := file.Upload(c)
 	if err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func fileDownload(c *gin.Context) {
 	id := c.Query("id")
 	if err := file.Download(c, id); err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 	}
 }
 
 func filePage(c *gin.Context) {
 	var param file.FilePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	data := file.Page(c, &param)
-	c.JSON(200, data)
+	file.Page(c, &param)
 }
 
 func fileDetail(c *gin.Context) {
 	id := c.Query("id")
 	vo := file.Detail(c, id)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func fileRemove(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	if err := file.Remove(c, param.IDs); err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func fileRemoveAbsolute(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	if err := file.RemoveAbsolute(c, param.IDs); err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func fileUploadInit(c *gin.Context) {
 	var param file.ChunkUploadInitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	data, err := file.InitChunkUpload(c, &param)
 	if err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func fileUploadChunk(c *gin.Context) {
@@ -164,41 +163,41 @@ func fileUploadChunk(c *gin.Context) {
 		Checksum:    c.PostForm("checksum"),
 	}
 	if param.UploadID == "" {
-		c.JSON(200, result.Failure(c, "upload_id 不能为空", 400, nil))
+		result.Failure(c, "upload_id 不能为空", 400)
 		return
 	}
 	if err := file.UploadChunk(c, &param); err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func fileUploadComplete(c *gin.Context) {
 	var param file.ChunkCompleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	data, err := file.CompleteChunkUpload(c, &param)
 	if err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func fileUploadAbort(c *gin.Context) {
 	var param file.ChunkAbortParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	if err := file.AbortChunkUpload(c, &param); err != nil {
-		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		result.Failure(c, err.Error(), 400)
 		return
 	}
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func init() {

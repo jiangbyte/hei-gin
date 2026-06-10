@@ -5,7 +5,7 @@ import (
 	"hei-gin/sdk/registry"
 	middleware "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	clientuser "hei-gin/plugins/plugin-client/user"
 
@@ -69,82 +69,81 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param clientuser.ClientUserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	data := clientuser.ClientUserPage(c, &param)
-	c.JSON(200, data)
+	clientuser.ClientUserPage(c, &param)
 }
 
 func createHandler(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.ClientUserCreate(c, &vo, auth.GetLoginIDDefaultNull(c))
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func modifyHandler(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.ClientUserModify(c, &vo, auth.GetLoginIDDefaultNull(c))
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func removeHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.ClientUserRemove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := clientuser.ClientUserDetail(c, id)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func currentHandler(c *gin.Context) {
 	vo := clientuser.Current(c, clientAuth.GetLoginIDDefaultNull(c))
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func updateProfileHandler(c *gin.Context) {
 	var param clientuser.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.UpdateProfile(c, clientAuth.GetLoginIDDefaultNull(c), &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func updateAvatarHandler(c *gin.Context) {
 	var param clientuser.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.UpdateAvatar(c, clientAuth.GetLoginIDDefaultNull(c), &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func updatePasswordHandler(c *gin.Context) {
 	var param clientuser.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	clientuser.UpdatePassword(c, clientAuth.GetLoginIDDefaultNull(c), &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

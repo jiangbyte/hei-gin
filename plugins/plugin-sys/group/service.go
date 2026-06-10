@@ -25,8 +25,8 @@ func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	return n
 }
 
-func Page(c *gin.Context, param *GroupPageParam) gin.H {
-	return crud.Page(c, &SysGroup{}, param, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, param *GroupPageParam) {
+	crud.Page(c, &SysGroup{}, param, func(q *gorm.DB) *gorm.DB {
 		if param.Keyword != "" { q = q.Where("name LIKE ?", "%"+param.Keyword+"%") }
 		if param.Category != "" { q = q.Where("category = ?", param.Category) }
 	

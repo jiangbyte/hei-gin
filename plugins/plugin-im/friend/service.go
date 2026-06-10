@@ -6,7 +6,6 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-im/ws"
 	imModel "hei-gin/plugins/plugin-im/model"
@@ -215,7 +214,7 @@ func FriendList(ctx context.Context, userID, userType string) []FriendVO {
 			Nickname: nicknameMap[k],
 			Avatar:   avatarMap[k],
 			Remark:   f.Remark,
-			AddedAt:  pojo.FormatDateTimePtr(f.CreatedAt),
+			AddedAt:  utils.FormatDateTimePtr(f.CreatedAt),
 		})
 	}
 	return result
@@ -395,7 +394,7 @@ func BlockList(ctx context.Context, userID, userType string) []BlockVO {
 		result[i] = BlockVO{
 			BlockedID:   b.BlockedID,
 			BlockedType: b.BlockedType,
-			CreatedAt:   pojo.FormatDateTimePtr(b.CreatedAt),
+			CreatedAt:   utils.FormatDateTimePtr(b.CreatedAt),
 		}
 	}
 	return result
@@ -424,7 +423,7 @@ func toVOList(requests []imModel.FriendRequest) []FriendRequestVO {
 			ID: req.ID, SenderID: req.SenderID, SenderType: req.SenderType,
 			ReceiverID: req.ReceiverID, ReceiverType: req.ReceiverType,
 			Remark: req.Remark, Status: req.Status,
-			CreatedAt: pojo.FormatDateTimePtr(req.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(req.CreatedAt),
 		}
 	}
 	return r

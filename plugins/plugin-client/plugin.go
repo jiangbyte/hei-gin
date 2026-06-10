@@ -1,8 +1,7 @@
 package plugin_client
 
 import (
-	"hei-gin/api"
-	"hei-gin/sdk/module"
+	"hei-gin/sdk/plugin"
 
 	// Blank-import to trigger model registration and route registration
 	_ "hei-gin/plugins/plugin-client/user"
@@ -16,11 +15,11 @@ import (
 )
 
 type ClientPlugin struct {
-	module.NoopModule
+	plugin.NoopPlugin
 }
 
-func (p *ClientPlugin) Info() api.PluginInfo {
-	return api.PluginInfo{
+func (p *ClientPlugin) Info() plugin.PluginInfo {
+	return plugin.PluginInfo{
 		Name:        "plugin-client",
 		Version:     "1.0.0",
 		Description: "Client-side management plugin (user, session, message, auth)",
@@ -30,5 +29,5 @@ func (p *ClientPlugin) Info() api.PluginInfo {
 func (p *ClientPlugin) Name() string { return "plugin-client" }
 
 func init() {
-	module.Register(&ClientPlugin{})
+	plugin.Register(&ClientPlugin{})
 }

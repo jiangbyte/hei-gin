@@ -12,9 +12,8 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/pojo"
-	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/storage"
 	ws "hei-gin/plugins/plugin-im/ws"
 
 	imModel "hei-gin/plugins/plugin-im/model"
@@ -495,7 +494,7 @@ func SendMessage(ctx context.Context, senderID, senderType string, p *SendMessag
 		ID: msg.ID, SenderID: msg.SenderID, SenderType: msg.SenderType,
 		Content: msg.Content, Extra: msg.Extra, MsgType: msg.MsgType,
 		ReplyTo: msg.ReplyTo, FileURL: fileURL,
-		CreatedAt: pojo.FormatDateTimePtr(msg.CreatedAt),
+		CreatedAt: utils.FormatDateTimePtr(msg.CreatedAt),
 	}
 }
 
@@ -585,7 +584,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 		}
 		if l, ok := lastMap[g.ID]; ok {
 			vo.LastContent = l.Content
-			vo.LastTime = pojo.FormatDateTime(l.CreatedAt)
+			vo.LastTime = utils.FormatDateTime(l.CreatedAt)
 		}
 		result = append(result, vo)
 	}
@@ -688,7 +687,7 @@ func Members(ctx context.Context, groupID string) []MemberVO {
 			UserID: m.UserID, UserType: m.UserType,
 			Role: m.Role, Nickname: m.Nickname,
 			IsMuted: m.MutedUntil != nil && m.MutedUntil.After(time.Now()),
-			JoinedAt: pojo.FormatDateTimePtr(m.JoinedAt),
+			JoinedAt: utils.FormatDateTimePtr(m.JoinedAt),
 		}
 	}
 	return result
@@ -709,7 +708,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("group_id = ?", groupID)
 	if cursor != "" {
-		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -734,7 +733,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 			Content: m.Content, Extra: m.Extra, MsgType: m.MsgType,
 			ReplyTo: m.ReplyTo, FileURL: fileURL,
-			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(m.CreatedAt),
 		}
 	}
 	return result, hasMore
@@ -759,7 +758,7 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Where("group_id = ? AND content LIKE ? AND msg_type != ?", groupID, "%"+keyword+"%", imModel.MsgTypeSystem)
 	if cursor != "" {
-		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
+		if t, err := utils.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -784,7 +783,7 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 			Content: m.Content, Extra: m.Extra, MsgType: m.MsgType,
 			ReplyTo: m.ReplyTo, FileURL: fileURL,
-			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
+			CreatedAt: utils.FormatDateTimePtr(m.CreatedAt),
 		}
 	}
 	return result, hasMore
@@ -860,7 +859,7 @@ func buildRecallPayload(msg *imModel.GroupMessage, recallerID, recallerType stri
 		"content":     msg.Content,
 		"msg_type":    msg.MsgType,
 		"recalled_by": recallerID,
-		"created_at":  pojo.FormatDateTimePtr(msg.CreatedAt),
+		"created_at":  utils.FormatDateTimePtr(msg.CreatedAt),
 		"action":      "recalled",
 	}
 }
@@ -948,7 +947,7 @@ func buildPushPayload(msg *imModel.GroupMessage) map[string]interface{} {
 		"extra":       msg.Extra,
 		"msg_type":    msg.MsgType,
 		"reply_to":    msg.ReplyTo,
-		"created_at":  pojo.FormatDateTimePtr(msg.CreatedAt),
+		"created_at":  utils.FormatDateTimePtr(msg.CreatedAt),
 	}
 }
 
@@ -1265,7 +1264,7 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		}
 		if l, ok := lastMap[g.ID]; ok {
 			vo.LastContent = l.Content
-			vo.LastTime = pojo.FormatDateTime(l.CreatedAt)
+			vo.LastTime = utils.FormatDateTime(l.CreatedAt)
 		}
 		result = append(result, vo)
 	}

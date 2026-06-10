@@ -15,7 +15,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 func dashboard(c *gin.Context) {
 	data := analyze.Dashboard(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

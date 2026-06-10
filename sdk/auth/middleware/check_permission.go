@@ -45,7 +45,7 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 		}
 		if !isLogin {
 			c.Abort()
-			c.JSON(200, result.Failure(c, "未授权/未登录", 401, nil))
+			result.Failure(c, "未授权/未登录", 401)
 			return
 		}
 
@@ -66,13 +66,13 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 		if mode == "OR" {
 			if !auth.HasPermissionOr(c, loginType, permissions...) {
 				c.Abort()
-				c.JSON(200, result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403, nil))
+				result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403)
 				return
 			}
 		} else {
 			if !auth.HasPermissionAnd(c, loginType, permissions...) {
 				c.Abort()
-				c.JSON(200, result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403, nil))
+				result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403)
 				return
 			}
 		}

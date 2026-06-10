@@ -1,7 +1,7 @@
 package user
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 type ClientUserVO struct {
@@ -76,8 +76,8 @@ func toVO(e *ClientUser) ClientUserVO {
 		Status:      e.Status,
 		LastLoginIP: e.LastLoginIP,
 		LoginCount:  e.LoginCount,
-		LastLoginAt: pojo.FormatDateTimePtr(e.LastLoginAt),
-		CreatedAt:   pojo.FormatDateTimePtr(e.CreatedAt),
-		UpdatedAt:   pojo.FormatDateTimePtr(e.UpdatedAt),
+		LastLoginAt: utils.FormatDateTimePtr(e.LastLoginAt),
+		CreatedAt:   utils.FormatDateTimePtr(e.CreatedAt),
+		UpdatedAt:   utils.FormatDateTimePtr(e.UpdatedAt),
 	}
 }

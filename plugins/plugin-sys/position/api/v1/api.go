@@ -4,7 +4,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	position "hei-gin/plugins/plugin-sys/position"
@@ -54,50 +54,49 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param position.PositionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := position.Page(c, &param)
-	c.JSON(200, data)
+	position.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/position/create
 func createHandler(c *gin.Context) {
 	var vo position.PositionVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	position.Create(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // modifyHandler handles POST /api/v1/sys/position/modify
 func modifyHandler(c *gin.Context) {
 	var vo position.PositionVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	position.Modify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // deleteHandler handles POST /api/v1/sys/position/remove
 func deleteHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	position.Remove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // detailHandler handles GET /api/v1/sys/position/detail
@@ -105,10 +104,10 @@ func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := position.Detail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

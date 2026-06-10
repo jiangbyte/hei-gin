@@ -1,7 +1,7 @@
 ﻿package group
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 type GroupVO struct {
@@ -42,8 +42,8 @@ func toVO(entity *SysGroup) *GroupVO {
 		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
 		ParentID: entity.ParentID, OrgID: entity.OrgID, Description: entity.Description,
 		Status: entity.Status, SortCode: entity.SortCode, Extra: entity.Extra,
-		CreatedAt: pojo.FormatDateTimePtr(entity.CreatedAt), CreatedBy: entity.CreatedBy,
-		UpdatedAt: pojo.FormatDateTimePtr(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
+		CreatedAt: utils.FormatDateTimePtr(entity.CreatedAt), CreatedBy: entity.CreatedBy,
+		UpdatedAt: utils.FormatDateTimePtr(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
 	}
 }
 

@@ -1,25 +1,31 @@
 package eventbus
 
 import (
-	"log"
 	"sync"
 
 	"hei-gin/api"
+	"hei-gin/sdk/middleware"
 )
 
 // DefaultBus is the global event bus instance.
 var DefaultBus api.EventBus = newBus()
 
+type subscriberEntry struct {
+	id   uint64
+	fn   api.EventSubscriber
+}
+
 type bus struct {
 	mu          sync.RWMutex
-	subscribers map[string][]api.EventSubscriber
+	subscribers map[string][]subscriberEntry
 	closed      chan struct{}
 	wg          sync.WaitGroup
+	subIDSeq    uint64
 }
 
 func newBus() *bus {
 	return &bus{
-		subscribers: make(map[string][]api.EventSubscriber),
+		subscribers: make(map[string][]subscriberEntry),
 		closed:      make(chan struct{}),
 	}
 }
@@ -32,37 +38,34 @@ func (b *bus) Publish(topic string, data any) {
 		return
 	}
 	event := api.Event{Topic: topic, Data: data}
-	for _, sub := range subs {
-		sub := sub
+	for _, entry := range subs {
+		entry := entry
 		b.wg.Add(1)
-		go func() {
+		middleware.GoSafe(func() {
 			defer b.wg.Done()
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("[EventBus] subscriber panic on topic %s: %v", topic, r)
-				}
-			}()
 			select {
 			case <-b.closed:
 				return
 			default:
-				sub(event)
+				entry.fn(event)
 			}
-		}()
+		})
 	}
 }
 
 func (b *bus) Subscribe(topic string, sub api.EventSubscriber) func() {
 	b.mu.Lock()
-	b.subscribers[topic] = append(b.subscribers[topic], sub)
+	b.subIDSeq++
+	id := b.subIDSeq
+	b.subscribers[topic] = append(b.subscribers[topic], subscriberEntry{id: id, fn: sub})
 	b.mu.Unlock()
 
 	return func() {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		subs := b.subscribers[topic]
-		for i, s := range subs {
-			if &s == &sub {
+		for i := range subs {
+			if subs[i].id == id {
 				b.subscribers[topic] = append(subs[:i], subs[i+1:]...)
 				return
 			}

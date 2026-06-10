@@ -1,6 +1,13 @@
 package auth
 
-import "github.com/gin-gonic/gin"
+import (
+	"log"
+
+	"hei-gin/sdk/config"
+	"hei-gin/sdk/plugin"
+
+	"github.com/gin-gonic/gin"
+)
 
 // Business singleton for BUSINESS login type.
 var businessAuth = newBaseAuthTool("BUSINESS")
@@ -43,3 +50,28 @@ func IsDisable(loginID string) bool           { return businessAuth.IsDisable(lo
 func CheckDisable(loginID string) error       { return businessAuth.CheckDisable(loginID) }
 func GetDisableTime(loginID string) int       { return businessAuth.GetDisableTime(loginID) }
 func UntieDisable(loginID string)             { businessAuth.UntieDisable(loginID) }
+
+
+// ---- plugin registration ----
+
+type authPlugin struct{ plugin.NoopPlugin }
+
+func (m *authPlugin) Name() string { return "auth" }
+
+func (m *authPlugin) Init() error {
+	Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	Consumer.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	log.Println("[auth] plugin initialized")
+	return nil
+}
+
+func (m *authPlugin) Start() error {
+	if err := RunPermissionScan(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func init() {
+	plugin.Register(&authPlugin{})
+}

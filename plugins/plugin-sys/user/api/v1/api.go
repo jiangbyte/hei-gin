@@ -5,7 +5,7 @@ import (
 	"hei-gin/sdk/registry"
 	middleware "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	user "hei-gin/plugins/plugin-sys/user"
 
@@ -122,154 +122,153 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param user.UserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := user.UserPage(c, &param)
-	c.JSON(200, data)
+	user.UserPage(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/user/create
 func createHandler(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	user.UserCreate(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // modifyHandler handles POST /api/v1/sys/user/modify
 func modifyHandler(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	user.UserModify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // removeHandler handles POST /api/v1/sys/user/remove
 func removeHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	user.UserRemove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // detailHandler handles GET /api/v1/sys/user/detail
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := user.UserDetail(c, id)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 // grantRoleHandler handles POST /api/v1/sys/user/grant-role
 func grantRoleHandler(c *gin.Context) {
 	var param user.GrantRoleParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	user.UserGrantRoles(c, param.UserID, param.RoleIDs, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // grantPermissionHandler handles POST /api/v1/sys/user/grant-permission
 func grantPermissionHandler(c *gin.Context) {
 	var param user.GrantUserPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	user.UserGrantPermissions(c, param.UserID, param.Permissions, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // ownPermissionDetailHandler handles GET /api/v1/sys/user/own-permission-detail
 func ownPermissionDetailHandler(c *gin.Context) {
 	userID := c.Query("user_id")
 	data := user.UserOwnPermissionDetails(c, userID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // ownRolesHandler handles GET /api/v1/sys/user/own-roles
 func ownRolesHandler(c *gin.Context) {
 	userID := c.Query("user_id")
 	data := user.UserOwnRoles(c, userID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // currentHandler handles GET /api/v1/sys/user/current
 func currentHandler(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	vo := user.UserCurrent(c, userID)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 // menusHandler handles GET /api/v1/sys/user/menus
 func menusHandler(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	data := user.UserMenus(c, userID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // permissionsHandler handles GET /api/v1/sys/user/permissions
 func permissionsHandler(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	data := user.UserPermissions(c, userID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // updateProfileHandler handles POST /api/v1/sys/user/update-profile
 func updateProfileHandler(c *gin.Context) {
 	var param user.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	user.UserUpdateProfile(c, auth.GetLoginIDDefaultNull(c), &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // updateAvatarHandler handles POST /api/v1/sys/user/update-avatar
 func updateAvatarHandler(c *gin.Context) {
 	var param user.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	user.UserUpdateAvatar(c, auth.GetLoginIDDefaultNull(c), param.Avatar)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // updatePasswordHandler handles POST /api/v1/sys/user/update-password
 func updatePasswordHandler(c *gin.Context) {
 	var param user.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	user.UserUpdatePassword(c, auth.GetLoginIDDefaultNull(c), &param)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

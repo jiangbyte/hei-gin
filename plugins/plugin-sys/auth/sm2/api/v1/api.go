@@ -16,7 +16,7 @@ func RegisterRoutes(r *gin.Engine) {
 // GetPublicKey returns the SM2 public key for frontend encryption.
 func GetPublicKey(c *gin.Context) {
 	publicKey := utils.GetPublicKey()
-	c.JSON(200, result.Success(c, publicKey))
+	result.Success(c, publicKey)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

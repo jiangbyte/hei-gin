@@ -77,150 +77,150 @@ func getLoginID(c *gin.Context) (string, string) {
 func createHandler(c *gin.Context) {
 	var p group.CreateParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	if userID == "" {
-		c.JSON(200, result.Failure(c, "未登录", 401, nil))
+		result.Failure(c, "未登录", 401)
 		return
 	}
 	g := group.Create(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, g))
+	result.Success(c, g)
 }
 
 func updateHandler(c *gin.Context) {
 	var p group.UpdateParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.Update(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func dissolveHandler(c *gin.Context) {
 	var p struct{ GroupID string `json:"group_id"` }
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, _ := getLoginID(c)
 	group.Dissolve(c.Request.Context(), userID, p.GroupID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func detailHandler(c *gin.Context) {
 	groupID := c.Query("group_id")
 	vo := group.Detail(c.Request.Context(), groupID)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func myGroupsHandler(c *gin.Context) {
 	userID, userType := getLoginID(c)
 	list := group.MyGroups(c.Request.Context(), userID, userType)
-	c.JSON(200, result.Success(c, list))
+	result.Success(c, list)
 }
 
 func inviteHandler(c *gin.Context) {
 	var p group.InviteParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.Invite(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func joinHandler(c *gin.Context) {
 	var p struct{ GroupID string `json:"group_id"` }
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.Join(c.Request.Context(), userID, userType, p.GroupID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func pendingJoinRequestsHandler(c *gin.Context) {
 	groupID := c.Query("group_id")
 	requests := group.PendingJoinRequests(c.Request.Context(), groupID)
-	c.JSON(200, result.Success(c, requests))
+	result.Success(c, requests)
 }
 
 func handleJoinRequestHandler(c *gin.Context) {
 	var p group.HandleJoinRequestParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.HandleJoinRequest(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func leaveHandler(c *gin.Context) {
 	var p struct{ GroupID string `json:"group_id"` }
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.Leave(c.Request.Context(), userID, userType, p.GroupID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func kickHandler(c *gin.Context) {
 	var p group.KickParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.Kick(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func setRoleHandler(c *gin.Context) {
 	var p group.SetRoleParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, _ := getLoginID(c)
 	group.SetRole(c.Request.Context(), userID, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func transferOwnerHandler(c *gin.Context) {
 	var p group.TransferOwnerParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, _ := getLoginID(c)
 	group.TransferOwner(c.Request.Context(), userID, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func setNicknameHandler(c *gin.Context) {
 	var p group.SetNicknameParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.SetMemberNickname(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func membersHandler(c *gin.Context) {
 	groupID := c.Query("group_id")
 	list := group.Members(c.Request.Context(), groupID)
-	c.JSON(200, result.Success(c, list))
+	result.Success(c, list)
 }
 
 func messagesHandler(c *gin.Context) {
@@ -233,7 +233,7 @@ func messagesHandler(c *gin.Context) {
 		}
 	}
 	msgs, hasMore := group.Messages(c.Request.Context(), groupID, cursor, size)
-	c.JSON(200, result.Success(c, gin.H{"records": msgs, "has_more": hasMore}))
+	result.Success(c, gin.H{"records": msgs, "has_more": hasMore})
 }
 
 func searchHandler(c *gin.Context) {
@@ -247,7 +247,7 @@ func searchHandler(c *gin.Context) {
 		}
 	}
 	msgs, hasMore := group.SearchMessages(c.Request.Context(), groupID, keyword, cursor, size)
-	c.JSON(200, result.Success(c, gin.H{"records": msgs, "has_more": hasMore}))
+	result.Success(c, gin.H{"records": msgs, "has_more": hasMore})
 }
 
 func searchGroupsHandler(c *gin.Context) {
@@ -259,18 +259,18 @@ func searchGroupsHandler(c *gin.Context) {
 		}
 	}
 	list := group.SearchGroups(c.Request.Context(), keyword, size)
-	c.JSON(200, result.Success(c, list))
+	result.Success(c, list)
 }
 
 func sendHandler(c *gin.Context) {
 	var p group.SendMessageParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	vo := group.SendMessage(c.Request.Context(), userID, userType, &p)
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func recallHandler(c *gin.Context) {
@@ -279,12 +279,12 @@ func recallHandler(c *gin.Context) {
 		MessageID string `json:"message_id"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.RecallMessage(c.Request.Context(), p.GroupID, p.MessageID, userID, userType)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func markReadHandler(c *gin.Context) {
@@ -293,12 +293,12 @@ func markReadHandler(c *gin.Context) {
 		MessageID string `json:"message_id"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	group.MarkRead(c.Request.Context(), p.GroupID, userID, userType, p.MessageID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func muteHandler(c *gin.Context) {
@@ -309,7 +309,7 @@ func muteHandler(c *gin.Context) {
 		Duration int    `json:"duration"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
@@ -319,7 +319,7 @@ func muteHandler(c *gin.Context) {
 	}
 	kp := group.KickParam{GroupID: p.GroupID, UserID: p.UserID, UserType: p.UserType}
 	group.MuteMember(c.Request.Context(), userID, userType, &kp, time.Duration(duration)*time.Minute)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func unmuteHandler(c *gin.Context) {
@@ -329,13 +329,13 @@ func unmuteHandler(c *gin.Context) {
 		UserType string `json:"user_type"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID, userType := getLoginID(c)
 	kp := group.KickParam{GroupID: p.GroupID, UserID: p.UserID, UserType: p.UserType}
 	group.UnmuteMember(c.Request.Context(), userID, userType, &kp)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func init() {

@@ -4,7 +4,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	group "hei-gin/plugins/plugin-sys/group"
@@ -56,68 +56,67 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param group.GroupPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	data := group.Page(c, &param)
-	c.JSON(200, data)
+	group.Page(c, &param)
 }
 
 func unionTreeHandler(c *gin.Context) {
 	data := group.Options(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func treeHandler(c *gin.Context) {
 	var param group.GroupTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	data := group.Tree(c, &param)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func createHandler(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	group.Create(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func modifyHandler(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	group.Modify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func removeHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	group.Remove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := group.Detail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

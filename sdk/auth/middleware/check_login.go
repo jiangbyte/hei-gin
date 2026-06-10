@@ -25,7 +25,7 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 		}
 		if !isLogin {
 			c.Abort()
-			c.JSON(200, result.Failure(c, "未授权/未登录", 401, nil))
+			result.Failure(c, "未授权/未登录", 401)
 			return
 		}
 

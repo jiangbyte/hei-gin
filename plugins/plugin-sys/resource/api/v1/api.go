@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 
@@ -9,7 +8,7 @@ import (
 	"hei-gin/sdk/registry"
 	authmw "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	resource "hei-gin/plugins/plugin-sys/resource"
 )
@@ -80,68 +79,68 @@ func RegisterRoutes(r *gin.Engine) {
 func modulePage(c *gin.Context) {
 	param := &resource.ModulePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
-	c.JSON(http.StatusOK, resource.ModulePage(c, param))
+	resource.ModulePage(c, param)
 }
 
 func moduleDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		result.Failure(c, "id不能为空", 400)
 		return
 	}
 
 	data := resource.ModuleDetail(c, id)
 	if data == nil {
-		c.JSON(http.StatusOK, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func moduleCreate(c *gin.Context) {
 	vo := &resource.ModuleVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	resource.ModuleCreate(c, vo, userID)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func moduleModify(c *gin.Context) {
 	vo := &resource.ModuleVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 	if vo.ID == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		result.Failure(c, "id不能为空", 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	resource.ModuleModify(c, vo, userID)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func moduleRemove(c *gin.Context) {
-	param := &pojo.IdsParam{}
+	param := &utils.IdsParam{}
 	if err := c.ShouldBindJSON(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 	if len(param.IDs) == 0 {
-		c.JSON(http.StatusOK, result.Failure(c, "ids不能为空", 400, nil))
+		result.Failure(c, "ids不能为空", 400)
 		return
 	}
 
 	resource.ModuleRemove(c, param.IDs)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // ---------------------------------------------------------------------------
@@ -150,74 +149,74 @@ func moduleRemove(c *gin.Context) {
 
 func resourceTree(c *gin.Context) {
 	data := resource.ResourceTree(c, "")
-	c.JSON(http.StatusOK, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func resourcePage(c *gin.Context) {
 	param := &resource.ResourcePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
-	c.JSON(http.StatusOK, resource.ResourcePage(c, param))
+	resource.ResourcePage(c, param)
 }
 
 func resourceDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		result.Failure(c, "id不能为空", 400)
 		return
 	}
 
 	data := resource.ResourceDetail(c, id)
 	if data == nil {
-		c.JSON(http.StatusOK, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(http.StatusOK, result.Success(c, data))
+	result.Success(c, data)
 }
 
 func resourceCreate(c *gin.Context) {
 	vo := &resource.ResourceVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	resource.ResourceCreate(c, vo, userID)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func resourceModify(c *gin.Context) {
 	vo := &resource.ResourceVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 	if vo.ID == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		result.Failure(c, "id不能为空", 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	resource.ResourceModify(c, vo, userID)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func resourceRemove(c *gin.Context) {
-	param := &pojo.IdsParam{}
+	param := &utils.IdsParam{}
 	if err := c.ShouldBindJSON(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 	if len(param.IDs) == 0 {
-		c.JSON(http.StatusOK, result.Failure(c, "ids不能为空", 400, nil))
+		result.Failure(c, "ids不能为空", 400)
 		return
 	}
 
 	resource.ResourceRemove(c, param.IDs)
-	c.JSON(http.StatusOK, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func init() {

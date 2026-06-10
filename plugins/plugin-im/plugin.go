@@ -1,11 +1,9 @@
 package plugin_im
 
 import (
-	"hei-gin/api"
-	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/module"
+	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/registry"
 	ws "hei-gin/plugins/plugin-im/ws"
 
@@ -23,8 +21,8 @@ import (
 
 type IMPlugin struct{}
 
-func (p *IMPlugin) Info() api.PluginInfo {
-	return api.PluginInfo{
+func (p *IMPlugin) Info() plugin.PluginInfo {
+	return plugin.PluginInfo{
 		Name:        "plugin-im",
 		Version:     "1.0.0",
 		Description: "Instant messaging plugin (WebSocket + group chat + friend + broadcast)",
@@ -45,7 +43,7 @@ func (p *IMPlugin) Stop() error {
 }
 
 func init() {
-	module.Register(&IMPlugin{})
+	plugin.Register(&IMPlugin{})
 
 	registry.RegisterRoute(func(r *gin.Engine) {
 	r.Static("/uploads", "./uploads")
@@ -55,33 +53,17 @@ func init() {
 }
 
 func sysWSHandler(c *gin.Context) {
-	token := c.Query("token")
-	if token == "" {
-		c.JSON(200, gin.H{"code": 401, "message": "缺少token", "success": false})
-		c.Abort()
+	result := ws.AuthenticateFromToken(c, enums.LoginTypeBusiness)
+	if !result.OK {
 		return
 	}
-	userID := auth.GetLoginIDByToken(token)
-	if userID == "" {
-		c.JSON(200, gin.H{"code": 401, "message": "token无效或已过期", "success": false})
-		c.Abort()
-		return
-	}
-	ws.GlobalHub.HandleWebSocket(c.Writer, c.Request, userID, enums.LoginTypeBusiness)
+	ws.GlobalHub.HandleWebSocket(c.Writer, c.Request, result.UserID, result.UserType)
 }
 
 func clientWSHandler(c *gin.Context) {
-	token := c.Query("token")
-	if token == "" {
-		c.JSON(200, gin.H{"code": 401, "message": "缺少token", "success": false})
-		c.Abort()
+	result := ws.AuthenticateFromToken(c, enums.LoginTypeConsumer)
+	if !result.OK {
 		return
 	}
-	userID := auth.Consumer.GetLoginIDByToken(token)
-	if userID == "" {
-		c.JSON(200, gin.H{"code": 401, "message": "token无效或已过期", "success": false})
-		c.Abort()
-		return
-	}
-	ws.GlobalHub.HandleWebSocket(c.Writer, c.Request, userID, enums.LoginTypeConsumer)
+	ws.GlobalHub.HandleWebSocket(c.Writer, c.Request, result.UserID, result.UserType)
 }

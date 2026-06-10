@@ -161,7 +161,7 @@ func enrichNames(vos []*UserVO) {
 	}
 }
 
-func UserPage(c *gin.Context, p *UserPageParam) gin.H {
+func UserPage(c *gin.Context, p *UserPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -200,7 +200,7 @@ func UserPage(c *gin.Context, p *UserPageParam) gin.H {
 	for _, v := range vos {
 		v.RoleIDs = rm[v.ID]
 	}
-	return result.PageDataResult(c, vos, total, p.Current, p.Size)
+	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
 func UserCreate(c *gin.Context, v *UserVO, uid string) {

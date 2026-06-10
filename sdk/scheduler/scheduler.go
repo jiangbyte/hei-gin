@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"hei-gin/sdk/plugin"
 	"log"
 	"time"
 
@@ -101,3 +102,16 @@ func (s *Scheduler) Stop() {
 	<-ctx.Done()
 	log.Printf("[Scheduler] Stopped")
 }
+
+
+// ---- plugin registration ----
+
+type schedulerPlugin struct{ plugin.NoopPlugin }
+
+func (m *schedulerPlugin) Name() string { return "scheduler" }
+
+func (m *schedulerPlugin) Start() error { Start(); return nil }
+
+func (m *schedulerPlugin) Stop() error { Stop(); return nil }
+
+func init() { plugin.Register(&schedulerPlugin{}) }

@@ -17,10 +17,10 @@ func RegisterRoutes(r *gin.Engine) {
 func GetCaptcha(c *gin.Context) {
 	captchaResult, err := captcha.BCaptcha.GetCaptcha()
 	if err != nil {
-		c.JSON(200, result.Failure(c, "验证码生成失败", 500, nil))
+		result.Failure(c, "验证码生成失败", 500)
 		return
 	}
-	c.JSON(200, result.Success(c, captchaResult))
+	result.Success(c, captchaResult)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

@@ -4,7 +4,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	role "hei-gin/plugins/plugin-sys/role"
@@ -87,122 +87,121 @@ func RegisterRoutes(r *gin.Engine) {
 func rolePage(c *gin.Context) {
 	var param role.RolePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := role.RolePage(c, &param)
-	c.JSON(200, data)
+	role.RolePage(c, &param)
 }
 
 // roleCreate handles POST /api/v1/sys/role/create
 func roleCreate(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	if vo.Code == "" || vo.Name == "" || vo.Category == "" {
-		c.JSON(200, result.Failure(c, "角色编码、名称、类别不能为空", 400, nil))
+		result.Failure(c, "角色编码、名称、类别不能为空", 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	role.RoleCreate(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // roleModify handles POST /api/v1/sys/role/modify
 func roleModify(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	if vo.ID == "" {
-		c.JSON(200, result.Failure(c, "ID不能为空", 400, nil))
+		result.Failure(c, "ID不能为空", 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	role.RoleModify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // roleRemove handles POST /api/v1/sys/role/remove
 func roleRemove(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	role.RoleRemove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // roleDetail handles GET /api/v1/sys/role/detail
 func roleDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
 
 	vo := role.RoleDetail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 // roleGrantPermission handles POST /api/v1/sys/role/grant-permission
 func roleGrantPermission(c *gin.Context) {
 	var param role.GrantPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	userID := auth.GetLoginIDDefaultNull(c)
 	role.RoleGrantPermissions(c, param.RoleID, param.Permissions, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // roleGrantResource handles POST /api/v1/sys/role/grant-resource
 func roleGrantResource(c *gin.Context) {
 	var param role.GrantResourceParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	role.RoleGrantResources(c, param.RoleID, param.ResourceIDs, param.Permissions)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // roleOwnPermission handles GET /api/v1/sys/role/own-permission
 func roleOwnPermission(c *gin.Context) {
 	roleID := c.Query("role_id")
 	codes := role.RoleOwnPermissionCodes(c, roleID)
-	c.JSON(200, result.Success(c, codes))
+	result.Success(c, codes)
 }
 
 // roleOwnPermissionDetail handles GET /api/v1/sys/role/own-permission-detail
 func roleOwnPermissionDetail(c *gin.Context) {
 	roleID := c.Query("role_id")
 	details := role.RoleOwnPermissionDetails(c, roleID)
-	c.JSON(200, result.Success(c, details))
+	result.Success(c, details)
 }
 
 // roleOwnResource handles GET /api/v1/sys/role/own-resource
 func roleOwnResource(c *gin.Context) {
 	roleID := c.Query("role_id")
 	ids := role.RoleOwnResourceIDs(c, roleID)
-	c.JSON(200, result.Success(c, ids))
+	result.Success(c, ids)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

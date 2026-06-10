@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/middleware"
 
 	"github.com/gorilla/websocket"
 )
@@ -58,12 +59,12 @@ func NewHub() *Hub {
 // Register adds a client to the hub with IP and per-user rate limiting.
 func (h *Hub) Register(client *Client) bool {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	// Per-IP connection limit
 	ip := client.IP
 	if ip != "" {
 		if h.ipCount[ip] >= maxClientsPerIP {
+			h.mu.Unlock()
 			log.Printf("[WS] IP %s exceeded max connections (%d)", ip, maxClientsPerIP)
 			return false
 		}
@@ -75,6 +76,7 @@ func (h *Hub) Register(client *Client) bool {
 		if existing.UserID == client.UserID && existing.UserType == client.UserType {
 			userCount++
 			if userCount >= maxClientsPerUser {
+				h.mu.Unlock()
 				log.Printf("[WS] User %s/%s exceeded max connections (%d)",
 					client.UserType, client.UserID, maxClientsPerUser)
 				return false
@@ -87,12 +89,12 @@ func (h *Hub) Register(client *Client) bool {
 		h.ipCount[ip]++
 	}
 	count := len(h.clients)
+	onRegistered := h.OnClientRegistered
 	h.mu.Unlock()
 
-	if h.OnClientRegistered != nil {
-		h.OnClientRegistered(client)
+	if onRegistered != nil {
+		onRegistered(client)
 	}
-	h.mu.Lock()
 
 	log.Printf("[WS] Client connected: %s/%s from %s (online: %d)", client.UserType, client.UserID, ip, count)
 	return true
@@ -255,12 +257,14 @@ func (h *Hub) StartOnlineBroadcast() {
 			}
 		}()
 		for range ticker.C {
-			count := h.OnlineCount()
-			h.BroadcastAll(Message{
-				Type: MsgOnlineCount,
-				Payload: OnlineCountPayload{
-					Count: count,
-				},
+			middleware.GoSafe(func() {
+				count := h.OnlineCount()
+				h.BroadcastAll(Message{
+					Type: MsgOnlineCount,
+					Payload: OnlineCountPayload{
+						Count: count,
+					},
+				})
 			})
 		}
 	}()

@@ -15,7 +15,7 @@ import (
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/middleware"
-	"hei-gin/sdk/module"
+	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/registry"
 
 	_ "hei-gin/sdk/auth"
@@ -38,8 +38,8 @@ func Run() {
 	}
 
 
-	if err := module.InitAll(); err != nil {
-		log.Fatalf("[APP] Module init failed: %v", err)
+	if err := plugin.InitAll(); err != nil {
+		log.Fatalf("[APP] Plugin init failed: %v", err)
 	}
 
 	// NOTE: Use gin.New() NOT gin.Default(). gin.Default() includes gin.Recovery()
@@ -58,7 +58,7 @@ func Run() {
 
 	SetupRouters(r)
 
-	module.StartAll()
+			plugin.StartAll()
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
 	srv := &http.Server{
@@ -85,7 +85,7 @@ func Run() {
 		log.Fatalf("[APP] Server forced to shutdown: %v", err)
 	}
 
-	module.StopAll()
+	plugin.StopAll()
 
 	db.Close()
 	db.CloseRedis()

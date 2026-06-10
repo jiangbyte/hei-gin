@@ -60,8 +60,8 @@ func getParentIDKey(parentID *string) string {
 	return *parentID
 }
 
-func Page(c *gin.Context, param *OrgPageParam) gin.H {
-	return crud.Page(c, &SysOrg{}, param, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, param *OrgPageParam) {
+	crud.Page(c, &SysOrg{}, param, func(q *gorm.DB) *gorm.DB {
 		if param.ParentID != "" {
 			if param.ParentID == "0" {
 				q = q.Where("(parent_id IS NULL OR parent_id = '' OR id = ?)", param.ParentID)

@@ -4,7 +4,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
 	config "hei-gin/plugins/plugin-sys/config"
@@ -65,85 +65,84 @@ func RegisterRoutes(r *gin.Engine) {
 func pageHandler(c *gin.Context) {
 	var param config.ConfigPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	data := config.Page(c, &param)
-	c.JSON(200, data)
+	config.Page(c, &param)
 }
 
 func listByCategoryHandler(c *gin.Context) {
 	var param config.ConfigListParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	vos := config.ListByCategory(c, param.Category)
-	c.JSON(200, result.Success(c, vos))
+	result.Success(c, vos)
 }
 
 func createHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	config.Create(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func modifyHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	config.Modify(c, &vo, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func deleteHandler(c *gin.Context) {
-	var param pojo.IdsParam
+	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	config.Remove(c, param.IDs)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := config.Detail(c, id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func editBatchHandler(c *gin.Context) {
 	var param config.ConfigBatchEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	config.EditBatch(c, &param, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func editByCategoryHandler(c *gin.Context) {
 	var param config.ConfigCategoryEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 	userID := auth.GetLoginIDDefaultNull(c)
 	config.EditByCategory(c, &param, userID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
 )
 
 
@@ -87,7 +87,7 @@ func toResourceVO(r *SysResource) *ResourceVO {
 		ComponentPath: r.ComponentPath, RedirectPath: r.RedirectPath, Icon: r.Icon,
 		Color: r.Color, IsVisible: r.IsVisible, IsCache: r.IsCache, IsAffix: r.IsAffix,
 		IsBreadcrumb: r.IsBreadcrumb, ExternalURL: r.ExternalURL, Extra: r.Extra,
-		Status: r.Status, SortCode: r.SortCode, CreatedAt: pojo.FormatDateTimePtr(r.CreatedAt), CreatedBy: r.CreatedBy,
-		UpdatedAt: pojo.FormatDateTimePtr(r.UpdatedAt), UpdatedBy: r.UpdatedBy,
+		Status: r.Status, SortCode: r.SortCode, CreatedAt: utils.FormatDateTimePtr(r.CreatedAt), CreatedBy: r.CreatedBy,
+		UpdatedAt: utils.FormatDateTimePtr(r.UpdatedAt), UpdatedBy: r.UpdatedBy,
 	}
 }

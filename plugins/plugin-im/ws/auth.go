@@ -1,0 +1,47 @@
+package ws
+
+import (
+	"github.com/gin-gonic/gin"
+
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
+	"hei-gin/sdk/result"
+)
+
+// AuthResult holds the result of WebSocket authentication.
+type AuthResult struct {
+	UserID   string
+	UserType enums.LoginTypeEnum
+	OK       bool
+}
+
+// AuthenticateFromToken extracts the user from a query-param token.
+// This is the unified auth helper for all WebSocket endpoints.
+// Returns an AuthResult; if !OK, an error response has already been written.
+func AuthenticateFromToken(c *gin.Context, loginType enums.LoginTypeEnum) AuthResult {
+	token := c.Query("token")
+	if token == "" {
+		result.Wrap(c).Fail("缺少token", 401)
+		c.Abort()
+		return AuthResult{OK: false}
+	}
+
+	var userID string
+	if loginType == enums.LoginTypeConsumer {
+		userID = auth.Consumer.GetLoginIDByToken(token)
+	} else {
+		userID = auth.GetLoginIDByToken(token)
+	}
+
+	if userID == "" {
+		result.Wrap(c).Fail("token无效或已过期", 401)
+		c.Abort()
+		return AuthResult{OK: false}
+	}
+
+	return AuthResult{
+		UserID:   userID,
+		UserType: loginType,
+		OK:       true,
+	}
+}

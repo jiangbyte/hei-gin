@@ -24,8 +24,8 @@ func parseTime(s *string) *time.Time {
 	return &t
 }
 
-func Page(c *gin.Context, param *NoticePageParam) gin.H {
-	return crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, param *NoticePageParam) {
+	crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
 		if param.Keyword != "" {
 			q = q.Where("title LIKE ?", "%"+param.Keyword+"%")
 		}
@@ -231,8 +231,8 @@ func entToVO(entity *SysNotice) *NoticeVO {
 	return vo
 }
 
-func PublicPage(c *gin.Context, param *NoticePageParam) gin.H {
-	return crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
+func PublicPage(c *gin.Context, param *NoticePageParam) {
+	crud.Page(c, &SysNotice{}, param, func(q *gorm.DB) *gorm.DB {
 		q = q.Where("status = ?", "ENABLED")
 		if param.Keyword != "" {
 			q = q.Where("title LIKE ?", "%"+param.Keyword+"%")

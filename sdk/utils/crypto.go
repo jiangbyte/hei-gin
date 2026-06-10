@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/config"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -244,3 +246,17 @@ func bigIntTo32Bytes(n *big.Int) []byte {
 	copy(padded[32-len(b):], b)
 	return padded
 }
+
+
+// ---- plugin registration ----
+
+type utilsPlugin struct{ plugin.NoopPlugin }
+
+func (m *utilsPlugin) Name() string { return "utils" }
+
+func (m *utilsPlugin) Init() error {
+	Init(config.C.SM2.PrivateKey, config.C.SM2.PublicKey)
+	return nil
+}
+
+func init() { plugin.Register(&utilsPlugin{}) }

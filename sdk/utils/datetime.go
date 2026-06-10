@@ -1,4 +1,4 @@
-package pojo
+package utils
 
 import "time"
 

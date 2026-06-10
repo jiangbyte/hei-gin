@@ -13,10 +13,9 @@ import (
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/pojo"
 )
 
-func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
+func ModulePage(c *gin.Context, param *ModulePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
@@ -27,7 +26,7 @@ func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
 
 	var records []SysModule
 	db.DB.WithContext(ctx).Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return result.PageDataResult(c, records, total, param.Current, param.Size)
+	result.PageDataResult(c, records, total, param.Current, param.Size)
 }
 
 func ModuleDetail(c *gin.Context, id string) *SysModule {
@@ -73,7 +72,7 @@ func ModuleRemove(c *gin.Context, ids []string) {
 	if err := db.DB.Where("id IN ?", ids).Delete(&SysModule{}).Error; err != nil { panic(exception.NewBusinessError("删除模块失败: "+err.Error(), 500)) }
 }
 
-func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
+func ResourcePage(c *gin.Context, param *ResourcePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
@@ -84,7 +83,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
 
 	var records []SysResource
 	db.DB.WithContext(ctx).Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return result.PageDataResult(c, records, total, param.Current, param.Size)
+	result.PageDataResult(c, records, total, param.Current, param.Size)
 }
 
 func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
@@ -127,9 +126,9 @@ func resToNode(r *SysResource) map[string]interface{} {
 	if r.ParentID != nil { n["parent_id"] = *r.ParentID } else { n["parent_id"] = nil }
 	if r.Description != nil { n["description"] = *r.Description }
 	if r.Extra != nil { n["extra"] = *r.Extra }
-	if r.CreatedAt != nil { n["created_at"] = pojo.FormatDateTime(*r.CreatedAt) }
+	if r.CreatedAt != nil { n["created_at"] = utils.FormatDateTime(*r.CreatedAt) }
 	if r.CreatedBy != nil { n["created_by"] = *r.CreatedBy }
-	if r.UpdatedAt != nil { n["updated_at"] = pojo.FormatDateTime(*r.UpdatedAt) }
+	if r.UpdatedAt != nil { n["updated_at"] = utils.FormatDateTime(*r.UpdatedAt) }
 	if r.UpdatedBy != nil { n["updated_by"] = *r.UpdatedBy }
 	return n
 }

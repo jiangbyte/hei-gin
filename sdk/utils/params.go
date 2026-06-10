@@ -1,4 +1,4 @@
-package pojo
+package utils
 
 type IdParam struct {
 	ID string `json:"id"`

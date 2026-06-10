@@ -86,7 +86,7 @@ func newHashReader(reader io.Reader) *hashReader {
 
 // ===== CRUD =====
 
-func Page(c *gin.Context, param *FilePageParam) gin.H {
+func Page(c *gin.Context, param *FilePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -120,7 +120,7 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 	for i := range records {
 		vos[i] = records[i].ToVO()
 	}
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
 func Detail(c *gin.Context, id string) *FileVO {

@@ -1,15 +1,10 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 
-	"gorm.io/gorm"
-
 	"hei-gin/api"
-	"hei-gin/sdk/constants"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 )
 
@@ -125,8 +120,3 @@ func safeStrPtr(s *string) string {
 	return *s
 }
 
-var _ = &gorm.DB{}
-var _ = context.Background
-var _ = db.Redis
-var _ = constants.SUPER_ADMIN_CODE
-var _ = enums.DataScopeAll

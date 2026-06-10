@@ -36,12 +36,12 @@ func RegisterClientRoutes(r *gin.Engine) {
 func sendHandler(c *gin.Context) {
 	var p broadcast.SendBroadcastParam
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID := auth.GetLoginID(c)
 	broadcast.Send(userID, &p)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func listHandler(c *gin.Context) {
@@ -53,19 +53,19 @@ func listHandler(c *gin.Context) {
 		}
 	}
 	list, hasMore := broadcast.List(cursor, size)
-	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
+	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
 func unreadListHandler(c *gin.Context) {
 	userID := auth.GetLoginID(c)
 	list, _ := broadcast.UnreadList(userID, "BUSINESS")
-	c.JSON(200, result.Success(c, list))
+	result.Success(c, list)
 }
 
 func clientUnreadListHandler(c *gin.Context) {
 	userID := auth.Consumer.GetLoginID(c)
 	list, _ := broadcast.UnreadList(userID, "CONSUMER")
-	c.JSON(200, result.Success(c, list))
+	result.Success(c, list)
 }
 
 func readHandler(c *gin.Context) {
@@ -73,12 +73,12 @@ func readHandler(c *gin.Context) {
 		BroadcastID string `json:"broadcast_id"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID := auth.GetLoginID(c)
 	broadcast.MarkRead(userID, "BUSINESS", p.BroadcastID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func clientReadHandler(c *gin.Context) {
@@ -86,22 +86,22 @@ func clientReadHandler(c *gin.Context) {
 		BroadcastID string `json:"broadcast_id"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		result.Failure(c, "参数错误", 400)
 		return
 	}
 	userID := auth.Consumer.GetLoginID(c)
 	broadcast.MarkRead(userID, "CONSUMER", p.BroadcastID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := broadcast.Detail(id)
 	if vo == nil {
-		c.JSON(200, result.Success(c, nil))
+		result.Success(c, nil)
 		return
 	}
-	c.JSON(200, result.Success(c, vo))
+	result.Success(c, vo)
 }
 
 func init() {

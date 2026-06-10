@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Page(c *gin.Context, param *PositionPageParam) gin.H {
-	return crud.Page(c, &SysPosition{}, param, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, param *PositionPageParam) {
+	crud.Page(c, &SysPosition{}, param, func(q *gorm.DB) *gorm.DB {
 		if param.Keyword != "" {
 			q = q.Where("name LIKE ?", "%"+param.Keyword+"%")
 		}

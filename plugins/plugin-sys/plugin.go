@@ -7,19 +7,19 @@ import (
 	"hei-gin/api"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/module"
+	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-sys/provider"
 )
 
 type SysPlugin struct {
-	module.NoopModule
+	plugin.NoopPlugin
 	permProvider *provider.PermissionProvider
 	userProvider *provider.UserProvider
 }
 
-func (p *SysPlugin) Info() api.PluginInfo {
-	return api.PluginInfo{
+func (p *SysPlugin) Info() plugin.PluginInfo {
+	return plugin.PluginInfo{
 		Name:        "plugin-sys",
 		Version:     "1.0.0",
 		Description: "System management plugin (user, role, org, permission, etc.)",
@@ -36,7 +36,7 @@ func (p *SysPlugin) Init() error {
 
 	var persister api.LogPersistenceAPI = &logPersister{}
 
-	log.LogPersistence = func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{}) {
+	log.RegisterPersistence(func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{}) {
 		opTimeStr := ""
 		if t, ok := opTime.(time.Time); ok {
 			opTimeStr = t.Format("2006-01-02 15:04:05")
@@ -65,11 +65,11 @@ func (p *SysPlugin) Init() error {
 		if err := persister.SaveLog(entry); err != nil {
 			stdlog.Printf("[SYSLOG] Failed to persist log: %v", err)
 		}
-	}
+	})
 	stdlog.Println("[plugin-sys] initialized")
 	return nil
 }
 
 func init() {
-	module.Register(&SysPlugin{})
+	plugin.Register(&SysPlugin{})
 }

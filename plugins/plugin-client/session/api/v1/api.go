@@ -50,31 +50,30 @@ func RegisterRoutes(r *gin.Engine) {
 // analysisHandler handles GET /api/v1/client/session/analysis
 func analysisHandler(c *gin.Context) {
 	data := clientsession.Analysis(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // pageHandler handles GET /api/v1/client/session/page
 func pageHandler(c *gin.Context) {
 	var param clientsession.SessionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := clientsession.Page(c, &param)
-	c.JSON(200, data)
+	clientsession.Page(c, &param)
 }
 
 // exitHandler handles POST /api/v1/client/session/exit
 func exitHandler(c *gin.Context) {
 	var param clientsession.SessionExitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	clientsession.Exit(c, param.UserID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // tokensHandler handles GET /api/v1/client/session/tokens
@@ -83,30 +82,30 @@ func tokensHandler(c *gin.Context) {
 		UserID string `form:"user_id"`
 	}
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	data := clientsession.TokenList(c, param.UserID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // exitTokenHandler handles POST /api/v1/client/session/exit-token
 func exitTokenHandler(c *gin.Context) {
 	var param clientsession.SessionExitTokenParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	clientsession.ExitToken(c, param.UserID, param.Token)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // chartDataHandler handles GET /api/v1/client/session/chart-data
 func chartDataHandler(c *gin.Context) {
 	data := clientsession.ChartData(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

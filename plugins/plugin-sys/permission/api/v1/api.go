@@ -19,14 +19,14 @@ func RegisterRoutes(r *gin.Engine) {
 // permListModules handles GET /api/v1/sys/permission/modules
 func permListModules(c *gin.Context) {
 	modules := permission.ListModules(c)
-	c.JSON(200, result.Success(c, modules))
+	result.Success(c, modules)
 }
 
 // permByModule handles GET /api/v1/sys/permission/by-module
 func permByModule(c *gin.Context) {
 	module := c.Query("module")
 	perms := permission.ListByModule(c, module)
-	c.JSON(200, result.Success(c, perms))
+	result.Success(c, perms)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

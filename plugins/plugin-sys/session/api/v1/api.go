@@ -50,31 +50,30 @@ func RegisterRoutes(r *gin.Engine) {
 // sessionAnalysis handles GET /api/v1/sys/session/analysis
 func sessionAnalysis(c *gin.Context) {
 	data := session.Analysis(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // sessionPage handles GET /api/v1/sys/session/page
 func sessionPage(c *gin.Context) {
 	var param session.SessionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := session.Page(c, &param)
-	c.JSON(200, data)
+	session.Page(c, &param)
 }
 
 // sessionExit handles POST /api/v1/sys/session/exit
 func sessionExit(c *gin.Context) {
 	var param session.SessionExitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	session.Exit(c, param.UserID)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // sessionTokens handles GET /api/v1/sys/session/tokens
@@ -83,30 +82,30 @@ func sessionTokens(c *gin.Context) {
 		UserID string `form:"user_id"`
 	}
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	data := session.TokenList(c, param.UserID)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 
 // sessionExitToken handles POST /api/v1/sys/session/exit-token
 func sessionExitToken(c *gin.Context) {
 	var param session.SessionExitTokenParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
 	session.ExitToken(c, param.UserID, param.Token)
-	c.JSON(200, result.Success(c, nil))
+	result.Success(c, nil)
 }
 
 // sessionChartData handles GET /api/v1/sys/session/chart-data
 func sessionChartData(c *gin.Context) {
 	data := session.ChartData(c)
-	c.JSON(200, result.Success(c, data))
+	result.Success(c, data)
 }
 func init() {
 	registry.RegisterRoute(RegisterRoutes)

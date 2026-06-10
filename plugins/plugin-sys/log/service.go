@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Page(c *gin.Context, param *LogPageParam) gin.H {
+func Page(c *gin.Context, param *LogPageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
@@ -32,7 +32,7 @@ func Page(c *gin.Context, param *LogPageParam) gin.H {
 
 	vos := make([]*LogVO, len(records))
 	for i, r := range records { vos[i] = entToVO(&r) }
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
 func LoginBarChart(c *gin.Context) *BarChartData {

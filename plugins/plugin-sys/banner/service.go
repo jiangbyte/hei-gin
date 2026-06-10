@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Page(c *gin.Context, param *BannerPageParam) gin.H {
-	return crud.Page(c, &SysBanner{}, param, nil, "created_at DESC", func(e *SysBanner) any { return toVO(e) })
+func Page(c *gin.Context, param *BannerPageParam) {
+	crud.Page(c, &SysBanner{}, param, nil, "created_at DESC", func(e *SysBanner) any { return toVO(e) })
 }
 
 func Detail(c *gin.Context, id string) *BannerVO {

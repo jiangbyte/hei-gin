@@ -13,6 +13,17 @@ import (
 
 type LogPersistenceFunc func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{})
 
+// LogPersistenceFuncs is the list of registered log persistence handlers.
+// Multiple plugins can register via RegisterPersistence to chain log backends.
+var LogPersistenceFuncs []LogPersistenceFunc
+
+// RegisterPersistence registers a log persistence handler.
+// Unlike the old single-function approach, this supports multiple backends.
+func RegisterPersistence(fn LogPersistenceFunc) {
+	LogPersistenceFuncs = append(LogPersistenceFuncs, fn)
+}
+
+// Deprecated: use RegisterPersistence instead.
 var LogPersistence LogPersistenceFunc
 
 func SysLog(name string) gin.HandlerFunc {
@@ -90,7 +101,11 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 
 	if LogPersistence != nil {
 		LogPersistence(nil, category, name, exeStatus, exeMsg, opIP, cityInfo, browser, osName, opUser, traceID, signData, c.Request.Method, c.Request.URL.String(), params, now)
-	} else {
-		log.Printf("[SYSLOG] LogPersistence not set, skipping log")
+	}
+	for _, fn := range LogPersistenceFuncs {
+		fn(nil, category, name, exeStatus, exeMsg, opIP, cityInfo, browser, osName, opUser, traceID, signData, c.Request.Method, c.Request.URL.String(), params, now)
+	}
+	if LogPersistence == nil && len(LogPersistenceFuncs) == 0 {
+		log.Printf("[SYSLOG] No LogPersistence registered, skipping log")
 	}
 }

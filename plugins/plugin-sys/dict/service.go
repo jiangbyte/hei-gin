@@ -20,8 +20,8 @@ import (
 
 
 // Page handles GET /api/v1/sys/dict/page
-func Page(c *gin.Context, p *DictPageParam) gin.H {
-	return crud.Page(c, &SysDict{}, p, func(q *gorm.DB) *gorm.DB {
+func Page(c *gin.Context, p *DictPageParam) {
+	crud.Page(c, &SysDict{}, p, func(q *gorm.DB) *gorm.DB {
 		if p.Keyword != "" {
 			like := "%" + p.Keyword + "%"
 			q = q.Where("code LIKE ? OR label LIKE ? OR value LIKE ?", like, like, like)
