@@ -18,40 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func orgToVOMap(entity *SysOrg) map[string]interface{} {
-	node := map[string]interface{}{
-		"id":        entity.ID,
-		"code":      entity.Code,
-		"name":      entity.Name,
-		"category":  entity.Category,
-		"status":    entity.Status,
-		"sort_code": entity.SortCode,
-		"children":  make([]map[string]interface{}, 0),
-	}
-	if entity.ParentID != nil {
-		node["parent_id"] = *entity.ParentID
-	}
-	if entity.Description != nil {
-		node["description"] = *entity.Description
-	}
-	if entity.Extra != nil {
-		node["extra"] = *entity.Extra
-	}
-	if entity.CreatedAt != nil {
-		node["created_at"] = entity.CreatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.CreatedBy != nil {
-		node["created_by"] = *entity.CreatedBy
-	}
-	if entity.UpdatedAt != nil {
-		node["updated_at"] = entity.UpdatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.UpdatedBy != nil {
-		node["updated_by"] = *entity.UpdatedBy
-	}
-	return node
-}
-
 func sortTreeNodes(nodes []map[string]interface{}) {
 	sort.Slice(nodes, func(i, j int) bool {
 		si, _ := nodes[i]["sort_code"].(int)
@@ -63,13 +29,6 @@ func sortTreeNodes(nodes []map[string]interface{}) {
 			sortTreeNodes(children)
 		}
 	}
-}
-
-func getParentIDKey(parentID *string) string {
-	if parentID == nil || *parentID == "" || *parentID == "0" {
-		return ""
-	}
-	return *parentID
 }
 
 func OrgPage(c *gin.Context, p *OrgPageParam) {
@@ -109,15 +68,15 @@ func OrgPage(c *gin.Context, p *OrgPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func OrgTree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
+func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
-	query := db.DB.WithContext(ctx).Model(&SysOrg{}).Order("sort_code ASC")
-	if param.Category != "" {
-		query = query.Where("category = ?", param.Category)
+	q := db.DB.WithContext(ctx).Model(&SysOrg{}).Order("sort_code ASC")
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
 	}
 
 	var all []SysOrg
-	query.Find(&all)
+	q.Find(&all)
 
 	if len(all) == 0 {
 		return make([]map[string]interface{}, 0)
@@ -126,13 +85,46 @@ func OrgTree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
 	nodeMap := make(map[string]map[string]interface{}, len(all))
 	for _, e := range all {
 		entry := e
-		nodeMap[entry.ID] = orgToVOMap(&entry)
+		node := map[string]interface{}{
+			"id":        entry.ID,
+			"code":      entry.Code,
+			"name":      entry.Name,
+			"category":  entry.Category,
+			"status":    entry.Status,
+			"sort_code": entry.SortCode,
+			"children":  make([]map[string]interface{}, 0),
+		}
+		if entry.ParentID != nil {
+			node["parent_id"] = *entry.ParentID
+		}
+		if entry.Description != nil {
+			node["description"] = *entry.Description
+		}
+		if entry.Extra != nil {
+			node["extra"] = *entry.Extra
+		}
+		if entry.CreatedAt != nil {
+			node["created_at"] = utils.FormatDateTimePtr(entry.CreatedAt)
+		}
+		if entry.CreatedBy != nil {
+			node["created_by"] = *entry.CreatedBy
+		}
+		if entry.UpdatedAt != nil {
+			node["updated_at"] = utils.FormatDateTimePtr(entry.UpdatedAt)
+		}
+		if entry.UpdatedBy != nil {
+			node["updated_by"] = *entry.UpdatedBy
+		}
+		nodeMap[entry.ID] = node
 	}
 
 	roots := make([]map[string]interface{}, 0)
 	for _, e := range all {
 		node := nodeMap[e.ID]
-		pid := getParentIDKey(e.ParentID)
+		pid := ""
+		if e.ParentID != nil && *e.ParentID != "" && *e.ParentID != "0" {
+			pid = *e.ParentID
+		}
 		if pid == "" {
 			roots = append(roots, node)
 		} else {

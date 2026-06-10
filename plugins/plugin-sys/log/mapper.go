@@ -2,7 +2,7 @@ package log
 
 import "hei-gin/sdk/utils"
 
-// SysLogToLogVO maps SysLog -> LogVO
+// SysLogToLogVO 将 log.SysLog 映射到 log.LogVO
 func SysLogToLogVO(src *SysLog) *LogVO {
 	if src == nil {
 		return nil
@@ -11,26 +11,27 @@ func SysLogToLogVO(src *SysLog) *LogVO {
 	dst := &LogVO{}
 
 	dst.ID = src.ID
-	dst.Category = utils.PtrStrToStr(src.Category)
-	dst.Name = utils.PtrStrToStr(src.Name)
-	dst.ExeStatus = utils.PtrStrToStr(src.ExeStatus)
-	dst.ExeMessage = utils.PtrStrToStr(src.ExeMessage)
-	dst.OpIP = utils.PtrStrToStr(src.OpIP)
-	dst.OpAddress = utils.PtrStrToStr(src.OpAddress)
-	dst.OpBrowser = utils.PtrStrToStr(src.OpBrowser)
-	dst.OpOs = utils.PtrStrToStr(src.OpOs)
-	dst.ClassName = utils.PtrStrToStr(src.ClassName)
-	dst.MethodName = utils.PtrStrToStr(src.MethodName)
-	dst.ReqMethod = utils.PtrStrToStr(src.ReqMethod)
-	dst.ReqURL = utils.PtrStrToStr(src.ReqURL)
-	dst.ParamJSON = utils.PtrStrToStr(src.ParamJSON)
-	dst.ResultJSON = utils.PtrStrToStr(src.ResultJSON)
-	dst.TraceID = utils.PtrStrToStr(src.TraceID)
-	dst.OpUser = utils.PtrStrToStr(src.OpUser)
-	dst.SignData = utils.PtrStrToStr(src.SignData)
-	dst.CreatedBy = utils.PtrStrToStr(src.CreatedBy)
-	dst.UpdatedBy = utils.PtrStrToStr(src.UpdatedBy)
+	dst.Category = src.Category
+	dst.Name = src.Name
+	dst.ExeStatus = src.ExeStatus
+	dst.ExeMessage = src.ExeMessage
+	dst.OpIP = src.OpIP
+	dst.OpAddress = src.OpAddress
+	dst.OpBrowser = src.OpBrowser
+	dst.OpOs = src.OpOs
+	dst.ClassName = src.ClassName
+	dst.MethodName = src.MethodName
+	dst.ReqMethod = src.ReqMethod
+	dst.ReqURL = src.ReqURL
+	dst.ParamJSON = src.ParamJSON
+	dst.ResultJSON = src.ResultJSON
+	dst.TraceID = src.TraceID
+	dst.OpUser = src.OpUser
+	dst.SignData = src.SignData
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
 
+	// *time.Time → string manual conversion
 	dst.OpTime = utils.FormatDateTimePtr(src.OpTime)
 	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
 	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
@@ -38,7 +39,7 @@ func SysLogToLogVO(src *SysLog) *LogVO {
 	return dst
 }
 
-// LogVOToSysLog maps LogVO -> SysLog
+// LogVOToSysLog 将 log.LogVO 映射到 log.SysLog
 func LogVOToSysLog(src *LogVO) *SysLog {
 	if src == nil {
 		return nil
@@ -47,26 +48,27 @@ func LogVOToSysLog(src *LogVO) *SysLog {
 	dst := &SysLog{}
 
 	dst.ID = src.ID
-	dst.Category = utils.StrToStrPtr(src.Category)
-	dst.Name = utils.StrToStrPtr(src.Name)
-	dst.ExeStatus = utils.StrToStrPtr(src.ExeStatus)
-	dst.ExeMessage = utils.StrToStrPtr(src.ExeMessage)
-	dst.OpIP = utils.StrToStrPtr(src.OpIP)
-	dst.OpAddress = utils.StrToStrPtr(src.OpAddress)
-	dst.OpBrowser = utils.StrToStrPtr(src.OpBrowser)
-	dst.OpOs = utils.StrToStrPtr(src.OpOs)
-	dst.ClassName = utils.StrToStrPtr(src.ClassName)
-	dst.MethodName = utils.StrToStrPtr(src.MethodName)
-	dst.ReqMethod = utils.StrToStrPtr(src.ReqMethod)
-	dst.ReqURL = utils.StrToStrPtr(src.ReqURL)
-	dst.ParamJSON = utils.StrToStrPtr(src.ParamJSON)
-	dst.ResultJSON = utils.StrToStrPtr(src.ResultJSON)
-	dst.TraceID = utils.StrToStrPtr(src.TraceID)
-	dst.OpUser = utils.StrToStrPtr(src.OpUser)
-	dst.SignData = utils.StrToStrPtr(src.SignData)
-	dst.CreatedBy = utils.StrToStrPtr(src.CreatedBy)
-	dst.UpdatedBy = utils.StrToStrPtr(src.UpdatedBy)
+	dst.Category = src.Category
+	dst.Name = src.Name
+	dst.ExeStatus = src.ExeStatus
+	dst.ExeMessage = src.ExeMessage
+	dst.OpIP = src.OpIP
+	dst.OpAddress = src.OpAddress
+	dst.OpBrowser = src.OpBrowser
+	dst.OpOs = src.OpOs
+	dst.ClassName = src.ClassName
+	dst.MethodName = src.MethodName
+	dst.ReqMethod = src.ReqMethod
+	dst.ReqURL = src.ReqURL
+	dst.ParamJSON = src.ParamJSON
+	dst.ResultJSON = src.ResultJSON
+	dst.TraceID = src.TraceID
+	dst.OpUser = src.OpUser
+	dst.SignData = src.SignData
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
 
+	// string → *time.Time manual conversion
 	dst.OpTime = utils.ParseDateTimePtr(&src.OpTime)
 	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
 	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
