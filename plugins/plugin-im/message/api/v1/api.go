@@ -3,9 +3,7 @@ package v1
 import (
 	"strconv"
 
-	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/auth"
-	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
@@ -14,219 +12,189 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"hei-gin/sdk/registry"
+	"hei-gin/sdk/middleware"
+	authMW "hei-gin/sdk/auth/middleware"
 )
 
 func RegisterRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im").Use(authMW.HeiCheckLogin())
-	{
-		// Message
-		g.GET("/message/page", pageHandler)
-		g.GET("/message/detail", detailHandler)
-		g.GET("/message/unread-count", unreadCountHandler)
-		g.POST("/message/send", middleware.RateLimiter("sys_send", 5, 20), authMW.NoRepeat(3000), sendHandler)
-		g.POST("/message/recall", recallHandler)
-		g.POST("/message/forward", forwardHandler)
-		g.POST("/message/delete", deleteHandler)
-		g.GET("/message/search", searchHandler)
-		g.POST("/message/mark-read", markReadHandler)
-		g.POST("/message/mark-all-read", markAllReadHandler)
-		g.POST("/message/remove", removeHandler)
+	// GET /api/v1/sys/im/message/page
+	r.GET("/api/v1/sys/im/message/page",
+		authMW.HeiCheckLogin(),
+		pageHandler,
+	)
 
-		// Conversation
-		g.GET("/conversation/list", conversationsHandler)
-		g.GET("/conversation/messages", conversationMessagesHandler)
-		g.POST("/conversation/read", conversationReadHandler)
-		g.POST("/conversation/get-or-create", getOrCreateConversationHandler)
-		g.POST("/file/upload", uploadFileHandler)
-	}
+	// GET /api/v1/sys/im/message/detail
+	r.GET("/api/v1/sys/im/message/detail",
+		authMW.HeiCheckLogin(),
+		detailHandler,
+	)
+
+	// GET /api/v1/sys/im/message/unread-count
+	r.GET("/api/v1/sys/im/message/unread-count",
+		authMW.HeiCheckLogin(),
+		unreadCountHandler,
+	)
+
+	// POST /api/v1/sys/im/message/send
+	r.POST("/api/v1/sys/im/message/send",
+		authMW.HeiCheckLogin(),
+		middleware.RateLimiter("sys_send", 5, 20),
+		authMW.NoRepeat(3000),
+		sendHandler,
+	)
+
+	// POST /api/v1/sys/im/message/recall
+	r.POST("/api/v1/sys/im/message/recall",
+		authMW.HeiCheckLogin(),
+		recallHandler,
+	)
+
+	// POST /api/v1/sys/im/message/forward
+	r.POST("/api/v1/sys/im/message/forward",
+		authMW.HeiCheckLogin(),
+		forwardHandler,
+	)
+
+	// POST /api/v1/sys/im/message/delete
+	r.POST("/api/v1/sys/im/message/delete",
+		authMW.HeiCheckLogin(),
+		deleteHandler,
+	)
+
+	// GET /api/v1/sys/im/message/search
+	r.GET("/api/v1/sys/im/message/search",
+		authMW.HeiCheckLogin(),
+		searchHandler,
+	)
+
+	// POST /api/v1/sys/im/message/mark-read
+	r.POST("/api/v1/sys/im/message/mark-read",
+		authMW.HeiCheckLogin(),
+		markReadHandler,
+	)
+
+	// POST /api/v1/sys/im/message/mark-all-read
+	r.POST("/api/v1/sys/im/message/mark-all-read",
+		authMW.HeiCheckLogin(),
+		markAllReadHandler,
+	)
+
+	// POST /api/v1/sys/im/message/remove
+	r.POST("/api/v1/sys/im/message/remove",
+		authMW.HeiCheckLogin(),
+		removeHandler,
+	)
+
+	// GET /api/v1/sys/im/conversation/list
+	r.GET("/api/v1/sys/im/conversation/list",
+		authMW.HeiCheckLogin(),
+		conversationsHandler,
+	)
+
+	// GET /api/v1/sys/im/conversation/messages
+	r.GET("/api/v1/sys/im/conversation/messages",
+		authMW.HeiCheckLogin(),
+		conversationMessagesHandler,
+	)
+
+	// POST /api/v1/sys/im/conversation/read
+	r.POST("/api/v1/sys/im/conversation/read",
+		authMW.HeiCheckLogin(),
+		conversationReadHandler,
+	)
+
+	// POST /api/v1/sys/im/conversation/get-or-create
+	r.POST("/api/v1/sys/im/conversation/get-or-create",
+		authMW.HeiCheckLogin(),
+		getOrCreateConversationHandler,
+	)
+
+	// POST /api/v1/sys/im/file/upload
+	r.POST("/api/v1/sys/im/file/upload",
+		authMW.HeiCheckLogin(),
+		uploadFileHandler,
+	)
 }
 
-func pageHandler(c *gin.Context) {
-	var param message.MessagePageParam
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	message.Page(c, userID, &param)
-}
+func RegisterClientRoutes(r *gin.Engine) {
+	// POST /api/v1/c/im/message/send
+	r.POST("/api/v1/c/im/message/send",
+		authMW.HeiClientCheckLogin(),
+		middleware.RateLimiter("c_send", 5, 20),
+		clientSendHandler,
+	)
 
-func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := message.Detail(id)
-	if vo == nil {
-		result.Success(c, nil)
-		return
-	}
-	result.Success(c, vo)
-}
+	// POST /api/v1/c/im/message/recall
+	r.POST("/api/v1/c/im/message/recall",
+		authMW.HeiClientCheckLogin(),
+		clientRecallHandler,
+	)
 
-func unreadCountHandler(c *gin.Context) {
-	userID := auth.GetLoginID(c)
-	count := message.UnreadCount(userID)
-	result.Success(c, message.UnreadCountVO{Count: count})
-}
-  func sendHandler(c *gin.Context) {
-	var param message.MessageSendParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	convIDs := message.Send(c, &param, userID, string(enums.LoginTypeBusiness))
-	data := gin.H{}
-	if len(convIDs) > 0 {
-		data["conversation_id"] = convIDs[0]
-	}
-	result.Success(c, data)
-}
+	// POST /api/v1/c/im/message/forward
+	r.POST("/api/v1/c/im/message/forward",
+		authMW.HeiClientCheckLogin(),
+		clientForwardHandler,
+	)
 
-func recallHandler(c *gin.Context) {
-	var param message.RecallParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	message.Recall(userID, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
-}
+	// POST /api/v1/c/im/message/delete
+	r.POST("/api/v1/c/im/message/delete",
+		authMW.HeiClientCheckLogin(),
+		clientDeleteHandler,
+	)
 
-func forwardHandler(c *gin.Context) {
-	var param message.ForwardParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	message.Forward(c, userID, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
-}
+	// GET /api/v1/c/im/message/search
+	r.GET("/api/v1/c/im/message/search",
+		authMW.HeiClientCheckLogin(),
+		clientSearchHandler,
+	)
 
-func deleteHandler(c *gin.Context) {
-	var param struct {
-		IDs []string `json:"ids"`
-	}
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	message.Remove(userID, param.IDs)
-	result.Success(c, nil)
-}
+	// POST /api/v1/c/im/message/mark-read
+	r.POST("/api/v1/c/im/message/mark-read",
+		authMW.HeiClientCheckLogin(),
+		clientMarkReadHandler,
+	)
 
-func searchHandler(c *gin.Context) {
-	var param message.SearchParam
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	list, hasMore := message.Search(c, userID, &param)
-	result.Success(c, gin.H{"records": list, "has_more": hasMore})
-}
+	// POST /api/v1/c/im/message/mark-all-read
+	r.POST("/api/v1/c/im/message/mark-all-read",
+		authMW.HeiClientCheckLogin(),
+		clientMarkAllReadHandler,
+	)
 
-func markReadHandler(c *gin.Context) {
-	var param utils.IdParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MarkRead(param.ID)
-	result.Success(c, nil)
-}
+	// POST /api/v1/c/im/message/remove
+	r.POST("/api/v1/c/im/message/remove",
+		authMW.HeiClientCheckLogin(),
+		clientRemoveHandler,
+	)
 
-func markAllReadHandler(c *gin.Context) {
-	userID := auth.GetLoginID(c)
-	message.MarkAllRead(userID)
-	result.Success(c, nil)
-}
+	// GET /api/v1/c/im/conversation/list
+	r.GET("/api/v1/c/im/conversation/list",
+		authMW.HeiClientCheckLogin(),
+		clientConversationsHandler,
+	)
 
-func removeHandler(c *gin.Context) {
-	var param utils.IdsParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	message.Remove(userID, param.IDs)
-	result.Success(c, nil)
-}
+	// GET /api/v1/c/im/conversation/messages
+	r.GET("/api/v1/c/im/conversation/messages",
+		authMW.HeiClientCheckLogin(),
+		clientConversationMessagesHandler,
+	)
 
-func conversationsHandler(c *gin.Context) {
-	userID := auth.GetLoginID(c)
-	cursor := c.Query("cursor")
-	size := 20
-	if s := c.Query("size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n > 0 {
-			size = n
-		}
-	}
-	list, hasMore := message.Conversations(userID, string(enums.LoginTypeBusiness), cursor, size)
-	result.Success(c, gin.H{"records": list, "has_more": hasMore})
-}
+	// POST /api/v1/c/im/conversation/read
+	r.POST("/api/v1/c/im/conversation/read",
+		authMW.HeiClientCheckLogin(),
+		clientConversationReadHandler,
+	)
 
-func conversationMessagesHandler(c *gin.Context) {
-	userID := auth.GetLoginID(c)
-	cid := c.Query("conversation_id")
-	cursor := c.Query("cursor")
-	size := 20
-	if s := c.Query("size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n > 0 {
-			size = n
-		}
-	}
+	// POST /api/v1/c/im/conversation/get-or-create
+	r.POST("/api/v1/c/im/conversation/get-or-create",
+		authMW.HeiClientCheckLogin(),
+		clientGetOrCreateConversationHandler,
+	)
 
-	var messages []message.ConversationMessageVO
-	var hasMore bool
-	if len(cid) > 6 && cid[:6] == "group:" {
-		gid := cid[6:]
-		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
-		messages = make([]message.ConversationMessageVO, len(msgs))
-		for i, m := range msgs {
-			messages[i] = message.ConversationMessageVO{
-				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
-				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
-				CreatedAt: m.CreatedAt,
-			}
-		}
-		hasMore = more
-	} else {
-		messages, hasMore = message.BusinessConversationMessages(c.Request.Context(), userID, cid, cursor, size)
-	}
-	result.Success(c, gin.H{
-		"records":  messages,
-		"has_more": hasMore,
-	})
-}
-
-func conversationReadHandler(c *gin.Context) {
-	var param struct {
-		ConversationID string `json:"conversation_id"`
-	}
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
-		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], userID, string(enums.LoginTypeBusiness))
-	} else {
-		message.MarkConversationRead(userID, param.ConversationID)
-	}
-	result.Success(c, nil)
-}
-
-func getOrCreateConversationHandler(c *gin.Context) {
-	var param message.GetOrCreateConversationParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	userID := auth.GetLoginID(c)
-	cid, displayName := message.GetOrCreateConversation(userID, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName})
+	// POST /api/v1/c/im/file/upload
+	r.POST("/api/v1/c/im/file/upload",
+		authMW.HeiClientCheckLogin(),
+		clientUploadFileHandler,
+	)
 }
 
 func init() {
@@ -234,152 +202,194 @@ func init() {
 	registry.RegisterRoute(RegisterClientRoutes)
 }
 
-// ==================== Consumer (C端) Routes ====================
-
-func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im").Use(authMW.HeiClientCheckLogin())
-	{
-		g.GET("/message/page", clientPageHandler)
-		g.GET("/message/detail", clientDetailHandler)
-		g.GET("/message/unread-count", clientUnreadCountHandler)
-		g.POST("/message/send", middleware.RateLimiter("c_send", 5, 20), clientSendHandler)
-		g.POST("/message/recall", clientRecallHandler)
-		g.POST("/message/forward", clientForwardHandler)
-		g.POST("/message/delete", clientDeleteHandler)
-		g.GET("/message/search", clientSearchHandler)
-		g.POST("/message/mark-read", clientMarkReadHandler)
-		g.POST("/message/mark-all-read", clientMarkAllReadHandler)
-		g.POST("/message/remove", clientRemoveHandler)
-
-		g.GET("/conversation/list", clientConversationsHandler)
-		g.GET("/conversation/messages", clientConversationMessagesHandler)
-		g.POST("/conversation/read", clientConversationReadHandler)
-		g.POST("/conversation/get-or-create", clientGetOrCreateConversationHandler)
-		g.POST("/file/upload", clientUploadFileHandler)
-	}
-}
-
-// Client auth helpers
-func clientUserID(c *gin.Context) (string, string) {
-	return auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer)
-}
-
-func clientPageHandler(c *gin.Context) {
+// pageHandler handles GET /api/v1/sys/im/message/page
+func pageHandler(c *gin.Context) {
 	var param message.MessagePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.Consumer.GetLoginID(c)
-	message.Page(c, userID, &param)
+	message.MessagePage(c, &param)
 }
 
-func clientDetailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := message.Detail(id)
-	if vo == nil {
-		result.Success(c, nil)
+// detailHandler handles GET /api/v1/sys/im/message/detail
+func detailHandler(c *gin.Context) {
+	message.MessageDetail(c)
+}
+
+// unreadCountHandler handles GET /api/v1/sys/im/message/unread-count
+func unreadCountHandler(c *gin.Context) {
+	message.MessageUnreadCount(c)
+}
+
+// sendHandler handles POST /api/v1/sys/im/message/send
+func sendHandler(c *gin.Context) {
+	var param message.MessageSendParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	result.Success(c, vo)
+	message.MessageSend(c, &param)
+	result.Success(c, nil)
 }
 
-func clientUnreadCountHandler(c *gin.Context) {
-	userID := auth.Consumer.GetLoginID(c)
-	count := message.UnreadCount(userID)
-	result.Success(c, message.UnreadCountVO{Count: count})
-}
-
+// clientSendHandler handles POST /api/v1/c/im/message/send
 func clientSendHandler(c *gin.Context) {
 	var param message.MessageSendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID, userType := clientUserID(c)
-	convIDs := message.Send(c, &param, userID, userType)
-	data := gin.H{}
-	if len(convIDs) > 0 {
-		data["conversation_id"] = convIDs[0]
-	}
-	result.Success(c, data)
+	message.MessageSend(c, &param)
+	result.Success(c, nil)
 }
 
+// recallHandler handles POST /api/v1/sys/im/message/recall
+func recallHandler(c *gin.Context) {
+	var param message.RecallParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageRecall(c, &param)
+	result.Success(c, nil)
+}
+
+// clientRecallHandler handles POST /api/v1/c/im/message/recall
 func clientRecallHandler(c *gin.Context) {
 	var param message.RecallParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID, userType := clientUserID(c)
-	message.Recall(userID, userType, &param)
+	message.MessageRecall(c, &param)
 	result.Success(c, nil)
 }
 
+// forwardHandler handles POST /api/v1/sys/im/message/forward
+func forwardHandler(c *gin.Context) {
+	var param message.ForwardParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageForward(c, &param)
+	result.Success(c, nil)
+}
+
+// clientForwardHandler handles POST /api/v1/c/im/message/forward
 func clientForwardHandler(c *gin.Context) {
 	var param message.ForwardParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID, userType := clientUserID(c)
-	message.Forward(c, userID, userType, &param)
+	message.MessageForward(c, &param)
 	result.Success(c, nil)
 }
 
-func clientDeleteHandler(c *gin.Context) {
-	var param struct {
-		IDs []string `json:"ids"`
-	}
+// deleteHandler handles POST /api/v1/sys/im/message/delete
+func deleteHandler(c *gin.Context) {
+	var param message.DeleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.Consumer.GetLoginID(c)
-	message.Remove(userID, param.IDs)
+	message.MessageRemove(c, &param)
 	result.Success(c, nil)
 }
 
+// clientDeleteHandler handles POST /api/v1/c/im/message/delete
+func clientDeleteHandler(c *gin.Context) {
+	var param message.DeleteParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageRemove(c, &param)
+	result.Success(c, nil)
+}
+
+// searchHandler handles GET /api/v1/sys/im/message/search
+func searchHandler(c *gin.Context) {
+	var param message.SearchParam
+	if err := c.ShouldBindQuery(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	list, hasMore := message.MessageSearch(c, &param)
+	result.Success(c, gin.H{"records": list, "has_more": hasMore})
+}
+
+// clientSearchHandler handles GET /api/v1/c/im/message/search
 func clientSearchHandler(c *gin.Context) {
 	var param message.SearchParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.Consumer.GetLoginID(c)
-	list, hasMore := message.Search(c, userID, &param)
+	list, hasMore := message.MessageSearch(c, &param)
 	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
+// markReadHandler handles POST /api/v1/sys/im/message/mark-read
+func markReadHandler(c *gin.Context) {
+	var param utils.IdParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageMarkRead(c, &param)
+	result.Success(c, nil)
+}
+
+// clientMarkReadHandler handles POST /api/v1/c/im/message/mark-read
 func clientMarkReadHandler(c *gin.Context) {
 	var param utils.IdParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MarkRead(param.ID)
+	message.MessageMarkRead(c, &param)
 	result.Success(c, nil)
 }
 
+// markAllReadHandler handles POST /api/v1/sys/im/message/mark-all-read
+func markAllReadHandler(c *gin.Context) {
+	message.MessageMarkAllRead(c)
+	result.Success(c, nil)
+}
+
+// clientMarkAllReadHandler handles POST /api/v1/c/im/message/mark-all-read
 func clientMarkAllReadHandler(c *gin.Context) {
-	userID := auth.Consumer.GetLoginID(c)
-	message.MarkAllRead(userID)
+	message.MessageMarkAllRead(c)
 	result.Success(c, nil)
 }
 
-func clientRemoveHandler(c *gin.Context) {
-	var param utils.IdsParam
+// removeHandler handles POST /api/v1/sys/im/message/remove
+func removeHandler(c *gin.Context) {
+	var param message.DeleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.Consumer.GetLoginID(c)
-	message.Remove(userID, param.IDs)
+	message.MessageRemove(c, &param)
 	result.Success(c, nil)
 }
 
-func clientConversationsHandler(c *gin.Context) {
-	userID := auth.Consumer.GetLoginID(c)
+// clientRemoveHandler handles POST /api/v1/c/im/message/remove
+func clientRemoveHandler(c *gin.Context) {
+	var param message.DeleteParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageRemove(c, &param)
+	result.Success(c, nil)
+}
+
+// conversationsHandler handles GET /api/v1/sys/im/conversation/list
+func conversationsHandler(c *gin.Context) {
 	cursor := c.Query("cursor")
 	size := 20
 	if s := c.Query("size"); s != "" {
@@ -387,12 +397,25 @@ func clientConversationsHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list, hasMore := message.Conversations(userID, string(enums.LoginTypeConsumer), cursor, size)
+	list, hasMore := message.MessageConversations(c, cursor, size)
 	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
-func clientConversationMessagesHandler(c *gin.Context) {
-	userID := auth.Consumer.GetLoginID(c)
+// clientConversationsHandler handles GET /api/v1/c/im/conversation/list
+func clientConversationsHandler(c *gin.Context) {
+	cursor := c.Query("cursor")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	list, hasMore := message.MessageConversations(c, cursor, size)
+	result.Success(c, gin.H{"records": list, "has_more": hasMore})
+}
+
+// conversationMessagesHandler handles GET /api/v1/sys/im/conversation/messages
+func conversationMessagesHandler(c *gin.Context) {
 	cid := c.Query("conversation_id")
 	cursor := c.Query("cursor")
 	size := 20
@@ -417,7 +440,7 @@ func clientConversationMessagesHandler(c *gin.Context) {
 		}
 		hasMore = more
 	} else {
-		messages, hasMore = message.ConsumerConversationMessages(c.Request.Context(), userID, cid, cursor, size)
+		messages, hasMore = message.MessageConversationMessages(c, cid, cursor, size)
 	}
 	result.Success(c, gin.H{
 		"records":  messages,
@@ -425,58 +448,96 @@ func clientConversationMessagesHandler(c *gin.Context) {
 	})
 }
 
-func clientConversationReadHandler(c *gin.Context) {
-	var param struct {
-		ConversationID string `json:"conversation_id"`
+// clientConversationMessagesHandler handles GET /api/v1/c/im/conversation/messages
+func clientConversationMessagesHandler(c *gin.Context) {
+	cid := c.Query("conversation_id")
+	cursor := c.Query("cursor")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
 	}
+
+	var messages []message.ConversationMessageVO
+	var hasMore bool
+	if len(cid) > 6 && cid[:6] == "group:" {
+		gid := cid[6:]
+		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
+		messages = make([]message.ConversationMessageVO, len(msgs))
+		for i, m := range msgs {
+			messages[i] = message.ConversationMessageVO{
+				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
+				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
+				CreatedAt: m.CreatedAt,
+			}
+		}
+		hasMore = more
+	} else {
+		messages, hasMore = message.MessageConversationMessages(c, cid, cursor, size)
+	}
+	result.Success(c, gin.H{
+		"records":  messages,
+		"has_more": hasMore,
+	})
+}
+
+// conversationReadHandler handles POST /api/v1/sys/im/conversation/read
+func conversationReadHandler(c *gin.Context) {
+	var param message.ConversationReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID := auth.Consumer.GetLoginID(c)
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
-		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], userID, string(enums.LoginTypeConsumer))
+		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.GetLoginID(c), string(enums.LoginTypeBusiness))
 	} else {
-		message.MarkConversationRead(userID, param.ConversationID)
+		message.MessageMarkConversationRead(c)
 	}
 	result.Success(c, nil)
 }
 
+// clientConversationReadHandler handles POST /api/v1/c/im/conversation/read
+func clientConversationReadHandler(c *gin.Context) {
+	var param message.ConversationReadParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
+		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
+	} else {
+		message.MessageMarkConversationRead(c)
+	}
+	result.Success(c, nil)
+}
+
+// getOrCreateConversationHandler handles POST /api/v1/sys/im/conversation/get-or-create
+func getOrCreateConversationHandler(c *gin.Context) {
+	var param message.GetOrCreateConversationParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	message.MessageGetOrCreateConversation(c, &param)
+}
+
+// clientGetOrCreateConversationHandler handles POST /api/v1/c/im/conversation/get-or-create
 func clientGetOrCreateConversationHandler(c *gin.Context) {
 	var param message.GetOrCreateConversationParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	userID, userType := clientUserID(c)
-	cid, displayName := message.GetOrCreateConversation(userID, userType, &param)
-	result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName})
+	message.MessageGetOrCreateConversation(c, &param)
 }
 
+// uploadFileHandler handles POST /api/v1/sys/im/file/upload
 func uploadFileHandler(c *gin.Context) {
-	userID := auth.GetLoginID(c)
-	data, err := message.UploadFile(c, userID, string(enums.LoginTypeBusiness))
-	if err != nil {
-		if appErr, ok := err.(*message.AppError); ok {
-			result.Failure(c, appErr.Message, appErr.Code)
-		} else {
-			result.Failure(c, err.Error(), 400)
-		}
-		return
-	}
-	result.Success(c, data)
+	message.UploadFile(c, auth.GetLoginID(c), string(enums.LoginTypeBusiness))
 }
 
+// clientUploadFileHandler handles POST /api/v1/c/im/file/upload
 func clientUploadFileHandler(c *gin.Context) {
-	userID := auth.Consumer.GetLoginID(c)
-	data, err := message.UploadFile(c, userID, string(enums.LoginTypeConsumer))
-	if err != nil {
-		if appErr, ok := err.(*message.AppError); ok {
-			result.Failure(c, appErr.Message, appErr.Code)
-		} else {
-			result.Failure(c, err.Error(), 400)
-		}
-		return
-	}
-	result.Success(c, data)
+	message.UploadFile(c, auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
 }

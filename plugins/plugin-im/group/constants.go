@@ -2,8 +2,8 @@ package group
 
 // Group types
 const (
-	GroupTypeMixed       = "mixed"        // B端群主, 可含B/C成员
-	GroupTypeConsumerOnly = "consumer_only" // C端群主, 仅C端成员
+	GroupTypeMixed       = "mixed"
+	GroupTypeConsumerOnly = "consumer_only"
 )
 
 // Member roles
@@ -24,10 +24,4 @@ const (
 const (
 	GroupNormal    = "normal"
 	GroupDissolved = "dissolved"
-)
-
-// User type constants
-const (
-	UserTypeBusiness = "BUSINESS"
-	UserTypeConsumer = "CONSUMER"
 )

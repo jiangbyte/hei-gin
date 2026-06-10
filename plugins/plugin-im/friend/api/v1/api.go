@@ -3,162 +3,348 @@ package v1
 import (
 	"strconv"
 
-	"hei-gin/sdk/auth"
-	authMW "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/registry"
 	"hei-gin/plugins/plugin-im/friend"
 
 	"github.com/gin-gonic/gin"
+	"hei-gin/sdk/registry"
+	authMW "hei-gin/sdk/auth/middleware"
 )
 
-func RegisterSysRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im/friend").Use(authMW.HeiCheckLogin())
-	{
-		g.POST("/send-request", authMW.NoRepeat(3000), sendRequestHandler)
-		g.POST("/accept", acceptHandler)
-		g.POST("/reject", rejectHandler)
-		g.GET("/list", listHandler)
-		g.GET("/pending-requests", pendingRequestsHandler)
-		g.POST("/remove", removeHandler)
-		g.POST("/block", blockHandler)
-		g.POST("/unblock", unblockHandler)
-		g.GET("/block-list", blockListHandler)
-		g.POST("/remark", remarkHandler)
-		g.GET("/search", searchHandler)
-	}
+func RegisterRoutes(r *gin.Engine) {
+	// POST /api/v1/sys/im/friend/send-request
+	r.POST("/api/v1/sys/im/friend/send-request",
+		authMW.HeiCheckLogin(),
+		authMW.NoRepeat(3000),
+		sendRequestHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/accept
+	r.POST("/api/v1/sys/im/friend/accept",
+		authMW.HeiCheckLogin(),
+		acceptHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/reject
+	r.POST("/api/v1/sys/im/friend/reject",
+		authMW.HeiCheckLogin(),
+		rejectHandler,
+	)
+
+	// GET /api/v1/sys/im/friend/list
+	r.GET("/api/v1/sys/im/friend/list",
+		authMW.HeiCheckLogin(),
+		listHandler,
+	)
+
+	// GET /api/v1/sys/im/friend/pending-requests
+	r.GET("/api/v1/sys/im/friend/pending-requests",
+		authMW.HeiCheckLogin(),
+		pendingRequestsHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/remove
+	r.POST("/api/v1/sys/im/friend/remove",
+		authMW.HeiCheckLogin(),
+		removeHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/block
+	r.POST("/api/v1/sys/im/friend/block",
+		authMW.HeiCheckLogin(),
+		blockHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/unblock
+	r.POST("/api/v1/sys/im/friend/unblock",
+		authMW.HeiCheckLogin(),
+		unblockHandler,
+	)
+
+	// GET /api/v1/sys/im/friend/block-list
+	r.GET("/api/v1/sys/im/friend/block-list",
+		authMW.HeiCheckLogin(),
+		blockListHandler,
+	)
+
+	// POST /api/v1/sys/im/friend/remark
+	r.POST("/api/v1/sys/im/friend/remark",
+		authMW.HeiCheckLogin(),
+		remarkHandler,
+	)
+
+	// GET /api/v1/sys/im/friend/search
+	r.GET("/api/v1/sys/im/friend/search",
+		authMW.HeiCheckLogin(),
+		searchHandler,
+	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im/friend").Use(authMW.HeiClientCheckLogin())
-	{
-		g.POST("/send-request", clientSendRequestHandler)
-		g.POST("/accept", clientAcceptHandler)
-		g.POST("/reject", clientRejectHandler)
-		g.GET("/list", clientListHandler)
-		g.GET("/pending-requests", clientPendingRequestsHandler)
-		g.POST("/remove", clientRemoveHandler)
-		g.POST("/block", clientBlockHandler)
-		g.POST("/unblock", clientUnblockHandler)
-		g.GET("/block-list", clientBlockListHandler)
-		g.POST("/remark", clientRemarkHandler)
-		g.GET("/search", clientSearchHandler)
-	}
+	// POST /api/v1/c/im/friend/send-request
+	r.POST("/api/v1/c/im/friend/send-request",
+		authMW.HeiClientCheckLogin(),
+		clientSendRequestHandler,
+	)
+
+	// POST /api/v1/c/im/friend/accept
+	r.POST("/api/v1/c/im/friend/accept",
+		authMW.HeiClientCheckLogin(),
+		clientAcceptHandler,
+	)
+
+	// POST /api/v1/c/im/friend/reject
+	r.POST("/api/v1/c/im/friend/reject",
+		authMW.HeiClientCheckLogin(),
+		clientRejectHandler,
+	)
+
+	// GET /api/v1/c/im/friend/list
+	r.GET("/api/v1/c/im/friend/list",
+		authMW.HeiClientCheckLogin(),
+		clientListHandler,
+	)
+
+	// GET /api/v1/c/im/friend/pending-requests
+	r.GET("/api/v1/c/im/friend/pending-requests",
+		authMW.HeiClientCheckLogin(),
+		clientPendingRequestsHandler,
+	)
+
+	// POST /api/v1/c/im/friend/remove
+	r.POST("/api/v1/c/im/friend/remove",
+		authMW.HeiClientCheckLogin(),
+		clientRemoveHandler,
+	)
+
+	// POST /api/v1/c/im/friend/block
+	r.POST("/api/v1/c/im/friend/block",
+		authMW.HeiClientCheckLogin(),
+		clientBlockHandler,
+	)
+
+	// POST /api/v1/c/im/friend/unblock
+	r.POST("/api/v1/c/im/friend/unblock",
+		authMW.HeiClientCheckLogin(),
+		clientUnblockHandler,
+	)
+
+	// GET /api/v1/c/im/friend/block-list
+	r.GET("/api/v1/c/im/friend/block-list",
+		authMW.HeiClientCheckLogin(),
+		clientBlockListHandler,
+	)
+
+	// POST /api/v1/c/im/friend/remark
+	r.POST("/api/v1/c/im/friend/remark",
+		authMW.HeiClientCheckLogin(),
+		clientRemarkHandler,
+	)
+
+	// GET /api/v1/c/im/friend/search
+	r.GET("/api/v1/c/im/friend/search",
+		authMW.HeiClientCheckLogin(),
+		searchHandler,
+	)
 }
 
-func getLoginID(c *gin.Context) (string, string) {
-	path := c.Request.URL.Path
-	if len(path) > 8 && path[:8] == "/api/v1/c" {
-		return auth.Consumer.GetLoginID(c), "CONSUMER"
-	}
-	return auth.GetLoginID(c), "BUSINESS"
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
 }
 
-
-// ==================== Sys Handlers ====================
-
-func sysUserID(c *gin.Context) (string, string) {
-	return auth.GetLoginID(c), "BUSINESS"
-}
-
+// sendRequestHandler handles POST /api/v1/sys/im/friend/send-request
 func sendRequestHandler(c *gin.Context) {
-	var p friend.SendRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.SendRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.SendRequest(c.Request.Context(), uid, ut, &p)
+	friend.FriendSendRequest(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientSendRequestHandler handles POST /api/v1/c/im/friend/send-request
+func clientSendRequestHandler(c *gin.Context) {
+	var param friend.SendRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendSendRequest(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// acceptHandler handles POST /api/v1/sys/im/friend/accept
 func acceptHandler(c *gin.Context) {
-	var p friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.AcceptRequest(c.Request.Context(), uid, ut, &p)
+	friend.FriendAcceptRequest(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientAcceptHandler handles POST /api/v1/c/im/friend/accept
+func clientAcceptHandler(c *gin.Context) {
+	var param friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendAcceptRequest(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// rejectHandler handles POST /api/v1/sys/im/friend/reject
 func rejectHandler(c *gin.Context) {
-	var p friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.RejectRequest(c.Request.Context(), uid, ut, &p)
+	friend.FriendRejectRequest(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientRejectHandler handles POST /api/v1/c/im/friend/reject
+func clientRejectHandler(c *gin.Context) {
+	var param friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendRejectRequest(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// listHandler handles GET /api/v1/sys/im/friend/list
 func listHandler(c *gin.Context) {
-	uid, ut := sysUserID(c)
-	list := friend.FriendList(c.Request.Context(), uid, ut)
+	list := friend.FriendList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
+// clientListHandler handles GET /api/v1/c/im/friend/list
+func clientListHandler(c *gin.Context) {
+	list := friend.FriendList(c, string(enums.LoginTypeConsumer))
+	result.Success(c, list)
+}
+
+// pendingRequestsHandler handles GET /api/v1/sys/im/friend/pending-requests
 func pendingRequestsHandler(c *gin.Context) {
-	uid, ut := sysUserID(c)
-	incoming, outgoing := friend.PendingRequests(c.Request.Context(), uid, ut)
+	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeBusiness))
 	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
 }
 
+// clientPendingRequestsHandler handles GET /api/v1/c/im/friend/pending-requests
+func clientPendingRequestsHandler(c *gin.Context) {
+	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeConsumer))
+	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
+}
+
+// removeHandler handles POST /api/v1/sys/im/friend/remove
 func removeHandler(c *gin.Context) {
-	var p struct {
-		FriendID   string `json:"friend_id"`
-		FriendType string `json:"friend_type"`
-	}
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.RemoveFriendParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.RemoveFriend(c.Request.Context(), uid, ut, p.FriendID, p.FriendType)
+	friend.FriendRemove(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientRemoveHandler handles POST /api/v1/c/im/friend/remove
+func clientRemoveHandler(c *gin.Context) {
+	var param friend.RemoveFriendParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendRemove(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// blockHandler handles POST /api/v1/sys/im/friend/block
 func blockHandler(c *gin.Context) {
-	var p friend.BlockParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.BlockParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.BlockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	friend.FriendBlock(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientBlockHandler handles POST /api/v1/c/im/friend/block
+func clientBlockHandler(c *gin.Context) {
+	var param friend.BlockParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendBlock(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// unblockHandler handles POST /api/v1/sys/im/friend/unblock
 func unblockHandler(c *gin.Context) {
-	var p friend.BlockParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.BlockParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.UnblockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	friend.FriendUnblock(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientUnblockHandler handles POST /api/v1/c/im/friend/unblock
+func clientUnblockHandler(c *gin.Context) {
+	var param friend.BlockParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendUnblock(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// blockListHandler handles GET /api/v1/sys/im/friend/block-list
 func blockListHandler(c *gin.Context) {
-	uid, ut := sysUserID(c)
-	list := friend.BlockList(c.Request.Context(), uid, ut)
+	list := friend.FriendBlockList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
+// clientBlockListHandler handles GET /api/v1/c/im/friend/block-list
+func clientBlockListHandler(c *gin.Context) {
+	list := friend.FriendBlockList(c, string(enums.LoginTypeConsumer))
+	result.Success(c, list)
+}
+
+// remarkHandler handles POST /api/v1/sys/im/friend/remark
 func remarkHandler(c *gin.Context) {
-	var p friend.RemarkParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
+	var param friend.RemarkParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	uid, ut := sysUserID(c)
-	friend.UpdateFriendRemark(c.Request.Context(), uid, ut, p.FriendID, p.FriendType, p.Remark)
+	friend.FriendUpdateRemark(c, string(enums.LoginTypeBusiness), &param)
 	result.Success(c, nil)
 }
 
+// clientRemarkHandler handles POST /api/v1/c/im/friend/remark
+func clientRemarkHandler(c *gin.Context) {
+	var param friend.RemarkParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	friend.FriendUpdateRemark(c, string(enums.LoginTypeConsumer), &param)
+	result.Success(c, nil)
+}
+
+// searchHandler handles GET /api/v1/sys/im/friend/search and GET /api/v1/c/im/friend/search
 func searchHandler(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20
@@ -167,127 +353,6 @@ func searchHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	results := friend.SearchUsers(c.Request.Context(), keyword, size)
+	results := friend.FriendSearch(c, keyword, size)
 	result.Success(c, results)
-}
-
-// ==================== Client Handlers ====================
-
-func clientUserID(c *gin.Context) (string, string) {
-	return auth.Consumer.GetLoginID(c), "CONSUMER"
-}
-
-func clientSendRequestHandler(c *gin.Context) {
-	var p friend.SendRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.SendRequest(c.Request.Context(), uid, ut, &p)
-	result.Success(c, nil)
-}
-
-func clientAcceptHandler(c *gin.Context) {
-	var p friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.AcceptRequest(c.Request.Context(), uid, ut, &p)
-	result.Success(c, nil)
-}
-
-func clientRejectHandler(c *gin.Context) {
-	var p friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.RejectRequest(c.Request.Context(), uid, ut, &p)
-	result.Success(c, nil)
-}
-
-func clientListHandler(c *gin.Context) {
-	uid, ut := clientUserID(c)
-	list := friend.FriendList(c.Request.Context(), uid, ut)
-	result.Success(c, list)
-}
-
-func clientPendingRequestsHandler(c *gin.Context) {
-	uid, ut := clientUserID(c)
-	incoming, outgoing := friend.PendingRequests(c.Request.Context(), uid, ut)
-	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
-}
-
-func clientRemoveHandler(c *gin.Context) {
-	var p struct {
-		FriendID   string `json:"friend_id"`
-		FriendType string `json:"friend_type"`
-	}
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.RemoveFriend(c.Request.Context(), uid, ut, p.FriendID, p.FriendType)
-	result.Success(c, nil)
-}
-
-func clientBlockHandler(c *gin.Context) {
-	var p friend.BlockParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.BlockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
-	result.Success(c, nil)
-}
-
-func clientUnblockHandler(c *gin.Context) {
-	var p friend.BlockParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.UnblockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
-	result.Success(c, nil)
-}
-
-func clientBlockListHandler(c *gin.Context) {
-	uid, ut := clientUserID(c)
-	list := friend.BlockList(c.Request.Context(), uid, ut)
-	result.Success(c, list)
-}
-
-func clientRemarkHandler(c *gin.Context) {
-	var p friend.RemarkParam
-	if err := c.ShouldBindJSON(&p); err != nil {
-		result.Failure(c, "参数错误", 400)
-		return
-	}
-	uid, ut := clientUserID(c)
-	friend.UpdateFriendRemark(c.Request.Context(), uid, ut, p.FriendID, p.FriendType, p.Remark)
-	result.Success(c, nil)
-}
-
-func clientSearchHandler(c *gin.Context) {
-	keyword := c.Query("keyword")
-	size := 20
-	if s := c.Query("size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n > 0 {
-			size = n
-		}
-	}
-	results := friend.SearchUsers(c.Request.Context(), keyword, size)
-	result.Success(c, results)
-}
-
-func init() {
-	registry.RegisterRoute(RegisterSysRoutes)
-	registry.RegisterRoute(RegisterClientRoutes)
 }

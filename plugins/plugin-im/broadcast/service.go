@@ -1,59 +1,64 @@
 package broadcast
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 	imModel "hei-gin/plugins/plugin-im/model"
 
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-im/ws"
+
+	"github.com/gin-gonic/gin"
 )
 
-// ==================== Send ====================
+// ==================== BroadcastSend ====================
 
-func Send(senderID string, p *SendBroadcastParam) {
-	scope := p.Scope
-	if scope == "" {
-		scope = "ALL"
+func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
+	ctx := c.Request.Context()
+	senderID := auth.GetLoginID(c)
+
+	if p.Scope == "" {
+		p.Scope = imModel.BroadcastScopeAll
 	}
 
-	now := time.Now()
-	if err := db.DB.Create(&imModel.Broadcast{
-		ID:        utils.GenerateID(),
-		Title:     p.Title,
-		Content:   p.Content,
-		Scope:     scope,
-		SenderID:  senderID,
-		CreatedAt: &now,
-		UpdatedAt: &now,
-	}).Error; err != nil {
-		panic(exception.NewBusinessError("发送通知失败", 500))
+	e := imModel.Broadcast{
+		ID:       utils.GenerateID(),
+		Title:    p.Title,
+		Content:  p.Content,
+		Scope:    p.Scope,
+		SenderID: senderID,
+	}
+	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("发送通知失败: "+err.Error(), 500))
+		return
 	}
 
 	// WS broadcast
 	payload := map[string]interface{}{
 		"title":   p.Title,
 		"content": p.Content,
-		"scope":   scope,
+		"scope":   p.Scope,
 		"action":  "broadcast",
 	}
 	msg := ws.Message{Type: "broadcast", Payload: payload}
-	switch scope {
-	case "ALL":
+	switch p.Scope {
+	case imModel.BroadcastScopeAll:
 		ws.GlobalCrossHub.BroadcastAll(msg)
-	case "BUSINESS":
+	case imModel.BroadcastScopeBusiness:
 		ws.GlobalCrossHub.BroadcastBusiness(msg)
-	case "CONSUMER":
+	case imModel.BroadcastScopeConsumer:
 		ws.GlobalCrossHub.BroadcastConsumers(msg)
 	}
 }
 
-// ==================== List (admin) ====================
+// ==================== BroadcastPage (admin) ====================
 
-func List(cursor string, size int) ([]BroadcastVO, bool) {
+func BroadcastPage(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool) {
+	ctx := c.Request.Context()
 	if size < 1 {
 		size = 20
 	}
@@ -61,7 +66,7 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 		size = 100
 	}
 
-	q := db.DB.Model(&imModel.Broadcast{})
+	q := db.DB.WithContext(ctx).Model(&imModel.Broadcast{})
 	if cursor != "" {
 		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
@@ -75,78 +80,93 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 		records = records[:size]
 	}
 
-	result := make([]BroadcastVO, len(records))
+	vos := make([]BroadcastVO, len(records))
 	for i, b := range records {
-		result[i] = BroadcastVO{
-			ID: b.ID, Title: b.Title, Content: b.Content,
-			Scope: b.Scope, SenderID: b.SenderID,
-			CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
-		}
+		vos[i] = *ImBroadcastToBroadcastVO(&b)
 	}
-	return result, hasMore
+	return vos, hasMore
 }
 
-// ==================== Unread List ====================
+// ==================== BroadcastUnreadList ====================
 
-func UnreadList(userID, userType string) ([]BroadcastVO, bool) {
+func BroadcastUnreadList(c *gin.Context, userType string) []BroadcastVO {
+	ctx := c.Request.Context()
+	var userID string
+	if userType == string(enums.LoginTypeConsumer) {
+		userID = auth.Consumer.GetLoginID(c)
+	} else {
+		userID = auth.GetLoginID(c)
+	}
+
 	var records []imModel.Broadcast
-	db.DB.Model(&imModel.Broadcast{}).Order("created_at DESC").Limit(50).Find(&records)
+	db.DB.WithContext(ctx).Model(&imModel.Broadcast{}).Order("created_at DESC").Limit(50).Find(&records)
 
-	// Check read status
 	var readRecords []imModel.BroadcastRead
-	db.DB.Model(&imModel.BroadcastRead{}).
+	db.DB.WithContext(ctx).Model(&imModel.BroadcastRead{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Find(&readRecords)
-	readMap := make(map[string]*time.Time)
+	readMap := make(map[string]bool)
 	for _, r := range readRecords {
-		readMap[r.BroadcastID] = r.ReadAt
+		readMap[r.BroadcastID] = true
 	}
 
-	result := make([]BroadcastVO, 0, len(records))
+	vos := make([]BroadcastVO, 0, len(records))
 	for _, b := range records {
-		readAt, read := readMap[b.ID]
-		vo := BroadcastVO{
-			ID: b.ID, Title: b.Title,
-			Content: b.Content,
-			Scope: b.Scope, Read: read,
-			CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
+		vo := *ImBroadcastToBroadcastVO(&b)
+		if _, ok := readMap[b.ID]; ok {
+			vo.Read = true
 		}
-		if read && readAt != nil {
-			s := utils.FormatDateTime(*readAt)
-			vo.ReadAt = s
-		}
-		result = append(result, vo)
+		vos = append(vos, vo)
 	}
-	return result, false
+	return vos
 }
 
-// ==================== Mark Read ====================
+// ==================== BroadcastMarkRead ====================
 
-func MarkRead(userID, userType, broadcastID string) {
-	now := time.Now()
-	_ = db.DB.Where("broadcast_id = ? AND user_id = ? AND user_type = ?", broadcastID, userID, userType).
+func BroadcastMarkRead(c *gin.Context, p *ReadParam) {
+	ctx := c.Request.Context()
+	userID := auth.GetLoginID(c)
+
+	_ = db.DB.WithContext(ctx).Where("broadcast_id = ? AND user_id = ? AND user_type = ?", p.BroadcastID, userID, string(enums.LoginTypeBusiness)).
 		FirstOrCreate(&imModel.BroadcastRead{
-			BroadcastID: broadcastID,
-			ID: utils.GenerateID(),
+			BroadcastID: p.BroadcastID,
+			ID:          utils.GenerateID(),
 			UserID:      userID,
-			UserType:    userType,
-			ReadAt:      &now,
+			UserType:    string(enums.LoginTypeBusiness),
 		})
 }
 
-// ==================== Detail ====================
+// ==================== BroadcastMarkReadConsumer ====================
 
-func Detail(id string) *BroadcastVO {
+func BroadcastMarkReadConsumer(c *gin.Context, p *ReadParam) {
+	ctx := c.Request.Context()
+	userID := auth.Consumer.GetLoginID(c)
+
+	_ = db.DB.WithContext(ctx).Where("broadcast_id = ? AND user_id = ? AND user_type = ?", p.BroadcastID, userID, string(enums.LoginTypeConsumer)).
+		FirstOrCreate(&imModel.BroadcastRead{
+			BroadcastID: p.BroadcastID,
+			ID:          utils.GenerateID(),
+			UserID:      userID,
+			UserType:    string(enums.LoginTypeConsumer),
+		})
+}
+
+// ==================== BroadcastDetail ====================
+
+func BroadcastDetail(c *gin.Context, id string) *BroadcastVO {
+	if id == "" {
+		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
+		return nil
+	}
+	ctx := c.Request.Context()
 	var b imModel.Broadcast
-	if err := db.DB.First(&b, "id = ?", id).Error; err != nil {
+	if err := db.DB.WithContext(ctx).First(&b, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("通知不存在", 400))
 			return nil
 		}
-		panic(exception.NewBusinessError("查询通知失败", 500))
+		result.WriteError(c, exception.NewBusinessError("查询通知失败: "+err.Error(), 500))
+		return nil
 	}
-	return &BroadcastVO{
-		ID: b.ID, Title: b.Title, Content: b.Content,
-		Scope: b.Scope, SenderID: b.SenderID,
-		CreatedAt: utils.FormatDateTimePtr(b.CreatedAt),
-	}
+	return ImBroadcastToBroadcastVO(&b)
 }

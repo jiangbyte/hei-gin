@@ -3,15 +3,16 @@ package message
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"encoding/json"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
 	imModel "hei-gin/plugins/plugin-im/model"
@@ -81,16 +82,18 @@ func formatFileSize(bytes int64) (kb int64, info string) {
 	return kb, fmt.Sprintf("%.1f MB", mb)
 }
 
-func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult, error) {
+func UploadFile(c *gin.Context, senderID, senderType string) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		return nil, NewAppError("上传文件失败: "+err.Error(), 400)
+		result.WriteError(c, exception.NewBusinessError("上传文件失败: "+err.Error(), 400))
+		return
 	}
 	defer file.Close()
 
 	ext := filepath.Ext(header.Filename)
 	if !allowedExtensions[strings.ToLower(ext)] {
-		return nil, NewAppError("不支持的文件类型: "+ext, 400)
+		result.WriteError(c, exception.NewBusinessError("不支持的文件类型: "+ext, 400))
+		return
 	}
 
 	engineType := c.PostForm("engine")
@@ -102,18 +105,19 @@ func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult,
 		bucket = "DEFAULT"
 	}
 
-	now := time.Now()
 	fileKey := utils.GenerateID() + ext
 
 	eng := storage.GetStorage(engineType)
 	if eng == nil {
-		return nil, NewAppError("不支持的存储类型: "+engineType, 500)
+		result.WriteError(c, exception.NewBusinessError("不支持的存储类型: "+engineType, 500))
+		return
 	}
 
 	hr := newHashReader(file)
 	storagePath, err := eng.StoreStream(bucket, fileKey, hr)
 	if err != nil {
-		return nil, NewAppError("保存文件失败: "+err.Error(), 500)
+		result.WriteError(c, exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
+		return
 	}
 
 	checksum := hr.Sum()
@@ -139,7 +143,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult,
 		SizeKb:         fileSizeKb,
 		SizeInfo:       sizeInfo,
 		StoragePath:    storagePath,
-		DownloadPath:   "",  // not stored — constructed dynamically
+		DownloadPath:   "",
 		Thumbnail:      thumbnail,
 		Checksum:       checksum,
 		ChecksumAlgo:   "sha256",
@@ -147,13 +151,13 @@ func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult,
 		SenderID:       senderID,
 		SenderType:     senderType,
 		MsgType:        msgType,
-		CreatedAt:      now,
 	}
 	if err := db.DB.Create(&record).Error; err != nil {
-		return nil, NewAppError("保存文件记录失败: "+err.Error(), 500)
+		result.WriteError(c, exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
+		return
 	}
 
-	return &FileUploadResult{
+	result.Success(c, &FileUploadResult{
 		URL:          storage.GetURL(engineType, bucket, fileKey),
 		FileKey:      fileKey,
 		Bucket:       bucket,
@@ -161,12 +165,10 @@ func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult,
 		OriginalName: header.Filename,
 		FileSize:     header.Size,
 		FileType:     ext,
-	}, nil
+	})
 }
 
 // ResolveFileURL constructs a full HTTP URL from message content and extra for IMAGE/FILE types.
-// If content is already a full URL (starts with http), returns as-is for backward compatibility.
-// Otherwise reads engine/bucket from extra JSON and constructs via storage.GetURL().
 func ResolveFileURL(content, extra string) string {
 	if strings.HasPrefix(content, "http") {
 		return content
@@ -178,7 +180,6 @@ func ResolveFileURL(content, extra string) string {
 	engine := "LOCAL"
 	bucket := "DEFAULT"
 
-	// Try to read engine/bucket from extra JSON
 	if extra != "" {
 		var meta struct {
 			Engine string `json:"engine"`

@@ -6,52 +6,46 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-im/ws"
 	imModel "hei-gin/plugins/plugin-im/model"
 
 	"github.com/gin-gonic/gin"
 )
 
-func toVO(e *imModel.Message) *MessageVO {
-	v := &MessageVO{
-		ID: e.ID, ConversationID: e.ConversationID,
-		Content: e.Content, MsgType: e.MsgType, Extra: e.Extra,
-		SenderID: e.SenderID, SenderType: e.SenderType,
-		ReceiverID: e.ReceiverID, ReceiverType: e.ReceiverType,
-		Status: e.Status,
-		CreatedAt: utils.FormatDateTimePtr(e.CreatedAt),
-		UpdatedAt: utils.FormatDateTimePtr(e.UpdatedAt),
+
+func getLoginID(c *gin.Context) string {
+	path := c.Request.URL.Path
+	if len(path) > 8 && path[:8] == "/api/v1/c" {
+		return auth.Consumer.GetLoginID(c)
 	}
-	if e.ReadAt != nil {
-		s := utils.FormatDateTime(*e.ReadAt)
-		v.ReadAt = &s
-	}
-	return v
+	return auth.GetLoginID(c)
 }
 
-func toVOList(records []imModel.Message) []MessageVO {
-	r := make([]MessageVO, len(records))
-	for i, e := range records {
-		r[i] = *toVO(&e)
+func getUserType(c *gin.Context) string {
+	path := c.Request.URL.Path
+	if len(path) > 8 && path[:8] == "/api/v1/c" {
+		return string(enums.LoginTypeConsumer)
 	}
-	return r
+	return string(enums.LoginTypeBusiness)
 }
 
+// ==================== MessageSend ====================
 
-// ==================== Send ====================
-
-func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType string) []string {
-
+func MessageSend(c *gin.Context, param *MessageSendParam) {
 	ctx := c.Request.Context()
-	now := time.Now()
+
+	senderID := getLoginID(c)
+	senderType := getUserType(c)
 
 	if !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
-		panic(exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
+		result.WriteError(c, exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
+		return
 	}
 
 	msgType := param.MsgType
@@ -77,26 +71,21 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 			ReceiverID:     rid,
 			ReceiverType:   receiverType,
 			Status:         "unread",
-			CreatedAt:      &now,
-			UpdatedAt:      &now,
 		}
 	}
 	if err := db.DB.WithContext(ctx).Create(&records).Error; err != nil {
-		panic(exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
+		return
 	}
 
-	// Update im_conversation cache for each receiver
 	for _, rec := range records {
 		conv := imModel.Conversation{
-			ID:        rec.ConversationID,
+			ID:       rec.ConversationID,
 			FromID:   rec.SenderID,
 			FromType: rec.SenderType,
-			ToID:   rec.ReceiverID,
-			ToType: rec.ReceiverType,
-			LastMsg:   rec.Content,
-			LastTime:  &now,
-			CreatedAt: &now,
-			UpdatedAt: &now,
+			ToID:     rec.ReceiverID,
+			ToType:   rec.ReceiverType,
+			LastMsg:  rec.Content,
 		}
 		db.DB.WithContext(ctx).Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "id"}},
@@ -106,20 +95,17 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 		}).Create(&conv)
 	}
 
-	// Send WS notifications
 	for i, rid := range param.ReceiverIDs {
-		cid := records[i].ConversationID
 		msg := ws.Message{
 			Type: ws.MsgNewMessage,
 			Payload: ws.NewMessagePayload{
 				MessageID:      records[i].ID,
-				ConversationID: cid,
+				ConversationID: records[i].ConversationID,
 				Content:        param.Content,
 				MsgType:        msgType,
 				Extra:          param.Extra,
 				SenderID:       senderID,
 				SenderType:     senderType,
-				CreatedAt:      utils.FormatDateTime(now),
 			},
 		}
 		if receiverType == string(enums.LoginTypeConsumer) {
@@ -128,17 +114,14 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 			ws.GlobalCrossHub.SendToUser(rid, msg, records[i].ID)
 		}
 	}
-	convIDs := make([]string, len(records))
-	for i := range records {
-		convIDs[i] = records[i].ConversationID
-	}
-	return convIDs
 }
 
-// ==================== Page ====================
+// ==================== MessagePage ====================
 
-func Page(c *gin.Context, userID string, param *MessagePageParam) {
+func MessagePage(c *gin.Context, param *MessagePageParam) {
 	ctx := c.Request.Context()
+	userID := getLoginID(c)
+
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -149,7 +132,8 @@ func Page(c *gin.Context, userID string, param *MessagePageParam) {
 		param.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)", userID, userID, userID)
+	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
+		Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)", userID, userID, userID)
 	if param.Status != "" {
 		query = query.Where("status = ?", param.Status)
 	}
@@ -159,101 +143,134 @@ func Page(c *gin.Context, userID string, param *MessagePageParam) {
 
 	var records []imModel.Message
 	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	result.PageDataResult(c, toVOList(records), total, param.Current, param.Size)
+
+	vos := make([]MessageVO, len(records))
+	for i, e := range records {
+		vos[i] = *ImMessageToMessageVO(&e)
+	}
+	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-// ==================== UnreadCount ====================
+// ==================== MessageUnreadCount ====================
 
-func UnreadCount(userID string) int64 {
+func MessageUnreadCount(c *gin.Context) {
+	userID := getLoginID(c)
+
 	var count int64
 	db.DB.Model(&imModel.Message{}).Where("receiver_id = ? AND status = ?", userID, "unread").Count(&count)
-	return count
+	result.Success(c, UnreadCountVO{Count: count})
 }
 
-// ==================== Detail ====================
+// ==================== MessageDetail ====================
 
-func Detail(id string) *MessageVO {
+func MessageDetail(c *gin.Context) {
+	id := c.Query("id")
+
 	var entity imModel.Message
 	if err := db.DB.First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil
+			result.Success(c, nil)
+			return
 		}
-		panic(exception.NewBusinessError("查询消息失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("查询消息失败: "+err.Error(), 500))
+		return
 	}
-	return toVO(&entity)
+	result.Success(c, ImMessageToMessageVO(&entity))
 }
 
-// ==================== MarkRead ====================
+// ==================== MessageMarkRead ====================
 
-func MarkRead(id string) {
-	now := time.Now()
-	if err := db.DB.Model(&imModel.Message{}).Where("id = ?", id).
-		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
-		panic(exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
+func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
+	if err := db.DB.Model(&imModel.Message{}).Where("id = ?", param.ID).
+		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func MarkConversationRead(receiverID string, conversationID string) {
-	now := time.Now()
+// ==================== MessageMarkConversationRead ====================
+
+func MessageMarkConversationRead(c *gin.Context) {
+	receiverID := getLoginID(c)
+
+	var param ConversationReadParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		return
+	}
+
 	if err := db.DB.Model(&imModel.Message{}).
-		Where("conversation_id = ? AND receiver_id = ? AND status = ?", conversationID, receiverID, "unread").
-		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
-		panic(exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
+		Where("conversation_id = ? AND receiver_id = ? AND status = ?", param.ConversationID, receiverID, "unread").
+		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
+		return
 	}
 }
 
-func MarkAllRead(receiverID string) {
-	now := time.Now()
+// ==================== MessageMarkAllRead ====================
+
+func MessageMarkAllRead(c *gin.Context) {
+	receiverID := getLoginID(c)
+
 	if err := db.DB.Model(&imModel.Message{}).
 		Where("receiver_id = ? AND status = ?", receiverID, "unread").
-		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
-		panic(exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
+		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
+		return
 	}
 }
 
-// ==================== Remove (soft-delete) ====================
+// ==================== MessageRemove (soft-delete) ====================
 
-func Remove(userID string, ids []string) {
-	if len(ids) == 0 {
+func MessageRemove(c *gin.Context, param *DeleteParam) {
+	userID := getLoginID(c)
+
+	if len(param.IDs) == 0 {
 		return
 	}
 	if err := db.DB.Model(&imModel.Message{}).
-		Where("id IN ? AND (sender_id = ? OR receiver_id = ?)", ids, userID, userID).
+		Where("id IN ? AND (sender_id = ? OR receiver_id = ?)", param.IDs, userID, userID).
 		Update("deleted_by", userID).Error; err != nil {
-		panic(exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
+		return
 	}
 }
 
-// ==================== Recall (within 5 min) ====================
+// ==================== MessageRecall (within 5 min) ====================
 
-func Recall(userID string, userType string, param *RecallParam) {
+func MessageRecall(c *gin.Context, param *RecallParam) {
+	userID := getLoginID(c)
+	userType := getUserType(c)
+
 	var msg imModel.Message
 	if err := db.DB.First(&msg, "id = ?", param.MessageID).Error; err != nil {
-		panic(exception.NewBusinessError("消息不存在", 400))
+		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
+		return
 	}
 	if msg.SenderID != userID || msg.SenderType != userType {
-		panic(exception.NewBusinessError("只能撤回自己的消息", 403))
+		result.WriteError(c, exception.NewBusinessError("只能撤回自己的消息", 403))
+		return
 	}
 	if msg.CreatedAt != nil && time.Since(*msg.CreatedAt) > 5*time.Minute {
-		panic(exception.NewBusinessError("超过5分钟，无法撤回", 400))
+		result.WriteError(c, exception.NewBusinessError("超过5分钟，无法撤回", 400))
+		return
 	}
-	now := time.Now()
 	if err := db.DB.Model(&imModel.Message{}).Where("id = ?", param.MessageID).
 		Updates(map[string]interface{}{
-			"content":    "消息已被撤回",
-			"msg_type":   imModel.MsgTypeSystem,
-			"updated_at": &now,
+			"content":  "消息已被撤回",
+			"msg_type": imModel.MsgTypeSystem,
 		}).Error; err != nil {
-		panic(exception.NewBusinessError("撤回失败: "+err.Error(), 500))
+		result.WriteError(c, exception.NewBusinessError("撤回失败: "+err.Error(), 500))
+		return
 	}
 }
 
-// ==================== Forward ====================
+// ==================== MessageForward ====================
 
-func Forward(c *gin.Context, userID string, userType string, param *ForwardParam) {
+func MessageForward(c *gin.Context, param *ForwardParam) {
 	var original imModel.Message
 	if err := db.DB.First(&original, "id = ?", param.MessageID).Error; err != nil {
-		panic(exception.NewBusinessError("消息不存在", 400))
+		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
+		return
 	}
 
 	sendParam := &MessageSendParam{
@@ -263,13 +280,15 @@ func Forward(c *gin.Context, userID string, userType string, param *ForwardParam
 		ReceiverIDs:  param.TargetIDs,
 		ReceiverType: param.TargetType,
 	}
-	Send(c, sendParam, userID, userType)
+	MessageSend(c, sendParam)
 }
 
-// ==================== Search ====================
+// ==================== MessageSearch ====================
 
-func Search(c *gin.Context, userID string, param *SearchParam) ([]MessageVO, bool) {
+func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
+	userID := getLoginID(c)
+
 	if param.Size < 1 {
 		param.Size = 20
 	}
@@ -291,5 +310,9 @@ func Search(c *gin.Context, userID string, param *SearchParam) ([]MessageVO, boo
 	if hasMore {
 		records = records[:param.Size]
 	}
-	return toVOList(records), hasMore
+	vos := make([]MessageVO, len(records))
+	for i, e := range records {
+		vos[i] = *ImMessageToMessageVO(&e)
+	}
+	return vos, hasMore
 }

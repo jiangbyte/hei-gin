@@ -76,24 +76,63 @@ type MessageVO struct {
 	CreatedAt  string  `json:"created_at"`
 }
 
-// ─── New Params for Phase 4 ───────────────────────────────────────────
 
+// HandleJoinRequestParam 处理入群申请
 type HandleJoinRequestParam struct {
 	RequestID string `json:"request_id" binding:"required"`
 	Action    string `json:"action" binding:"required"` // approved | rejected
 }
 
+// TransferOwnerParam 转让群
 type TransferOwnerParam struct {
-	GroupID string `json:"group_id" binding:"required"`
+	GroupID     string `json:"group_id" binding:"required"`
 	NewOwnerID   string `json:"new_owner_id" binding:"required"`
 	NewOwnerType string `json:"new_owner_type" binding:"required"`
 }
 
+// SetNicknameParam 设置群昵称
 type SetNicknameParam struct {
 	GroupID  string `json:"group_id" binding:"required"`
 	UserID   string `json:"user_id" binding:"required"`
 	UserType string `json:"user_type" binding:"required"`
 	Nickname string `json:"nickname"`
+}
+
+// DissolveParam 解散群
+type DissolveParam struct {
+	GroupID string `json:"group_id" binding:"required"`
+}
+
+// JoinOrLeaveParam 加入/退出群
+type JoinOrLeaveParam struct {
+	GroupID string `json:"group_id" binding:"required"`
+}
+
+// RecallMessageParam 撤回消息
+type RecallMessageParam struct {
+	GroupID   string `json:"group_id" binding:"required"`
+	MessageID string `json:"message_id" binding:"required"`
+}
+
+// MarkReadParam 标记已读
+type MarkReadParam struct {
+	GroupID   string `json:"group_id" binding:"required"`
+	MessageID string `json:"message_id" binding:"required"`
+}
+
+// MuteParam 禁言
+type MuteParam struct {
+	GroupID  string `json:"group_id" binding:"required"`
+	UserID   string `json:"user_id" binding:"required"`
+	UserType string `json:"user_type" binding:"required"`
+	Duration int    `json:"duration"`
+}
+
+// UnmuteParam 解禁
+type UnmuteParam struct {
+	GroupID  string `json:"group_id" binding:"required"`
+	UserID   string `json:"user_id" binding:"required"`
+	UserType string `json:"user_type" binding:"required"`
 }
 
 // ConversationVO is used by MyGroupConversations for the unified conversation list.

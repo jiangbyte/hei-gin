@@ -18,3 +18,8 @@ type BroadcastVO struct {
 	ReadAt    string `json:"read_at,omitempty"`
 	CreatedAt string `json:"created_at"`
 }
+
+// ReadParam 标记已读参数
+type ReadParam struct {
+	BroadcastID string `json:"broadcast_id" binding:"required"`
+}

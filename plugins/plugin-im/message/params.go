@@ -90,6 +90,16 @@ type ConversationMessageVO struct {
 	CreatedAt  string `json:"created_at"`
 }
 
+// DeleteParam 删除消息参数
+type DeleteParam struct {
+	IDs []string `json:"ids"`
+}
+
+// ConversationReadParam 会话已读参数
+type ConversationReadParam struct {
+	ConversationID string `json:"conversation_id"`
+}
+
 type GetOrCreateConversationParam struct {
 	UserID   string `json:"user_id"`
 	UserType string `json:"user_type"`

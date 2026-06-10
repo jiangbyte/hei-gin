@@ -1,27 +1,42 @@
 package friend
 
 import (
-	"context"
-	"time"
+	imModel "hei-gin/plugins/plugin-im/model"
 
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-im/ws"
-	imModel "hei-gin/plugins/plugin-im/model"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
+
+	"github.com/gin-gonic/gin"
 )
 
-// ==================== Send Friend Request ====================
-
-func SendRequest(ctx context.Context, senderID, senderType string, p *SendRequestParam) {
-	if senderID == "" || p.ReceiverID == "" || p.ReceiverType == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func getLoginID(c *gin.Context, userType string) string {
+	if userType == string(enums.LoginTypeConsumer) {
+		return auth.Consumer.GetLoginID(c)
 	}
-	if senderID == p.ReceiverID && senderType == p.ReceiverType {
-		panic(exception.NewBusinessError("不能添加自己为好友", 400))
+	return auth.GetLoginID(c)
+}
+
+// ==================== FriendSendRequest ====================
+
+func FriendSendRequest(c *gin.Context, userType string, p *SendRequestParam) {
+	ctx := c.Request.Context()
+	senderID := getLoginID(c, userType)
+
+	if p.ReceiverID == "" || p.ReceiverType == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
+	}
+	if senderID == p.ReceiverID && userType == p.ReceiverType {
+		result.WriteError(c, exception.NewBusinessError("不能添加自己为好友", 400))
+		return
 	}
 
 	// Check existing friendship
@@ -29,133 +44,152 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 	db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?) OR "+
 			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
-			senderID, senderType, p.ReceiverID, p.ReceiverType,
-			p.ReceiverID, p.ReceiverType, senderID, senderType).
+			senderID, userType, p.ReceiverID, p.ReceiverType,
+			p.ReceiverID, p.ReceiverType, senderID, userType).
 		Count(&count)
 	if count > 0 {
-		panic(exception.NewBusinessError("已经是好友了", 400))
+		result.WriteError(c, exception.NewBusinessError("已经是好友了", 400))
+		return
 	}
 
 	// Check pending request
 	var existing int64
 	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("sender_id = ? AND sender_type = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
-			senderID, senderType, p.ReceiverID, p.ReceiverType, "pending").
+			senderID, userType, p.ReceiverID, p.ReceiverType, "pending").
 		Count(&existing)
 	if existing > 0 {
-		panic(exception.NewBusinessError("已发送过好友请求，请等待回复", 400))
+		result.WriteError(c, exception.NewBusinessError("已发送过好友请求，请等待回复", 400))
+		return
 	}
 
-	now := time.Now()
 	req := &imModel.FriendRequest{
 		ID:           utils.GenerateID(),
 		SenderID:     senderID,
-		SenderType:   senderType,
+		SenderType:   userType,
 		ReceiverID:   p.ReceiverID,
 		ReceiverType: p.ReceiverType,
 		Remark:       p.Remark,
 		Status:       "pending",
-		CreatedAt:    &now,
-		UpdatedAt:    &now,
 	}
 	if err := db.DB.WithContext(ctx).Create(req).Error; err != nil {
-		panic(exception.NewBusinessError("发送好友请求失败", 500))
+		result.WriteError(c, exception.NewBusinessError("发送好友请求失败: "+err.Error(), 500))
+		return
 	}
 
 	// WS push to receiver
 	payload := map[string]interface{}{
 		"request_id":  req.ID,
 		"sender_id":   senderID,
-		"sender_type": senderType,
+		"sender_type": userType,
 		"remark":      p.Remark,
 		"action":      "friend_request",
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
-	if p.ReceiverType == "CONSUMER" {
+	if p.ReceiverType == string(enums.LoginTypeConsumer) {
 		ws.GlobalCrossHub.SendToConsumer(p.ReceiverID, msg)
 	} else {
 		ws.GlobalCrossHub.SendToUser(p.ReceiverID, msg)
 	}
 }
 
-// ==================== Accept Friend Request ====================
+// ==================== FriendAcceptRequest ====================
 
-func AcceptRequest(ctx context.Context, userID, userType string, p *HandleRequestParam) {
-	if userID == "" || p.RequestID == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func FriendAcceptRequest(c *gin.Context, userType string, p *HandleRequestParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.RequestID == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
 
 	var req imModel.FriendRequest
 	if err := db.DB.WithContext(ctx).First(&req, "id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 		p.RequestID, userID, userType, "pending").Error; err != nil {
-		panic(exception.NewBusinessError("好友请求不存在或已处理", 400))
+		result.WriteError(c, exception.NewBusinessError("好友请求不存在或已处理", 400))
+		return
 	}
 
 	tx := db.DB.WithContext(ctx).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			panic(r)
-		}
-	}()
 
-	now := time.Now()
-	tx.Model(&req).Updates(map[string]interface{}{"status": "accepted", "updated_at": now})
+	if err := tx.Model(&req).Update("status", "accepted").Error; err != nil {
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("添加好友失败: "+err.Error(), 500))
+		return
+	}
 
 	// Create bidirectional friendship records
 	pair1 := imModel.Friendship{
 		ID: utils.GenerateID(), UserID: req.ReceiverID, UserType: req.ReceiverType,
-		FriendID: req.SenderID, FriendType: req.SenderType, CreatedAt: &now,
+		FriendID: req.SenderID, FriendType: req.SenderType,
 	}
 	pair2 := imModel.Friendship{
 		ID: utils.GenerateID(), UserID: req.SenderID, UserType: req.SenderType,
-		FriendID: req.ReceiverID, FriendType: req.ReceiverType, CreatedAt: &now,
+		FriendID: req.ReceiverID, FriendType: req.ReceiverType,
 	}
 	if err := tx.Create(&pair1).Error; err != nil {
-		panic(exception.NewBusinessError("添加好友失败", 500))
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("添加好友失败: "+err.Error(), 500))
+		return
 	}
 	if err := tx.Create(&pair2).Error; err != nil {
-		panic(exception.NewBusinessError("添加好友失败", 500))
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("添加好友失败: "+err.Error(), 500))
+		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("添加好友失败", 500))
+		result.WriteError(c, exception.NewBusinessError("添加好友失败: "+err.Error(), 500))
+		return
 	}
 
 	// WS push to sender
 	payload := map[string]interface{}{
-		"request_id":  req.ID,
+		"request_id":    req.ID,
 		"receiver_id":   userID,
 		"receiver_type": userType,
-		"action":      "friend_request_accepted",
+		"action":        "friend_request_accepted",
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
-	if req.SenderType == "CONSUMER" {
+	if req.SenderType == string(enums.LoginTypeConsumer) {
 		ws.GlobalCrossHub.SendToConsumer(req.SenderID, msg)
 	} else {
 		ws.GlobalCrossHub.SendToUser(req.SenderID, msg)
 	}
 }
 
-// ==================== Reject Friend Request ====================
+// ==================== FriendRejectRequest ====================
 
-func RejectRequest(ctx context.Context, userID, userType string, p *HandleRequestParam) {
-	if userID == "" || p.RequestID == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func FriendRejectRequest(c *gin.Context, userType string, p *HandleRequestParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.RequestID == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
 
-	result := db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
+	res := db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 			p.RequestID, userID, userType, "pending").
-		Updates(map[string]interface{}{"status": "rejected", "updated_at": time.Now()})
-	if result.RowsAffected == 0 {
-		panic(exception.NewBusinessError("好友请求不存在或已处理", 400))
+		Update("status", "rejected")
+	if res.RowsAffected == 0 {
+		result.WriteError(c, exception.NewBusinessError("好友请求不存在或已处理", 400))
+		return
+	}
+	if res.Error != nil {
+		result.WriteError(c, exception.NewBusinessError("拒绝好友请求失败: "+res.Error.Error(), 500))
+		return
 	}
 }
 
-// ==================== Friend List ====================
+// ==================== FriendList ====================
 
-func FriendList(ctx context.Context, userID, userType string) []FriendVO {
+func FriendList(c *gin.Context, userType string) []FriendVO {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
 	var friendships []imModel.Friendship
 	db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
@@ -165,12 +199,12 @@ func FriendList(ctx context.Context, userID, userType string) []FriendVO {
 		return nil
 	}
 
-	businessIDs, consumerIDs := []string{}, []string{}
+	var businessIDs, consumerIDs []string
 	for _, f := range friendships {
 		switch f.FriendType {
-		case "BUSINESS":
+		case string(enums.LoginTypeBusiness):
 			businessIDs = append(businessIDs, f.FriendID)
-		case "CONSUMER":
+		case string(enums.LoginTypeConsumer):
 			consumerIDs = append(consumerIDs, f.FriendID)
 		}
 	}
@@ -205,76 +239,98 @@ func FriendList(ctx context.Context, userID, userType string) []FriendVO {
 		}
 	}
 
-	result := make([]FriendVO, 0, len(friendships))
+	vos := make([]FriendVO, 0, len(friendships))
 	for _, f := range friendships {
+		vo := *ImFriendshipToFriendVO(&f)
 		k := f.FriendType + ":" + f.FriendID
-		result = append(result, FriendVO{
-			UserID:   f.FriendID,
-			UserType: f.FriendType,
-			Nickname: nicknameMap[k],
-			Avatar:   avatarMap[k],
-			Remark:   f.Remark,
-			AddedAt:  utils.FormatDateTimePtr(f.CreatedAt),
-		})
+		vo.Nickname = nicknameMap[k]
+		vo.Avatar = avatarMap[k]
+		vos = append(vos, vo)
 	}
-	return result
+	return vos
 }
 
-// ==================== Friend Requests (incoming + outgoing) ====================
+// ==================== FriendPendingRequests ====================
 
-func PendingRequests(ctx context.Context, userID, userType string) ([]FriendRequestVO, []FriendRequestVO) {
-	var incoming []imModel.FriendRequest
+func FriendPendingRequests(c *gin.Context, userType string) (incoming, outgoing []FriendRequestVO) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	var inRecs []imModel.FriendRequest
 	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "pending").
-		Order("created_at DESC").Find(&incoming)
+		Order("created_at DESC").Find(&inRecs)
 
-	var outgoing []imModel.FriendRequest
+	var outRecs []imModel.FriendRequest
 	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("sender_id = ? AND sender_type = ? AND status = ?", userID, userType, "pending").
-		Order("created_at DESC").Find(&outgoing)
+		Order("created_at DESC").Find(&outRecs)
 
-	return toVOList(incoming), toVOList(outgoing)
+	incoming = make([]FriendRequestVO, len(inRecs))
+	for i, r := range inRecs {
+		incoming[i] = *ImFriendRequestToFriendRequestVO(&r)
+	}
+	outgoing = make([]FriendRequestVO, len(outRecs))
+	for i, r := range outRecs {
+		outgoing[i] = *ImFriendRequestToFriendRequestVO(&r)
+	}
+	return
 }
 
-// ==================== Remove Friend ====================
+// ==================== FriendRemove ====================
 
-func RemoveFriend(ctx context.Context, userID, userType, friendID, friendType string) {
-	if userID == "" || friendID == "" || friendType == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func FriendRemove(c *gin.Context, userType string, p *RemoveFriendParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.FriendID == "" || p.FriendType == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
 
 	tx := db.DB.WithContext(ctx).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			panic(r)
-		}
-	}()
 
 	r1 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
-		userID, userType, friendID, friendType).Delete(&imModel.Friendship{})
+		userID, userType, p.FriendID, p.FriendType).Delete(&imModel.Friendship{})
+	if r1.Error != nil {
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("删除好友失败: "+r1.Error.Error(), 500))
+		return
+	}
+
 	r2 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
-		friendID, friendType, userID, userType).Delete(&imModel.Friendship{})
+		p.FriendID, p.FriendType, userID, userType).Delete(&imModel.Friendship{})
+	if r2.Error != nil {
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("删除好友失败: "+r2.Error.Error(), 500))
+		return
+	}
 
 	if r1.RowsAffected == 0 && r2.RowsAffected == 0 {
-		panic(exception.NewBusinessError("好友关系不存在", 400))
+		tx.Rollback()
+		result.WriteError(c, exception.NewBusinessError("好友关系不存在", 400))
+		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		panic(exception.NewBusinessError("删除好友失败", 500))
+		result.WriteError(c, exception.NewBusinessError("删除好友失败: "+err.Error(), 500))
+		return
 	}
+
+	// WS push
+	payload := map[string]interface{}{
+		"friend_id":   p.FriendID,
+		"friend_type": p.FriendType,
+		"action":      "friend_removed",
+	}
+	msg := ws.Message{Type: "friend", Payload: payload}
+	ws.GlobalCrossHub.SendToUser(userID, msg)
 }
 
-// ==================== Search Users ====================
+// ==================== FriendSearch ====================
 
-type SearchResult struct {
-	UserID   string `json:"user_id"`
-	UserType string `json:"user_type"`
-	Nickname string `json:"nickname"`
-	Avatar   string `json:"avatar"`
-}
-
-func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult {
+func FriendSearch(c *gin.Context, keyword string, limit int) []SearchResult {
+	ctx := c.Request.Context()
 	if keyword == "" || limit < 1 {
 		return nil
 	}
@@ -299,7 +355,7 @@ func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult 
 			avatar = *u.Avatar
 		}
 		results = append(results, SearchResult{
-			UserID: u.ID, UserType: "BUSINESS",
+			UserID: u.ID, UserType: string(enums.LoginTypeBusiness),
 			Nickname: nickname, Avatar: avatar,
 		})
 	}
@@ -320,7 +376,7 @@ func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult 
 				avatar = *u.Avatar
 			}
 			results = append(results, SearchResult{
-				UserID: u.ID, UserType: "CONSUMER",
+				UserID: u.ID, UserType: string(enums.LoginTypeConsumer),
 				Nickname: nickname, Avatar: avatar,
 			})
 		}
@@ -329,102 +385,105 @@ func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult 
 	return results
 }
 
-// ==================== Block / Unblock / BlockList ====================
+// ==================== FriendBlock ====================
 
-func BlockUser(ctx context.Context, userID, userType, blockedID, blockedType string) {
-	if userID == "" || blockedID == "" || blockedType == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func FriendBlock(c *gin.Context, userType string, p *BlockParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.BlockedID == "" || p.BlockedType == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
-	if userID == blockedID && userType == blockedType {
-		panic(exception.NewBusinessError("不能拉黑自己", 400))
+	if userID == p.BlockedID && userType == p.BlockedType {
+		result.WriteError(c, exception.NewBusinessError("不能拉黑自己", 400))
+		return
 	}
 
 	// Check if already blocked
 	var existing int64
 	db.DB.WithContext(ctx).Model(&imModel.FriendBlock{}).
 		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
-			userID, userType, blockedID, blockedType).Count(&existing)
+			userID, userType, p.BlockedID, p.BlockedType).Count(&existing)
 	if existing > 0 {
-		panic(exception.NewBusinessError("已经拉黑了该用户", 400))
+		result.WriteError(c, exception.NewBusinessError("已经拉黑了该用户", 400))
+		return
 	}
 
-	now := time.Now()
 	if err := db.DB.WithContext(ctx).Create(&imModel.FriendBlock{
 		ID:          utils.GenerateID(),
 		UserID:      userID,
 		UserType:    userType,
-		BlockedID:   blockedID,
-		BlockedType: blockedType,
-		CreatedAt:   &now,
+		BlockedID:   p.BlockedID,
+		BlockedType: p.BlockedType,
 	}).Error; err != nil {
-		panic(exception.NewBusinessError("拉黑失败", 500))
+		result.WriteError(c, exception.NewBusinessError("拉黑失败: "+err.Error(), 500))
+		return
 	}
 
 	// Also remove friendship if exists
 	db.DB.WithContext(ctx).
 		Where("(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?) OR "+
 			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
-			userID, userType, blockedID, blockedType,
-			blockedID, blockedType, userID, userType).
+			userID, userType, p.BlockedID, p.BlockedType,
+			p.BlockedID, p.BlockedType, userID, userType).
 		Delete(&imModel.Friendship{})
 }
 
-func UnblockUser(ctx context.Context, userID, userType, blockedID, blockedType string) {
-	if userID == "" || blockedID == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+// ==================== FriendUnblock ====================
+
+func FriendUnblock(c *gin.Context, userType string, p *BlockParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.BlockedID == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
 
-	result := db.DB.WithContext(ctx).
+	res := db.DB.WithContext(ctx).
 		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
-			userID, userType, blockedID, blockedType).
+			userID, userType, p.BlockedID, p.BlockedType).
 		Delete(&imModel.FriendBlock{})
-	if result.RowsAffected == 0 {
-		panic(exception.NewBusinessError("未拉黑该用户", 400))
+	if res.RowsAffected == 0 {
+		result.WriteError(c, exception.NewBusinessError("未拉黑该用户", 400))
+		return
 	}
 }
 
-func BlockList(ctx context.Context, userID, userType string) []BlockVO {
+// ==================== FriendBlockList ====================
+
+func FriendBlockList(c *gin.Context, userType string) []BlockVO {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
 	var blocks []imModel.FriendBlock
 	db.DB.WithContext(ctx).Model(&imModel.FriendBlock{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Find(&blocks)
 
-	result := make([]BlockVO, len(blocks))
+	vos := make([]BlockVO, len(blocks))
 	for i, b := range blocks {
-		result[i] = BlockVO{
-			BlockedID:   b.BlockedID,
-			BlockedType: b.BlockedType,
-			CreatedAt:   utils.FormatDateTimePtr(b.CreatedAt),
-		}
+		vos[i] = *ImFriendBlockToBlockVO(&b)
 	}
-	return result
+	return vos
 }
 
-// ==================== Update Friend Remark ====================
+// ==================== FriendUpdateRemark ====================
 
-func UpdateFriendRemark(ctx context.Context, userID, userType, friendID, friendType, remark string) {
-	if userID == "" || friendID == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+func FriendUpdateRemark(c *gin.Context, userType string, p *RemarkParam) {
+	ctx := c.Request.Context()
+	userID := getLoginID(c, userType)
+
+	if p.FriendID == "" {
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
 	if err := db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
-			userID, userType, friendID, friendType).
-		Update("remark", remark).Error; err != nil {
-		panic(exception.NewBusinessError("修改备注失败", 500))
+			userID, userType, p.FriendID, p.FriendType).
+		Update("remark", p.Remark).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("修改备注失败: "+err.Error(), 500))
+		return
 	}
-}
-
-// ==================== Helpers ====================
-
-func toVOList(requests []imModel.FriendRequest) []FriendRequestVO {
-	r := make([]FriendRequestVO, len(requests))
-	for i, req := range requests {
-		r[i] = FriendRequestVO{
-			ID: req.ID, SenderID: req.SenderID, SenderType: req.SenderType,
-			ReceiverID: req.ReceiverID, ReceiverType: req.ReceiverType,
-			Remark: req.Remark, Status: req.Status,
-			CreatedAt: utils.FormatDateTimePtr(req.CreatedAt),
-		}
-	}
-	return r
 }

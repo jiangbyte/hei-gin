@@ -1,30 +1,27 @@
 package message
 
 import (
-	"context"
 	"sort"
-	"strings"
 	"time"
+	"strings"
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	imModel "hei-gin/plugins/plugin-im/model"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/plugins/plugin-im/group"
+
+	"github.com/gin-gonic/gin"
 )
 
-// ==================== Conversations ====================
-//
-// Single-chat conversations are ALWAYS derived from im_message directly.
-// The im_conversation cache table is NOT used for reads — this ensures
-// conversations are never out of sync with messages.
-// Group conversations come from group.MyGroupConversations().
+// ==================== MessageConversations ====================
 
-func Conversations(currentUserID, userType string, cursor string, size int) ([]ConversationVO, bool) {
+func MessageConversations(c *gin.Context, cursor string, size int) ([]ConversationVO, bool) {
 	if size < 1 {
 		size = 20
 	}
@@ -32,10 +29,11 @@ func Conversations(currentUserID, userType string, cursor string, size int) ([]C
 		size = 100
 	}
 
-	// Build single-chat conversations from im_message
+	currentUserID := getLoginID(c)
+	userType := getUserType(c)
+
 	singleResult := buildFromMessages(currentUserID, userType)
 
-	// Add group conversations
 	groupConvs := group.MyGroupConversations(currentUserID, userType)
 	for _, gv := range groupConvs {
 		singleResult["group:"+gv.GroupID] = &ConversationVO{
@@ -51,7 +49,6 @@ func Conversations(currentUserID, userType string, cursor string, size int) ([]C
 		}
 	}
 
-	// Sort: all conversations mixed together by last_time
 	result := make([]ConversationVO, 0, len(singleResult))
 	for _, vo := range singleResult {
 		result = append(result, *vo)
@@ -60,7 +57,6 @@ func Conversations(currentUserID, userType string, cursor string, size int) ([]C
 		return result[i].LastTime > result[j].LastTime
 	})
 
-	// Apply cursor pagination on the sorted result
 	hasMore := false
 	if cursor != "" {
 		cut := -1
@@ -82,9 +78,7 @@ func Conversations(currentUserID, userType string, cursor string, size int) ([]C
 	return result, hasMore
 }
 
-// buildFromMessages derives single-chat conversation VOs directly from im_message.
 func buildFromMessages(currentUserID, userType string) map[string]*ConversationVO {
-	// Single query: get the latest message per conversation where user participates
 	type msgRow struct {
 		ConversationID string
 		SenderID       string
@@ -97,7 +91,6 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 	}
 
 	var rows []msgRow
-	// Get the latest message per conversation using a derived table approach
 	subQuery := db.DB.Table("im_message").
 		Select("conversation_id, MAX(created_at) as max_ct").
 		Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by IS NULL OR deleted_by != ?)",
@@ -110,17 +103,14 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 		Order("m.created_at DESC").
 		Scan(&rows)
 
-	// Build VOs
 	resultMap := make(map[string]*ConversationVO, len(rows))
-	userKeys := make(map[string]bool) // "type:id" for batch resolve
+	userKeys := make(map[string]bool)
 
-	// Batch collect conversation IDs for unread count
 	convIDs := make([]string, 0, len(rows))
 	for _, r := range rows {
 		convIDs = append(convIDs, r.ConversationID)
 	}
 
-	// Batch query unread counts
 	type unreadRow struct {
 		ConversationID string
 		Count          int64
@@ -157,7 +147,6 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 		}
 	}
 
-	// Batch resolve nicknames and avatars
 	if len(userKeys) > 0 {
 		businessIDs, consumerIDs := []string{}, []string{}
 		for key := range userKeys {
@@ -180,10 +169,10 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 			db.DB.Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&busUsers)
 			for _, u := range busUsers {
 				if u.Nickname != nil {
-					nicknameMap["BUSINESS:"+u.ID] = *u.Nickname
+					nicknameMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Nickname
 				}
 				if u.Avatar != nil {
-					avatarMap["BUSINESS:"+u.ID] = *u.Avatar
+					avatarMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Avatar
 				}
 			}
 		}
@@ -192,10 +181,10 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 			db.DB.Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&conUsers)
 			for _, u := range conUsers {
 				if u.Nickname != nil {
-					nicknameMap["CONSUMER:"+u.ID] = *u.Nickname
+					nicknameMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Nickname
 				}
 				if u.Avatar != nil {
-					avatarMap["CONSUMER:"+u.ID] = *u.Avatar
+					avatarMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Avatar
 				}
 			}
 		}
@@ -210,17 +199,11 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 	return resultMap
 }
 
-// ==================== Conversation Messages ====================
+// ==================== MessageConversationMessages ====================
 
-func BusinessConversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
-	return conversationMessages(ctx, currentUserID, conversationID, cursor, size)
-}
+func MessageConversationMessages(c *gin.Context, conversationID, cursor string, size int) ([]ConversationMessageVO, bool) {
+	currentUserID := getLoginID(c)
 
-func ConsumerConversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
-	return conversationMessages(ctx, currentUserID, conversationID, cursor, size)
-}
-
-func conversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
 	if size < 1 {
 		size = 20
 	}
@@ -228,7 +211,7 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 		size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&imModel.Message{}).
+	q := db.DB.Model(&imModel.Message{}).
 		Where("conversation_id = ? AND (sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)",
 			conversationID, currentUserID, currentUserID, currentUserID)
 	if cursor != "" {
@@ -254,28 +237,23 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 		if m.MsgType == "IMAGE" || m.MsgType == "FILE" {
 			fileURL = ResolveFileURL(m.Content, m.Extra)
 		}
-		result[i] = ConversationMessageVO{
-			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
-			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
-			Status: m.Status,
-			FileURL: fileURL,
-			CreatedAt: utils.FormatDateTimePtr(m.CreatedAt),
-		}
+		result[i] = *ImMessageToConversationMessageVO(&m, fileURL)
 	}
 	return result, hasMore
 }
 
-// ==================== Get or Create Conversation ====================
-// Simply generates a deterministic conversation ID from the user pair.
-// No DB write — the conversation is derived from messages on read.
+// ==================== MessageGetOrCreateConversation ====================
 
-func GetOrCreateConversation(userID string, userType string, param *GetOrCreateConversationParam) (string, string) {
+func MessageGetOrCreateConversation(c *gin.Context, param *GetOrCreateConversationParam) {
+	currentUserID := getLoginID(c)
+	userType := getUserType(c)
+
 	if param.UserID == "" || param.UserType == "" {
-		panic(exception.NewBusinessError("参数错误", 400))
+		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
+		return
 	}
-	cid := imModel.GenerateConversationID(userID, enums.LoginTypeEnum(userType), param.UserID, enums.LoginTypeEnum(param.UserType))
+	cid := imModel.GenerateConversationID(currentUserID, enums.LoginTypeEnum(userType), param.UserID, enums.LoginTypeEnum(param.UserType))
 
-	// Resolve display name
 	displayName := param.UserID
 	if param.UserType == string(enums.LoginTypeBusiness) {
 		var u sysUser.SysUser
@@ -288,5 +266,5 @@ func GetOrCreateConversation(userID string, userType string, param *GetOrCreateC
 			displayName = *u.Nickname
 		}
 	}
-	return cid, displayName
+	result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName})
 }

@@ -12,6 +12,12 @@ type HandleRequestParam struct {
 	RequestID string `json:"request_id" binding:"required"`
 }
 
+// RemoveFriendParam 删除好友
+type RemoveFriendParam struct {
+	FriendID   string `json:"friend_id" binding:"required"`
+	FriendType string `json:"friend_type" binding:"required"`
+}
+
 // FriendVO 好友视图
 type FriendVO struct {
 	UserID   string `json:"user_id"`
@@ -52,4 +58,12 @@ type RemarkParam struct {
 type BlockParam struct {
 	BlockedID   string `json:"blocked_id" binding:"required"`
 	BlockedType string `json:"blocked_type" binding:"required"`
+}
+
+// SearchResult 搜索用户结果
+type SearchResult struct {
+	UserID   string `json:"user_id"`
+	UserType string `json:"user_type"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
 }
