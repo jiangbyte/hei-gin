@@ -2,7 +2,7 @@ package group
 
 // Group types
 const (
-	GroupTypeMixed       = "mixed"
+	GroupTypeMixed        = "mixed"
 	GroupTypeConsumerOnly = "consumer_only"
 )
 
