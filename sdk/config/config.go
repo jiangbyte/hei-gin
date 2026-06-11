@@ -72,11 +72,11 @@ type UserConfig struct {
 	ResetPassword string `yaml:"reset_password"`
 }
 
-
 type AuthConfig struct {
 	// PublicPaths lists routes that bypass authentication entirely.
 	// Each entry is matched as a prefix against the full request path.
-	PublicPaths []string `yaml:"public_paths"`
+	PublicPaths             []string `yaml:"public_paths"`
+	BusinessRegisterEnabled bool     `yaml:"business_register_enabled"`
 }
 
 type CORSConfig struct {
@@ -89,7 +89,6 @@ type CORSConfig struct {
 type SnowflakeConfig struct {
 	Instance int64 `yaml:"instance"`
 }
-
 
 var C *Config
 

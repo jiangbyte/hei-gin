@@ -1,10 +1,7 @@
 package middleware
 
 import (
-	"context"
-
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
@@ -39,18 +36,7 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 			uid = auth.GetLoginIDDefaultNull(c)
 		}
 
-		// Set loginUser for downstream audit logging
-		if username := auth.GetExtra(c, "username"); username != nil {
-			if u, ok := username.(string); ok && u != "" {
-				c.Set("loginUser", u)
-			}
-		}
-
-		// Inject user ID into request context for GORM global callback
-		if uid != "" {
-			ctx := context.WithValue(c.Request.Context(), db.CtxKeyLoginID{}, uid)
-			c.Request = c.Request.WithContext(ctx)
-		}
+		AttachLoginContext(c, lt, uid)
 
 		c.Next()
 	}

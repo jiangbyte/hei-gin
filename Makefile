@@ -1,5 +1,7 @@
 .PHONY: dev build run test lint clean scaffold list-imports
 
+GO_MODULES := . api sdk plugins/plugin-sys plugins/plugin-client plugins/plugin-im
+
 # ── Development ─────────────────────────────────────────────────────
 dev:          ## Start with hot-reload (requires air)
 	@command -v air >/dev/null 2>&1 || { \
@@ -32,10 +34,16 @@ migrate-dry:  ## Preview database migrations (dry-run)
 
 # ── Quality ─────────────────────────────────────────────────────────
 test:         ## Run tests
-	go test ./...
+	@for module in $(GO_MODULES); do \
+		echo "==> go test $$module"; \
+		(cd $$module && go test ./...) || exit 1; \
+	done
 
 lint:         ## Run linter
-	go vet ./...
+	@for module in $(GO_MODULES); do \
+		echo "==> go vet $$module"; \
+		(cd $$module && go vet ./...) || exit 1; \
+	done
 
 clean:        ## Clean build artifacts
 	rm -rf .air_tmp bin/

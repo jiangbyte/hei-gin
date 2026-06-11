@@ -24,3 +24,7 @@ type Engine interface {
 	// Copy copies an object from source to destination within the same backend.
 	Copy(srcBucket, srcKey, dstBucket, dstKey string) error
 }
+
+type SizedStreamer interface {
+	StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error)
+}

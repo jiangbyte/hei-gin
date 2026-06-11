@@ -163,13 +163,19 @@ func ClientUserRemove(c *gin.Context, param *utils.IdsParam) {
 // ===== Current =====
 
 func ClientUserCurrent(c *gin.Context) *ClientUserVO {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
+		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return nil
 	}
 
 	var e ClientUser
 	if err := db.DB.WithContext(c.Request.Context()).First(&e, "id = ?", userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
+			return nil
+		}
+		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 		return nil
 	}
 	return ClientUserToClientUserVO(&e)
@@ -178,8 +184,9 @@ func ClientUserCurrent(c *gin.Context) *ClientUserVO {
 // ===== UpdateProfile =====
 
 func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
+		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
 	}
 	ctx := c.Request.Context()
@@ -212,13 +219,16 @@ func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	if len(up) == 0 {
 		return
 	}
-	db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Updates(up)
+	if err := db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Updates(up).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("更新个人信息失败: "+err.Error(), 500))
+		return
+	}
 }
 
 // ===== UpdateAvatar =====
 
 func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
@@ -249,7 +259,7 @@ func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 // ===== UpdatePassword =====
 
 func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
@@ -272,6 +282,18 @@ func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 		result.WriteError(c, exception.NewBusinessError("当前密码不正确", 400))
 		return
 	}
-	h, _ := bcrypt.GenerateFromPassword([]byte(utils.Decrypt(param.NewPassword)), bcrypt.DefaultCost)
-	db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Update("password", string(h))
+	newPwd := utils.Decrypt(param.NewPassword)
+	if newPwd == "" {
+		result.WriteError(c, exception.NewBusinessError("新密码解密失败", 400))
+		return
+	}
+	h, err := bcrypt.GenerateFromPassword([]byte(newPwd), bcrypt.DefaultCost)
+	if err != nil {
+		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
+		return
+	}
+	if err := db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Update("password", string(h)).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
+		return
+	}
 }

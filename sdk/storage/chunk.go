@@ -8,6 +8,7 @@ type ChunkInfo struct {
 	ChunkIndex  int    // 0-based chunk index
 	TotalChunks int    // Total number of chunks in this upload
 	Checksum    string // Optional chunk-level checksum (SHA256 hex)
+	Size        int64  // Chunk size in bytes when known
 	Data        io.Reader
 }
 

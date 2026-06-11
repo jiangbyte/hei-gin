@@ -4,7 +4,9 @@ import (
 	"strings"
 
 	"hei-gin/sdk/auth"
+	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/config"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -37,39 +39,66 @@ func AuthCheck() gin.HandlerFunc {
 
 		// Public paths from config – no auth
 		for _, pp := range config.C.Auth.PublicPaths {
-			if strings.HasPrefix(path, pp) {
+			if pathPrefixMatch(path, pp) {
+				attachOptionalLogin(c)
 				c.Next()
 				return
 			}
 		}
 
 		// /api/v{n}/c/... → CONSUMER auth
-		if strings.HasPrefix(path, "/api/v") {
+		if strings.HasPrefix(path, "/api/v") && len(path) > len("/api/v") {
 			afterV := path[7:] // after "/api/v"
 			slash := strings.IndexByte(afterV, '/')
 			if slash >= 0 {
-				afterVer := afterV[slash+1:]    // e.g. "c/..." or "sys/..."
+				afterVer := afterV[slash+1:] // e.g. "c/..." or "sys/..."
 				if strings.HasPrefix(afterVer, "c/") {
-					if !auth.Consumer.IsLogin(c) {
+					uid := auth.Consumer.GetLoginIDDefaultNull(c)
+					if uid == "" {
 						c.Abort()
 						result.Failure(c, "未授权/未登录", 401)
 						return
 					}
+					authMW.AttachLoginContext(c, string(enums.LoginTypeConsumer), uid)
 					c.Next()
 					return
 				}
 
 				// All other /api/v{n}/... routes → BUSINESS auth
-				if !auth.IsLogin(c) {
+				uid := auth.GetLoginIDDefaultNull(c)
+				if uid == "" {
 					c.Abort()
 					result.Failure(c, "未授权/未登录", 401)
 					return
 				}
+				authMW.AttachLoginContext(c, string(enums.LoginTypeBusiness), uid)
 				c.Next()
 				return
 			}
 		}
 
+		attachOptionalLogin(c)
 		c.Next()
 	}
+}
+
+func attachOptionalLogin(c *gin.Context) {
+	if uid := auth.GetLoginIDDefaultNull(c); uid != "" {
+		authMW.AttachLoginContext(c, string(enums.LoginTypeBusiness), uid)
+	} else if uid := auth.Consumer.GetLoginIDDefaultNull(c); uid != "" {
+		authMW.AttachLoginContext(c, string(enums.LoginTypeConsumer), uid)
+	}
+}
+
+func pathPrefixMatch(path, prefix string) bool {
+	if prefix == "" {
+		return false
+	}
+	if prefix == "/" {
+		return path == "/"
+	}
+	if strings.HasSuffix(prefix, "/") {
+		return strings.HasPrefix(path, prefix)
+	}
+	return path == prefix || strings.HasPrefix(path, prefix+"/")
 }

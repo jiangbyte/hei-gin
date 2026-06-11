@@ -58,6 +58,10 @@ func (s *Local) Store(bucket, fileKey string, data []byte) (string, error) {
 
 // StoreStream copies data from a reader to the local filesystem.
 func (s *Local) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+	return s.StoreStreamWithSize(bucket, fileKey, reader, -1)
+}
+
+func (s *Local) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	path, err := s.ensurePath(bucket, fileKey)
 	if err != nil {
 		return "", err

@@ -38,7 +38,7 @@ func httpStatus(code int) int {
 }
 
 func writeJSON(c *gin.Context, httpCode int, body gin.H) {
-	if c.IsAborted() {
+	if c.Writer.Written() {
 		return
 	}
 	c.JSON(httpCode, body)

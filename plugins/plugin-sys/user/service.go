@@ -7,12 +7,12 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/auth"
 
 	"hei-gin/sdk/constants"
 
@@ -315,7 +315,10 @@ func UserModify(c *gin.Context, v *UserVO) {
 	if uid := auth.GetLoginIDDefaultNull(c); uid != "" {
 		up["updated_by"] = uid
 	}
-	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", v.ID).Updates(up)
+	if err := db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", v.ID).Updates(up).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("编辑用户失败: "+err.Error(), 500))
+		return
+	}
 }
 
 func UserRemove(c *gin.Context, p *utils.IdsParam) {
@@ -426,8 +429,11 @@ func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
-	db.DB.Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
-		map[string]interface{}{"status": p.Status})
+	if err := db.DB.Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
+		map[string]interface{}{"status": p.Status}).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("更新用户状态失败: "+err.Error(), 500))
+		return
+	}
 }
 
 func UserOwnRoleIDs(c *gin.Context, uid string) []string {
@@ -446,8 +452,8 @@ func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface
 	r := make([]map[string]interface{}, len(pp))
 	for i, p := range pp {
 		r[i] = map[string]interface{}{
-			"permission_code": p.PermissionCode,
-			"scope":           p.Scope,
+			"permission_code":        p.PermissionCode,
+			"scope":                  p.Scope,
 			"custom_scope_group_ids": p.CustomScopeGroupIds,
 			"custom_scope_org_ids":   p.CustomScopeOrgIds,
 		}
@@ -487,7 +493,10 @@ func UserUpdateProfile(c *gin.Context, p *UpdateProfileParam) {
 		up["phone"] = *p.Phone
 	}
 	up["updated_at"] = time.Now()
-	db.DB.Model(&SysUser{}).Where("id = ?", uid).Updates(up)
+	if err := db.DB.Model(&SysUser{}).Where("id = ?", uid).Updates(up).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("更新个人信息失败: "+err.Error(), 500))
+		return
+	}
 }
 
 func UserUpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
@@ -542,8 +551,20 @@ func UserUpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
 		result.WriteError(c, exception.NewBusinessError("当前密码不正确", 400))
 		return
 	}
-	h, _ := bcrypt.GenerateFromPassword([]byte(utils.Decrypt(p.NewPassword)), bcrypt.DefaultCost)
-	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", uid).Update("password", string(h))
+	newPwd := utils.Decrypt(p.NewPassword)
+	if newPwd == "" {
+		result.WriteError(c, exception.NewBusinessError("新密码解密失败", 400))
+		return
+	}
+	h, err := bcrypt.GenerateFromPassword([]byte(newPwd), bcrypt.DefaultCost)
+	if err != nil {
+		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
+		return
+	}
+	if err := db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", uid).Update("password", string(h)).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
+		return
+	}
 }
 
 type rawResource struct {

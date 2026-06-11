@@ -10,14 +10,16 @@ import (
 	"strings"
 
 	"encoding/json"
+	imModel "hei-gin/plugins/plugin-im/model"
+	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
-	imModel "hei-gin/plugins/plugin-im/model"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type FileUploadResult struct {
@@ -31,7 +33,7 @@ type FileUploadResult struct {
 }
 
 var allowedExtensions = map[string]bool{
-	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".svg": true, ".ico": true,
+	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".ico": true,
 	".bmp": true, ".tiff": true,
 	".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".pdf": true,
 	".txt": true, ".csv": true, ".md": true,
@@ -47,6 +49,13 @@ func isImageExt(ext string) bool {
 		return true
 	}
 	return false
+}
+
+func maxUploadSize() int64 {
+	if config.C != nil && config.C.App.UploadMaxSize > 0 {
+		return config.C.App.UploadMaxSize
+	}
+	return 50 << 20
 }
 
 type hashReader struct {
@@ -82,6 +91,13 @@ func formatFileSize(bytes int64) (kb int64, info string) {
 	return kb, fmt.Sprintf("%.1f MB", mb)
 }
 
+func storeStream(eng storage.Engine, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+	if ss, ok := eng.(storage.SizedStreamer); ok {
+		return ss.StoreStreamWithSize(bucket, fileKey, reader, size)
+	}
+	return eng.StoreStream(bucket, fileKey, reader)
+}
+
 func UploadFile(c *gin.Context, senderID, senderType string) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -90,8 +106,12 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 	}
 	defer file.Close()
 
-	ext := filepath.Ext(header.Filename)
-	if !allowedExtensions[strings.ToLower(ext)] {
+	if header.Size <= 0 || header.Size > maxUploadSize() {
+		result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("文件大小超过限制 (%d MB)", maxUploadSize()/(1<<20)), 400))
+		return
+	}
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext == "" || !allowedExtensions[ext] {
 		result.WriteError(c, exception.NewBusinessError("不支持的文件类型: "+ext, 400))
 		return
 	}
@@ -114,7 +134,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 	}
 
 	hr := newHashReader(file)
-	storagePath, err := eng.StoreStream(bucket, fileKey, hr)
+	storagePath, err := storeStream(eng, bucket, fileKey, hr, header.Size)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
 		return
@@ -125,7 +145,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 
 	thumbnail := ""
 	if isImageExt(ext) {
-		thumbnail = fileKey
+		thumbnail = storage.GetURL(engineType, bucket, fileKey)
 	}
 
 	msgType := c.PostForm("msg_type")
@@ -143,7 +163,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 		SizeKb:         fileSizeKb,
 		SizeInfo:       sizeInfo,
 		StoragePath:    storagePath,
-		DownloadPath:   "",
+		DownloadPath:   storage.GetURL(engineType, bucket, fileKey),
 		Thumbnail:      thumbnail,
 		Checksum:       checksum,
 		ChecksumAlgo:   "sha256",
@@ -196,4 +216,31 @@ func ResolveFileURL(content, extra string) string {
 	}
 
 	return storage.GetURL(engine, bucket, content)
+}
+
+func ServeUploadedFile(c *gin.Context, bucket, fileKey string) error {
+	if bucket == "" || fileKey == "" || strings.Contains(bucket, "..") || strings.Contains(fileKey, "..") ||
+		strings.Contains(bucket, "/") || strings.Contains(bucket, "\\") ||
+		strings.Contains(fileKey, "/") || strings.Contains(fileKey, "\\") {
+		return fmt.Errorf("文件不存在")
+	}
+
+	var entity imModel.ImFile
+	if err := db.DB.WithContext(c.Request.Context()).
+		First(&entity, "bucket = ? AND file_key = ?", bucket, fileKey).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("文件不存在")
+		}
+		return fmt.Errorf("查询文件失败")
+	}
+
+	if strings.EqualFold(entity.Engine, "LOCAL") && entity.StoragePath != "" {
+		c.File(entity.StoragePath)
+		return nil
+	}
+	if entity.DownloadPath != "" {
+		c.Redirect(302, entity.DownloadPath)
+		return nil
+	}
+	return fmt.Errorf("文件路径为空")
 }

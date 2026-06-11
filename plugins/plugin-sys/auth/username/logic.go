@@ -1,18 +1,21 @@
 package username
+
 import (
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/captcha"
+	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	userModel "hei-gin/plugins/plugin-sys/user"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
+
 // DoLogin handles username/password login.
 func DoLogin(c *gin.Context) {
 	var param UsernameLoginParam
@@ -82,8 +85,13 @@ func DoLogin(c *gin.Context) {
 	log.RecordAuthLog(c, "登录", "LOGIN", "SUCCESS", "", username)
 	result.Success(c, UsernameLoginResult{Token: tokenStr})
 }
+
 // DoRegister handles user registration.
 func DoRegister(c *gin.Context) {
+	if !config.C.Auth.BusinessRegisterEnabled {
+		result.WriteError(c, exception.NewBusinessError("后台注册未开放", 403))
+		return
+	}
 	var param UsernameRegisterParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.WriteError(c, exception.NewBusinessError("请求参数错误", 400))
@@ -122,6 +130,7 @@ func DoRegister(c *gin.Context) {
 	log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
 	result.Success(c, UsernameRegisterResult{Message: "注册成功"})
 }
+
 // DoLogout handles user logout.
 func DoLogout(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)

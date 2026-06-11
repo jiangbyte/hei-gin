@@ -3,12 +3,12 @@ package v1
 import (
 	"strconv"
 
+	file "hei-gin/plugins/plugin-sys/file"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/utils"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
-	file "hei-gin/plugins/plugin-sys/file"
+	"hei-gin/sdk/result"
+	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -166,8 +166,19 @@ func uploadInitHandler(c *gin.Context) {
 
 // uploadChunkHandler handles POST /api/v1/sys/file/upload/chunk
 func uploadChunkHandler(c *gin.Context) {
-	chunkIndex, _ := strconv.Atoi(c.PostForm("chunk_index"))
-	totalChunks, _ := strconv.Atoi(c.PostForm("total_chunks"))
+	chunkIndex, err := strconv.Atoi(c.PostForm("chunk_index"))
+	if err != nil {
+		result.Failure(c, "chunk_index 参数错误", 400)
+		return
+	}
+	totalChunks := 0
+	if raw := c.PostForm("total_chunks"); raw != "" {
+		totalChunks, err = strconv.Atoi(raw)
+		if err != nil {
+			result.Failure(c, "total_chunks 参数错误", 400)
+			return
+		}
+	}
 	param := file.ChunkUploadParam{
 		UploadID:    c.PostForm("upload_id"),
 		ChunkIndex:  chunkIndex,

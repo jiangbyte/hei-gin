@@ -3,8 +3,8 @@ package auth
 import (
 	"log"
 
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/config"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/plugin"
 
 	"github.com/gin-gonic/gin"
@@ -52,6 +52,20 @@ func CheckDisable(loginID string) error       { return businessAuth.CheckDisable
 func GetDisableTime(loginID string) int       { return businessAuth.GetDisableTime(loginID) }
 func UntieDisable(loginID string)             { businessAuth.UntieDisable(loginID) }
 
+func ToolForLoginType(loginType string) *baseAuthTool {
+	if loginType == string(enums.LoginTypeConsumer) {
+		return Consumer
+	}
+	return businessAuth
+}
+
+func GetLoginIDByType(c *gin.Context, loginType string) string {
+	return ToolForLoginType(loginType).GetLoginIDDefaultNull(c)
+}
+
+func GetExtraByType(c *gin.Context, loginType, key string) any {
+	return ToolForLoginType(loginType).GetExtra(c, key)
+}
 
 // ---- plugin registration ----
 

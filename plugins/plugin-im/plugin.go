@@ -1,11 +1,14 @@
 package plugin_im
 
 import (
+	message "hei-gin/plugins/plugin-im/message"
 	ws "hei-gin/plugins/plugin-im/ws"
+	file "hei-gin/plugins/plugin-sys/file"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/registry"
+	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
 
@@ -15,7 +18,6 @@ import (
 	_ "hei-gin/plugins/plugin-im/friend/api/v1"
 	_ "hei-gin/plugins/plugin-im/group"
 	_ "hei-gin/plugins/plugin-im/group/api/v1"
-	_ "hei-gin/plugins/plugin-im/message"
 	_ "hei-gin/plugins/plugin-im/message/api/v1"
 )
 
@@ -46,10 +48,24 @@ func init() {
 	plugin.Register(&IMPlugin{})
 
 	registry.RegisterRoute(func(r *gin.Engine) {
-		r.Static("/uploads", "./uploads")
+		r.GET("/uploads/:bucket/:file_key", uploadHandler)
 		r.GET("/api/v1/sys/im/ws", sysWSHandler)
 		r.GET("/api/v1/c/im/ws", clientWSHandler)
 	})
+}
+
+func uploadHandler(c *gin.Context) {
+	bucket := c.Param("bucket")
+	fileKey := c.Param("file_key")
+	if err := file.FileDownloadByKey(c, bucket, fileKey); err == nil {
+		return
+	} else if err.Error() == "未授权/未登录" {
+		result.Failure(c, err.Error(), 401)
+		return
+	}
+	if err := message.ServeUploadedFile(c, bucket, fileKey); err != nil {
+		result.Failure(c, err.Error(), 404)
+	}
 }
 
 func sysWSHandler(c *gin.Context) {

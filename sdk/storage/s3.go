@@ -3,8 +3,8 @@ package storage
 import (
 	"bytes"
 	"context"
-	"io"
 	"errors"
+	"io"
 	"log"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 type S3 struct {
 	client        *s3.Client
 	defaultBucket string
-	baseURL      string
+	baseURL       string
 	endpoint      string
 }
 
@@ -85,19 +85,23 @@ func (s *S3) Store(bucket, fileKey string, data []byte) (string, error) {
 
 // StoreStream reads all data from the reader and uploads it to S3.
 func (s *S3) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+	return s.StoreStreamWithSize(bucket, fileKey, reader, -1)
+}
+
+func (s *S3) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	ctx := context.Background()
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return "", err
-	}
-	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
+	input := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(fileKey),
-		Body:   bytes.NewReader(data),
-	})
+		Body:   reader,
+	}
+	if size >= 0 {
+		input.ContentLength = aws.Int64(size)
+	}
+	_, err := s.client.PutObject(ctx, input)
 	if err != nil {
 		return "", err
 	}
@@ -199,11 +203,12 @@ func (s *S3) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) erro
 	ctx := context.Background()
 	partNumber := int32(chunk.ChunkIndex + 1) // S3 parts are 1-based
 	_, err := s.client.UploadPart(ctx, &s3.UploadPartInput{
-		Bucket:     aws.String(bucket),
-		Key:        aws.String(fileKey),
-		UploadId:   aws.String(uploadID),
-		PartNumber: aws.Int32(partNumber),
-		Body:       chunk.Data,
+		Bucket:        aws.String(bucket),
+		Key:           aws.String(fileKey),
+		UploadId:      aws.String(uploadID),
+		PartNumber:    aws.Int32(partNumber),
+		Body:          chunk.Data,
+		ContentLength: aws.Int64(chunk.Size),
 	})
 	return err
 }

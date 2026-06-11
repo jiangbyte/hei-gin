@@ -3,10 +3,10 @@ package storage
 import (
 	"bytes"
 	"context"
-	"strings"
 	"errors"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -19,9 +19,10 @@ import (
 type Minio struct {
 	core          *minio.Core
 	defaultBucket string
-	baseURL      string
+	baseURL       string
 	endpoint      string
 }
+
 func NewMinio(endpoint, accessKey, secretKey, defaultBucket string, secure bool, region string, baseURL string) *Minio {
 	core, err := minio.NewCore(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
@@ -37,8 +38,8 @@ func NewMinio(endpoint, accessKey, secretKey, defaultBucket string, secure bool,
 		defaultBucket: defaultBucket,
 		baseURL:       baseURL,
 		endpoint:      endpoint,
-}
 	}
+}
 
 // client returns the embedded *minio.Client for standard operations.
 func (m *Minio) client() *minio.Client {
@@ -77,15 +78,15 @@ func (m *Minio) Store(bucket, fileKey string, data []byte) (string, error) {
 
 // StoreStream uploads data from a reader to MinIO.
 func (m *Minio) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+	return m.StoreStreamWithSize(bucket, fileKey, reader, -1)
+}
+
+func (m *Minio) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	ctx := context.Background()
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return "", err
-	}
-	_, err = m.client().PutObject(ctx, bucket, fileKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{})
+	_, err := m.client().PutObject(ctx, bucket, fileKey, reader, size, minio.PutObjectOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -191,13 +192,9 @@ func (m *Minio) InitChunkUpload(bucket, fileKey string, totalChunks int) (string
 // UploadChunk uploads a single chunk as a part in the MinIO multipart upload.
 func (m *Minio) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
 	ctx := context.Background()
-	data, err := io.ReadAll(chunk.Data)
-	if err != nil {
-		return err
-	}
 	partNumber := chunk.ChunkIndex + 1 // MinIO parts are 1-based
-	_, err = m.core.PutObjectPart(ctx, bucket, fileKey, uploadID, partNumber,
-		bytes.NewReader(data), int64(len(data)), minio.PutObjectPartOptions{})
+	_, err := m.core.PutObjectPart(ctx, bucket, fileKey, uploadID, partNumber,
+		chunk.Data, chunk.Size, minio.PutObjectPartOptions{})
 	return err
 }
 
