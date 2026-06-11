@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"hei-gin/sdk/db"
-	"hei-gin/sdk/exception"
+	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
 )
@@ -84,7 +84,9 @@ func RateLimiter(endpointKey string, window int, maxRequests int) gin.HandlerFun
 			count = 0
 		}
 		if count > int64(max) {
-			panic(exception.NewBusinessError("请求过于频繁，请稍后重试", http.StatusTooManyRequests))
+			c.Abort()
+			result.Failure(c, "请求过于频繁，请稍后重试", http.StatusTooManyRequests)
+			return
 		}
 
 		c.Next()

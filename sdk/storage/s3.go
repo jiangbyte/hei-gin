@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -29,7 +30,8 @@ func NewS3(endpoint, accessKey, secretKey, defaultBucket, region string, pathSty
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 	)
 	if err != nil {
-		panic(err)
+		log.Printf("[storage/s3] failed to load AWS config: %v", err)
+		return nil
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {

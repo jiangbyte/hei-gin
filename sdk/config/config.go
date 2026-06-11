@@ -76,7 +76,6 @@ type UserConfig struct {
 type AuthConfig struct {
 	// PublicPaths lists routes that bypass authentication entirely.
 	// Each entry is matched as a prefix against the full request path.
-	// For /api/v{n}/... paths the version digit is treated as a wildcard.
 	PublicPaths []string `yaml:"public_paths"`
 }
 

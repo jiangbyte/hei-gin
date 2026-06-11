@@ -6,6 +6,7 @@ import (
 	"strings"
 	"errors"
 	"io"
+	"log"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -28,7 +29,8 @@ func NewMinio(endpoint, accessKey, secretKey, defaultBucket string, secure bool,
 		Region: region,
 	})
 	if err != nil {
-		panic(err)
+		log.Printf("[storage/minio] failed to create MinIO client: %v", err)
+		return nil
 	}
 	return &Minio{
 		core:          core,

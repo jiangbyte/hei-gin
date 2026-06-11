@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ func HeiCheckRole(roles []string, mode ...string) gin.HandlerFunc {
 	if len(mode) > 0 {
 		m = mode[0]
 	}
-	return heiCheckRoleInner("BUSINESS", roles, m)
+	return heiCheckRoleInner(string(enums.LoginTypeBusiness), roles, m)
 }
 
 // HeiClientCheckRole returns a middleware that checks the CONSUMER user has the required roles.
@@ -27,7 +28,7 @@ func HeiClientCheckRole(roles []string, mode ...string) gin.HandlerFunc {
 	if len(mode) > 0 {
 		m = mode[0]
 	}
-	return heiCheckRoleInner("CONSUMER", roles, m)
+	return heiCheckRoleInner(string(enums.LoginTypeConsumer), roles, m)
 }
 
 // heiCheckRoleInner is a shared implementation for both BUSINESS and CONSUMER role checks.
@@ -35,7 +36,7 @@ func heiCheckRoleInner(loginType string, roles []string, mode string) gin.Handle
 	return func(c *gin.Context) {
 		// Check login first
 		var isLogin bool
-		if loginType == "CONSUMER" {
+		if loginType == string(enums.LoginTypeConsumer) {
 			tool := auth.Consumer
 			isLogin = tool.IsLogin(c)
 		} else {

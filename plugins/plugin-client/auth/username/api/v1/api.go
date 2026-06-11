@@ -1,4 +1,4 @@
-package username_api
+package v1
 
 import (
 	"hei-gin/plugins/plugin-client/auth/username"

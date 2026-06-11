@@ -7,6 +7,7 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	resModel "hei-gin/plugins/plugin-sys/resource"
@@ -134,7 +135,7 @@ func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
 	var actionIDs []string
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ?", userID).Select("resource_id").Find(&actionIDs)
 
-	q := db.DB.WithContext(ctx).Model(&resModel.SysResource{}).Where("category IN ? AND status = ?", []string{"BACKEND_MENU", "FRONTEND_MENU"}, "ENABLED")
+	q := db.DB.WithContext(ctx).Model(&resModel.SysResource{}).Where("category IN ? AND status = ?", []string{string(enums.ResourceCategoryBackendMenu), string(enums.ResourceCategoryFrontendMenu)}, string(enums.StatusEnabled))
 	if len(actionIDs) > 0 {
 		q = q.Where("id NOT IN ?", actionIDs)
 	}
@@ -169,7 +170,7 @@ func getNotices(ctx context.Context) []HomeNotice {
 	}
 	var rows []noticeRow
 	db.DB.WithContext(ctx).Table("sys_notice").
-		Where("status = ?", "ENABLED").
+		Where("status = ?", string(enums.StatusEnabled)).
 		Where("category = ?", "PLATFORM").
 		Order("sort_code ASC, is_top DESC").
 		Select("id, title, level, created_at").

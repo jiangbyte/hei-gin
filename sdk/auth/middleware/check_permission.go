@@ -6,6 +6,7 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ func HeiCheckPermission(permissions []string, mode ...string) gin.HandlerFunc {
 	if len(mode) > 0 {
 		m = mode[0]
 	}
-	return heiCheckPermissionInner("BUSINESS", permissions, m)
+	return heiCheckPermissionInner(string(enums.LoginTypeBusiness), permissions, m)
 }
 
 // HeiClientCheckPermission returns a middleware that checks the CONSUMER user has the required permissions.
@@ -29,7 +30,7 @@ func HeiClientCheckPermission(permissions []string, mode ...string) gin.HandlerF
 	if len(mode) > 0 {
 		m = mode[0]
 	}
-	return heiCheckPermissionInner("CONSUMER", permissions, m)
+	return heiCheckPermissionInner(string(enums.LoginTypeConsumer), permissions, m)
 }
 
 // heiCheckPermissionInner is a shared implementation for both BUSINESS and CONSUMER permission checks.
@@ -37,7 +38,7 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 	return func(c *gin.Context) {
 		// Check login first
 		var isLogin bool
-		if loginType == "CONSUMER" {
+		if loginType == string(enums.LoginTypeConsumer) {
 			tool := auth.Consumer
 			isLogin = tool.IsLogin(c)
 		} else {

@@ -1,4 +1,4 @@
-package sm2_api
+package v1
 
 import (
 	"hei-gin/sdk/registry"

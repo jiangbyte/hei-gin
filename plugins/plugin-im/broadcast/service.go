@@ -22,7 +22,7 @@ func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
 	senderID := auth.GetLoginID(c)
 
 	if p.Scope == "" {
-		p.Scope = imModel.BroadcastScopeAll
+		p.Scope = "ALL"
 	}
 
 	e := imModel.Broadcast{
@@ -46,11 +46,11 @@ func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
 	}
 	msg := ws.Message{Type: "broadcast", Payload: payload}
 	switch p.Scope {
-	case imModel.BroadcastScopeAll:
+	case "ALL":
 		ws.GlobalCrossHub.BroadcastAll(msg)
-	case imModel.BroadcastScopeBusiness:
+	case string(enums.LoginTypeBusiness):
 		ws.GlobalCrossHub.BroadcastBusiness(msg)
-	case imModel.BroadcastScopeConsumer:
+	case string(enums.LoginTypeConsumer):
 		ws.GlobalCrossHub.BroadcastConsumers(msg)
 	}
 }

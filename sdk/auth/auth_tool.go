@@ -3,6 +3,7 @@ package auth
 import (
 	"log"
 
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/plugin"
 
@@ -10,11 +11,11 @@ import (
 )
 
 // Business singleton for BUSINESS login type.
-var businessAuth = newBaseAuthTool("BUSINESS")
+var businessAuth = newBaseAuthTool(string(enums.LoginTypeBusiness))
 
 // Consumer singleton for CONSUMER (client) login type.
 // Consumer is the auth tool for CONSUMER (client) login type.
-var Consumer = newBaseAuthTool("CONSUMER")
+var Consumer = newBaseAuthTool(string(enums.LoginTypeConsumer))
 
 // ---- BUSINESS package-level convenience functions ----
 

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/config"
 	"crypto/rand"
@@ -23,30 +24,26 @@ var (
 // Init initializes SM2 with the given private and public keys (hex strings).
 // 0x prefix is automatically stripped and keys are lowercased.
 func Init(privateKey, publicKey string) {
-	if strings.TrimSpace(privateKey) == "" {
-		panic("Private key cannot be null or empty")
+	_privateKey = strings.TrimSpace(strings.ToLower(privateKey))
+	_privateKey = strings.TrimPrefix(_privateKey, "0x")
+	_publicKey = strings.TrimSpace(strings.ToLower(publicKey))
+	_publicKey = strings.TrimPrefix(_publicKey, "0x")
+
+	if strings.TrimSpace(privateKey) == "" || strings.TrimSpace(publicKey) == "" {
+		log.Println("[crypto] SM2: private or public key is empty, SM2 encryption will not be available")
+		return
 	}
-	if strings.TrimSpace(publicKey) == "" {
-		panic("Public key cannot be null or empty")
-	}
-
-	priv := strings.TrimSpace(strings.ToLower(privateKey))
-	priv = strings.TrimPrefix(priv, "0x")
-
-	pub := strings.TrimSpace(strings.ToLower(publicKey))
-	pub = strings.TrimPrefix(pub, "0x")
-
-	_privateKey = priv
-	_publicKey = pub
 
 	var err error
-	_sm2PrivKey, err = hexToPrivateKey(priv)
+	_sm2PrivKey, err = hexToPrivateKey(_privateKey)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse SM2 private key: %v", err))
+		log.Printf("[crypto] failed to parse SM2 private key: %v", err)
+		return
 	}
-	_sm2PubKey, err = hexToPublicKey(pub)
+	_sm2PubKey, err = hexToPublicKey(_publicKey)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse SM2 public key: %v", err))
+		log.Printf("[crypto] failed to parse SM2 public key: %v", err)
+		return
 	}
 }
 
@@ -97,11 +94,13 @@ func hexToPublicKey(hexStr string) (*sm2.PublicKey, error) {
 // Encrypt encrypts plaintext using SM2 and returns the hex-encoded ciphertext in C1C2C3 format.
 func Encrypt(plaintext string) string {
 	if _sm2PubKey == nil {
-		panic("SM2 has not been initialized. Please call Init() first.")
+		log.Println("[crypto] SM2 not initialized, Encrypt returning empty")
+		return ""
 	}
 	ciphertext, err := sm2.Encrypt(_sm2PubKey, []byte(plaintext), rand.Reader, sm2.C1C2C3)
 	if err != nil {
-		panic(fmt.Sprintf("SM2 encryption failed: %v", err))
+		log.Printf("[crypto] SM2 encryption failed: %v", err)
+		return ""
 	}
 	return hex.EncodeToString(ciphertext)
 }
@@ -110,11 +109,13 @@ func Encrypt(plaintext string) string {
 // reordered to C1C3C2 format (compatible with frontend sm-crypto cipherMode=1).
 func EncryptC1C3C2(plaintext string) string {
 	if _sm2PubKey == nil {
-		panic("SM2 has not been initialized. Please call Init() first.")
+		log.Println("[crypto] SM2 not initialized, EncryptC1C3C2 returning empty")
+		return ""
 	}
 	ciphertext, err := sm2.Encrypt(_sm2PubKey, []byte(plaintext), rand.Reader, sm2.C1C2C3)
 	if err != nil {
-		panic(fmt.Sprintf("SM2 encryption failed: %v", err))
+		log.Printf("[crypto] SM2 encryption failed: %v", err)
+		return ""
 	}
 
 	// ciphertext from sm2.Encrypt is C1||C2||C3
@@ -211,7 +212,8 @@ func GenSalt(length int) string {
 func GenKeypair() (string, string) {
 	priv, err := sm2.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(fmt.Sprintf("failed to generate SM2 keypair: %v", err))
+		log.Printf("[crypto] failed to generate SM2 keypair: %v", err)
+		return "", ""
 	}
 
 	// Private key: 32 bytes, zero-padded to 64 hex chars
@@ -231,7 +233,8 @@ func GenKeypair() (string, string) {
 // GetPublicKey returns the initialized public key hex string.
 func GetPublicKey() string {
 	if _publicKey == "" {
-		panic("SM2 has not been initialized.")
+		log.Println("[crypto] SM2 not initialized, GetPublicKey returning empty")
+		return ""
 	}
 	return _publicKey
 }

@@ -1,4 +1,4 @@
-package captcha_api
+package v1
 
 import (
 	"hei-gin/sdk/captcha"

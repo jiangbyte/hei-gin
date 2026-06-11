@@ -5,6 +5,7 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -16,13 +17,13 @@ import (
 // Injects the user ID into c.Request.Context() so GORM hooks can auto-fill CreatedBy/UpdatedBy.
 func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		lt := "BUSINESS"
+		lt := string(enums.LoginTypeBusiness)
 		if len(loginType) > 0 {
 			lt = loginType[0]
 		}
 
 		var uid string
-		if lt == "CONSUMER" {
+		if lt == string(enums.LoginTypeConsumer) {
 			if !auth.Consumer.IsLogin(c) {
 				c.Abort()
 				result.Failure(c, "未授权/未登录", 401)
@@ -57,5 +58,5 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 
 // HeiClientCheckLogin returns a middleware that checks if the CONSUMER user is logged in.
 func HeiClientCheckLogin() gin.HandlerFunc {
-	return HeiCheckLogin("CONSUMER")
+	return HeiCheckLogin(string(enums.LoginTypeConsumer))
 }

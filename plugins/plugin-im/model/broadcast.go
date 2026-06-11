@@ -2,14 +2,7 @@ package model
 
 import "time"
 
-// ─── Broadcast (全站通知) ──────────────────────────────────────────────
 
-// BroadcastScope defines the target audience for broadcast.
-const (
-	BroadcastScopeAll      = "ALL"
-	BroadcastScopeBusiness = "BUSINESS"
-	BroadcastScopeConsumer = "CONSUMER"
-)
 
 // Broadcast represents a site-wide announcement.
 type Broadcast struct {

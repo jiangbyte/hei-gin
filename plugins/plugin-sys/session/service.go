@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"hei-gin/sdk/enums"
+
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
 	"hei-gin/sdk/db"
@@ -328,14 +330,14 @@ func ChartData(c *gin.Context) *SessionChartData {
 		BarChart: BarChartData{
 			Days: days,
 			Series: []CategorySeries{
-				{Name: "BUSINESS", Data: bSeries},
-				{Name: "CONSUMER", Data: cSeries},
+				{Name: string(enums.LoginTypeBusiness), Data: bSeries},
+				{Name: string(enums.LoginTypeConsumer), Data: cSeries},
 			},
 		},
 		PieChart: PieChartData{
 			Data: []CategoryTotal{
-				{Category: "BUSINESS", Total: bTotal},
-				{Category: "CONSUMER", Total: cTotal},
+				{Category: string(enums.LoginTypeBusiness), Total: bTotal},
+				{Category: string(enums.LoginTypeConsumer), Total: cTotal},
 			},
 		},
 	}
