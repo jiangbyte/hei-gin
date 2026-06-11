@@ -89,7 +89,10 @@ func (s *S3) StoreStream(bucket, fileKey string, reader io.Reader) (string, erro
 }
 
 func (s *S3) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
-	ctx := context.Background()
+	return s.StoreStreamWithContext(context.Background(), bucket, fileKey, reader, size)
+}
+
+func (s *S3) StoreStreamWithContext(ctx context.Context, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
@@ -148,7 +151,10 @@ func (s *S3) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
 
 // Delete removes an object from S3.
 func (s *S3) Delete(bucket, fileKey string) error {
-	ctx := context.Background()
+	return s.DeleteWithContext(context.Background(), bucket, fileKey)
+}
+
+func (s *S3) DeleteWithContext(ctx context.Context, bucket, fileKey string) error {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(fileKey),
@@ -184,7 +190,10 @@ func (s *S3) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 
 // InitChunkUpload initializes an S3 multipart upload session.
 func (s *S3) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
-	ctx := context.Background()
+	return s.InitChunkUploadWithContext(context.Background(), bucket, fileKey, totalChunks)
+}
+
+func (s *S3) InitChunkUploadWithContext(ctx context.Context, bucket, fileKey string, totalChunks int) (string, error) {
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
@@ -200,7 +209,10 @@ func (s *S3) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, e
 
 // UploadChunk uploads a single chunk as a part in the S3 multipart upload.
 func (s *S3) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
-	ctx := context.Background()
+	return s.UploadChunkWithContext(context.Background(), bucket, fileKey, uploadID, chunk)
+}
+
+func (s *S3) UploadChunkWithContext(ctx context.Context, bucket, fileKey, uploadID string, chunk ChunkInfo) error {
 	partNumber := int32(chunk.ChunkIndex + 1) // S3 parts are 1-based
 	_, err := s.client.UploadPart(ctx, &s3.UploadPartInput{
 		Bucket:        aws.String(bucket),
@@ -215,8 +227,10 @@ func (s *S3) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) erro
 
 // CompleteChunkUpload lists all uploaded parts and completes the S3 multipart upload.
 func (s *S3) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
-	ctx := context.Background()
+	return s.CompleteChunkUploadWithContext(context.Background(), bucket, fileKey, uploadID)
+}
 
+func (s *S3) CompleteChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) (string, error) {
 	var completedParts []types.CompletedPart
 	var partNumberMarker *string
 
@@ -262,7 +276,10 @@ func (s *S3) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, erro
 
 // AbortChunkUpload aborts the S3 multipart upload and cleans up partial data.
 func (s *S3) AbortChunkUpload(bucket, fileKey, uploadID string) error {
-	ctx := context.Background()
+	return s.AbortChunkUploadWithContext(context.Background(), bucket, fileKey, uploadID)
+}
+
+func (s *S3) AbortChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) error {
 	_, err := s.client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(bucket),
 		Key:      aws.String(fileKey),

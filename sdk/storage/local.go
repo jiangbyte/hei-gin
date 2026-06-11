@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -62,6 +63,10 @@ func (s *Local) StoreStream(bucket, fileKey string, reader io.Reader) (string, e
 }
 
 func (s *Local) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+	return s.StoreStreamWithContext(context.Background(), bucket, fileKey, reader, size)
+}
+
+func (s *Local) StoreStreamWithContext(ctx context.Context, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	path, err := s.ensurePath(bucket, fileKey)
 	if err != nil {
 		return "", err
@@ -71,7 +76,7 @@ func (s *Local) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, si
 		return "", err
 	}
 	defer f.Close()
-	if _, err := io.Copy(f, reader); err != nil {
+	if _, err := io.Copy(f, &contextReader{ctx: ctx, reader: reader}); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -98,6 +103,15 @@ func (s *Local) GetURL(bucket, fileKey string) string {
 
 // Delete removes a file from the local filesystem.
 func (s *Local) Delete(bucket, fileKey string) error {
+	return s.DeleteWithContext(context.Background(), bucket, fileKey)
+}
+
+func (s *Local) DeleteWithContext(ctx context.Context, bucket, fileKey string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 	path, err := s.getPath(bucket, fileKey)
 	if err != nil {
 		return err
@@ -107,6 +121,20 @@ func (s *Local) Delete(bucket, fileKey string) error {
 		return nil
 	}
 	return err
+}
+
+type contextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r *contextReader) Read(p []byte) (int, error) {
+	select {
+	case <-r.ctx.Done():
+		return 0, r.ctx.Err()
+	default:
+		return r.reader.Read(p)
+	}
 }
 
 // Exists checks whether a file exists on the local filesystem.

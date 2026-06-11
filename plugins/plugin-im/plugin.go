@@ -36,8 +36,12 @@ func (p *IMPlugin) Init() error {
 	ws.InitCrossHub(ws.GlobalHub, db.Redis)
 	return nil
 }
-func (p *IMPlugin) Start() error { return nil }
+func (p *IMPlugin) Start() error {
+	ws.GlobalHub.StartOnlineBroadcast()
+	return nil
+}
 func (p *IMPlugin) Stop() error {
+	ws.GlobalHub.StopOnlineBroadcast()
 	if ws.GlobalCrossHub != nil {
 		ws.GlobalCrossHub.Close()
 	}

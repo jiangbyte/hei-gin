@@ -10,9 +10,11 @@ import (
 // DefaultBus is the global event bus instance.
 var DefaultBus api.EventBus = newBus()
 
+const maxConcurrentSubscribers = 256
+
 type subscriberEntry struct {
-	id   uint64
-	fn   api.EventSubscriber
+	id uint64
+	fn api.EventSubscriber
 }
 
 type bus struct {
@@ -21,18 +23,23 @@ type bus struct {
 	closed      chan struct{}
 	wg          sync.WaitGroup
 	subIDSeq    uint64
+	sem         chan struct{}
 }
 
 func newBus() *bus {
 	return &bus{
 		subscribers: make(map[string][]subscriberEntry),
 		closed:      make(chan struct{}),
+		sem:         make(chan struct{}, maxConcurrentSubscribers),
 	}
 }
 
 func (b *bus) Publish(topic string, data any) {
 	b.mu.RLock()
 	subs, ok := b.subscribers[topic]
+	if ok {
+		subs = append([]subscriberEntry(nil), subs...)
+	}
 	b.mu.RUnlock()
 	if !ok {
 		return
@@ -40,9 +47,17 @@ func (b *bus) Publish(topic string, data any) {
 	event := api.Event{Topic: topic, Data: data}
 	for _, entry := range subs {
 		entry := entry
+		select {
+		case <-b.closed:
+			return
+		case b.sem <- struct{}{}:
+		}
 		b.wg.Add(1)
 		middleware.GoSafe(func() {
-			defer b.wg.Done()
+			defer func() {
+				<-b.sem
+				b.wg.Done()
+			}()
 			select {
 			case <-b.closed:
 				return

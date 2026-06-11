@@ -248,12 +248,17 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 }
 
 func MyGroupConversations(userID, userType string) []*ConversationVO {
+	return MyGroupConversationsWithContext(context.Background(), userID, userType)
+}
+
+func MyGroupConversationsWithContext(ctx context.Context, userID, userType string) []*ConversationVO {
 	if userID == "" {
 		return nil
 	}
 
 	var members []imModel.GroupMember
-	db.DB.
+	queryDB := db.DB.WithContext(ctx)
+	queryDB.
 		Select("group_id").
 		Where("user_id = ? AND user_type = ? AND status = ?", userID, userType, MemberActive).
 		Find(&members)
@@ -267,14 +272,14 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 	}
 
 	var groups []imModel.Group
-	db.DB.Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
+	queryDB.Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
 
 	type cnt struct {
 		GroupID string
 		Count   int
 	}
 	var counts []cnt
-	db.DB.Model(&imModel.GroupMember{}).
+	queryDB.Model(&imModel.GroupMember{}).
 		Select("group_id, COUNT(*) as count").
 		Where("group_id IN ? AND status = ?", groupIDs, MemberActive).
 		Group("group_id").Scan(&counts)
@@ -289,11 +294,11 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		CreatedAt time.Time
 	}
 	var lastMsgs []lm
-	lastSubQ := db.DB.Table("im_group_message").
+	lastSubQ := queryDB.Table("im_group_message").
 		Select("group_id, MAX(created_at) as max_ct").
 		Where("group_id IN ?", groupIDs).
 		Group("group_id")
-	db.DB.Table("im_group_message g2").
+	queryDB.Table("im_group_message g2").
 		Select("g2.group_id, g2.content, g2.created_at").
 		Joins("INNER JOIN (?) g1 ON g1.group_id = g2.group_id AND g1.max_ct = g2.created_at", lastSubQ).
 		Scan(&lastMsgs)
@@ -307,11 +312,11 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		Count   int64
 	}
 	var unreads []uc
-	readSubQ := db.DB.Table("im_group_message_read").
+	readSubQ := queryDB.Table("im_group_message_read").
 		Select("group_id, MAX(read_at) as max_read").
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Group("group_id")
-	db.DB.Table("im_group_message gm").
+	queryDB.Table("im_group_message gm").
 		Select("gm.group_id, COUNT(*) as count").
 		Joins("LEFT JOIN (?) gr ON gr.group_id = gm.group_id", readSubQ).
 		Where("gm.group_id IN ?", groupIDs).

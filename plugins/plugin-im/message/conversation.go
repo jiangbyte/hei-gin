@@ -1,20 +1,21 @@
 package message
 
 import (
+	"context"
 	"sort"
-	"time"
 	"strings"
+	"time"
 
+	imModel "hei-gin/plugins/plugin-im/model"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	imModel "hei-gin/plugins/plugin-im/model"
 
-	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/plugins/plugin-im/group"
+	sysUser "hei-gin/plugins/plugin-sys/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,9 +33,10 @@ func MessageConversations(c *gin.Context, cursor string, size int) ([]Conversati
 	currentUserID := getLoginID(c)
 	userType := getUserType(c)
 
-	singleResult := buildFromMessages(currentUserID, userType)
+	ctx := c.Request.Context()
+	singleResult := buildFromMessages(ctx, currentUserID, userType)
 
-	groupConvs := group.MyGroupConversations(currentUserID, userType)
+	groupConvs := group.MyGroupConversationsWithContext(ctx, currentUserID, userType)
 	for _, gv := range groupConvs {
 		singleResult["group:"+gv.GroupID] = &ConversationVO{
 			ConversationID:   "group:" + gv.GroupID,
@@ -78,7 +80,7 @@ func MessageConversations(c *gin.Context, cursor string, size int) ([]Conversati
 	return result, hasMore
 }
 
-func buildFromMessages(currentUserID, userType string) map[string]*ConversationVO {
+func buildFromMessages(ctx context.Context, currentUserID, userType string) map[string]*ConversationVO {
 	type msgRow struct {
 		ConversationID string
 		SenderID       string
@@ -91,13 +93,14 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 	}
 
 	var rows []msgRow
-	subQuery := db.DB.Table("im_message").
+	queryDB := db.DB.WithContext(ctx)
+	subQuery := queryDB.Table("im_message").
 		Select("conversation_id, MAX(created_at) as max_ct").
-		Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by IS NULL OR deleted_by != ?)",
-			currentUserID, currentUserID, currentUserID).
+		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by IS NULL OR deleted_by != ?)",
+			currentUserID, userType, currentUserID, userType, currentUserID).
 		Group("conversation_id")
 
-	db.DB.Table("im_message m").
+	queryDB.Table("im_message m").
 		Select("m.conversation_id, m.sender_id, m.sender_type, m.receiver_id, m.receiver_type, m.content, m.created_at, m.status").
 		Joins("INNER JOIN (?) latest ON latest.conversation_id = m.conversation_id AND latest.max_ct = m.created_at", subQuery).
 		Order("m.created_at DESC").
@@ -116,11 +119,14 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 		Count          int64
 	}
 	var unreads []unreadRow
-	db.DB.Model(&imModel.Message{}).
-		Select("conversation_id, COUNT(*) as count").
-		Where("conversation_id IN ? AND receiver_id = ? AND status = ?", convIDs, currentUserID, "unread").
-		Group("conversation_id").
-		Scan(&unreads)
+	if len(convIDs) > 0 {
+		queryDB.Model(&imModel.Message{}).
+			Select("conversation_id, COUNT(*) as count").
+			Where("conversation_id IN ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
+				convIDs, currentUserID, userType, "unread").
+			Group("conversation_id").
+			Scan(&unreads)
+	}
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.ConversationID] = u.Count
@@ -166,7 +172,7 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 
 		if len(businessIDs) > 0 {
 			var busUsers []sysUser.SysUser
-			db.DB.Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&busUsers)
+			queryDB.Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&busUsers)
 			for _, u := range busUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Nickname
@@ -178,7 +184,7 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 		}
 		if len(consumerIDs) > 0 {
 			var conUsers []cliUser.ClientUser
-			db.DB.Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&conUsers)
+			queryDB.Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&conUsers)
 			for _, u := range conUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Nickname
@@ -203,6 +209,7 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 
 func MessageConversationMessages(c *gin.Context, conversationID, cursor string, size int) ([]ConversationMessageVO, bool) {
 	currentUserID := getLoginID(c)
+	userType := getUserType(c)
 
 	if size < 1 {
 		size = 20
@@ -211,9 +218,9 @@ func MessageConversationMessages(c *gin.Context, conversationID, cursor string, 
 		size = 100
 	}
 
-	q := db.DB.Model(&imModel.Message{}).
-		Where("conversation_id = ? AND (sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)",
-			conversationID, currentUserID, currentUserID, currentUserID)
+	q := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("conversation_id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
+			conversationID, currentUserID, userType, currentUserID, userType, currentUserID)
 	if cursor != "" {
 		if t, err := utils.ParseDateTime(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
@@ -257,12 +264,12 @@ func MessageGetOrCreateConversation(c *gin.Context, param *GetOrCreateConversati
 	displayName := param.UserID
 	if param.UserType == string(enums.LoginTypeBusiness) {
 		var u sysUser.SysUser
-		if err := db.DB.First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+		if err := db.DB.WithContext(c.Request.Context()).First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	} else {
 		var u cliUser.ClientUser
-		if err := db.DB.First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+		if err := db.DB.WithContext(c.Request.Context()).First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	}

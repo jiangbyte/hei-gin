@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -92,6 +93,13 @@ func formatFileSize(bytes int64) (kb int64, info string) {
 }
 
 func storeStream(eng storage.Engine, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+	return storeStreamWithContext(context.Background(), eng, bucket, fileKey, reader, size)
+}
+
+func storeStreamWithContext(ctx context.Context, eng storage.Engine, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+	if ss, ok := eng.(storage.ContextSizedStreamer); ok {
+		return ss.StoreStreamWithContext(ctx, bucket, fileKey, reader, size)
+	}
 	if ss, ok := eng.(storage.SizedStreamer); ok {
 		return ss.StoreStreamWithSize(bucket, fileKey, reader, size)
 	}
@@ -134,7 +142,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 	}
 
 	hr := newHashReader(file)
-	storagePath, err := storeStream(eng, bucket, fileKey, hr, header.Size)
+	storagePath, err := storeStreamWithContext(c.Request.Context(), eng, bucket, fileKey, hr, header.Size)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
 		return
@@ -172,7 +180,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 		SenderType:     senderType,
 		MsgType:        msgType,
 	}
-	if err := db.DB.Create(&record).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).Create(&record).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
 		return
 	}

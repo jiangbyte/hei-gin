@@ -19,19 +19,40 @@ import (
 // ── Internal helpers ─────────────────────────────────────────────
 
 func getLoginID(c *gin.Context) string {
-	path := c.Request.URL.Path
-	if len(path) > 8 && path[:8] == "/api/v1/c" {
+	if v, ok := c.Get("login_id"); ok {
+		if uid, ok := v.(string); ok && uid != "" {
+			return uid
+		}
+	}
+	if getUserType(c) == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.GetLoginID(c)
 }
 
 func getUserType(c *gin.Context) string {
+	if v, ok := c.Get("login_type"); ok {
+		if loginType, ok := v.(string); ok && loginType != "" {
+			return loginType
+		}
+	}
 	path := c.Request.URL.Path
-	if len(path) > 8 && path[:8] == "/api/v1/c" {
+	if isConsumerAPIPath(path) {
 		return string(enums.LoginTypeConsumer)
 	}
 	return string(enums.LoginTypeBusiness)
+}
+
+func isConsumerAPIPath(path string) bool {
+	if !strings.HasPrefix(path, "/api/v") {
+		return false
+	}
+	afterVersionPrefix := path[len("/api/v"):]
+	slash := strings.IndexByte(afterVersionPrefix, '/')
+	if slash < 0 {
+		return false
+	}
+	return strings.HasPrefix(afterVersionPrefix[slash+1:], "c/")
 }
 
 // ==================== GroupCreate ====================

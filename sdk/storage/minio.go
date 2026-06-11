@@ -82,7 +82,10 @@ func (m *Minio) StoreStream(bucket, fileKey string, reader io.Reader) (string, e
 }
 
 func (m *Minio) StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error) {
-	ctx := context.Background()
+	return m.StoreStreamWithContext(context.Background(), bucket, fileKey, reader, size)
+}
+
+func (m *Minio) StoreStreamWithContext(ctx context.Context, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
@@ -133,7 +136,10 @@ func (m *Minio) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error
 
 // Delete removes an object from MinIO.
 func (m *Minio) Delete(bucket, fileKey string) error {
-	ctx := context.Background()
+	return m.DeleteWithContext(context.Background(), bucket, fileKey)
+}
+
+func (m *Minio) DeleteWithContext(ctx context.Context, bucket, fileKey string) error {
 	err := m.client().RemoveObject(ctx, bucket, fileKey, minio.RemoveObjectOptions{})
 	if err != nil {
 		var errResp minio.ErrorResponse
@@ -178,7 +184,10 @@ func (m *Minio) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 
 // InitChunkUpload initializes a MinIO multipart upload session.
 func (m *Minio) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
-	ctx := context.Background()
+	return m.InitChunkUploadWithContext(context.Background(), bucket, fileKey, totalChunks)
+}
+
+func (m *Minio) InitChunkUploadWithContext(ctx context.Context, bucket, fileKey string, totalChunks int) (string, error) {
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
 	}
@@ -191,7 +200,10 @@ func (m *Minio) InitChunkUpload(bucket, fileKey string, totalChunks int) (string
 
 // UploadChunk uploads a single chunk as a part in the MinIO multipart upload.
 func (m *Minio) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
-	ctx := context.Background()
+	return m.UploadChunkWithContext(context.Background(), bucket, fileKey, uploadID, chunk)
+}
+
+func (m *Minio) UploadChunkWithContext(ctx context.Context, bucket, fileKey, uploadID string, chunk ChunkInfo) error {
 	partNumber := chunk.ChunkIndex + 1 // MinIO parts are 1-based
 	_, err := m.core.PutObjectPart(ctx, bucket, fileKey, uploadID, partNumber,
 		chunk.Data, chunk.Size, minio.PutObjectPartOptions{})
@@ -200,8 +212,10 @@ func (m *Minio) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) e
 
 // CompleteChunkUpload lists all uploaded parts and completes the multipart upload.
 func (m *Minio) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
-	ctx := context.Background()
+	return m.CompleteChunkUploadWithContext(context.Background(), bucket, fileKey, uploadID)
+}
 
+func (m *Minio) CompleteChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) (string, error) {
 	var parts []minio.CompletePart
 	partNumberMarker := 0
 	for {
@@ -234,6 +248,9 @@ func (m *Minio) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, e
 
 // AbortChunkUpload aborts the MinIO multipart upload and cleans up partial data.
 func (m *Minio) AbortChunkUpload(bucket, fileKey, uploadID string) error {
-	ctx := context.Background()
+	return m.AbortChunkUploadWithContext(context.Background(), bucket, fileKey, uploadID)
+}
+
+func (m *Minio) AbortChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) error {
 	return m.core.AbortMultipartUpload(ctx, bucket, fileKey, uploadID)
 }

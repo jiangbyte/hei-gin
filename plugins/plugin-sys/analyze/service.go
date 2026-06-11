@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"time"
 
+	logModel "hei-gin/plugins/plugin-sys/log"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
-	logModel "hei-gin/plugins/plugin-sys/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -81,6 +81,8 @@ func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 
 func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
+	todayStart := time.Now().Truncate(24 * time.Hour)
+	tomorrowStart := todayStart.Add(24 * time.Hour)
 
 	var loginTotal int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
@@ -91,7 +93,7 @@ func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 	var loginToday int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
 		Where("category = ?", "LOGIN").
-		Where("DATE(op_time) = CURDATE()").
+		Where("op_time >= ? AND op_time < ?", todayStart, tomorrowStart).
 		Count(&loginToday)
 
 	log.Printf("[Analyze] Login stats: total=%d, failed=%d, today=%d", loginTotal, failedTotal, loginToday)
@@ -107,6 +109,8 @@ func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 
 func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
+	todayStart := time.Now().Truncate(24 * time.Hour)
+	tomorrowStart := todayStart.Add(24 * time.Hour)
 
 	var logTotal int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Count(&logTotal)
@@ -117,7 +121,7 @@ func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 	var exceptionToday int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
 		Where("category = ?", "EXCEPTION").
-		Where("DATE(op_time) = CURDATE()").
+		Where("op_time >= ? AND op_time < ?", todayStart, tomorrowStart).
 		Count(&exceptionToday)
 
 	return &LogAnalysisData{

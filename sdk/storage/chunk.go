@@ -1,6 +1,9 @@
 package storage
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 // ChunkInfo describes a single file chunk in a chunked upload session.
 type ChunkInfo struct {
@@ -29,4 +32,13 @@ type ChunkedUploader interface {
 
 	// AbortChunkUpload cancels the upload and cleans up all temporary data.
 	AbortChunkUpload(bucket, fileKey, uploadID string) error
+}
+
+// ContextChunkedUploader is an optional extension for request-scoped chunk
+// uploads so cancellation and timeouts can propagate into remote storage calls.
+type ContextChunkedUploader interface {
+	InitChunkUploadWithContext(ctx context.Context, bucket, fileKey string, totalChunks int) (uploadID string, err error)
+	UploadChunkWithContext(ctx context.Context, bucket, fileKey, uploadID string, chunk ChunkInfo) error
+	CompleteChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) (filePath string, err error)
+	AbortChunkUploadWithContext(ctx context.Context, bucket, fileKey, uploadID string) error
 }

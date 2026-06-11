@@ -20,6 +20,10 @@ type Client struct {
 	IP       string
 }
 
+func (c *Client) userKey() string {
+	return string(c.UserType) + ":" + c.UserID
+}
+
 // ReadPump pumps messages from the WebSocket connection to the hub.
 func (c *Client) ReadPump() {
 	defer func() {
@@ -97,10 +101,7 @@ func (c *Client) SendPong() {
 			Count: c.Hub.OnlineCount(),
 		},
 	})
-	select {
-	case c.Send <- data:
-	default:
-	}
+	c.sendBytes(data)
 }
 
 // SendJSON sends a JSON message to this client.
@@ -109,6 +110,13 @@ func (c *Client) SendJSON(msg Message) {
 	if err != nil {
 		return
 	}
+	c.sendBytes(data)
+}
+
+func (c *Client) sendBytes(data []byte) {
+	defer func() {
+		_ = recover()
+	}()
 	select {
 	case c.Send <- data:
 	default:

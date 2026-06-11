@@ -3,20 +3,40 @@ package org
 import (
 	"context"
 	"sort"
+	"sync"
+	"time"
 
 	"gorm.io/gorm"
 
+	groupModel "hei-gin/plugins/plugin-sys/group"
+	posModel "hei-gin/plugins/plugin-sys/position"
+	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	groupModel "hei-gin/plugins/plugin-sys/group"
-	posModel "hei-gin/plugins/plugin-sys/position"
-	userModel "hei-gin/plugins/plugin-sys/user"
 
 	"github.com/gin-gonic/gin"
 )
+
+const orgTreeCacheTTL = 30 * time.Second
+
+type orgTreeCacheEntry struct {
+	expires time.Time
+	data    []map[string]interface{}
+}
+
+var (
+	orgTreeMu    sync.RWMutex
+	orgTreeCache = make(map[string]orgTreeCacheEntry)
+)
+
+func invalidateOrgTreeCache() {
+	orgTreeMu.Lock()
+	orgTreeCache = make(map[string]orgTreeCacheEntry)
+	orgTreeMu.Unlock()
+}
 
 func sortTreeNodes(nodes []map[string]interface{}) {
 	sort.Slice(nodes, func(i, j int) bool {
@@ -69,6 +89,14 @@ func OrgPage(c *gin.Context, p *OrgPageParam) {
 }
 
 func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
+	cacheKey := p.Category
+	orgTreeMu.RLock()
+	if cached, ok := orgTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
+		orgTreeMu.RUnlock()
+		return cached.data
+	}
+	orgTreeMu.RUnlock()
+
 	ctx := c.Request.Context()
 	q := db.DB.WithContext(ctx).Model(&SysOrg{}).Order("sort_code ASC")
 	if p.Category != "" {
@@ -76,7 +104,10 @@ func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
 	}
 
 	var all []SysOrg
-	q.Find(&all)
+	if err := q.Find(&all).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("查询组织树失败: "+err.Error(), 500))
+		return nil
+	}
 
 	if len(all) == 0 {
 		return make([]map[string]interface{}, 0)
@@ -135,6 +166,9 @@ func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
 	}
 
 	sortTreeNodes(roots)
+	orgTreeMu.Lock()
+	orgTreeCache[cacheKey] = orgTreeCacheEntry{expires: time.Now().Add(orgTreeCacheTTL), data: roots}
+	orgTreeMu.Unlock()
 	return roots
 }
 
@@ -152,6 +186,7 @@ func OrgCreate(c *gin.Context, vo *OrgVO) {
 		result.WriteError(c, exception.NewBusinessError("添加组织失败: "+err.Error(), 500))
 		return
 	}
+	invalidateOrgTreeCache()
 }
 
 func OrgModify(c *gin.Context, vo *OrgVO) {
@@ -188,6 +223,7 @@ func OrgModify(c *gin.Context, vo *OrgVO) {
 		result.WriteError(c, exception.NewBusinessError("编辑组织失败: "+err.Error(), 500))
 		return
 	}
+	invalidateOrgTreeCache()
 }
 
 func OrgRemove(c *gin.Context, param *utils.IdsParam) {
@@ -224,6 +260,7 @@ func OrgRemove(c *gin.Context, param *utils.IdsParam) {
 		result.WriteError(c, exception.NewBusinessError("删除组织失败: "+err.Error(), 500))
 		return
 	}
+	invalidateOrgTreeCache()
 }
 
 func OrgDetail(c *gin.Context, id string) *OrgVO {
@@ -262,7 +299,9 @@ func collectDescendantOrgIDs(ctx context.Context, ids []string) []string {
 	}
 
 	var all []SysOrg
-	db.DB.WithContext(ctx).Find(&all)
+	if err := db.DB.WithContext(ctx).Find(&all).Error; err != nil {
+		return ids
+	}
 	cm := make(map[string][]string)
 	for _, o := range all {
 		if o.ParentID != nil && *o.ParentID != "" {

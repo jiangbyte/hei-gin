@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"log"
 
 	"hei-gin/sdk/config"
@@ -26,9 +27,15 @@ func GetTokenValue(c *gin.Context) string { return businessAuth.GetTokenValue(c)
 func Login(c *gin.Context, id string, extra map[string]any) (string, error) {
 	return businessAuth.Login(c, id, extra)
 }
-func Logout(c *gin.Context, loginID ...string)    { businessAuth.Logout(c, loginID...) }
-func Kickout(loginID string)                      { businessAuth.Kickout(loginID) }
-func KickoutToken(loginID, token string)          { businessAuth.KickoutToken(loginID, token) }
+func Logout(c *gin.Context, loginID ...string) { businessAuth.Logout(c, loginID...) }
+func Kickout(loginID string)                   { businessAuth.Kickout(loginID) }
+func KickoutToken(loginID, token string)       { businessAuth.KickoutToken(loginID, token) }
+func KickoutWithContext(ctx context.Context, loginID string) {
+	businessAuth.KickoutWithContext(ctx, loginID)
+}
+func KickoutTokenWithContext(ctx context.Context, loginID, token string) {
+	businessAuth.KickoutTokenWithContext(ctx, loginID, token)
+}
 func IsLogin(c *gin.Context) bool                 { return businessAuth.IsLogin(c) }
 func CheckLogin(c *gin.Context) error             { return businessAuth.CheckLogin(c) }
 func GetLoginID(c *gin.Context) string            { return businessAuth.GetLoginID(c) }

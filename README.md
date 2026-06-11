@@ -77,7 +77,7 @@ hei-gin/
 ├── main.go                          # 应用入口（import 插件并调用 app.Run()）
 ├── go.mod / go.sum / go.work        # Go 模块定义 + Workspace
 ├── config.example.yaml              # 配置文件示例
-├── config.yaml                      # 本地配置文件（不提交到仓库）
+├── config.yaml                      # 本地配置文件
 │
 ├── sdk/                             # 框架 SDK（核心基础设施，独立 Go 模块）
 │   ├── app/

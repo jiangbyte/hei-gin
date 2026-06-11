@@ -161,8 +161,12 @@ func (ch *CrossHub) rateLimitKey(userID string, userType enums.LoginTypeEnum) st
 	return "ws:ratelimit:" + string(userType) + ":" + userID
 }
 
+func (ch *CrossHub) userCountKey(userType enums.LoginTypeEnum, userID string) string {
+	return "ws:usercnt:" + string(userType) + ":" + userID
+}
+
 func (ch *CrossHub) dedupKey(messageID string) string {
-	return "ws:dedup:" + messageID
+	return "ws:dedup:" + ch.instanceID + ":" + messageID
 }
 
 // ─── Presence ─────────────────────────────────────────────────────────
@@ -204,10 +208,15 @@ func (ch *CrossHub) TrackConnection(userID string, userType enums.LoginTypeEnum)
 		return
 	}
 	key := ch.userSetKey(userType, userID)
+	countKey := ch.userCountKey(userType, userID)
 	if err := ch.rdb.SAdd(ch.ctx, key, ch.instanceID).Err(); err != nil {
 		log.Printf("[CrossHub] TrackConnection SAdd error: %v", err)
 	}
+	if err := ch.rdb.HIncrBy(ch.ctx, countKey, ch.instanceID, 1).Err(); err != nil {
+		log.Printf("[CrossHub] TrackConnection HIncrBy error: %v", err)
+	}
 	ch.rdb.Expire(ch.ctx, key, instTTL()+30*time.Second)
+	ch.rdb.Expire(ch.ctx, countKey, instTTL()+30*time.Second)
 }
 
 func (ch *CrossHub) UntrackConnection(userID string, userType enums.LoginTypeEnum) {
@@ -215,9 +224,28 @@ func (ch *CrossHub) UntrackConnection(userID string, userType enums.LoginTypeEnu
 		return
 	}
 	key := ch.userSetKey(userType, userID)
-	if err := ch.rdb.SRem(ch.ctx, key, ch.instanceID).Err(); err != nil {
-		log.Printf("[CrossHub] UntrackConnection SRem error: %v", err)
+	countKey := ch.userCountKey(userType, userID)
+	count, err := ch.rdb.HIncrBy(ch.ctx, countKey, ch.instanceID, -1).Result()
+	if err != nil {
+		log.Printf("[CrossHub] UntrackConnection HIncrBy error: %v", err)
+		count = 0
 	}
+	if count <= 0 {
+		_ = ch.rdb.HDel(ch.ctx, countKey, ch.instanceID).Err()
+		if err := ch.rdb.SRem(ch.ctx, key, ch.instanceID).Err(); err != nil {
+			log.Printf("[CrossHub] UntrackConnection SRem error: %v", err)
+		}
+	}
+	ch.rdb.Expire(ch.ctx, key, instTTL()+30*time.Second)
+	ch.rdb.Expire(ch.ctx, countKey, instTTL()+30*time.Second)
+}
+
+func userCountKeyFromSetKey(key string) string {
+	const prefix = "ws:user:"
+	if len(key) <= len(prefix) || key[:len(prefix)] != prefix {
+		return ""
+	}
+	return "ws:usercnt:" + key[len(prefix):]
 }
 
 func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEnum) []string {
@@ -417,6 +445,9 @@ func (ch *CrossHub) cleanStaleInstances() {
 			}
 			if exists == 0 {
 				ch.rdb.SRem(ch.ctx, key, instID)
+				if countKey := userCountKeyFromSetKey(key); countKey != "" {
+					ch.rdb.HDel(ch.ctx, countKey, instID)
+				}
 				cleaned++
 			}
 		}
@@ -465,10 +496,6 @@ func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
 		return
 	}
 
-	if ch == nil {
-		return
-	}
-
 	ch.local.SendToUsers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
@@ -482,15 +509,39 @@ func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
 		return
 	}
 
-	if ch == nil {
-		return
-	}
-
 	ch.local.SendToConsumers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
 			ch.publishToRemote(uid, enums.LoginTypeConsumer, msg, "")
 		}
+	}
+}
+
+func (ch *CrossHub) SendMessagesToUsers(messages map[string]Message, messageIDs map[string]string) {
+	if ch == nil {
+		return
+	}
+
+	ch.local.SendMessagesToUsers(messages)
+	if ch.rdb == nil {
+		return
+	}
+	for uid, msg := range messages {
+		ch.publishToRemote(uid, enums.LoginTypeBusiness, msg, messageIDs[uid])
+	}
+}
+
+func (ch *CrossHub) SendMessagesToConsumers(messages map[string]Message, messageIDs map[string]string) {
+	if ch == nil {
+		return
+	}
+
+	ch.local.SendMessagesToConsumers(messages)
+	if ch.rdb == nil {
+		return
+	}
+	for uid, msg := range messages {
+		ch.publishToRemote(uid, enums.LoginTypeConsumer, msg, messageIDs[uid])
 	}
 }
 
@@ -603,11 +654,25 @@ func (ch *CrossHub) Close() {
 		return
 	}
 	ch.closeOnce.Do(func() {
-		ch.cancel()
 		if ch.rdb != nil {
-			ch.rdb.Del(ch.ctx, ch.instanceKey())
-			ch.rdb.Del(ch.ctx, ch.msgListKey())
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ch.removeInstancePresence(ctx, ch.instanceID)
+			_ = ch.rdb.Del(ctx, ch.instanceKey()).Err()
+			_ = ch.rdb.Del(ctx, ch.msgListKey()).Err()
+			cancel()
 		}
+		ch.cancel()
 		ch.wg.Wait()
 	})
+}
+
+func (ch *CrossHub) removeInstancePresence(ctx context.Context, instanceID string) {
+	iter := ch.rdb.Scan(ctx, 0, "ws:user:*", 1000).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
+		_ = ch.rdb.SRem(ctx, key, instanceID).Err()
+		if countKey := userCountKeyFromSetKey(key); countKey != "" {
+			_ = ch.rdb.HDel(ctx, countKey, instanceID).Err()
+		}
+	}
 }

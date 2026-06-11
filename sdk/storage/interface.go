@@ -1,6 +1,9 @@
 package storage
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 // Engine defines the contract for file storage backends.
 // Each engine type (LOCAL, MINIO, S3) implements this interface.
@@ -27,4 +30,12 @@ type Engine interface {
 
 type SizedStreamer interface {
 	StoreStreamWithSize(bucket, fileKey string, reader io.Reader, size int64) (string, error)
+}
+
+type ContextSizedStreamer interface {
+	StoreStreamWithContext(ctx context.Context, bucket, fileKey string, reader io.Reader, size int64) (string, error)
+}
+
+type ContextDeleter interface {
+	DeleteWithContext(ctx context.Context, bucket, fileKey string) error
 }

@@ -2,289 +2,105 @@ package session
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
-	"hei-gin/sdk/auth"
-	"hei-gin/sdk/constants"
-	"hei-gin/sdk/enums"
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/result"
 	cliUser "hei-gin/plugins/plugin-client/user"
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
+	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 )
-
-var svcCtx = context.Background()
-
-func scanKeys(ctx context.Context, redis *redis.Client, pattern string) ([]string, error) {
-	var cursor uint64
-	var keys []string
-	for {
-		batch, nextCursor, err := redis.Scan(ctx, cursor, pattern, 200).Result()
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, batch...)
-		if nextCursor == 0 {
-			break
-		}
-		cursor = nextCursor
-	}
-	return keys, nil
-}
 
 // ===== Analysis =====
 
 func SessionAnalysis(c *gin.Context) *SessionAnalysisResult {
-	bKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
-	cKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
+	ctx := c.Request.Context()
+	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
+	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
 
-	bTotal, bNewly, bMax := countTokens(svcCtx, db.Redis, bKeys, constants.TOKEN_PREFIX_BUSINESS)
-	cTotal, cNewly, cMax := countTokens(svcCtx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
-
-	maxTokenCount := bMax
-	if cMax > maxTokenCount {
-		maxTokenCount = cMax
+	maxTokenCount := bStats.MaxTokenCount
+	if cStats.MaxTokenCount > maxTokenCount {
+		maxTokenCount = cStats.MaxTokenCount
 	}
 
 	return &SessionAnalysisResult{
-		TotalCount:        bTotal + cTotal,
+		TotalCount:        bStats.TotalCount + cStats.TotalCount,
 		MaxTokenCount:     maxTokenCount,
-		OneHourNewlyAdded: bNewly + cNewly,
-		ProportionOfBAndC: fmt.Sprintf("%d/%d", bTotal, cTotal),
+		OneHourNewlyAdded: bStats.OneHourNewlyAdded + cStats.OneHourNewlyAdded,
+		ProportionOfBAndC: fmt.Sprintf("%d/%d", bStats.TotalCount, cStats.TotalCount),
 	}
-}
-
-func countTokens(ctx context.Context, redis *redis.Client, sessionKeys []string, tokenPrefix string) (total, oneHourNewlyAdded, maxPerUser int) {
-	userTokenCounts := make(map[string]int)
-	oneHourAgo := time.Now().Add(-1 * time.Hour)
-
-	for _, sessionKey := range sessionKeys {
-		parts := strings.Split(sessionKey, ":")
-		userID := parts[len(parts)-1]
-
-		tokens, err := redis.SMembers(ctx, sessionKey).Result()
-		if err != nil {
-			continue
-		}
-		userTokenCounts[userID] = len(tokens)
-
-		for _, token := range tokens {
-			total++
-			tokenKey := tokenPrefix + token
-			data, err := redis.Get(ctx, tokenKey).Result()
-			if err != nil {
-				continue
-			}
-			var tokenData map[string]any
-			if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
-				continue
-			}
-			createdAtStr, _ := tokenData["created_at"].(string)
-			if createdAtStr != "" {
-				createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtStr)
-				if err == nil && createdAt.After(oneHourAgo) {
-					oneHourNewlyAdded++
-				}
-			}
-		}
-	}
-
-	for _, count := range userTokenCounts {
-		if count > maxPerUser {
-			maxPerUser = count
-		}
-	}
-	return
-}
-
-func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, tokenPrefix string) map[string]int {
-	daily := make(map[string]int)
-	for _, sessionKey := range sessionKeys {
-		tokens, err := redis.SMembers(ctx, sessionKey).Result()
-		if err != nil {
-			continue
-		}
-		for _, token := range tokens {
-			tokenKey := tokenPrefix + token
-			data, err := redis.Get(ctx, tokenKey).Result()
-			if err != nil {
-				continue
-			}
-			var tokenData map[string]any
-			if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
-				continue
-			}
-			createdAtStr, _ := tokenData["created_at"].(string)
-			if createdAtStr != "" {
-				createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtStr)
-				if err == nil {
-					daily[createdAt.Format("2006-01-02")]++
-				}
-			}
-		}
-	}
-	return daily
 }
 
 // ===== Page =====
 
 func SessionPage(c *gin.Context, p *SessionPageParam) {
-	sessions, err := collectSessions(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER, constants.TOKEN_PREFIX_CONSUMER, p.Keyword)
-	if err != nil || sessions == nil {
-		sessions = []*SessionPageResult{}
+	ctx := c.Request.Context()
+	current, size := normalizePage(p.Current, p.Size)
+
+	keyword := strings.TrimSpace(p.Keyword)
+	infos, total, err := listConsumerSessionInfos(ctx, keyword, current, size)
+	if err != nil {
+		infos = []auth.SessionInfo{}
+		total = 0
 	}
 
-	sort.Slice(sessions, func(i, j int) bool {
-		return sessions[i].SessionCreateTime > sessions[j].SessionCreateTime
-	})
-
-	total := len(sessions)
-	if p.Current < 1 {
-		p.Current = 1
-	}
-	if p.Size < 1 {
-		p.Size = 10
-	}
-
-	start := (p.Current - 1) * p.Size
-	var pageRecords []*SessionPageResult
-	if start >= total {
-		pageRecords = []*SessionPageResult{}
-	} else {
-		end := start + p.Size
-		if end > total {
-			end = total
+	users := loadConsumerUsers(ctx, sessionUserIDs(infos))
+	rows := make([]*SessionPageResult, 0, len(infos))
+	for _, info := range infos {
+		row := &SessionPageResult{
+			UserID:                info.UserID,
+			TokenCount:            info.TokenCount,
+			SessionCreateTime:     info.SessionCreateTime,
+			SessionTimeout:        formatTimeout(info.SessionTimeoutSeconds),
+			SessionTimeoutSeconds: info.SessionTimeoutSeconds,
 		}
-		pageRecords = sessions[start:end]
+		if user := users[info.UserID]; user != nil {
+			row.Username = user.Username
+			row.Nickname = user.Nickname
+			row.Avatar = user.Avatar
+			row.Status = &user.Status
+			row.LastLoginIP = user.LastLoginIP
+		}
+		rows = append(rows, row)
 	}
-	result.PageDataResult(c, pageRecords, int64(total), p.Current, p.Size)
+	result.PageDataResult(c, rows, total, current, size)
 }
 
-func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, tokenPrefix, keyword string) ([]*SessionPageResult, error) {
-	sessionKeys, err := scanKeys(ctx, redis, sessionPrefix + "*")
-	if err != nil {
-		return nil, err
+func listConsumerSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
+	if keyword == "" {
+		return auth.ListSessionInfos(ctx, string(enums.LoginTypeConsumer), current, size, "")
 	}
-
-	var result []*SessionPageResult
-	userCache := make(map[string]*cliUser.ClientUser)
-
-	for _, sessionKey := range sessionKeys {
-		parts := strings.Split(sessionKey, ":")
-		userID := parts[len(parts)-1]
-
-		if keyword != "" && !strings.Contains(userID, keyword) {
-			continue
-		}
-
-		// Session key is a Redis SET (stores token members via SAdd), NOT a String.
-		// Do NOT redis.Get() it — that causes WRONGTYPE error.
-		// Instead, read token data to derive session info from the earliest token.
-		tokens, err := redis.SMembers(ctx, sessionKey).Result()
-		if err != nil || len(tokens) == 0 {
-			continue
-		}
-
-		var minCreatedAt time.Time
-		hasCreatedAt := false
-		for _, token := range tokens {
-			tokenKey := tokenPrefix + token
-			data, err := redis.Get(ctx, tokenKey).Result()
-			if err != nil {
-				continue
-			}
-			var tokenData map[string]any
-			if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
-				continue
-			}
-			createdAtStr, _ := tokenData["created_at"].(string)
-			if createdAtStr != "" {
-				createdAt, err := time.Parse("2006-01-02 15:04:05", createdAtStr)
-				if err == nil && (!hasCreatedAt || createdAt.Before(minCreatedAt)) {
-					minCreatedAt = createdAt
-					hasCreatedAt = true
-				}
-			}
-		}
-
-		user, ok := userCache[userID]
-		if !ok {
-			var u cliUser.ClientUser
-			if err := db.DB.First(&u, "id = ?", userID).Error; err != nil {
-				userCache[userID] = nil
-			} else {
-				user = &u
-				userCache[userID] = user
-			}
-		}
-
-		item := &SessionPageResult{
-			UserID:     userID,
-			TokenCount: len(tokens),
-		}
-		if user != nil {
-			item.Username = user.Username
-			item.Nickname = user.Nickname
-			item.Avatar = user.Avatar
-			item.Status = &user.Status
-			item.LastLoginIP = user.LastLoginIP
-		}
-		if hasCreatedAt {
-			item.SessionCreateTime = minCreatedAt.Format("2006-01-02 15:04:05")
-		}
-		result = append(result, item)
-	}
-	return result, nil
+	userIDs := findConsumerUserIDs(ctx, keyword)
+	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeConsumer), userIDs, current, size)
 }
 
 // ===== Exit =====
 
 func SessionExit(c *gin.Context, userID string) {
-	auth.Consumer.Kickout(userID)
+	auth.Consumer.KickoutWithContext(c.Request.Context(), userID)
 }
 
 // ===== TokenList =====
 
 func SessionTokenList(c *gin.Context, userID string) []*SessionTokenResult {
-	sessionKey := constants.SESSION_PREFIX_CONSUMER + userID
-	tokens, err := db.Redis.SMembers(svcCtx, sessionKey).Result()
+	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeConsumer), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
 	}
 
-	var results []*SessionTokenResult
+	results := make([]*SessionTokenResult, 0, len(tokens))
 	for _, token := range tokens {
-		tokenKey := constants.TOKEN_PREFIX_CONSUMER + token
-		data, err := db.Redis.Get(svcCtx, tokenKey).Result()
-		if err != nil {
-			continue
-		}
-		var tokenData map[string]any
-		if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
-			continue
-		}
-
-		createdAt, _ := tokenData["created_at"].(string)
-		extra, _ := tokenData["extra"].(map[string]any)
-		deviceType, _ := extra["device_type"].(string)
-		deviceID, _ := extra["device_id"].(string)
-
-		ttl, err := db.Redis.TTL(svcCtx, tokenKey).Result()
-		timeoutSeconds := -1
-		if err == nil {
-			timeoutSeconds = int(ttl.Seconds())
-		}
-
 		results = append(results, &SessionTokenResult{
-			Token: token, CreatedAt: createdAt,
-			Timeout: formatTimeout(timeoutSeconds), TimeoutSeconds: timeoutSeconds,
-			DeviceType: deviceType, DeviceID: deviceID,
+			Token:          token.Token,
+			CreatedAt:      token.CreatedAt,
+			Timeout:        formatTimeout(token.TimeoutSeconds),
+			TimeoutSeconds: token.TimeoutSeconds,
+			DeviceType:     token.DeviceType,
+			DeviceID:       token.DeviceID,
 		})
 	}
 	return results
@@ -293,18 +109,19 @@ func SessionTokenList(c *gin.Context, userID string) []*SessionTokenResult {
 // ===== ExitToken =====
 
 func SessionExitToken(c *gin.Context, userID, token string) {
-	auth.Consumer.KickoutToken(userID, token)
+	auth.Consumer.KickoutTokenWithContext(c.Request.Context(), userID, token)
 }
 
 // ===== ChartData =====
 
 func SessionChart(c *gin.Context) *SessionChartData {
-	cKeys, _ := scanKeys(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
-	cTotal, _, _ := countTokens(svcCtx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
-	cDaily := countDaily(svcCtx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
-
+	ctx := c.Request.Context()
 	days := lastNDays(7)
-	series := make([]int, 7)
+
+	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
+	cDaily := auth.GetSessionDailyCounts(ctx, string(enums.LoginTypeConsumer), days)
+
+	series := make([]int, len(days))
 	for i, day := range days {
 		series[i] = cDaily[day]
 	}
@@ -318,10 +135,68 @@ func SessionChart(c *gin.Context) *SessionChartData {
 		},
 		PieChart: PieChartData{
 			Data: []CategoryTotal{
-				{Category: string(enums.LoginTypeConsumer), Total: cTotal},
+				{Category: string(enums.LoginTypeConsumer), Total: cStats.TotalCount},
 			},
 		},
 	}
+}
+
+func loadConsumerUsers(ctx context.Context, userIDs []string) map[string]*cliUser.ClientUser {
+	if len(userIDs) == 0 {
+		return map[string]*cliUser.ClientUser{}
+	}
+	var users []cliUser.ClientUser
+	db.DB.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
+	result := make(map[string]*cliUser.ClientUser, len(users))
+	for i := range users {
+		user := users[i]
+		result[user.ID] = &user
+	}
+	return result
+}
+
+func findConsumerUserIDs(ctx context.Context, keyword string) []string {
+	const maxKeywordCandidates = 1000
+
+	like := keyword + "%"
+	var ids []string
+	db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).
+		Select("id").
+		Where("id = ? OR id LIKE ? OR username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?",
+			keyword, like, like, like, like, like).
+		Order("last_login_at DESC, id ASC").
+		Limit(maxKeywordCandidates).
+		Pluck("id", &ids)
+	return ids
+}
+
+func sessionUserIDs(infos []auth.SessionInfo) []string {
+	ids := make([]string, 0, len(infos))
+	seen := make(map[string]struct{}, len(infos))
+	for _, info := range infos {
+		if info.UserID == "" {
+			continue
+		}
+		if _, ok := seen[info.UserID]; ok {
+			continue
+		}
+		seen[info.UserID] = struct{}{}
+		ids = append(ids, info.UserID)
+	}
+	return ids
+}
+
+func normalizePage(current, size int) (int, int) {
+	if current < 1 {
+		current = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	if size > 100 {
+		size = 100
+	}
+	return current, size
 }
 
 func formatTimeout(seconds int) string {

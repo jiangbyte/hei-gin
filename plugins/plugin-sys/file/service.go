@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -132,11 +133,50 @@ func deleteChunkState(c *gin.Context, uploadID string) {
 	}
 }
 
-func storeStream(eng storage.Engine, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+func storeStream(ctx context.Context, eng storage.Engine, bucket, fileKey string, reader io.Reader, size int64) (string, error) {
+	if ss, ok := eng.(storage.ContextSizedStreamer); ok {
+		return ss.StoreStreamWithContext(ctx, bucket, fileKey, reader, size)
+	}
 	if ss, ok := eng.(storage.SizedStreamer); ok {
 		return ss.StoreStreamWithSize(bucket, fileKey, reader, size)
 	}
 	return eng.StoreStream(bucket, fileKey, reader)
+}
+
+func supportsChunkUpload(eng storage.Engine) bool {
+	if _, ok := eng.(storage.ContextChunkedUploader); ok {
+		return true
+	}
+	_, ok := eng.(storage.ChunkedUploader)
+	return ok
+}
+
+func initChunkUpload(ctx context.Context, eng storage.Engine, bucket, fileKey string, totalChunks int) (string, error) {
+	if cu, ok := eng.(storage.ContextChunkedUploader); ok {
+		return cu.InitChunkUploadWithContext(ctx, bucket, fileKey, totalChunks)
+	}
+	return eng.(storage.ChunkedUploader).InitChunkUpload(bucket, fileKey, totalChunks)
+}
+
+func uploadChunk(ctx context.Context, eng storage.Engine, bucket, fileKey, uploadID string, chunk storage.ChunkInfo) error {
+	if cu, ok := eng.(storage.ContextChunkedUploader); ok {
+		return cu.UploadChunkWithContext(ctx, bucket, fileKey, uploadID, chunk)
+	}
+	return eng.(storage.ChunkedUploader).UploadChunk(bucket, fileKey, uploadID, chunk)
+}
+
+func completeChunkUpload(ctx context.Context, eng storage.Engine, bucket, fileKey, uploadID string) (string, error) {
+	if cu, ok := eng.(storage.ContextChunkedUploader); ok {
+		return cu.CompleteChunkUploadWithContext(ctx, bucket, fileKey, uploadID)
+	}
+	return eng.(storage.ChunkedUploader).CompleteChunkUpload(bucket, fileKey, uploadID)
+}
+
+func abortChunkUpload(ctx context.Context, eng storage.Engine, bucket, fileKey, uploadID string) error {
+	if cu, ok := eng.(storage.ContextChunkedUploader); ok {
+		return cu.AbortChunkUploadWithContext(ctx, bucket, fileKey, uploadID)
+	}
+	return eng.(storage.ChunkedUploader).AbortChunkUpload(bucket, fileKey, uploadID)
 }
 
 func formatFileSize(bytes int64) (kb int64, info string) {
@@ -178,6 +218,20 @@ func (r *hashReader) Sum() string {
 
 func newHashReader(reader io.Reader) *hashReader {
 	return &hashReader{reader: reader, hash: sha256.New()}
+}
+
+type contextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r *contextReader) Read(p []byte) (int, error) {
+	select {
+	case <-r.ctx.Done():
+		return 0, r.ctx.Err()
+	default:
+		return r.reader.Read(p)
+	}
 }
 
 // ===== Page =====
@@ -259,7 +313,11 @@ func FileRemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
 	for _, f := range files {
 		if f.Engine != "" {
 			if eng := storage.GetStorage(f.Engine); eng != nil {
-				eng.Delete(f.Bucket, f.FileKey)
+				if deleter, ok := eng.(storage.ContextDeleter); ok {
+					_ = deleter.DeleteWithContext(ctx, f.Bucket, f.FileKey)
+				} else {
+					_ = eng.Delete(f.Bucket, f.FileKey)
+				}
 			}
 		}
 	}
@@ -302,7 +360,7 @@ func FileUpload(c *gin.Context) (*FileUploadResult, error) {
 
 	// Stream file to storage while computing SHA256 on-the-fly
 	hr := newHashReader(file)
-	storagePath, err := storeStream(eng, bucket, fileKey, hr, header.Size)
+	storagePath, err := storeStream(c.Request.Context(), eng, bucket, fileKey, hr, header.Size)
 	if err != nil {
 		return nil, fmt.Errorf("保存文件失败: %w", err)
 	}
@@ -383,8 +441,9 @@ func FileInitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUpl
 		return nil, fmt.Errorf("不支持的存储类型: %s", engineType)
 	}
 
-	if cu, ok := eng.(storage.ChunkedUploader); ok {
-		uploadID, err := cu.InitChunkUpload(bucket, fileKey, param.TotalChunks)
+	if supportsChunkUpload(eng) {
+		ctx := c.Request.Context()
+		uploadID, err := initChunkUpload(ctx, eng, bucket, fileKey, param.TotalChunks)
 		if err != nil {
 			return nil, fmt.Errorf("分片上传初始化失败: %w", err)
 		}
@@ -397,7 +456,7 @@ func FileInitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUpl
 			TotalChunks: param.TotalChunks,
 			OwnerID:     currentOwnerID(c),
 		}); err != nil {
-			_ = cu.AbortChunkUpload(bucket, fileKey, uploadID)
+			_ = abortChunkUpload(ctx, eng, bucket, fileKey, uploadID)
 			return nil, err
 		}
 		return &ChunkUploadResult{
@@ -468,16 +527,16 @@ func FileUploadChunk(c *gin.Context, param *ChunkUploadParam) error {
 		return fmt.Errorf("分片大小不匹配")
 	}
 
-	if cu, ok := eng.(storage.ChunkedUploader); ok {
+	if supportsChunkUpload(eng) {
 		chunk := storage.ChunkInfo{
 			UploadID:    param.UploadID,
 			ChunkIndex:  param.ChunkIndex,
 			TotalChunks: state.TotalChunks,
 			Checksum:    param.Checksum,
 			Size:        header.Size,
-			Data:        file,
+			Data:        &contextReader{ctx: c.Request.Context(), reader: file},
 		}
-		if err := cu.UploadChunk(state.Bucket, state.FileKey, param.UploadID, chunk); err != nil {
+		if err := uploadChunk(c.Request.Context(), eng, state.Bucket, state.FileKey, param.UploadID, chunk); err != nil {
 			return fmt.Errorf("上传分片失败: %w", err)
 		}
 	} else {
@@ -490,7 +549,7 @@ func FileUploadChunk(c *gin.Context, param *ChunkUploadParam) error {
 		if err != nil {
 			return fmt.Errorf("保存分片文件失败: %w", err)
 		}
-		if _, err := io.Copy(f, file); err != nil {
+		if _, err := io.Copy(f, &contextReader{ctx: c.Request.Context(), reader: file}); err != nil {
 			_ = f.Close()
 			return fmt.Errorf("保存分片文件失败: %w", err)
 		}
@@ -520,8 +579,8 @@ func FileCompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUp
 	now := time.Now()
 
 	var storagePath string
-	if cu, ok := eng.(storage.ChunkedUploader); ok {
-		path, err := cu.CompleteChunkUpload(state.Bucket, state.FileKey, param.UploadID)
+	if supportsChunkUpload(eng) {
+		path, err := completeChunkUpload(c.Request.Context(), eng, state.Bucket, state.FileKey, param.UploadID)
 		if err != nil {
 			return nil, fmt.Errorf("合并分片失败: %w", err)
 		}
@@ -530,7 +589,7 @@ func FileCompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUp
 		tmpDir := filepath.Join(os.TempDir(), "chunk_"+param.UploadID)
 		defer os.RemoveAll(tmpDir)
 
-		path, err := mergeAndStore(eng, state.Bucket, state.FileKey, tmpDir, state.TotalChunks)
+		path, err := mergeAndStore(c.Request.Context(), eng, state.Bucket, state.FileKey, tmpDir, state.TotalChunks)
 		if err != nil {
 			return nil, err
 		}
@@ -592,8 +651,8 @@ func FileAbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
 		return fmt.Errorf("不支持的存储类型: %s", state.Engine)
 	}
 
-	if cu, ok := eng.(storage.ChunkedUploader); ok {
-		err := cu.AbortChunkUpload(state.Bucket, state.FileKey, param.UploadID)
+	if supportsChunkUpload(eng) {
+		err := abortChunkUpload(c.Request.Context(), eng, state.Bucket, state.FileKey, param.UploadID)
 		deleteChunkState(c, param.UploadID)
 		return err
 	}
@@ -603,7 +662,7 @@ func FileAbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
 	return os.RemoveAll(tmpDir)
 }
 
-func mergeAndStore(eng storage.Engine, bucket, fileKey, tmpDir string, totalChunks int) (string, error) {
+func mergeAndStore(ctx context.Context, eng storage.Engine, bucket, fileKey, tmpDir string, totalChunks int) (string, error) {
 	for i := 0; i < totalChunks; i++ {
 		chunkPath := filepath.Join(tmpDir, fmt.Sprintf("chunk_%06d", i))
 		if _, err := os.Stat(chunkPath); err != nil {
@@ -615,13 +674,19 @@ func mergeAndStore(eng storage.Engine, bucket, fileKey, tmpDir string, totalChun
 	go func() {
 		defer pw.Close()
 		for i := 0; i < totalChunks; i++ {
+			select {
+			case <-ctx.Done():
+				pw.CloseWithError(ctx.Err())
+				return
+			default:
+			}
 			chunkPath := filepath.Join(tmpDir, fmt.Sprintf("chunk_%06d", i))
 			f, err := os.Open(chunkPath)
 			if err != nil {
 				pw.CloseWithError(fmt.Errorf("打开分片文件失败: %w", err))
 				return
 			}
-			_, err = io.Copy(pw, f)
+			_, err = io.Copy(pw, &contextReader{ctx: ctx, reader: f})
 			f.Close()
 			if err != nil {
 				pw.CloseWithError(fmt.Errorf("读取分片数据失败: %w", err))
@@ -630,7 +695,7 @@ func mergeAndStore(eng storage.Engine, bucket, fileKey, tmpDir string, totalChun
 		}
 	}()
 
-	return storeStream(eng, bucket, fileKey, pr, -1)
+	return storeStream(ctx, eng, bucket, fileKey, pr, -1)
 }
 
 // ===== Download =====

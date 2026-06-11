@@ -1,38 +1,59 @@
 package message
 
 import (
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	imModel "hei-gin/plugins/plugin-im/model"
+	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	"hei-gin/plugins/plugin-im/ws"
-	imModel "hei-gin/plugins/plugin-im/model"
 
 	"github.com/gin-gonic/gin"
 )
 
-
 func getLoginID(c *gin.Context) string {
-	path := c.Request.URL.Path
-	if len(path) > 8 && path[:8] == "/api/v1/c" {
+	if v, ok := c.Get("login_id"); ok {
+		if uid, ok := v.(string); ok && uid != "" {
+			return uid
+		}
+	}
+	if getUserType(c) == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.GetLoginID(c)
 }
 
 func getUserType(c *gin.Context) string {
+	if v, ok := c.Get("login_type"); ok {
+		if loginType, ok := v.(string); ok && loginType != "" {
+			return loginType
+		}
+	}
 	path := c.Request.URL.Path
-	if len(path) > 8 && path[:8] == "/api/v1/c" {
+	if isConsumerAPIPath(path) {
 		return string(enums.LoginTypeConsumer)
 	}
 	return string(enums.LoginTypeBusiness)
+}
+
+func isConsumerAPIPath(path string) bool {
+	if !strings.HasPrefix(path, "/api/v") {
+		return false
+	}
+	afterVersionPrefix := path[len("/api/v"):]
+	slash := strings.IndexByte(afterVersionPrefix, '/')
+	if slash < 0 {
+		return false
+	}
+	return strings.HasPrefix(afterVersionPrefix[slash+1:], "c/")
 }
 
 // ==================== MessageSend ====================
@@ -43,7 +64,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 	senderID := getLoginID(c)
 	senderType := getUserType(c)
 
-	if !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
+	if ws.GlobalCrossHub != nil && !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
 		result.WriteError(c, exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
 		return
 	}
@@ -56,9 +77,22 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 	if receiverType == "" {
 		receiverType = string(enums.LoginTypeBusiness)
 	}
+	receiverIDs := normalizeReceiverIDs(param.ReceiverIDs)
+	if len(receiverIDs) == 0 {
+		result.WriteError(c, exception.NewBusinessError("接收人不能为空", 400))
+		return
+	}
+	if len(receiverIDs) > 200 {
+		result.WriteError(c, exception.NewBusinessError("单次最多发送给200个接收人", 400))
+		return
+	}
+	if len(param.Content) > 5000 {
+		result.WriteError(c, exception.NewBusinessError("消息内容不能超过5000个字符", 400))
+		return
+	}
 
-	records := make([]imModel.Message, len(param.ReceiverIDs))
-	for i, rid := range param.ReceiverIDs {
+	records := make([]imModel.Message, len(receiverIDs))
+	for i, rid := range receiverIDs {
 		cid := imModel.GenerateConversationID(senderID, enums.LoginTypeEnum(senderType), rid, enums.LoginTypeEnum(receiverType))
 		records[i] = imModel.Message{
 			ID:             utils.GenerateID(),
@@ -78,24 +112,35 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 		return
 	}
 
+	conversations := make([]imModel.Conversation, 0, len(records))
 	for _, rec := range records {
-		conv := imModel.Conversation{
+		lastTime := rec.CreatedAt
+		if lastTime == nil {
+			now := time.Now()
+			lastTime = &now
+		}
+		conversations = append(conversations, imModel.Conversation{
 			ID:       rec.ConversationID,
 			FromID:   rec.SenderID,
 			FromType: rec.SenderType,
 			ToID:     rec.ReceiverID,
 			ToType:   rec.ReceiverType,
 			LastMsg:  rec.Content,
-		}
-		db.DB.WithContext(ctx).Clauses(clause.OnConflict{
+			LastTime: lastTime,
+		})
+	}
+	if len(conversations) > 0 {
+		_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"last_msg", "last_time", "updated_at",
 			}),
-		}).Create(&conv)
+		}).Create(&conversations).Error
 	}
 
-	for i, rid := range param.ReceiverIDs {
+	pushMessages := make(map[string]ws.Message, len(receiverIDs))
+	messageIDs := make(map[string]string, len(receiverIDs))
+	for i, rid := range receiverIDs {
 		msg := ws.Message{
 			Type: ws.MsgNewMessage,
 			Payload: ws.NewMessagePayload{
@@ -108,12 +153,31 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 				SenderType:     senderType,
 			},
 		}
-		if receiverType == string(enums.LoginTypeConsumer) {
-			ws.GlobalCrossHub.SendToConsumer(rid, msg, records[i].ID)
-		} else {
-			ws.GlobalCrossHub.SendToUser(rid, msg, records[i].ID)
-		}
+		pushMessages[rid] = msg
+		messageIDs[rid] = records[i].ID
 	}
+	if receiverType == string(enums.LoginTypeConsumer) {
+		ws.GlobalCrossHub.SendMessagesToConsumers(pushMessages, messageIDs)
+	} else {
+		ws.GlobalCrossHub.SendMessagesToUsers(pushMessages, messageIDs)
+	}
+}
+
+func normalizeReceiverIDs(ids []string) []string {
+	result := make([]string, 0, len(ids))
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
 }
 
 // ==================== MessagePage ====================
@@ -121,6 +185,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 func MessagePage(c *gin.Context, param *MessagePageParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
+	userType := getUserType(c)
 
 	if param.Current < 1 {
 		param.Current = 1
@@ -133,7 +198,8 @@ func MessagePage(c *gin.Context, param *MessagePageParam) {
 	}
 
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
-		Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)", userID, userID, userID)
+		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
+			userID, userType, userID, userType, userID)
 	if param.Status != "" {
 		query = query.Where("status = ?", param.Status)
 	}
@@ -155,9 +221,12 @@ func MessagePage(c *gin.Context, param *MessagePageParam) {
 
 func MessageUnreadCount(c *gin.Context) {
 	userID := getLoginID(c)
+	userType := getUserType(c)
 
 	var count int64
-	db.DB.Model(&imModel.Message{}).Where("receiver_id = ? AND status = ?", userID, "unread").Count(&count)
+	db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "unread").
+		Count(&count)
 	result.Success(c, UnreadCountVO{Count: count})
 }
 
@@ -165,9 +234,14 @@ func MessageUnreadCount(c *gin.Context) {
 
 func MessageDetail(c *gin.Context) {
 	id := c.Query("id")
+	userID := getLoginID(c)
+	userType := getUserType(c)
 
 	var entity imModel.Message
-	if err := db.DB.First(&entity, "id = ?", id).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).
+		Where("id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
+			id, userID, userType, userID, userType).
+		First(&entity).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.Success(c, nil)
 			return
@@ -181,7 +255,10 @@ func MessageDetail(c *gin.Context) {
 // ==================== MessageMarkRead ====================
 
 func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
-	if err := db.DB.Model(&imModel.Message{}).Where("id = ?", param.ID).
+	userID := getLoginID(c)
+	userType := getUserType(c)
+	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("id = ? AND receiver_id = ? AND receiver_type = ?", param.ID, userID, userType).
 		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
@@ -190,16 +267,17 @@ func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
 
 // ==================== MessageMarkConversationRead ====================
 
-func MessageMarkConversationRead(c *gin.Context) {
+func MessageMarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 	receiverID := getLoginID(c)
+	receiverType := getUserType(c)
 
-	var param ConversationReadParam
-	if err := c.ShouldBindJSON(&param); err != nil {
+	if param == nil || param.ConversationID == "" {
 		return
 	}
 
-	if err := db.DB.Model(&imModel.Message{}).
-		Where("conversation_id = ? AND receiver_id = ? AND status = ?", param.ConversationID, receiverID, "unread").
+	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("conversation_id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
+			param.ConversationID, receiverID, receiverType, "unread").
 		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
@@ -210,9 +288,10 @@ func MessageMarkConversationRead(c *gin.Context) {
 
 func MessageMarkAllRead(c *gin.Context) {
 	receiverID := getLoginID(c)
+	receiverType := getUserType(c)
 
-	if err := db.DB.Model(&imModel.Message{}).
-		Where("receiver_id = ? AND status = ?", receiverID, "unread").
+	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("receiver_id = ? AND receiver_type = ? AND status = ?", receiverID, receiverType, "unread").
 		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
 		return
@@ -223,12 +302,14 @@ func MessageMarkAllRead(c *gin.Context) {
 
 func MessageRemove(c *gin.Context, param *DeleteParam) {
 	userID := getLoginID(c)
+	userType := getUserType(c)
 
 	if len(param.IDs) == 0 {
 		return
 	}
-	if err := db.DB.Model(&imModel.Message{}).
-		Where("id IN ? AND (sender_id = ? OR receiver_id = ?)", param.IDs, userID, userID).
+	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
+		Where("id IN ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
+			param.IDs, userID, userType, userID, userType).
 		Update("deleted_by", userID).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
 		return
@@ -242,7 +323,7 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 	userType := getUserType(c)
 
 	var msg imModel.Message
-	if err := db.DB.First(&msg, "id = ?", param.MessageID).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).First(&msg, "id = ?", param.MessageID).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
@@ -254,7 +335,7 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 		result.WriteError(c, exception.NewBusinessError("超过5分钟，无法撤回", 400))
 		return
 	}
-	if err := db.DB.Model(&imModel.Message{}).Where("id = ?", param.MessageID).
+	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).Where("id = ?", param.MessageID).
 		Updates(map[string]interface{}{
 			"content":  "消息已被撤回",
 			"msg_type": imModel.MsgTypeSystem,
@@ -267,8 +348,13 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 // ==================== MessageForward ====================
 
 func MessageForward(c *gin.Context, param *ForwardParam) {
+	userID := getLoginID(c)
+	userType := getUserType(c)
 	var original imModel.Message
-	if err := db.DB.First(&original, "id = ?", param.MessageID).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).
+		Where("id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
+			param.MessageID, userID, userType, userID, userType).
+		First(&original).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
@@ -288,6 +374,7 @@ func MessageForward(c *gin.Context, param *ForwardParam) {
 func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
+	userType := getUserType(c)
 
 	if param.Size < 1 {
 		param.Size = 20
@@ -297,7 +384,8 @@ func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 	}
 
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
-		Where("(sender_id = ? OR receiver_id = ?) AND content LIKE ?", userID, userID, "%"+param.Keyword+"%")
+		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND content LIKE ?",
+			userID, userType, userID, userType, "%"+param.Keyword+"%")
 	if param.Cursor != "" {
 		if t, err := utils.ParseDateTime(param.Cursor); err == nil {
 			query = query.Where("created_at < ?", t)

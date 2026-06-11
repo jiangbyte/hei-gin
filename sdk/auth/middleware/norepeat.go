@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"io"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"hei-gin/sdk/auth"
@@ -15,6 +17,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const maxNoRepeatBodyBytes int64 = 1 << 20
 
 // NoRepeat returns a middleware that prevents duplicate submissions within the given interval (in milliseconds).
 // It uses Redis to store a hash of the request params keyed by userID + IP + URL path.
@@ -30,56 +34,31 @@ func NoRepeat(interval int) gin.HandlerFunc {
 		// Get client IP
 		ip := utils.GetClientIP(c)
 
-		// Build cache key
-		cacheKey := constants.NO_REPEAT_PREFIX + ip + ":" + userID + ":" + c.Request.URL.Path
-
 		// Hash request params
 		phash := paramsHash(c)
+		cacheKey := constants.NO_REPEAT_PREFIX + ip + ":" + userID + ":" + c.Request.URL.Path + ":" + phash
 
 		// Check Redis
 		redisClient := db.Redis
 		if redisClient != nil {
 			ctx := c.Request.Context()
-			cached, err := redisClient.Get(ctx, cacheKey).Result()
-			if err == nil {
-				var data struct {
-					Hash string `json:"hash"`
-					Time int64  `json:"time"`
-				}
-				if err := json.Unmarshal([]byte(cached), &data); err == nil {
-					if data.Hash == phash {
-						elapsed := time.Now().UnixMilli() - data.Time
-						if elapsed < int64(interval) {
-							remaining := (int64(interval) - elapsed) / 1000
-							if remaining < 1 {
-								remaining = 1
-							}
-							c.Abort()
-							c.JSON(200, gin.H{
-								"code":    429,
-								"message": "请求过于频繁，请" + strconv.FormatInt(remaining, 10) + "秒后再试",
-								"success": false,
-							})
-							return
-						}
-					}
-				}
+			cacheTTL := time.Duration(interval) * time.Millisecond
+			if cacheTTL <= 0 {
+				cacheTTL = time.Second
 			}
-
-			// Store new request info in Redis with 3600s TTL
-			nowMS := time.Now().UnixMilli()
-			storeData, marshalErr := json.Marshal(map[string]interface{}{
-				"hash": phash,
-				"time": nowMS,
-			})
-			if marshalErr == nil {
-				cacheTTL := interval / 1000 // convert ms to seconds
-				if cacheTTL < 60 {
-					cacheTTL = 60
-				} else if cacheTTL > 3600 {
-					cacheTTL = 3600
+			ok, err := redisClient.SetNX(ctx, cacheKey, "1", cacheTTL).Result()
+			if err == nil && !ok {
+				remaining := int64(cacheTTL / time.Second)
+				if remaining < 1 {
+					remaining = 1
 				}
-				redisClient.SetEx(ctx, cacheKey, string(storeData), time.Duration(cacheTTL)*time.Second)
+				c.Abort()
+				c.JSON(200, gin.H{
+					"code":    429,
+					"message": "请求过于频繁，请" + strconv.FormatInt(remaining, 10) + "秒后再试",
+					"success": false,
+				})
+				return
 			}
 		}
 
@@ -102,6 +81,9 @@ func paramsHash(c *gin.Context) string {
 
 	// Collect form parameters (for POST/PUT/PATCH)
 	if c.Request.Method != "GET" {
+		if strings.HasPrefix(c.GetHeader("Content-Type"), "multipart/") {
+			return hashParams(params)
+		}
 		_ = c.Request.ParseForm()
 		for k, v := range c.Request.PostForm {
 			if len(v) == 1 {
@@ -113,14 +95,21 @@ func paramsHash(c *gin.Context) string {
 	}
 
 	// Read request body and restore it for downstream handlers (Gin v1.12.0 GetRawData does not restore Body)
-	if body, err := c.GetRawData(); err == nil {
+	if c.Request.ContentLength < 0 || c.Request.ContentLength > maxNoRepeatBodyBytes {
+		return hashParams(params)
+	}
+	bodyReader := http.MaxBytesReader(c.Writer, c.Request.Body, maxNoRepeatBodyBytes)
+	if body, err := io.ReadAll(bodyReader); err == nil {
 		if len(body) > 0 {
 			params["_body"] = string(body)
 		}
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
-	// Marshal to JSON and hash
+	return hashParams(params)
+}
+
+func hashParams(params map[string]interface{}) string {
 	jsonBytes, _ := json.Marshal(params)
 	h := fnv.New64a()
 	_, _ = h.Write(jsonBytes)

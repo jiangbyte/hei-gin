@@ -3,17 +3,17 @@ package v1
 import (
 	"strconv"
 
+	"hei-gin/plugins/plugin-im/group"
+	"hei-gin/plugins/plugin-im/message"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/utils"
 	"hei-gin/sdk/result"
-	"hei-gin/plugins/plugin-im/message"
-	"hei-gin/plugins/plugin-im/group"
+	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/middleware"
 	authMW "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/middleware"
+	"hei-gin/sdk/registry"
 )
 
 func RegisterRoutes(r *gin.Engine) {
@@ -492,7 +492,7 @@ func conversationReadHandler(c *gin.Context) {
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
 		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.GetLoginID(c), string(enums.LoginTypeBusiness))
 	} else {
-		message.MessageMarkConversationRead(c)
+		message.MessageMarkConversationRead(c, &param)
 	}
 	result.Success(c, nil)
 }
@@ -507,7 +507,7 @@ func clientConversationReadHandler(c *gin.Context) {
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
 		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
 	} else {
-		message.MessageMarkConversationRead(c)
+		message.MessageMarkConversationRead(c, &param)
 	}
 	result.Success(c, nil)
 }

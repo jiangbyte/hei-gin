@@ -4,17 +4,37 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sync"
+	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 )
+
+const resourceTreeCacheTTL = 30 * time.Second
+
+type resourceTreeCacheEntry struct {
+	expires time.Time
+	data    []map[string]interface{}
+}
+
+var (
+	resourceTreeMu    sync.RWMutex
+	resourceTreeCache = make(map[string]resourceTreeCacheEntry)
+)
+
+func invalidateResourceTreeCache() {
+	resourceTreeMu.Lock()
+	resourceTreeCache = make(map[string]resourceTreeCacheEntry)
+	resourceTreeMu.Unlock()
+}
 
 type relRoleResource struct {
 	ID         string
@@ -82,6 +102,7 @@ func ModuleCreate(c *gin.Context, vo *ModuleVO) {
 		result.WriteError(c, exception.NewBusinessError("添加模块失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 }
 
 func ModuleModify(c *gin.Context, vo *ModuleVO) {
@@ -132,6 +153,7 @@ func ModuleModify(c *gin.Context, vo *ModuleVO) {
 		result.WriteError(c, exception.NewBusinessError("编辑模块失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 }
 
 func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
@@ -144,6 +166,7 @@ func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
 		result.WriteError(c, exception.NewBusinessError("删除模块失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 }
 
 func ResourcePage(c *gin.Context, param *ResourcePageParam) {
@@ -172,13 +195,24 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) {
 }
 
 func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
+	cacheKey := "tree:" + category
+	resourceTreeMu.RLock()
+	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
+		resourceTreeMu.RUnlock()
+		return cached.data
+	}
+	resourceTreeMu.RUnlock()
+
 	ctx := c.Request.Context()
 	q := db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
 	var all []SysResource
-	q.Find(&all)
+	if err := q.Find(&all).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("查询资源树失败: "+err.Error(), 500))
+		return nil
+	}
 
 	cm := make(map[string][]SysResource)
 	for _, r := range all {
@@ -188,7 +222,11 @@ func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 		}
 		cm[pid] = append(cm[pid], r)
 	}
-	return buildRT(cm, "", 0)
+	data := buildRT(cm, "", 0)
+	resourceTreeMu.Lock()
+	resourceTreeCache[cacheKey] = resourceTreeCacheEntry{expires: time.Now().Add(resourceTreeCacheTTL), data: data}
+	resourceTreeMu.Unlock()
+	return data
 }
 
 func buildRT(cm map[string][]SysResource, pid string, depth int) []map[string]interface{} {
@@ -228,9 +266,20 @@ func resToNode(r *SysResource) map[string]interface{} {
 }
 
 func ResourceMenu(c *gin.Context) []map[string]interface{} {
+	cacheKey := "menu"
+	resourceTreeMu.RLock()
+	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
+		resourceTreeMu.RUnlock()
+		return cached.data
+	}
+	resourceTreeMu.RUnlock()
+
 	ctx := c.Request.Context()
 	var all []SysResource
-	db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC").Find(&all)
+	if err := db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC").Find(&all).Error; err != nil {
+		result.WriteError(c, exception.NewBusinessError("查询资源菜单失败: "+err.Error(), 500))
+		return nil
+	}
 	cm := make(map[string][]SysResource)
 	for _, r := range all {
 		pid := ""
@@ -247,6 +296,9 @@ func ResourceMenu(c *gin.Context) []map[string]interface{} {
 		n["children"] = buildMenuTree(cm, rt.ID, 0)
 		r = append(r, n)
 	}
+	resourceTreeMu.Lock()
+	resourceTreeCache[cacheKey] = resourceTreeCacheEntry{expires: time.Now().Add(resourceTreeCacheTTL), data: r}
+	resourceTreeMu.Unlock()
 	return r
 }
 
@@ -315,6 +367,7 @@ func ResourceCreate(c *gin.Context, vo *ResourceVO) {
 		result.WriteError(c, exception.NewBusinessError("添加资源失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 }
 
 func ResourceModify(c *gin.Context, vo *ResourceVO) {
@@ -404,6 +457,7 @@ func ResourceModify(c *gin.Context, vo *ResourceVO) {
 		result.WriteError(c, exception.NewBusinessError("编辑资源失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 
 	syncPerm(ctx, vo.ID, oldExtra, vo.Extra)
 }
@@ -437,8 +491,8 @@ func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
 		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 		return
 	}
+	invalidateResourceTreeCache()
 }
-
 
 func collectDescendant(ctx context.Context, ids []string) []string {
 	m := make(map[string]bool)
@@ -447,7 +501,9 @@ func collectDescendant(ctx context.Context, ids []string) []string {
 	}
 
 	var all []SysResource
-	db.DB.WithContext(ctx).Find(&all)
+	if err := db.DB.WithContext(ctx).Find(&all).Error; err != nil {
+		return ids
+	}
 	cm := make(map[string][]string)
 	for _, r := range all {
 		if r.ParentID != nil && *r.ParentID != "" {

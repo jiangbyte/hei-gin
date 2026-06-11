@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net/http"
 	"strings"
 
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+const maxLoggedBodyBytes int64 = 1 << 20
 
 // ParseUserAgent extracts browser and OS from a User-Agent string.
 // Delegates to utils.GetBrowser and utils.GetOS.
@@ -26,8 +29,15 @@ func ExtractParamsJson(c *gin.Context) string {
 	if c.Request.Method != "POST" && c.Request.Method != "PUT" && c.Request.Method != "PATCH" {
 		return ""
 	}
+	contentType := c.GetHeader("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/") {
+		return ""
+	}
+	if c.Request.ContentLength < 0 || c.Request.ContentLength > maxLoggedBodyBytes {
+		return ""
+	}
 
-	bodyBytes, err := io.ReadAll(c.Request.Body)
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(c.Writer, c.Request.Body, maxLoggedBodyBytes))
 	if err != nil {
 		return ""
 	}

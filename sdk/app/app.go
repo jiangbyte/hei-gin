@@ -59,9 +59,18 @@ func Run() {
 	plugin.StartAll()
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
+	idleTimeout := time.Duration(config.C.App.TimeoutKeepAlive) * time.Second
+	if idleTimeout <= 0 {
+		idleTimeout = 15 * time.Second
+	}
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: r,
+		Addr:              addr,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       idleTimeout,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	go func() {

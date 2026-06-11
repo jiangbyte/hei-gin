@@ -10,7 +10,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/middleware"
 
 	"github.com/gorilla/websocket"
 )
@@ -49,11 +48,17 @@ const maxClientsPerUser = 3
 
 // Hub maintains the set of active clients and broadcasts online counts.
 type Hub struct {
-	mu      sync.RWMutex
-	clients map[*Client]bool
+	mu          sync.RWMutex
+	clients     map[*Client]bool
+	lifecycleMu sync.Mutex
+	onlineStop  chan struct{}
+	onlineDone  chan struct{}
 
 	// ipCount tracks connections per IP for rate limiting
 	ipCount map[string]int
+
+	// userCount tracks connections per login-type/user pair for O(1) per-user limiting.
+	userCount map[string]int
 
 	// Lifecycle hooks for CrossHub integration.
 	OnClientRegistered   func(c *Client)
@@ -63,8 +68,9 @@ type Hub struct {
 // NewHub creates a new Hub.
 func NewHub() *Hub {
 	return &Hub{
-		clients: make(map[*Client]bool),
-		ipCount: make(map[string]int),
+		clients:   make(map[*Client]bool),
+		ipCount:   make(map[string]int),
+		userCount: make(map[string]int),
 	}
 }
 
@@ -82,24 +88,19 @@ func (h *Hub) Register(client *Client) bool {
 		}
 	}
 
-	// Per-user connection limit
-	userCount := 0
-	for existing := range h.clients {
-		if existing.UserID == client.UserID && existing.UserType == client.UserType {
-			userCount++
-			if userCount >= maxClientsPerUser {
-				h.mu.Unlock()
-				log.Printf("[WS] User %s/%s exceeded max connections (%d)",
-					client.UserType, client.UserID, maxClientsPerUser)
-				return false
-			}
-		}
+	userKey := client.userKey()
+	if h.userCount[userKey] >= maxClientsPerUser {
+		h.mu.Unlock()
+		log.Printf("[WS] User %s/%s exceeded max connections (%d)",
+			client.UserType, client.UserID, maxClientsPerUser)
+		return false
 	}
 
 	h.clients[client] = true
 	if ip != "" {
 		h.ipCount[ip]++
 	}
+	h.userCount[userKey]++
 	count := len(h.clients)
 	onRegistered := h.OnClientRegistered
 	h.mu.Unlock()
@@ -125,6 +126,11 @@ func (h *Hub) Unregister(client *Client) {
 			if h.ipCount[ip] <= 0 {
 				delete(h.ipCount, ip)
 			}
+		}
+		userKey := client.userKey()
+		h.userCount[userKey]--
+		if h.userCount[userKey] <= 0 {
+			delete(h.userCount, userKey)
 		}
 	}
 	count := len(h.clients)
@@ -160,116 +166,180 @@ func (h *Hub) isUserConnected(userID string, userType enums.LoginTypeEnum) bool 
 
 // SendToUsers sends a message to multiple business users in a single lock acquisition.
 func (h *Hub) SendToUsers(userIDs []string, msg Message) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
 	userSet := make(map[string]struct{}, len(userIDs))
 	for _, uid := range userIDs {
 		userSet[uid] = struct{}{}
 	}
+	clients := make([]*Client, 0, len(userIDs))
+	h.mu.RLock()
 	for client := range h.clients {
 		if client.UserType == enums.LoginTypeBusiness {
 			if _, ok := userSet[client.UserID]; ok {
-				client.SendJSON(msg)
+				clients = append(clients, client)
 			}
 		}
+	}
+	h.mu.RUnlock()
+	for _, client := range clients {
+		client.SendJSON(msg)
 	}
 }
 
 // SendToConsumers sends a message to multiple consumer users in a single lock acquisition.
 func (h *Hub) SendToConsumers(userIDs []string, msg Message) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
 	userSet := make(map[string]struct{}, len(userIDs))
 	for _, uid := range userIDs {
 		userSet[uid] = struct{}{}
 	}
+	clients := make([]*Client, 0, len(userIDs))
+	h.mu.RLock()
 	for client := range h.clients {
 		if client.UserType == enums.LoginTypeConsumer {
 			if _, ok := userSet[client.UserID]; ok {
-				client.SendJSON(msg)
+				clients = append(clients, client)
 			}
 		}
+	}
+	h.mu.RUnlock()
+	for _, client := range clients {
+		client.SendJSON(msg)
+	}
+}
+
+func (h *Hub) SendMessagesToUsers(messages map[string]Message) {
+	h.sendMessagesByUser(enums.LoginTypeBusiness, messages)
+}
+
+func (h *Hub) SendMessagesToConsumers(messages map[string]Message) {
+	h.sendMessagesByUser(enums.LoginTypeConsumer, messages)
+}
+
+func (h *Hub) sendMessagesByUser(userType enums.LoginTypeEnum, messages map[string]Message) {
+	if len(messages) == 0 {
+		return
+	}
+	clients := make([]*Client, 0, len(messages))
+	clientMsgs := make([]Message, 0, len(messages))
+	h.mu.RLock()
+	for client := range h.clients {
+		if client.UserType != userType {
+			continue
+		}
+		msg, ok := messages[client.UserID]
+		if !ok {
+			continue
+		}
+		clients = append(clients, client)
+		clientMsgs = append(clientMsgs, msg)
+	}
+	h.mu.RUnlock()
+	for i, client := range clients {
+		client.SendJSON(clientMsgs[i])
 	}
 }
 
 func (h *Hub) SendToUser(userID string, msg Message) {
+	clients := make([]*Client, 0, 1)
 	h.mu.RLock()
-	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client.UserType == enums.LoginTypeBusiness && client.UserID == userID {
-			client.SendJSON(msg)
+			clients = append(clients, client)
 		}
+	}
+	h.mu.RUnlock()
+	for _, client := range clients {
+		client.SendJSON(msg)
 	}
 }
 
 // SendToConsumer sends a message to a specific consumer (client) user.
 func (h *Hub) SendToConsumer(userID string, msg Message) {
+	clients := make([]*Client, 0, 1)
 	h.mu.RLock()
-	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client.UserType == enums.LoginTypeConsumer && client.UserID == userID {
-			client.SendJSON(msg)
+			clients = append(clients, client)
 		}
+	}
+	h.mu.RUnlock()
+	for _, client := range clients {
+		client.SendJSON(msg)
 	}
 }
 
 // BroadcastAll sends a message to all connected clients.
 func (h *Hub) BroadcastAll(msg Message) {
 	data, _ := json.Marshal(msg)
+	clients := h.snapshotClients(func(*Client) bool { return true })
+	for _, client := range clients {
+		client.sendBytes(data)
+	}
+}
+
+func (h *Hub) snapshotClients(match func(*Client) bool) []*Client {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+	clients := make([]*Client, 0, len(h.clients))
 	for client := range h.clients {
-		select {
-		case client.Send <- data:
-		default:
+		if match(client) {
+			clients = append(clients, client)
 		}
 	}
+	return clients
 }
 
 // BroadcastBusiness sends a message to all connected business (admin) clients.
 func (h *Hub) BroadcastBusiness(msg Message) {
 	data, _ := json.Marshal(msg)
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	for client := range h.clients {
-		if client.UserType == enums.LoginTypeBusiness {
-			select {
-			case client.Send <- data:
-			default:
-			}
-		}
+	clients := h.snapshotClients(func(client *Client) bool {
+		return client.UserType == enums.LoginTypeBusiness
+	})
+	for _, client := range clients {
+		client.sendBytes(data)
 	}
 }
 
 func (h *Hub) BroadcastConsumers(msg Message) {
 	data, _ := json.Marshal(msg)
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	for client := range h.clients {
-		if client.UserType == enums.LoginTypeConsumer {
-			select {
-			case client.Send <- data:
-			default:
-			}
-		}
+	clients := h.snapshotClients(func(client *Client) bool {
+		return client.UserType == enums.LoginTypeConsumer
+	})
+	for _, client := range clients {
+		client.sendBytes(data)
 	}
 }
 
 // StartOnlineBroadcast periodically broadcasts the online count to all clients.
 func (h *Hub) StartOnlineBroadcast() {
+	h.lifecycleMu.Lock()
+	if h.onlineStop != nil {
+		h.lifecycleMu.Unlock()
+		return
+	}
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	h.onlineStop = stop
+	h.onlineDone = done
+	h.lifecycleMu.Unlock()
+
 	interval := time.Duration(getConfig().OnlineBroadcastInterval) * time.Second
 	if interval <= 0 {
 		interval = 60 * time.Second
 	}
 	ticker := time.NewTicker(interval)
 	go func() {
+		defer close(done)
+		defer ticker.Stop()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("[WS] Online broadcast panicked: %v", r)
 			}
 		}()
-		for range ticker.C {
-			middleware.GoSafe(func() {
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
 				count := h.OnlineCount()
 				h.BroadcastAll(Message{
 					Type: MsgOnlineCount,
@@ -277,9 +347,24 @@ func (h *Hub) StartOnlineBroadcast() {
 						Count: count,
 					},
 				})
-			})
+			}
 		}
 	}()
+}
+
+func (h *Hub) StopOnlineBroadcast() {
+	h.lifecycleMu.Lock()
+	stop := h.onlineStop
+	done := h.onlineDone
+	if stop == nil {
+		h.lifecycleMu.Unlock()
+		return
+	}
+	h.onlineStop = nil
+	h.onlineDone = nil
+	close(stop)
+	h.lifecycleMu.Unlock()
+	<-done
 }
 
 // HandleWebSocket upgrades an HTTP connection to WebSocket and registers the client.
