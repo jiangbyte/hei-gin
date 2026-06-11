@@ -1,86 +1,33 @@
 package middleware
 
 import (
-	"regexp"
 	"strings"
 
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/config"
+	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	// staticPaths lists paths that require no authentication.
-	staticPaths = []string{
-		"/api/v1/sys/dict/tree",
-		"/favicon.ico",
-		"/docs",
-		"/redoc",
-		"/openapi.json",
-		"/v3/api-docs",
-	}
+var wsPathSuffixes = []string{"/ws"}
 
-	// apiSegmentPattern extracts the segment after /api/v<digits>/ from a path.
-	// Example: /api/v1/sys/user -> matches with capture "sys".
-	apiSegmentPattern = regexp.MustCompile(`^/api/v\d+/([^/]+)/`)
-
-	// wsPathSuffixes are API paths that end with /ws (WebSocket endpoints).
-	// These paths authenticate via query-parameter token, not session cookies.
-	wsPathSuffixes = []string{"/ws"}
-)
-
-// getTraceID retrieves the trace_id from gin context, returning empty string if not set.
-func getTraceID(c *gin.Context) string {
-	v, exists := c.Get("trace_id")
-	if !exists {
-		return ""
-	}
-	s, ok := v.(string)
-	if !ok {
-		return ""
-	}
-	return s
-}
-
-// unauthorizedResponse writes a consistent 401 JSON response with trace_id.
-func unauthorizedResponse(c *gin.Context) {
-	traceID := getTraceID(c)
-	c.Abort()
-	c.JSON(200, gin.H{
-		"code":     401,
-		"message":  "未授权/未登录",
-		"success":  false,
-		"trace_id": traceID,
-	})
-}
-
-// AuthCheck returns a Gin middleware that enforces authentication based on path patterns.
-//
-//	Static paths (favicon.ico, docs, etc.)        -> pass
-//	OPTIONS method                                 -> pass
-//	/api/v{n}/public/*                             -> pass (no auth)
-//	/api/v{n}/c/*                                  -> client auth required
-//	/api/v{n}/b/* or /api/v{n}/<other>/*           -> regular auth required
+// AuthCheck returns a global middleware that:
+//  1. Skips auth for configured public paths
+//  2. Requires CONSUMER login for /api/v{n}/c/... routes
+//  3. Requires BUSINESS login for all other /api/v{n}/... routes
 func AuthCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		method := c.Request.Method
 
-		// 1. Static paths – no auth
-		for _, sp := range staticPaths {
-			if path == sp || strings.HasPrefix(path, sp) {
-				c.Next()
-				return
-			}
-		}
-
-		// 2. OPTIONS method – no auth
+		// OPTIONS – no auth
 		if method == "OPTIONS" {
 			c.Next()
 			return
 		}
 
-		// 2a. WebSocket paths – let WS handler do its own token-based auth
+		// WebSocket – let WS handler do its own token-based auth
 		for _, suffix := range wsPathSuffixes {
 			if strings.HasSuffix(path, suffix) {
 				c.Next()
@@ -88,36 +35,39 @@ func AuthCheck() gin.HandlerFunc {
 			}
 		}
 
-		// 3. Check versioned API paths
-		matches := apiSegmentPattern.FindStringSubmatch(path)
-		if len(matches) < 2 {
-			c.Next()
-			return
-		}
-
-		segment := matches[1]
-
-		// 4. Public paths – no auth
-		if segment == "public" {
-			c.Next()
-			return
-		}
-
-		// 5. Client auth path: /api/v{n}/c/...
-		if segment == "c" {
-			clientAuth := auth.Consumer
-			if !clientAuth.IsLogin(c) {
-				unauthorizedResponse(c)
+		// Public paths from config – no auth
+		for _, pp := range config.C.Auth.PublicPaths {
+			if strings.HasPrefix(path, pp) {
+				c.Next()
 				return
 			}
-			c.Next()
-			return
 		}
 
-		// 6. B path (/api/v{n}/b/...) or DEFAULT (/api/v{n}/<other>/...)
-		if !auth.IsLogin(c) {
-			unauthorizedResponse(c)
-			return
+		// /api/v{n}/c/... → CONSUMER auth
+		if strings.HasPrefix(path, "/api/v") {
+			afterV := path[7:] // after "/api/v"
+			slash := strings.IndexByte(afterV, '/')
+			if slash >= 0 {
+				afterVer := afterV[slash+1:]    // e.g. "c/..." or "sys/..."
+				if strings.HasPrefix(afterVer, "c/") {
+					if !auth.Consumer.IsLogin(c) {
+						c.Abort()
+						result.Failure(c, "未授权/未登录", 401)
+						return
+					}
+					c.Next()
+					return
+				}
+
+				// All other /api/v{n}/... routes → BUSINESS auth
+				if !auth.IsLogin(c) {
+					c.Abort()
+					result.Failure(c, "未授权/未登录", 401)
+					return
+				}
+				c.Next()
+				return
+			}
 		}
 
 		c.Next()

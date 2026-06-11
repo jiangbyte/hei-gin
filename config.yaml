@@ -88,3 +88,16 @@ ws:
   write_timeout: 10
   online_broadcast_interval: 60
 
+# Auth
+auth:
+  # Routes that bypass authentication entirely (prefix match).
+  # For /api/v{n}/... paths the version digit is treated as a wildcard;
+  # non-API paths like /favicon.ico are matched as-is.
+  public_paths:
+    - "/api/v1/public/"
+    - "/api/v1/sys/dict/tree"
+    - "/favicon.ico"
+    - "/docs"
+    - "/redoc"
+    - "/openapi.json"
+    - "/v3/api-docs"

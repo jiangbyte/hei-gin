@@ -88,3 +88,17 @@ ws:
   pong_timeout: 60               # WS Pong超时（秒）
   write_timeout: 10              # WS写入超时（秒）
   online_broadcast_interval: 60  # 在线人数广播间隔（秒）
+
+# Auth
+auth:
+  # Routes that bypass authentication entirely (prefix match).
+  # For /api/v{n}/... paths the version digit is treated as a wildcard;
+  # non-API paths like /favicon.ico are matched as-is.
+  public_paths:
+    - "/api/v1/public/"
+    - "/api/v1/sys/dict/tree"
+    - "/favicon.ico"
+    - "/docs"
+    - "/redoc"
+    - "/openapi.json"
+    - "/v3/api-docs"

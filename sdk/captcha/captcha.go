@@ -18,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"hei-gin/sdk/constants"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -262,8 +261,8 @@ func randomInt(min, max int) int {
 
 // Package-level exported captcha service instances for business and consumer.
 var (
-	BCaptcha = NewCaptchaService(constants.CAPTCHA_BUSINESS_CACHE_KEY)
-	CCaptcha = NewCaptchaService(constants.CAPTCHA_CONSUMER_CACHE_KEY)
+	BCaptcha = NewCaptchaService("BUSINESS:captcha:")
+	CCaptcha = NewCaptchaService("CONSUMER:captcha:")
 )
 
 

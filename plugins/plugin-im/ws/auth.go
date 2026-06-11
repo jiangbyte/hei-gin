@@ -21,7 +21,7 @@ type AuthResult struct {
 func AuthenticateFromToken(c *gin.Context, loginType enums.LoginTypeEnum) AuthResult {
 	token := c.Query("token")
 	if token == "" {
-		result.Wrap(c).Fail("缺少token", 401)
+		result.Failure(c, "缺少token", 401)
 		c.Abort()
 		return AuthResult{OK: false}
 	}
@@ -34,7 +34,7 @@ func AuthenticateFromToken(c *gin.Context, loginType enums.LoginTypeEnum) AuthRe
 	}
 
 	if userID == "" {
-		result.Wrap(c).Fail("token无效或已过期", 401)
+		result.Failure(c, "token无效或已过期", 401)
 		c.Abort()
 		return AuthResult{OK: false}
 	}
