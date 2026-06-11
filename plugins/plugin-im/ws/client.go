@@ -27,7 +27,7 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 
-	pongTimeout := time.Duration(cfg.PongTimeout) * time.Second
+	pongTimeout := time.Duration(getConfig().PongTimeout) * time.Second
 	c.Conn.SetReadDeadline(time.Now().Add(pongTimeout))
 	c.Conn.SetPongHandler(func(string) error {
 		c.Conn.SetReadDeadline(time.Now().Add(pongTimeout))
@@ -57,11 +57,11 @@ func (c *Client) ReadPump() {
 
 // WritePump pumps messages from the hub to the WebSocket connection.
 func (c *Client) WritePump() {
-	heartbeatInterval := time.Duration(cfg.HeartbeatInterval) * time.Second
+	heartbeatInterval := time.Duration(getConfig().HeartbeatInterval) * time.Second
 	if heartbeatInterval <= 0 {
 		heartbeatInterval = 30 * time.Second
 	}
-	writeTimeout := time.Duration(cfg.WriteTimeout) * time.Second
+	writeTimeout := time.Duration(getConfig().WriteTimeout) * time.Second
 
 	ticker := time.NewTicker(heartbeatInterval)
 	defer func() {

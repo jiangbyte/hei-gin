@@ -4,36 +4,48 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sync"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/middleware"
 
 	"github.com/gorilla/websocket"
 )
 
-// cfg is the package-level ws configuration, loaded once from config.C.Raw["ws"].
-var cfg = loadConfig()
+var (
+	_once        sync.Once
+	_cfg         WSConfig
+	_upgrader    *websocket.Upgrader
+	_initHubOnce sync.Once
+)
+
+func getConfig() WSConfig {
+	_once.Do(func() {
+		_cfg = loadConfig()
+		_upgrader = &websocket.Upgrader{
+			ReadBufferSize:  _cfg.ReadBufferSize,
+			WriteBufferSize: _cfg.WriteBufferSize,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		}
+	})
+	return _cfg
+}
+
+func getUpgrader() *websocket.Upgrader {
+	getConfig()
+	return _upgrader
+}
 
 // maxClientsPerIP limits the number of concurrent WebSocket connections from a single IP.
 const maxClientsPerIP = 10
 
 // maxClientsPerUser limits the number of concurrent WebSocket connections for a single user.
 const maxClientsPerUser = 3
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  cfg.ReadBufferSize,
-	WriteBufferSize: cfg.WriteBufferSize,
-	CheckOrigin: func(r *http.Request) bool {
-		// In production, validate against config.C.CORS.AllowOrigins
-		// For development, allow all origins (consistent with CORS config)
-		return true
-	},
-}
-
-
 
 // Hub maintains the set of active clients and broadcasts online counts.
 type Hub struct {
@@ -245,7 +257,7 @@ func (h *Hub) BroadcastConsumers(msg Message) {
 
 // StartOnlineBroadcast periodically broadcasts the online count to all clients.
 func (h *Hub) StartOnlineBroadcast() {
-	interval := time.Duration(cfg.OnlineBroadcastInterval) * time.Second
+	interval := time.Duration(getConfig().OnlineBroadcastInterval) * time.Second
 	if interval <= 0 {
 		interval = 60 * time.Second
 	}
@@ -272,7 +284,7 @@ func (h *Hub) StartOnlineBroadcast() {
 
 // HandleWebSocket upgrades an HTTP connection to WebSocket and registers the client.
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType enums.LoginTypeEnum) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := getUpgrader().Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[WS] Upgrade error: %v", err)
 		return
@@ -318,7 +330,16 @@ func getClientIP(r *http.Request) string {
 }
 
 // GlobalHub is the singleton hub instance used by the application.
+// NOTE: NewHub() must NOT call getConfig() — it runs at package init time,
+// before config.FindAndLoad(). Use lazy loading for any config-dependent fields.
 var GlobalHub = NewHub()
 
 // GlobalCrossHub is the cross-instance hub. Initialized by app.go after Redis setup.
 var GlobalCrossHub *CrossHub
+
+// InitCrossHub initializes GlobalCrossHub exactly once with sync.Once protection.
+func InitCrossHub(local *Hub, rdb *redis.Client) {
+	_initHubOnce.Do(func() {
+		GlobalCrossHub = NewCrossHub(local, rdb)
+	})
+}

@@ -19,50 +19,50 @@ import (
 // ─── Config helpers ───────────────────────────────────────────────────
 
 func hbInterval() time.Duration {
-	if cfg.HeartbeatInterval > 0 {
-		return time.Duration(cfg.HeartbeatInterval) * time.Second
+	if getConfig().HeartbeatInterval > 0 {
+		return time.Duration(getConfig().HeartbeatInterval) * time.Second
 	}
 	return 15 * time.Second
 }
 
 func instTTL() time.Duration {
-	if cfg.InstanceTTL > 0 {
-		return time.Duration(cfg.InstanceTTL) * time.Second
+	if getConfig().InstanceTTL > 0 {
+		return time.Duration(getConfig().InstanceTTL) * time.Second
 	}
 	return 60 * time.Second
 }
 
 func staleClean() time.Duration {
-	if cfg.StaleCleanInterval > 0 {
-		return time.Duration(cfg.StaleCleanInterval) * time.Minute
+	if getConfig().StaleCleanInterval > 0 {
+		return time.Duration(getConfig().StaleCleanInterval) * time.Minute
 	}
 	return 5 * time.Minute
 }
 
 func rlWindow() time.Duration {
-	if cfg.RateLimitWindow > 0 {
-		return time.Duration(cfg.RateLimitWindow) * time.Second
+	if getConfig().RateLimitWindow > 0 {
+		return time.Duration(getConfig().RateLimitWindow) * time.Second
 	}
 	return 10 * time.Second
 }
 
 func rlMax() int64 {
-	if cfg.RateLimitMax > 0 {
-		return int64(cfg.RateLimitMax)
+	if getConfig().RateLimitMax > 0 {
+		return int64(getConfig().RateLimitMax)
 	}
 	return 30
 }
 
 func dedupTTL() time.Duration {
-	if cfg.DedupTTL > 0 {
-		return time.Duration(cfg.DedupTTL) * time.Second
+	if getConfig().DedupTTL > 0 {
+		return time.Duration(getConfig().DedupTTL) * time.Second
 	}
 	return 30 * time.Second
 }
 
 func pollTO() time.Duration {
-	if cfg.PollTimeout > 0 {
-		return time.Duration(cfg.PollTimeout) * time.Second
+	if getConfig().PollTimeout > 0 {
+		return time.Duration(getConfig().PollTimeout) * time.Second
 	}
 	return 2 * time.Second
 }
@@ -168,6 +168,10 @@ func (ch *CrossHub) dedupKey(messageID string) string {
 // ─── Presence ─────────────────────────────────────────────────────────
 
 func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType enums.LoginTypeEnum) bool {
+	if ch == nil {
+		return false
+	}
+
 	if ch.rdb == nil {
 		return ch.local.isUserConnected(userID, userType)
 	}
@@ -232,6 +236,10 @@ func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEn
 // ─── Rate Limiting ────────────────────────────────────────────────────
 
 func (ch *CrossHub) AllowMessage(userID string, userType enums.LoginTypeEnum) bool {
+	if ch == nil {
+		return false
+	}
+
 	if ch.rdb == nil {
 		return true
 	}
@@ -453,6 +461,14 @@ func (ch *CrossHub) msgListCleanupLoop() {
 // ─── Public API ───────────────────────────────────────────────────────
 
 func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
+	if ch == nil {
+		return
+	}
+
+	if ch == nil {
+		return
+	}
+
 	ch.local.SendToUsers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
@@ -462,6 +478,14 @@ func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
 }
 
 func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
+	if ch == nil {
+		return
+	}
+
+	if ch == nil {
+		return
+	}
+
 	ch.local.SendToConsumers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
@@ -471,6 +495,9 @@ func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
 }
 
 func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) {
+	if ch == nil {
+		return
+	}
 	ch.local.SendToUser(userID, msg)
 	if ch.rdb != nil {
 		mid := ""
@@ -482,6 +509,9 @@ func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) 
 }
 
 func (ch *CrossHub) SendToConsumer(userID string, msg Message, messageID ...string) {
+	if ch == nil {
+		return
+	}
 	ch.local.SendToConsumer(userID, msg)
 	if ch.rdb != nil {
 		mid := ""
@@ -529,22 +559,42 @@ func (ch *CrossHub) publishToRemote(userID string, userType enums.LoginTypeEnum,
 }
 
 func (ch *CrossHub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType enums.LoginTypeEnum) {
+	if ch == nil {
+		return
+	}
+
 	ch.local.HandleWebSocket(w, r, userID, userType)
 }
 
 func (ch *CrossHub) OnlineCount() int {
+	if ch == nil {
+		return 0
+	}
+
 	return ch.local.OnlineCount()
 }
 
 func (ch *CrossHub) BroadcastAll(msg Message) {
+	if ch == nil {
+		return
+	}
+
 	ch.local.BroadcastAll(msg)
 }
 
 func (ch *CrossHub) BroadcastBusiness(msg Message) {
+	if ch == nil {
+		return
+	}
+
 	ch.local.BroadcastBusiness(msg)
 }
 
 func (ch *CrossHub) BroadcastConsumers(msg Message) {
+	if ch == nil {
+		return
+	}
+
 	ch.local.BroadcastConsumers(msg)
 }
 

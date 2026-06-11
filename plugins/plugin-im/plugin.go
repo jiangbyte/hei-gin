@@ -1,22 +1,22 @@
 package plugin_im
 
 import (
+	ws "hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/registry"
-	ws "hei-gin/plugins/plugin-im/ws"
 
 	"github.com/gin-gonic/gin"
 
-	_ "hei-gin/plugins/plugin-im/message"
-	_ "hei-gin/plugins/plugin-im/message/api/v1"
-	_ "hei-gin/plugins/plugin-im/group"
-	_ "hei-gin/plugins/plugin-im/group/api/v1"
-	_ "hei-gin/plugins/plugin-im/friend"
-	_ "hei-gin/plugins/plugin-im/friend/api/v1"
 	_ "hei-gin/plugins/plugin-im/broadcast"
 	_ "hei-gin/plugins/plugin-im/broadcast/api/v1"
+	_ "hei-gin/plugins/plugin-im/friend"
+	_ "hei-gin/plugins/plugin-im/friend/api/v1"
+	_ "hei-gin/plugins/plugin-im/group"
+	_ "hei-gin/plugins/plugin-im/group/api/v1"
+	_ "hei-gin/plugins/plugin-im/message"
+	_ "hei-gin/plugins/plugin-im/message/api/v1"
 )
 
 type IMPlugin struct{}
@@ -31,7 +31,7 @@ func (p *IMPlugin) Info() plugin.PluginInfo {
 
 func (p *IMPlugin) Name() string { return "plugin-im" }
 func (p *IMPlugin) Init() error {
-	ws.GlobalCrossHub = ws.NewCrossHub(ws.GlobalHub, db.Redis)
+	ws.InitCrossHub(ws.GlobalHub, db.Redis)
 	return nil
 }
 func (p *IMPlugin) Start() error { return nil }
@@ -46,7 +46,7 @@ func init() {
 	plugin.Register(&IMPlugin{})
 
 	registry.RegisterRoute(func(r *gin.Engine) {
-	r.Static("/uploads", "./uploads")
+		r.Static("/uploads", "./uploads")
 		r.GET("/api/v1/sys/im/ws", sysWSHandler)
 		r.GET("/api/v1/c/im/ws", clientWSHandler)
 	})

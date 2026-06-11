@@ -20,7 +20,6 @@ import (
 
 	_ "hei-gin/sdk/auth"
 	_ "hei-gin/sdk/captcha"
-	_ "hei-gin/sdk/scheduler"
 	_ "hei-gin/sdk/utils"
 )
 
@@ -37,7 +36,6 @@ func Run() {
 		log.Fatalf("[APP] Failed to init Redis: %v", err)
 	}
 
-
 	if err := plugin.InitAll(); err != nil {
 		log.Fatalf("[APP] Plugin init failed: %v", err)
 	}
@@ -48,17 +46,17 @@ func Run() {
 	r := gin.New()
 
 	// Middleware order matters — outermost first (Recovery must be outermost to catch all)
-	r.Use(middleware.Recovery()) // Catch all panics → JSON
-	r.Use(gin.Logger())          // Request logging
-	r.Use(middleware.Trace())    // Trace ID injection
-	r.Use(middleware.CORS())     // CORS headers
+	r.Use(middleware.Recovery())  // Catch all panics → JSON
+	r.Use(gin.Logger())           // Request logging
+	r.Use(middleware.Trace())     // Trace ID injection
+	r.Use(middleware.CORS())      // CORS headers
 	r.Use(middleware.AuthCheck()) // Authentication
 
 	registry.ApplyMiddlewares(r)
 
 	SetupRouters(r)
 
-			plugin.StartAll()
+	plugin.StartAll()
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
 	srv := &http.Server{
