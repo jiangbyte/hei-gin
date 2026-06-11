@@ -5,6 +5,7 @@ import (
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/registry"
+	"hei-gin/sdk/enums"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func RegisterRoutes(r *gin.Engine) {
 		username.DoRegister,
 	)
 	r.POST("/api/v1/c/logout",
-		middleware.HeiCheckLogin("CONSUMER"),
+		middleware.HeiCheckLogin(string(enums.LoginTypeConsumer)),
 		username.DoLogout,
 	)
 }

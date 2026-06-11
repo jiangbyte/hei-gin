@@ -12,7 +12,7 @@ import (
 )
 
 // HeiCheckLogin returns a middleware that checks if the user is logged in.
-// loginType defaults to "BUSINESS". Pass "CONSUMER" for client-side users.
+// loginType defaults to BUSINESS. Pass CONSUMER for client-side users.
 // Sets "loginUser" in the Gin context for downstream audit logging.
 // Injects the user ID into c.Request.Context() so GORM hooks can auto-fill CreatedBy/UpdatedBy.
 func HeiCheckLogin(loginType ...string) gin.HandlerFunc {

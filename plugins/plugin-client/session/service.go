@@ -10,6 +10,7 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/result"
 	cliUser "hei-gin/plugins/plugin-client/user"
@@ -317,7 +318,7 @@ func SessionChart(c *gin.Context) *SessionChartData {
 		},
 		PieChart: PieChartData{
 			Data: []CategoryTotal{
-				{Category: "CONSUMER", Total: cTotal},
+				{Category: string(enums.LoginTypeConsumer), Total: cTotal},
 			},
 		},
 	}
