@@ -58,6 +58,13 @@ func init() {
 	})
 }
 
+// @Summary      即时通讯连接接口调用
+// @Description  访问 /uploads/:bucket/:file_key，即时通讯连接接口调用
+// @Tags         即时通讯连接
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /uploads/:bucket/:file_key [get]
 func uploadHandler(c *gin.Context) {
 	bucket := c.Param("bucket")
 	fileKey := c.Param("file_key")
@@ -72,6 +79,13 @@ func uploadHandler(c *gin.Context) {
 	}
 }
 
+// @Summary      即时通讯连接WebSocket连接
+// @Description  访问 /api/v1/sys/im/ws，即时通讯连接WebSocket连接
+// @Tags         即时通讯连接
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/ws [get]
 func sysWSHandler(c *gin.Context) {
 	result := ws.AuthenticateFromToken(c, enums.LoginTypeBusiness)
 	if !result.OK {
@@ -80,6 +94,13 @@ func sysWSHandler(c *gin.Context) {
 	ws.GlobalHub.HandleWebSocket(c.Writer, c.Request, result.UserID, result.UserType)
 }
 
+// @Summary      即时通讯连接WebSocket连接
+// @Description  访问 /api/v1/c/im/ws，即时通讯连接WebSocket连接
+// @Tags         即时通讯连接
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/ws [get]
 func clientWSHandler(c *gin.Context) {
 	result := ws.AuthenticateFromToken(c, enums.LoginTypeConsumer)
 	if !result.OK {

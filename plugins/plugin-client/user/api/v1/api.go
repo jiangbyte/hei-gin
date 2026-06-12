@@ -68,6 +68,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/client-user/page
+// @Summary      C端用户分页查询
+// @Description  访问 /api/v1/client-user/page，C端用户分页查询
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        query  query  clientuser.ClientUserPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/client-user/page [get]
 func pageHandler(c *gin.Context) {
 	var param clientuser.ClientUserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -79,6 +87,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/client-user/create
+// @Summary      C端用户创建
+// @Description  访问 /api/v1/client-user/create，C端用户创建
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  clientuser.ClientUserVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/client-user/create [post]
 func createHandler(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -91,6 +107,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/client-user/modify
+// @Summary      C端用户修改
+// @Description  访问 /api/v1/client-user/modify，C端用户修改
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  clientuser.ClientUserVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/client-user/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -103,6 +127,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/client-user/remove
+// @Summary      C端用户删除
+// @Description  访问 /api/v1/client-user/remove，C端用户删除
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/client-user/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -115,18 +147,41 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/client-user/detail
+// @Summary      C端用户详情查询
+// @Description  访问 /api/v1/client-user/detail，C端用户详情查询
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/client-user/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := clientuser.ClientUserDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // currentHandler handles GET /api/v1/c/client-user/current
+// @Summary      C端用户当前信息
+// @Description  访问 /api/v1/c/client-user/current，C端用户当前信息
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/client-user/current [get]
 func currentHandler(c *gin.Context) {
 	vo := clientuser.ClientUserCurrent(c)
 	result.Success(c, vo)
 }
 
 // updateProfileHandler handles POST /api/v1/c/client-user/update-profile
+// @Summary      C端用户更新个人信息
+// @Description  访问 /api/v1/c/client-user/update-profile，C端用户更新个人信息
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  clientuser.UpdateProfileParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/client-user/update-profile [post]
 func updateProfileHandler(c *gin.Context) {
 	var param clientuser.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -139,6 +194,14 @@ func updateProfileHandler(c *gin.Context) {
 }
 
 // updateAvatarHandler handles POST /api/v1/c/client-user/update-avatar
+// @Summary      C端用户更新头像
+// @Description  访问 /api/v1/c/client-user/update-avatar，C端用户更新头像
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  clientuser.UpdateAvatarParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/client-user/update-avatar [post]
 func updateAvatarHandler(c *gin.Context) {
 	var param clientuser.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -151,6 +214,14 @@ func updateAvatarHandler(c *gin.Context) {
 }
 
 // updatePasswordHandler handles POST /api/v1/c/client-user/update-password
+// @Summary      C端用户修改密码
+// @Description  访问 /api/v1/c/client-user/update-password，C端用户修改密码
+// @Tags         C端用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body  clientuser.UpdatePasswordParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/client-user/update-password [post]
 func updatePasswordHandler(c *gin.Context) {
 	var param clientuser.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {

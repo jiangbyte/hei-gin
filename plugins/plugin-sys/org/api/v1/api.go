@@ -59,6 +59,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/org/page
+// @Summary      组织管理分页查询
+// @Description  访问 /api/v1/sys/org/page，组织管理分页查询
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  org.OrgPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/page [get]
 func pageHandler(c *gin.Context) {
 	var param org.OrgPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -70,6 +78,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // treeHandler handles GET /api/v1/sys/org/tree
+// @Summary      组织管理树形查询
+// @Description  访问 /api/v1/sys/org/tree，组织管理树形查询
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  org.OrgTreeParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/tree [get]
 func treeHandler(c *gin.Context) {
 	var param org.OrgTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -81,6 +97,14 @@ func treeHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/org/create
+// @Summary      组织管理创建
+// @Description  访问 /api/v1/sys/org/create，组织管理创建
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  org.OrgVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/create [post]
 func createHandler(c *gin.Context) {
 	var vo org.OrgVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -93,6 +117,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/org/modify
+// @Summary      组织管理修改
+// @Description  访问 /api/v1/sys/org/modify，组织管理修改
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  org.OrgVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo org.OrgVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -105,6 +137,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/org/remove
+// @Summary      组织管理删除
+// @Description  访问 /api/v1/sys/org/remove，组织管理删除
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -117,6 +157,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/org/detail
+// @Summary      组织管理详情查询
+// @Description  访问 /api/v1/sys/org/detail，组织管理详情查询
+// @Tags         组织管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/org/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := org.OrgDetail(c, c.Query("id"))
 	result.Success(c, vo)

@@ -81,6 +81,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/log/page
+// @Summary      日志管理分页查询
+// @Description  访问 /api/v1/sys/log/page，日志管理分页查询
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  logPackage.LogPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/page [get]
 func pageHandler(c *gin.Context) {
 	var param logPackage.LogPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -91,6 +99,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/log/create
+// @Summary      日志管理创建
+// @Description  访问 /api/v1/sys/log/create，日志管理创建
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  logPackage.LogVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/create [post]
 func createHandler(c *gin.Context) {
 	var vo logPackage.LogVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -102,6 +118,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/log/modify
+// @Summary      日志管理修改
+// @Description  访问 /api/v1/sys/log/modify，日志管理修改
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  logPackage.LogVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo logPackage.LogVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -113,6 +137,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/log/remove
+// @Summary      日志管理删除
+// @Description  访问 /api/v1/sys/log/remove，日志管理删除
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -124,12 +156,28 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/log/detail
+// @Summary      日志管理详情查询
+// @Description  访问 /api/v1/sys/log/detail，日志管理详情查询
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := logPackage.LogDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // deleteByCategoryHandler handles POST /api/v1/sys/log/delete-by-category
+// @Summary      日志管理按分类删除
+// @Description  访问 /api/v1/sys/log/delete-by-category，日志管理按分类删除
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  logPackage.LogDeleteByCategoryParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/delete-by-category [post]
 func deleteByCategoryHandler(c *gin.Context) {
 	var param logPackage.LogDeleteByCategoryParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -141,24 +189,52 @@ func deleteByCategoryHandler(c *gin.Context) {
 }
 
 // visLineChartHandler handles GET /api/v1/sys/log/vis/line-chart-data
+// @Summary      日志管理登录折线图数据
+// @Description  访问 /api/v1/sys/log/vis/line-chart-data，日志管理登录折线图数据
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/vis/line-chart-data [get]
 func visLineChartHandler(c *gin.Context) {
 	data := logPackage.LogLoginBarChart(c)
 	result.Success(c, data)
 }
 
 // visPieChartHandler handles GET /api/v1/sys/log/vis/pie-chart-data
+// @Summary      日志管理登录饼图数据
+// @Description  访问 /api/v1/sys/log/vis/pie-chart-data，日志管理登录饼图数据
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/vis/pie-chart-data [get]
 func visPieChartHandler(c *gin.Context) {
 	data := logPackage.LogLoginPieChart(c)
 	result.Success(c, data)
 }
 
 // opBarChartHandler handles GET /api/v1/sys/log/op/bar-chart-data
+// @Summary      日志管理操作柱状图数据
+// @Description  访问 /api/v1/sys/log/op/bar-chart-data，日志管理操作柱状图数据
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/op/bar-chart-data [get]
 func opBarChartHandler(c *gin.Context) {
 	data := logPackage.LogOpBarChart(c)
 	result.Success(c, data)
 }
 
 // opPieChartHandler handles GET /api/v1/sys/log/op/pie-chart-data
+// @Summary      日志管理操作饼图数据
+// @Description  访问 /api/v1/sys/log/op/pie-chart-data，日志管理操作饼图数据
+// @Tags         日志管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/log/op/pie-chart-data [get]
 func opPieChartHandler(c *gin.Context) {
 	data := logPackage.LogOpPieChart(c)
 	result.Success(c, data)

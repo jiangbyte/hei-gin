@@ -52,11 +52,26 @@ func init() {
 }
 
 // analysisHandler handles GET /api/v1/sys/session/analysis
+// @Summary      会话管理分析数据
+// @Description  访问 /api/v1/sys/session/analysis，会话管理分析数据
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/analysis [get]
 func analysisHandler(c *gin.Context) {
 	result.Success(c, session.Analysis(c))
 }
 
 // pageHandler handles GET /api/v1/sys/session/page
+// @Summary      会话管理分页查询
+// @Description  访问 /api/v1/sys/session/page，会话管理分页查询
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  session.SessionPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/page [get]
 func pageHandler(c *gin.Context) {
 	var param session.SessionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -68,6 +83,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // exitHandler handles POST /api/v1/sys/session/exit
+// @Summary      会话管理强退会话
+// @Description  访问 /api/v1/sys/session/exit，会话管理强退会话
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  session.SessionExitParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/exit [post]
 func exitHandler(c *gin.Context) {
 	var param session.SessionExitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -80,12 +103,28 @@ func exitHandler(c *gin.Context) {
 }
 
 // tokensHandler handles GET /api/v1/sys/session/tokens
+// @Summary      会话管理令牌列表
+// @Description  访问 /api/v1/sys/session/tokens，会话管理令牌列表
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Param        user_id  query  string  false  "user_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/tokens [get]
 func tokensHandler(c *gin.Context) {
 	data := session.TokenList(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
 // exitTokenHandler handles POST /api/v1/sys/session/exit-token
+// @Summary      会话管理强退令牌
+// @Description  访问 /api/v1/sys/session/exit-token，会话管理强退令牌
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  session.SessionExitTokenParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/exit-token [post]
 func exitTokenHandler(c *gin.Context) {
 	var param session.SessionExitTokenParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -98,6 +137,13 @@ func exitTokenHandler(c *gin.Context) {
 }
 
 // chartDataHandler handles GET /api/v1/sys/session/chart-data
+// @Summary      会话管理图表数据
+// @Description  访问 /api/v1/sys/session/chart-data，会话管理图表数据
+// @Tags         会话管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/session/chart-data [get]
 func chartDataHandler(c *gin.Context) {
 	result.Success(c, session.ChartData(c))
 }

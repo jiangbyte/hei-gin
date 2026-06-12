@@ -122,6 +122,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/user/page
+// @Summary      用户管理分页查询
+// @Description  访问 /api/v1/sys/user/page，用户管理分页查询
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  user.UserPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/page [get]
 func pageHandler(c *gin.Context) {
 	var param user.UserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -133,6 +141,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/user/create
+// @Summary      用户管理创建
+// @Description  访问 /api/v1/sys/user/create，用户管理创建
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.UserVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/create [post]
 func createHandler(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -144,6 +160,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/user/modify
+// @Summary      用户管理修改
+// @Description  访问 /api/v1/sys/user/modify，用户管理修改
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.UserVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -155,6 +179,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/user/remove
+// @Summary      用户管理删除
+// @Description  访问 /api/v1/sys/user/remove，用户管理删除
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -167,12 +199,28 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/user/detail
+// @Summary      用户管理详情查询
+// @Description  访问 /api/v1/sys/user/detail，用户管理详情查询
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := user.UserDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // grantRoleHandler handles POST /api/v1/sys/user/grant-role
+// @Summary      用户管理分配角色
+// @Description  访问 /api/v1/sys/user/grant-role，用户管理分配角色
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.GrantRoleParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/grant-role [post]
 func grantRoleHandler(c *gin.Context) {
 	var param user.GrantRoleParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -184,6 +232,14 @@ func grantRoleHandler(c *gin.Context) {
 }
 
 // grantPermissionHandler handles POST /api/v1/sys/user/grant-permission
+// @Summary      用户管理分配权限
+// @Description  访问 /api/v1/sys/user/grant-permission，用户管理分配权限
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.GrantUserPermissionParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/grant-permission [post]
 func grantPermissionHandler(c *gin.Context) {
 	var param user.GrantUserPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -196,36 +252,81 @@ func grantPermissionHandler(c *gin.Context) {
 }
 
 // ownPermissionDetailHandler handles GET /api/v1/sys/user/own-permission-detail
+// @Summary      用户管理自身权限详情
+// @Description  访问 /api/v1/sys/user/own-permission-detail，用户管理自身权限详情
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        user_id  query  string  false  "user_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/own-permission-detail [get]
 func ownPermissionDetailHandler(c *gin.Context) {
 	data := user.UserOwnPermissionDetails(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
 // ownRolesHandler handles GET /api/v1/sys/user/own-roles
+// @Summary      用户管理自身角色列表
+// @Description  访问 /api/v1/sys/user/own-roles，用户管理自身角色列表
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        user_id  query  string  false  "user_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/own-roles [get]
 func ownRolesHandler(c *gin.Context) {
 	data := user.UserOwnRoles(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
 // currentHandler handles GET /api/v1/sys/user/current
+// @Summary      用户管理当前信息
+// @Description  访问 /api/v1/sys/user/current，用户管理当前信息
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/current [get]
 func currentHandler(c *gin.Context) {
 	vo := user.UserCurrent(c)
 	result.Success(c, vo)
 }
 
 // menusHandler handles GET /api/v1/sys/user/menus
+// @Summary      用户管理菜单列表
+// @Description  访问 /api/v1/sys/user/menus，用户管理菜单列表
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/menus [get]
 func menusHandler(c *gin.Context) {
 	data := user.UserMenus(c)
 	result.Success(c, data)
 }
 
 // permissionsHandler handles GET /api/v1/sys/user/permissions
+// @Summary      用户管理权限列表
+// @Description  访问 /api/v1/sys/user/permissions，用户管理权限列表
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/permissions [get]
 func permissionsHandler(c *gin.Context) {
 	data := user.UserPermissions(c)
 	result.Success(c, data)
 }
 
 // updateProfileHandler handles POST /api/v1/sys/user/update-profile
+// @Summary      用户管理更新个人信息
+// @Description  访问 /api/v1/sys/user/update-profile，用户管理更新个人信息
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.UpdateProfileParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/update-profile [post]
 func updateProfileHandler(c *gin.Context) {
 	var param user.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -238,6 +339,14 @@ func updateProfileHandler(c *gin.Context) {
 }
 
 // updateAvatarHandler handles POST /api/v1/sys/user/update-avatar
+// @Summary      用户管理更新头像
+// @Description  访问 /api/v1/sys/user/update-avatar，用户管理更新头像
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.UpdateAvatarParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/update-avatar [post]
 func updateAvatarHandler(c *gin.Context) {
 	var param user.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -250,6 +359,14 @@ func updateAvatarHandler(c *gin.Context) {
 }
 
 // updatePasswordHandler handles POST /api/v1/sys/user/update-password
+// @Summary      用户管理修改密码
+// @Description  访问 /api/v1/sys/user/update-password，用户管理修改密码
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.UpdatePasswordParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/update-password [post]
 func updatePasswordHandler(c *gin.Context) {
 	var param user.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {

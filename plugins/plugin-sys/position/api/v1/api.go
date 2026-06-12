@@ -54,6 +54,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/position/page
+// @Summary      岗位管理分页查询
+// @Description  访问 /api/v1/sys/position/page，岗位管理分页查询
+// @Tags         岗位管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  position.PositionPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/position/page [get]
 func pageHandler(c *gin.Context) {
 	var param position.PositionPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -65,6 +73,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/position/create
+// @Summary      岗位管理创建
+// @Description  访问 /api/v1/sys/position/create，岗位管理创建
+// @Tags         岗位管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  position.PositionVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/position/create [post]
 func createHandler(c *gin.Context) {
 	var vo position.PositionVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -77,6 +93,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/position/modify
+// @Summary      岗位管理修改
+// @Description  访问 /api/v1/sys/position/modify，岗位管理修改
+// @Tags         岗位管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  position.PositionVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/position/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo position.PositionVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -89,6 +113,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/position/remove
+// @Summary      岗位管理删除
+// @Description  访问 /api/v1/sys/position/remove，岗位管理删除
+// @Tags         岗位管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/position/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -101,6 +133,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/position/detail
+// @Summary      岗位管理详情查询
+// @Description  访问 /api/v1/sys/position/detail，岗位管理详情查询
+// @Tags         岗位管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/position/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := position.PositionDetail(c, c.Query("id"))
 	result.Success(c, vo)

@@ -18,6 +18,14 @@ import (
 )
 
 // DoLogin handles consumer username/password login.
+// @Summary      C端认证登录
+// @Description  访问 /api/v1/public/c/login，C端认证登录
+// @Tags         C端认证
+// @Accept       json
+// @Produce      json
+// @Param        body  body  UsernameLoginParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/public/c/login [post]
 func DoLogin(c *gin.Context) {
 	ctx := c.Request.Context()
 	var param UsernameLoginParam
@@ -99,6 +107,14 @@ func DoLogin(c *gin.Context) {
 }
 
 // DoRegister handles consumer user registration.
+// @Summary      C端认证注册
+// @Description  访问 /api/v1/public/c/register，C端认证注册
+// @Tags         C端认证
+// @Accept       json
+// @Produce      json
+// @Param        body  body  UsernameRegisterParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/public/c/register [post]
 func DoRegister(c *gin.Context) {
 	ctx := c.Request.Context()
 	var param UsernameRegisterParam
@@ -147,6 +163,13 @@ func DoRegister(c *gin.Context) {
 }
 
 // DoLogout handles consumer user logout.
+// @Summary      C端认证登出
+// @Description  访问 /api/v1/c/logout，C端认证登出
+// @Tags         C端认证
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/logout [post]
 func DoLogout(c *gin.Context) {
 	clientAuth := auth.Consumer
 	userID := clientAuth.GetLoginIDDefaultNull(c)

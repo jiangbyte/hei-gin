@@ -17,6 +17,14 @@ import (
 )
 
 // DoLogin handles username/password login.
+// @Summary      后台认证登录
+// @Description  访问 /api/v1/public/b/login，后台认证登录
+// @Tags         后台认证
+// @Accept       json
+// @Produce      json
+// @Param        body  body  UsernameLoginParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/public/b/login [post]
 func DoLogin(c *gin.Context) {
 	var param UsernameLoginParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -87,6 +95,14 @@ func DoLogin(c *gin.Context) {
 }
 
 // DoRegister handles user registration.
+// @Summary      后台认证注册
+// @Description  访问 /api/v1/public/b/register，后台认证注册
+// @Tags         后台认证
+// @Accept       json
+// @Produce      json
+// @Param        body  body  UsernameRegisterParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/public/b/register [post]
 func DoRegister(c *gin.Context) {
 	if !config.C.Auth.BusinessRegisterEnabled {
 		result.WriteError(c, exception.NewBusinessError("后台注册未开放", 403))
@@ -132,6 +148,13 @@ func DoRegister(c *gin.Context) {
 }
 
 // DoLogout handles user logout.
+// @Summary      后台认证登出
+// @Description  访问 /api/v1/b/logout，后台认证登出
+// @Tags         后台认证
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/b/logout [post]
 func DoLogout(c *gin.Context) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID != "" {

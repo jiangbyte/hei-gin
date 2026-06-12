@@ -79,6 +79,14 @@ func init() {
 // ---------------------------------------------------------------------------
 
 // modulePageHandler handles GET /api/v1/sys/module/page
+// @Summary      资源管理分页查询
+// @Description  访问 /api/v1/sys/module/page，资源管理分页查询
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  resource.ModulePageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/module/page [get]
 func modulePageHandler(c *gin.Context) {
 	var param resource.ModulePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -89,12 +97,28 @@ func modulePageHandler(c *gin.Context) {
 }
 
 // moduleDetailHandler handles GET /api/v1/sys/module/detail
+// @Summary      资源管理详情查询
+// @Description  访问 /api/v1/sys/module/detail，资源管理详情查询
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/module/detail [get]
 func moduleDetailHandler(c *gin.Context) {
 	vo := resource.ModuleDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // moduleCreateHandler handles POST /api/v1/sys/module/create
+// @Summary      资源管理创建
+// @Description  访问 /api/v1/sys/module/create，资源管理创建
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  resource.ModuleVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/module/create [post]
 func moduleCreateHandler(c *gin.Context) {
 	var vo resource.ModuleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -107,6 +131,14 @@ func moduleCreateHandler(c *gin.Context) {
 }
 
 // moduleModifyHandler handles POST /api/v1/sys/module/modify
+// @Summary      资源管理修改
+// @Description  访问 /api/v1/sys/module/modify，资源管理修改
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  resource.ModuleVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/module/modify [post]
 func moduleModifyHandler(c *gin.Context) {
 	var vo resource.ModuleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -119,6 +151,14 @@ func moduleModifyHandler(c *gin.Context) {
 }
 
 // moduleRemoveHandler handles POST /api/v1/sys/module/remove
+// @Summary      资源管理删除
+// @Description  访问 /api/v1/sys/module/remove，资源管理删除
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/module/remove [post]
 func moduleRemoveHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -135,12 +175,27 @@ func moduleRemoveHandler(c *gin.Context) {
 // ---------------------------------------------------------------------------
 
 // resourceTreeHandler handles GET /api/v1/sys/resource/tree
+// @Summary      资源管理树形查询
+// @Description  访问 /api/v1/sys/resource/tree，资源管理树形查询
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/tree [get]
 func resourceTreeHandler(c *gin.Context) {
 	data := resource.ResourceTree(c, "")
 	result.Success(c, data)
 }
 
 // resourcePageHandler handles GET /api/v1/sys/resource/page
+// @Summary      资源管理分页查询
+// @Description  访问 /api/v1/sys/resource/page，资源管理分页查询
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  resource.ResourcePageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/page [get]
 func resourcePageHandler(c *gin.Context) {
 	var param resource.ResourcePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -151,12 +206,28 @@ func resourcePageHandler(c *gin.Context) {
 }
 
 // resourceDetailHandler handles GET /api/v1/sys/resource/detail
+// @Summary      资源管理详情查询
+// @Description  访问 /api/v1/sys/resource/detail，资源管理详情查询
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/detail [get]
 func resourceDetailHandler(c *gin.Context) {
 	vo := resource.ResourceDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // resourceCreateHandler handles POST /api/v1/sys/resource/create
+// @Summary      资源管理创建
+// @Description  访问 /api/v1/sys/resource/create，资源管理创建
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  resource.ResourceVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/create [post]
 func resourceCreateHandler(c *gin.Context) {
 	var vo resource.ResourceVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -169,6 +240,14 @@ func resourceCreateHandler(c *gin.Context) {
 }
 
 // resourceModifyHandler handles POST /api/v1/sys/resource/modify
+// @Summary      资源管理修改
+// @Description  访问 /api/v1/sys/resource/modify，资源管理修改
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  resource.ResourceVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/modify [post]
 func resourceModifyHandler(c *gin.Context) {
 	var vo resource.ResourceVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -181,6 +260,14 @@ func resourceModifyHandler(c *gin.Context) {
 }
 
 // resourceRemoveHandler handles POST /api/v1/sys/resource/remove
+// @Summary      资源管理删除
+// @Description  访问 /api/v1/sys/resource/remove，资源管理删除
+// @Tags         资源管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/resource/remove [post]
 func resourceRemoveHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {

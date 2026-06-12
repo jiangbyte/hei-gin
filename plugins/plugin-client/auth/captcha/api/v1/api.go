@@ -18,6 +18,13 @@ func init() {
 }
 
 // getCaptchaHandler generates a captcha image and returns it as a base64-encoded string.
+// @Summary      C端认证获取验证码
+// @Description  访问 /api/v1/public/c/captcha，C端认证获取验证码
+// @Tags         C端认证
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/public/c/captcha [get]
 func getCaptchaHandler(c *gin.Context) {
 	captchaResult, err := captcha.CCaptcha.GetCaptcha()
 	if err != nil {

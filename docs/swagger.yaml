@@ -1,4 +1,3 @@
-basePath: /api/v1
 definitions:
   banner.BannerVO:
     properties:
@@ -37,6 +36,1053 @@ definitions:
       view_count:
         type: integer
     type: object
+  broadcast.ReadParam:
+    properties:
+      broadcast_id:
+        type: string
+    required:
+    - broadcast_id
+    type: object
+  broadcast.SendBroadcastParam:
+    properties:
+      content:
+        type: string
+      scope:
+        description: ALL | BUSINESS | CONSUMER
+        type: string
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  config.ConfigBatchEditItem:
+    properties:
+      config_key:
+        type: string
+      config_value:
+        type: string
+      id:
+        type: string
+      remark:
+        type: string
+      sort_code:
+        type: integer
+    type: object
+  config.ConfigBatchEditParam:
+    properties:
+      configs:
+        items:
+          $ref: '#/definitions/config.ConfigBatchEditItem'
+        type: array
+    type: object
+  config.ConfigCategoryEditParam:
+    properties:
+      category:
+        type: string
+      config_key:
+        type: string
+      config_value:
+        type: string
+      remark:
+        type: string
+    type: object
+  config.ConfigVO:
+    properties:
+      category:
+        type: string
+      config_key:
+        type: string
+      config_value:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      extra:
+        type: string
+      id:
+        type: string
+      remark:
+        type: string
+      sort_code:
+        type: integer
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  dict.DictVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      label:
+        type: string
+      parent_id:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      value:
+        type: string
+    type: object
+  file.ChunkAbortParam:
+    properties:
+      bucket:
+        type: string
+      engine:
+        type: string
+      file_key:
+        type: string
+      upload_id:
+        type: string
+    required:
+    - upload_id
+    type: object
+  file.ChunkCompleteParam:
+    properties:
+      bucket:
+        type: string
+      engine:
+        type: string
+      file_key:
+        type: string
+      file_size:
+        type: integer
+      original_name:
+        type: string
+      upload_id:
+        type: string
+    required:
+    - file_key
+    - file_size
+    - original_name
+    - upload_id
+    type: object
+  file.ChunkUploadInitParam:
+    properties:
+      bucket:
+        type: string
+      engine:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      total_chunks:
+        type: integer
+    required:
+    - file_name
+    - file_size
+    - total_chunks
+    type: object
+  friend.BlockParam:
+    properties:
+      blocked_id:
+        type: string
+      blocked_type:
+        type: string
+    required:
+    - blocked_id
+    - blocked_type
+    type: object
+  friend.HandleRequestParam:
+    properties:
+      request_id:
+        type: string
+    required:
+    - request_id
+    type: object
+  friend.RemarkParam:
+    properties:
+      friend_id:
+        type: string
+      friend_type:
+        type: string
+      remark:
+        type: string
+    required:
+    - friend_id
+    - friend_type
+    type: object
+  friend.RemoveFriendParam:
+    properties:
+      friend_id:
+        type: string
+      friend_type:
+        type: string
+    required:
+    - friend_id
+    - friend_type
+    type: object
+  friend.SendRequestParam:
+    properties:
+      receiver_id:
+        type: string
+      receiver_type:
+        description: BUSINESS | CONSUMER
+        type: string
+      remark:
+        type: string
+    required:
+    - receiver_id
+    - receiver_type
+    type: object
+  group.DissolveParam:
+    properties:
+      group_id:
+        type: string
+    required:
+    - group_id
+    type: object
+  group.HandleJoinRequestParam:
+    properties:
+      action:
+        description: approved | rejected
+        type: string
+      request_id:
+        type: string
+    required:
+    - action
+    - request_id
+    type: object
+  group.InviteParam:
+    properties:
+      group_id:
+        type: string
+      user_ids:
+        items:
+          type: string
+        type: array
+      user_type:
+        type: string
+    required:
+    - group_id
+    - user_ids
+    - user_type
+    type: object
+  group.JoinOrLeaveParam:
+    properties:
+      group_id:
+        type: string
+    required:
+    - group_id
+    type: object
+  group.KickParam:
+    properties:
+      group_id:
+        type: string
+      user_id:
+        type: string
+      user_type:
+        type: string
+    required:
+    - group_id
+    - user_id
+    - user_type
+    type: object
+  group.MarkReadParam:
+    properties:
+      group_id:
+        type: string
+      message_id:
+        type: string
+    required:
+    - group_id
+    - message_id
+    type: object
+  group.MuteParam:
+    properties:
+      duration:
+        type: integer
+      group_id:
+        type: string
+      user_id:
+        type: string
+      user_type:
+        type: string
+    required:
+    - group_id
+    - user_id
+    - user_type
+    type: object
+  group.RecallMessageParam:
+    properties:
+      group_id:
+        type: string
+      message_id:
+        type: string
+    required:
+    - group_id
+    - message_id
+    type: object
+  group.SendMessageParam:
+    properties:
+      content:
+        type: string
+      extra:
+        description: JSON TEXT
+        type: string
+      group_id:
+        type: string
+      msg_type:
+        type: string
+      reply_to:
+        type: string
+    required:
+    - group_id
+    type: object
+  group.SetNicknameParam:
+    properties:
+      group_id:
+        type: string
+      nickname:
+        type: string
+      user_id:
+        type: string
+      user_type:
+        type: string
+    required:
+    - group_id
+    - user_id
+    - user_type
+    type: object
+  group.SetRoleParam:
+    properties:
+      group_id:
+        type: string
+      role:
+        description: admin | owner
+        type: string
+      user_id:
+        type: string
+      user_type:
+        type: string
+    required:
+    - group_id
+    - role
+    - user_id
+    - user_type
+    type: object
+  group.TransferOwnerParam:
+    properties:
+      group_id:
+        type: string
+      new_owner_id:
+        type: string
+      new_owner_type:
+        type: string
+    required:
+    - group_id
+    - new_owner_id
+    - new_owner_type
+    type: object
+  group.UnmuteParam:
+    properties:
+      group_id:
+        type: string
+      user_id:
+        type: string
+      user_type:
+        type: string
+    required:
+    - group_id
+    - user_id
+    - user_type
+    type: object
+  group.UpdateParam:
+    properties:
+      avatar:
+        type: string
+      group_id:
+        type: string
+      name:
+        type: string
+      notice:
+        type: string
+    required:
+    - group_id
+    type: object
+  hei-gin_plugins_plugin-client_auth_username.UsernameLoginParam:
+    properties:
+      captcha_code:
+        type: string
+      captcha_id:
+        type: string
+      device_id:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_auth_username.UsernameRegisterParam:
+    properties:
+      captcha_code:
+        type: string
+      captcha_id:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_session.SessionExitParam:
+    properties:
+      user_id:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_session.SessionExitTokenParam:
+    properties:
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_user.UpdateAvatarParam:
+    properties:
+      avatar:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_user.UpdatePasswordParam:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-client_user.UpdateProfileParam:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      username:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-sys_auth_username.UsernameLoginParam:
+    properties:
+      captcha_code:
+        type: string
+      captcha_id:
+        type: string
+      device_id:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  hei-gin_plugins_plugin-sys_auth_username.UsernameRegisterParam:
+    properties:
+      captcha_code:
+        type: string
+      captcha_id:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  hei-gin_plugins_plugin-sys_group.GroupVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      extra:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      org_id:
+        type: string
+      org_names:
+        items:
+          type: string
+        type: array
+      parent_id:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-sys_session.SessionExitParam:
+    properties:
+      user_id:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-sys_session.SessionExitTokenParam:
+    properties:
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-sys_user.UpdateAvatarParam:
+    properties:
+      avatar:
+        type: string
+    type: object
+  hei-gin_plugins_plugin-sys_user.UpdatePasswordParam:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  hei-gin_plugins_plugin-sys_user.UpdateProfileParam:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      github:
+        type: string
+      motto:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      username:
+        type: string
+    type: object
+  home.AddQuickActionParam:
+    properties:
+      resource_id:
+        type: string
+    type: object
+  log.LogDeleteByCategoryParam:
+    properties:
+      category:
+        type: string
+    type: object
+  log.LogVO:
+    properties:
+      category:
+        type: string
+      class_name:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      exe_message:
+        type: string
+      exe_status:
+        type: string
+      id:
+        type: string
+      method_name:
+        type: string
+      name:
+        type: string
+      op_address:
+        type: string
+      op_browser:
+        type: string
+      op_ip:
+        type: string
+      op_os:
+        type: string
+      op_time:
+        type: string
+      op_user:
+        type: string
+      param_json:
+        type: string
+      req_method:
+        type: string
+      req_url:
+        type: string
+      result_json:
+        type: string
+      sign_data:
+        type: string
+      trace_id:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  message.ConversationReadParam:
+    properties:
+      conversation_id:
+        type: string
+    type: object
+  message.DeleteParam:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
+  message.ForwardParam:
+    properties:
+      message_id:
+        type: string
+      target_ids:
+        items:
+          type: string
+        type: array
+      target_type:
+        type: string
+    type: object
+  message.GetOrCreateConversationParam:
+    properties:
+      user_id:
+        type: string
+      user_type:
+        type: string
+    type: object
+  message.MessageSendParam:
+    properties:
+      content:
+        type: string
+      extra:
+        type: string
+      msg_type:
+        type: string
+      receiver_ids:
+        items:
+          type: string
+        type: array
+      receiver_type:
+        type: string
+    type: object
+  message.RecallParam:
+    properties:
+      message_id:
+        type: string
+    type: object
+  notice.NoticeVO:
+    properties:
+      author:
+        type: string
+      category:
+        type: string
+      content:
+        type: string
+      cover:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      expire_at:
+        type: string
+      id:
+        type: string
+      is_top:
+        type: string
+      level:
+        type: string
+      publish_at:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      summary:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  org.OrgVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      extra:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  position.PositionVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      extra:
+        type: string
+      group_id:
+        type: string
+      group_names:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      org_id:
+        type: string
+      org_names:
+        items:
+          type: string
+        type: array
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  resource.ModuleVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: string
+      is_visible:
+        type: string
+      name:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  resource.ResourceVO:
+    properties:
+      category:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/resource.ResourceVO'
+        type: array
+      code:
+        type: string
+      color:
+        type: string
+      component_path:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      external_url:
+        type: string
+      extra:
+        type: string
+      icon:
+        type: string
+      id:
+        type: string
+      is_affix:
+        type: string
+      is_breadcrumb:
+        type: string
+      is_cache:
+        type: string
+      is_visible:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+      redirect_path:
+        type: string
+      route_path:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  role.GrantPermissionParam:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/role.PermissionItem'
+        type: array
+      role_id:
+        type: string
+    type: object
+  role.GrantResourceParam:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/role.PermissionItem'
+        type: array
+      resource_ids:
+        items:
+          type: string
+        type: array
+      role_id:
+        type: string
+    type: object
+  role.PermissionItem:
+    properties:
+      custom_scope_group_ids:
+        type: string
+      custom_scope_org_ids:
+        type: string
+      permission_code:
+        type: string
+      scope:
+        type: string
+    type: object
+  role.RoleVO:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      extra:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      sort_code:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  user.ClientUserVO:
+    properties:
+      avatar:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      github:
+        type: string
+      id:
+        type: string
+      last_login_at:
+        type: string
+      last_login_ip:
+        type: string
+      login_count:
+        type: integer
+      motto:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  user.GrantRoleParam:
+    properties:
+      role_ids:
+        items:
+          type: string
+        type: array
+      user_id:
+        type: string
+    type: object
+  user.GrantUserPermissionParam:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/user.PermissionItem'
+        type: array
+      user_id:
+        type: string
+    type: object
+  user.PermissionItem:
+    properties:
+      custom_scope_group_ids:
+        type: string
+      custom_scope_org_ids:
+        type: string
+      permission_code:
+        type: string
+      scope:
+        type: string
+    type: object
+  user.UserVO:
+    properties:
+      avatar:
+        type: string
+      birthday:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      github:
+        type: string
+      group_id:
+        type: string
+      group_names:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      last_login_at:
+        type: string
+      last_login_ip:
+        type: string
+      login_count:
+        type: integer
+      motto:
+        type: string
+      nickname:
+        type: string
+      org_id:
+        type: string
+      org_names:
+        items:
+          type: string
+        type: array
+      password:
+        type: string
+      phone:
+        type: string
+      position_id:
+        type: string
+      position_name:
+        type: string
+      role_ids:
+        items:
+          type: string
+        type: array
+      status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      username:
+        type: string
+    type: object
+  utils.IdParam:
+    properties:
+      id:
+        type: string
+    type: object
   utils.IdsParam:
     properties:
       ids:
@@ -44,7 +1090,6 @@ definitions:
           type: string
         type: array
     type: object
-host: localhost:18885
 info:
   contact:
     name: Charlie
@@ -57,6 +1102,1536 @@ info:
   title: Hei Gin API
   version: 1.0.0
 paths:
+  /api/v1/b/logout:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/b/logout，后台认证登出
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 后台认证登出
+      tags:
+      - 后台认证
+  /api/v1/c/client-user/current:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/client-user/current，C端用户当前信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户当前信息
+      tags:
+      - C端用户
+  /api/v1/c/client-user/update-avatar:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/client-user/update-avatar，C端用户更新头像
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_user.UpdateAvatarParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户更新头像
+      tags:
+      - C端用户
+  /api/v1/c/client-user/update-password:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/client-user/update-password，C端用户修改密码
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_user.UpdatePasswordParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户修改密码
+      tags:
+      - C端用户
+  /api/v1/c/client-user/update-profile:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/client-user/update-profile，C端用户更新个人信息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_user.UpdateProfileParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户更新个人信息
+      tags:
+      - C端用户
+  /api/v1/c/file/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 访问 /api/v1/c/file/upload，文件管理上传文件
+      parameters:
+      - description: 上传文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 存储引擎
+        in: formData
+        name: engine
+        type: string
+      - description: 存储桶
+        in: formData
+        name: bucket
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理上传文件
+      tags:
+      - 文件管理
+  /api/v1/c/im/broadcast/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/detail，即时通讯广播详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播详情查询
+      tags:
+      - 即时通讯广播
+  /api/v1/c/im/broadcast/read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/broadcast/read，即时通讯广播标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/broadcast.ReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播标记已读
+      tags:
+      - 即时通讯广播
+  /api/v1/c/im/broadcast/unread-list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/broadcast/unread-list，即时通讯广播未读列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播未读列表
+      tags:
+      - 即时通讯广播
+  /api/v1/c/im/conversation/get-or-create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/conversation/get-or-create，即时通讯消息获取或创建会话
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.GetOrCreateConversationParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息获取或创建会话
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/conversation/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/conversation/list，即时通讯消息会话列表
+      parameters:
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话列表
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/conversation/messages:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/conversation/messages，即时通讯消息会话消息列表
+      parameters:
+      - description: conversation_id
+        in: query
+        name: conversation_id
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话消息列表
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/conversation/read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/conversation/read，即时通讯消息会话已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.ConversationReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话已读
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/file/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 访问 /api/v1/c/im/file/upload，即时通讯消息上传文件
+      parameters:
+      - description: 上传文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 存储引擎
+        in: formData
+        name: engine
+        type: string
+      - description: 存储桶
+        in: formData
+        name: bucket
+        type: string
+      - description: 消息类型
+        in: formData
+        name: msg_type
+        type: string
+      - description: 会话 ID
+        in: formData
+        name: conversation_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息上传文件
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/friend/accept:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/accept，即时通讯好友接受申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.HandleRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友接受申请
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/block:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/block，即时通讯好友拉黑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.BlockParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拉黑
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/block-list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/block-list，即时通讯好友拉黑列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拉黑列表
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/list，即时通讯好友列表查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友列表查询
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/pending-requests:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/pending-requests，即时通讯好友待处理申请列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友待处理申请列表
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/reject:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/reject，即时通讯好友拒绝申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.HandleRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拒绝申请
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/remark:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/remark，即时通讯好友设置备注
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.RemarkParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友设置备注
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/remove，即时通讯好友删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.RemoveFriendParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友删除
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/search，即时通讯好友搜索
+      parameters:
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友搜索
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/send-request:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/send-request，即时通讯好友发送申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.SendRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友发送申请
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/friend/unblock:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/friend/unblock，即时通讯好友取消拉黑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.BlockParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友取消拉黑
+      tags:
+      - 即时通讯好友
+  /api/v1/c/im/group/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/group/create，即时通讯群组创建
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组创建
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/detail，即时通讯群组详情查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组详情查询
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/join:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/group/join，即时通讯群组加入群组
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.JoinOrLeaveParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组加入群组
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/leave:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/group/leave，即时通讯群组退出群组
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.JoinOrLeaveParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组退出群组
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/mark-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/mark-read，即时通讯群组标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.MarkReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组标记已读
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/members:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/members，即时通讯群组成员列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组成员列表
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/messages:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/messages，即时通讯群组消息列表
+      parameters:
+      - description: group_id
+        in: query
+        name: group_id
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组消息列表
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/my-groups:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/group/my-groups，即时通讯群组我的群组列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组我的群组列表
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/recall:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/recall，即时通讯群组撤回消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.RecallMessageParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组撤回消息
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/search，即时通讯群组搜索
+      parameters:
+      - description: group_id
+        in: query
+        name: group_id
+        type: string
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组搜索
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/search-groups:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/search-groups，即时通讯群组群组搜索
+      parameters:
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组群组搜索
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/group/send:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/send，即时通讯群组发送消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.SendMessageParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组发送消息
+      tags:
+      - 即时通讯群组
+  /api/v1/c/im/message/delete:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/delete，即时通讯消息删除消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.DeleteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息删除消息
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/forward:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/forward，即时通讯消息转发消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.ForwardParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息转发消息
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/mark-all-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/mark-all-read，即时通讯消息全部标记已读
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息全部标记已读
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/mark-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/mark-read，即时通讯消息标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息标记已读
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/recall:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/recall，即时通讯消息撤回消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.RecallParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息撤回消息
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/remove，即时通讯消息删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.DeleteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息删除
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/search，即时通讯消息搜索
+      parameters:
+      - in: query
+        name: cursor
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息搜索
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/message/send:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/message/send，即时通讯消息发送消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.MessageSendParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息发送消息
+      tags:
+      - 即时通讯消息
+  /api/v1/c/im/ws:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/im/ws，即时通讯连接WebSocket连接
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯连接WebSocket连接
+      tags:
+      - 即时通讯连接
+  /api/v1/c/logout:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/c/logout，C端认证登出
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端认证登出
+      tags:
+      - C端认证
+  /api/v1/client-user/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client-user/create，C端用户创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.ClientUserVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户创建
+      tags:
+      - C端用户
+  /api/v1/client-user/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client-user/detail，C端用户详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户详情查询
+      tags:
+      - C端用户
+  /api/v1/client-user/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client-user/modify，C端用户修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.ClientUserVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户修改
+      tags:
+      - C端用户
+  /api/v1/client-user/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client-user/page，C端用户分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户分页查询
+      tags:
+      - C端用户
+  /api/v1/client-user/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client-user/remove，C端用户删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端用户删除
+      tags:
+      - C端用户
+  /api/v1/client/session/analysis:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/analysis，C端会话分析数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话分析数据
+      tags:
+      - C端会话
+  /api/v1/client/session/chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/chart-data，C端会话图表数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话图表数据
+      tags:
+      - C端会话
+  /api/v1/client/session/exit:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/exit，C端会话强退会话
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_session.SessionExitParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话强退会话
+      tags:
+      - C端会话
+  /api/v1/client/session/exit-token:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/exit-token，C端会话强退令牌
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_session.SessionExitTokenParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话强退令牌
+      tags:
+      - C端会话
+  /api/v1/client/session/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/page，C端会话分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话分页查询
+      tags:
+      - C端会话
+  /api/v1/client/session/tokens:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/client/session/tokens，C端会话令牌列表
+      parameters:
+      - description: user_id
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端会话令牌列表
+      tags:
+      - C端会话
+  /api/v1/public/b/captcha:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/b/captcha，后台认证获取验证码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 后台认证获取验证码
+      tags:
+      - 后台认证
+  /api/v1/public/b/login:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/b/login，后台认证登录
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_auth_username.UsernameLoginParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 后台认证登录
+      tags:
+      - 后台认证
+  /api/v1/public/b/register:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/b/register，后台认证注册
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_auth_username.UsernameRegisterParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 后台认证注册
+      tags:
+      - 后台认证
+  /api/v1/public/b/sm2/public-key:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/b/sm2/public-key，后台认证获取公钥
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 后台认证获取公钥
+      tags:
+      - 后台认证
+  /api/v1/public/c/captcha:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/captcha，C端认证获取验证码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端认证获取验证码
+      tags:
+      - C端认证
+  /api/v1/public/c/login:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/login，C端认证登录
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_auth_username.UsernameLoginParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端认证登录
+      tags:
+      - C端认证
+  /api/v1/public/c/notice/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/notice/detail，通知公告详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告详情查询
+      tags:
+      - 通知公告
+  /api/v1/public/c/notice/latest:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/notice/latest，通知公告最新公告
+      parameters:
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告最新公告
+      tags:
+      - 通知公告
+  /api/v1/public/c/notice/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/notice/page，通知公告分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告分页查询
+      tags:
+      - 通知公告
+  /api/v1/public/c/register:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/register，C端认证注册
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-client_auth_username.UsernameRegisterParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端认证注册
+      tags:
+      - C端认证
+  /api/v1/public/c/sm2/public-key:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/public/c/sm2/public-key，C端认证获取公钥
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: C端认证获取公钥
+      tags:
+      - C端认证
+  /api/v1/sys/analyze/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/analyze/dashboard，系统分析仪表盘数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统分析仪表盘数据
+      tags:
+      - 系统分析
   /api/v1/sys/banner/create:
     post:
       consumes:
@@ -173,6 +2748,3717 @@ paths:
       summary: 删除横幅
       tags:
       - 横幅管理
+  /api/v1/sys/config/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/create，系统配置创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/config.ConfigVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置创建
+      tags:
+      - 系统配置
+  /api/v1/sys/config/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/detail，系统配置详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置详情查询
+      tags:
+      - 系统配置
+  /api/v1/sys/config/edit-batch:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/edit-batch，系统配置批量编辑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/config.ConfigBatchEditParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置批量编辑
+      tags:
+      - 系统配置
+  /api/v1/sys/config/edit-by-category:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/edit-by-category，系统配置按分类批量编辑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/config.ConfigCategoryEditParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置按分类批量编辑
+      tags:
+      - 系统配置
+  /api/v1/sys/config/list-by-category:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/list-by-category，系统配置按分类列表查询
+      parameters:
+      - description: category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置按分类列表查询
+      tags:
+      - 系统配置
+  /api/v1/sys/config/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/modify，系统配置修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/config.ConfigVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置修改
+      tags:
+      - 系统配置
+  /api/v1/sys/config/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/page，系统配置分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置分页查询
+      tags:
+      - 系统配置
+  /api/v1/sys/config/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/config/remove，系统配置删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统配置删除
+      tags:
+      - 系统配置
+  /api/v1/sys/dict/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/create，字典管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dict.DictVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理创建
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/detail，字典管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理详情查询
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/get-children:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/get-children，字典管理获取子项
+      parameters:
+      - description: type_code
+        in: query
+        name: type_code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理获取子项
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/get-label:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/get-label，字典管理获取标签
+      parameters:
+      - description: type_code
+        in: query
+        name: type_code
+        type: string
+      - description: value
+        in: query
+        name: value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理获取标签
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/list，字典管理列表查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理列表查询
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/modify，字典管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dict.DictVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理修改
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/page，字典管理分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: dict_group
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: parent_id
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理分页查询
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/remove，字典管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理删除
+      tags:
+      - 字典管理
+  /api/v1/sys/dict/tree:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/dict/tree，字典管理树形查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: dict_group
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 字典管理树形查询
+      tags:
+      - 字典管理
+  /api/v1/sys/file/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/detail，文件管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理详情查询
+      tags:
+      - 文件管理
+  /api/v1/sys/file/download:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/download，文件管理下载
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理下载
+      tags:
+      - 文件管理
+  /api/v1/sys/file/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/page，文件管理分页查询
+      parameters:
+      - in: query
+        name: bucket
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: engine
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理分页查询
+      tags:
+      - 文件管理
+  /api/v1/sys/file/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/remove，文件管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理删除
+      tags:
+      - 文件管理
+  /api/v1/sys/file/remove-absolute:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/remove-absolute，文件管理接口调用
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理接口调用
+      tags:
+      - 文件管理
+  /api/v1/sys/file/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 访问 /api/v1/sys/file/upload，文件管理上传文件
+      parameters:
+      - description: 上传文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 存储引擎
+        in: formData
+        name: engine
+        type: string
+      - description: 存储桶
+        in: formData
+        name: bucket
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理上传文件
+      tags:
+      - 文件管理
+  /api/v1/sys/file/upload/abort:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/upload/abort，文件管理取消分片上传
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/file.ChunkAbortParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理取消分片上传
+      tags:
+      - 文件管理
+  /api/v1/sys/file/upload/chunk:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 访问 /api/v1/sys/file/upload/chunk，文件管理上传分片
+      parameters:
+      - description: chunk_index
+        in: formData
+        name: chunk_index
+        type: string
+      - description: total_chunks
+        in: formData
+        name: total_chunks
+        type: string
+      - description: upload_id
+        in: formData
+        name: upload_id
+        type: string
+      - description: checksum
+        in: formData
+        name: checksum
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理上传分片
+      tags:
+      - 文件管理
+  /api/v1/sys/file/upload/complete:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/upload/complete，文件管理完成分片上传
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/file.ChunkCompleteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理完成分片上传
+      tags:
+      - 文件管理
+  /api/v1/sys/file/upload/init:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/file/upload/init，文件管理初始化分片上传
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/file.ChunkUploadInitParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件管理初始化分片上传
+      tags:
+      - 文件管理
+  /api/v1/sys/group/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/create，部门分组创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_group.GroupVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组创建
+      tags:
+      - 部门分组
+  /api/v1/sys/group/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/detail，部门分组详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组详情查询
+      tags:
+      - 部门分组
+  /api/v1/sys/group/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/modify，部门分组修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_group.GroupVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组修改
+      tags:
+      - 部门分组
+  /api/v1/sys/group/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/page，部门分组分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: org_id
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组分页查询
+      tags:
+      - 部门分组
+  /api/v1/sys/group/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/remove，部门分组删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组删除
+      tags:
+      - 部门分组
+  /api/v1/sys/group/tree:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/tree，部门分组树形查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: org_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组树形查询
+      tags:
+      - 部门分组
+  /api/v1/sys/group/union-tree:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/group/union-tree，部门分组联合树形查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 部门分组联合树形查询
+      tags:
+      - 部门分组
+  /api/v1/sys/home:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/home，首页配置接口调用
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 首页配置接口调用
+      tags:
+      - 首页配置
+  /api/v1/sys/home/quick-actions/add:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/home/quick-actions/add，首页配置新增
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/home.AddQuickActionParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 首页配置新增
+      tags:
+      - 首页配置
+  /api/v1/sys/home/quick-actions/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/home/quick-actions/remove，首页配置删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 首页配置删除
+      tags:
+      - 首页配置
+  /api/v1/sys/home/quick-actions/sort:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/home/quick-actions/sort，首页配置排序
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 首页配置排序
+      tags:
+      - 首页配置
+  /api/v1/sys/im/broadcast/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/detail，即时通讯广播详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播详情查询
+      tags:
+      - 即时通讯广播
+  /api/v1/sys/im/broadcast/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/list，即时通讯广播列表查询
+      parameters:
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播列表查询
+      tags:
+      - 即时通讯广播
+  /api/v1/sys/im/broadcast/read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/read，即时通讯广播标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/broadcast.ReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播标记已读
+      tags:
+      - 即时通讯广播
+  /api/v1/sys/im/broadcast/send:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/send，即时通讯广播发送消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/broadcast.SendBroadcastParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播发送消息
+      tags:
+      - 即时通讯广播
+  /api/v1/sys/im/broadcast/unread-list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/broadcast/unread-list，即时通讯广播未读列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯广播未读列表
+      tags:
+      - 即时通讯广播
+  /api/v1/sys/im/conversation/get-or-create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/conversation/get-or-create，即时通讯消息获取或创建会话
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.GetOrCreateConversationParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息获取或创建会话
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/conversation/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/conversation/list，即时通讯消息会话列表
+      parameters:
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话列表
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/conversation/messages:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/conversation/messages，即时通讯消息会话消息列表
+      parameters:
+      - description: conversation_id
+        in: query
+        name: conversation_id
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话消息列表
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/conversation/read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/conversation/read，即时通讯消息会话已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.ConversationReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息会话已读
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/file/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 访问 /api/v1/sys/im/file/upload，即时通讯消息上传文件
+      parameters:
+      - description: 上传文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 存储引擎
+        in: formData
+        name: engine
+        type: string
+      - description: 存储桶
+        in: formData
+        name: bucket
+        type: string
+      - description: 消息类型
+        in: formData
+        name: msg_type
+        type: string
+      - description: 会话 ID
+        in: formData
+        name: conversation_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息上传文件
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/friend/accept:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/accept，即时通讯好友接受申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.HandleRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友接受申请
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/block:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/block，即时通讯好友拉黑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.BlockParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拉黑
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/block-list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/block-list，即时通讯好友拉黑列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拉黑列表
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/list:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/list，即时通讯好友列表查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友列表查询
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/pending-requests:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/pending-requests，即时通讯好友待处理申请列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友待处理申请列表
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/reject:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/reject，即时通讯好友拒绝申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.HandleRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友拒绝申请
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/remark:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/remark，即时通讯好友设置备注
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.RemarkParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友设置备注
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/remove，即时通讯好友删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.RemoveFriendParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友删除
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/search，即时通讯好友搜索
+      parameters:
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友搜索
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/send-request:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/send-request，即时通讯好友发送申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.SendRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友发送申请
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/friend/unblock:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/friend/unblock，即时通讯好友取消拉黑
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/friend.BlockParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯好友取消拉黑
+      tags:
+      - 即时通讯好友
+  /api/v1/sys/im/group/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/create，即时通讯群组创建
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组创建
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/detail，即时通讯群组详情查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组详情查询
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/dissolve:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/dissolve，即时通讯群组解散群组
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.DissolveParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组解散群组
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/handle-join-request:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/handle-join-request，即时通讯群组处理入群申请
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.HandleJoinRequestParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组处理入群申请
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/invite:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/invite，即时通讯群组邀请成员
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.InviteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组邀请成员
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/join:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/join，即时通讯群组加入群组
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.JoinOrLeaveParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组加入群组
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/kick:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/kick，即时通讯群组移除成员
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.KickParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组移除成员
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/leave:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/leave，即时通讯群组退出群组
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.JoinOrLeaveParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组退出群组
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/mark-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/mark-read，即时通讯群组标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.MarkReadParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组标记已读
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/members:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/members，即时通讯群组成员列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组成员列表
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/messages:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/messages，即时通讯群组消息列表
+      parameters:
+      - description: group_id
+        in: query
+        name: group_id
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组消息列表
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/mute:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/mute，即时通讯群组禁言
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.MuteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组禁言
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/my-groups:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/my-groups，即时通讯群组我的群组列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组我的群组列表
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/pending-join-requests:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/pending-join-requests，即时通讯群组待处理入群申请列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组待处理入群申请列表
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/recall:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/recall，即时通讯群组撤回消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.RecallMessageParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组撤回消息
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/search，即时通讯群组搜索
+      parameters:
+      - description: group_id
+        in: query
+        name: group_id
+        type: string
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组搜索
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/search-groups:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/search-groups，即时通讯群组群组搜索
+      parameters:
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - description: size
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组群组搜索
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/send:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/send，即时通讯群组发送消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.SendMessageParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组发送消息
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/set-nickname:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/set-nickname，即时通讯群组设置群昵称
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.SetNicknameParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组设置群昵称
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/set-role:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/set-role，即时通讯群组设置成员角色
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.SetRoleParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组设置成员角色
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/transfer-owner:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/transfer-owner，即时通讯群组转让群主
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.TransferOwnerParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组转让群主
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/unmute:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/unmute，即时通讯群组解除禁言
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.UnmuteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组解除禁言
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/group/update:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/group/update，即时通讯群组更新
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/group.UpdateParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯群组更新
+      tags:
+      - 即时通讯群组
+  /api/v1/sys/im/message/delete:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/delete，即时通讯消息删除消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.DeleteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息删除消息
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/detail，即时通讯消息详情查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息详情查询
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/forward:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/forward，即时通讯消息转发消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.ForwardParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息转发消息
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/mark-all-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/mark-all-read，即时通讯消息全部标记已读
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息全部标记已读
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/mark-read:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/mark-read，即时通讯消息标记已读
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息标记已读
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/page，即时通讯消息分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息分页查询
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/recall:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/recall，即时通讯消息撤回消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.RecallParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息撤回消息
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/remove，即时通讯消息删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.DeleteParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息删除
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/search:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/search，即时通讯消息搜索
+      parameters:
+      - in: query
+        name: cursor
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息搜索
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/send:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/send，即时通讯消息发送消息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/message.MessageSendParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息发送消息
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/message/unread-count:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/message/unread-count，即时通讯消息未读数
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯消息未读数
+      tags:
+      - 即时通讯消息
+  /api/v1/sys/im/ws:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/im/ws，即时通讯连接WebSocket连接
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯连接WebSocket连接
+      tags:
+      - 即时通讯连接
+  /api/v1/sys/log/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/create，日志管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/log.LogVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理创建
+      tags:
+      - 日志管理
+  /api/v1/sys/log/delete-by-category:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/delete-by-category，日志管理按分类删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/log.LogDeleteByCategoryParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理按分类删除
+      tags:
+      - 日志管理
+  /api/v1/sys/log/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/detail，日志管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理详情查询
+      tags:
+      - 日志管理
+  /api/v1/sys/log/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/modify，日志管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/log.LogVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理修改
+      tags:
+      - 日志管理
+  /api/v1/sys/log/op/bar-chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/op/bar-chart-data，日志管理操作柱状图数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理操作柱状图数据
+      tags:
+      - 日志管理
+  /api/v1/sys/log/op/pie-chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/op/pie-chart-data，日志管理操作饼图数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理操作饼图数据
+      tags:
+      - 日志管理
+  /api/v1/sys/log/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/page，日志管理分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: exe_status
+        type: string
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理分页查询
+      tags:
+      - 日志管理
+  /api/v1/sys/log/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/remove，日志管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理删除
+      tags:
+      - 日志管理
+  /api/v1/sys/log/vis/line-chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/vis/line-chart-data，日志管理登录折线图数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理登录折线图数据
+      tags:
+      - 日志管理
+  /api/v1/sys/log/vis/pie-chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/log/vis/pie-chart-data，日志管理登录饼图数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 日志管理登录饼图数据
+      tags:
+      - 日志管理
+  /api/v1/sys/module/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/module/create，资源管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/resource.ModuleVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理创建
+      tags:
+      - 资源管理
+  /api/v1/sys/module/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/module/detail，资源管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理详情查询
+      tags:
+      - 资源管理
+  /api/v1/sys/module/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/module/modify，资源管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/resource.ModuleVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理修改
+      tags:
+      - 资源管理
+  /api/v1/sys/module/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/module/page，资源管理分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理分页查询
+      tags:
+      - 资源管理
+  /api/v1/sys/module/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/module/remove，资源管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理删除
+      tags:
+      - 资源管理
+  /api/v1/sys/notice/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/notice/create，通知公告创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/notice.NoticeVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告创建
+      tags:
+      - 通知公告
+  /api/v1/sys/notice/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/notice/detail，通知公告详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告详情查询
+      tags:
+      - 通知公告
+  /api/v1/sys/notice/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/notice/modify，通知公告修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/notice.NoticeVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告修改
+      tags:
+      - 通知公告
+  /api/v1/sys/notice/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/notice/page，通知公告分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告分页查询
+      tags:
+      - 通知公告
+  /api/v1/sys/notice/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/notice/remove，通知公告删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 通知公告删除
+      tags:
+      - 通知公告
+  /api/v1/sys/org/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/create，组织管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/org.OrgVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理创建
+      tags:
+      - 组织管理
+  /api/v1/sys/org/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/detail，组织管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理详情查询
+      tags:
+      - 组织管理
+  /api/v1/sys/org/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/modify，组织管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/org.OrgVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理修改
+      tags:
+      - 组织管理
+  /api/v1/sys/org/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/page，组织管理分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: parent_id
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理分页查询
+      tags:
+      - 组织管理
+  /api/v1/sys/org/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/remove，组织管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理删除
+      tags:
+      - 组织管理
+  /api/v1/sys/org/tree:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/org/tree，组织管理树形查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 组织管理树形查询
+      tags:
+      - 组织管理
+  /api/v1/sys/permission/by-module:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/permission/by-module，权限管理按模块查询
+      parameters:
+      - description: module
+        in: query
+        name: module
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 权限管理按模块查询
+      tags:
+      - 权限管理
+  /api/v1/sys/permission/modules:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/permission/modules，权限管理模块列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 权限管理模块列表
+      tags:
+      - 权限管理
+  /api/v1/sys/position/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/position/create，岗位管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/position.PositionVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 岗位管理创建
+      tags:
+      - 岗位管理
+  /api/v1/sys/position/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/position/detail，岗位管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 岗位管理详情查询
+      tags:
+      - 岗位管理
+  /api/v1/sys/position/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/position/modify，岗位管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/position.PositionVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 岗位管理修改
+      tags:
+      - 岗位管理
+  /api/v1/sys/position/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/position/page，岗位管理分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: org_id
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 岗位管理分页查询
+      tags:
+      - 岗位管理
+  /api/v1/sys/position/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/position/remove，岗位管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 岗位管理删除
+      tags:
+      - 岗位管理
+  /api/v1/sys/resource/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/create，资源管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/resource.ResourceVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理创建
+      tags:
+      - 资源管理
+  /api/v1/sys/resource/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/detail，资源管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理详情查询
+      tags:
+      - 资源管理
+  /api/v1/sys/resource/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/modify，资源管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/resource.ResourceVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理修改
+      tags:
+      - 资源管理
+  /api/v1/sys/resource/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/page，资源管理分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理分页查询
+      tags:
+      - 资源管理
+  /api/v1/sys/resource/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/remove，资源管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理删除
+      tags:
+      - 资源管理
+  /api/v1/sys/resource/tree:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/resource/tree，资源管理树形查询
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 资源管理树形查询
+      tags:
+      - 资源管理
+  /api/v1/sys/role/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/create，角色管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/role.RoleVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理创建
+      tags:
+      - 角色管理
+  /api/v1/sys/role/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/detail，角色管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理详情查询
+      tags:
+      - 角色管理
+  /api/v1/sys/role/grant-permission:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/grant-permission，角色管理分配权限
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/role.GrantPermissionParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理分配权限
+      tags:
+      - 角色管理
+  /api/v1/sys/role/grant-resource:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/grant-resource，角色管理分配资源
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/role.GrantResourceParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理分配资源
+      tags:
+      - 角色管理
+  /api/v1/sys/role/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/modify，角色管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/role.RoleVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理修改
+      tags:
+      - 角色管理
+  /api/v1/sys/role/own-permission:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/own-permission，角色管理自身权限
+      parameters:
+      - description: role_id
+        in: query
+        name: role_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理自身权限
+      tags:
+      - 角色管理
+  /api/v1/sys/role/own-permission-detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/own-permission-detail，角色管理自身权限详情
+      parameters:
+      - description: role_id
+        in: query
+        name: role_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理自身权限详情
+      tags:
+      - 角色管理
+  /api/v1/sys/role/own-resource:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/own-resource，角色管理自身资源
+      parameters:
+      - description: role_id
+        in: query
+        name: role_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理自身资源
+      tags:
+      - 角色管理
+  /api/v1/sys/role/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/page，角色管理分页查询
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理分页查询
+      tags:
+      - 角色管理
+  /api/v1/sys/role/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/role/remove，角色管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 角色管理删除
+      tags:
+      - 角色管理
+  /api/v1/sys/session/analysis:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/analysis，会话管理分析数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理分析数据
+      tags:
+      - 会话管理
+  /api/v1/sys/session/chart-data:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/chart-data，会话管理图表数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理图表数据
+      tags:
+      - 会话管理
+  /api/v1/sys/session/exit:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/exit，会话管理强退会话
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_session.SessionExitParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理强退会话
+      tags:
+      - 会话管理
+  /api/v1/sys/session/exit-token:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/exit-token，会话管理强退令牌
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_session.SessionExitTokenParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理强退令牌
+      tags:
+      - 会话管理
+  /api/v1/sys/session/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/page，会话管理分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理分页查询
+      tags:
+      - 会话管理
+  /api/v1/sys/session/tokens:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/session/tokens，会话管理令牌列表
+      parameters:
+      - description: user_id
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 会话管理令牌列表
+      tags:
+      - 会话管理
+  /api/v1/sys/user/create:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/create，用户管理创建
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理创建
+      tags:
+      - 用户管理
+  /api/v1/sys/user/current:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/current，用户管理当前信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理当前信息
+      tags:
+      - 用户管理
+  /api/v1/sys/user/detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/detail，用户管理详情查询
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理详情查询
+      tags:
+      - 用户管理
+  /api/v1/sys/user/grant-permission:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/grant-permission，用户管理分配权限
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.GrantUserPermissionParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理分配权限
+      tags:
+      - 用户管理
+  /api/v1/sys/user/grant-role:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/grant-role，用户管理分配角色
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.GrantRoleParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理分配角色
+      tags:
+      - 用户管理
+  /api/v1/sys/user/menus:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/menus，用户管理菜单列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理菜单列表
+      tags:
+      - 用户管理
+  /api/v1/sys/user/modify:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/modify，用户管理修改
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理修改
+      tags:
+      - 用户管理
+  /api/v1/sys/user/own-permission-detail:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/own-permission-detail，用户管理自身权限详情
+      parameters:
+      - description: user_id
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理自身权限详情
+      tags:
+      - 用户管理
+  /api/v1/sys/user/own-roles:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/own-roles，用户管理自身角色列表
+      parameters:
+      - description: user_id
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理自身角色列表
+      tags:
+      - 用户管理
+  /api/v1/sys/user/page:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/page，用户管理分页查询
+      parameters:
+      - in: query
+        name: current
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理分页查询
+      tags:
+      - 用户管理
+  /api/v1/sys/user/permissions:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/permissions，用户管理权限列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理权限列表
+      tags:
+      - 用户管理
+  /api/v1/sys/user/remove:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/remove，用户管理删除
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理删除
+      tags:
+      - 用户管理
+  /api/v1/sys/user/update-avatar:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/update-avatar，用户管理更新头像
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_user.UpdateAvatarParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理更新头像
+      tags:
+      - 用户管理
+  /api/v1/sys/user/update-password:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/update-password，用户管理修改密码
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_user.UpdatePasswordParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理修改密码
+      tags:
+      - 用户管理
+  /api/v1/sys/user/update-profile:
+    post:
+      consumes:
+      - application/json
+      description: 访问 /api/v1/sys/user/update-profile，用户管理更新个人信息
+      parameters:
+      - description: 请求体
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/hei-gin_plugins_plugin-sys_user.UpdateProfileParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户管理更新个人信息
+      tags:
+      - 用户管理
+  /uploads/:bucket/:file_key:
+    get:
+      consumes:
+      - application/json
+      description: 访问 /uploads/:bucket/:file_key，即时通讯连接接口调用
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 即时通讯连接接口调用
+      tags:
+      - 即时通讯连接
 securityDefinitions:
   BearerAuth:
     description: Bearer token authentication

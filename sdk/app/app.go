@@ -2,22 +2,21 @@ package app
 
 import (
 	"context"
-	_ "embed"
 	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
-	"github.com/swaggo/swag"
 	"github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/gin-gonic/gin"
 
+	"hei-gin/docs"
+	_ "hei-gin/docs"
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/middleware"
@@ -113,33 +112,23 @@ func SetupRouters(r *gin.Engine) {
 	registry.ExecuteRoutes(r)
 }
 
-//go:embed swagger.json
-var swaggerEmbeddedJSON []byte
-
-var swaggerRegisterOnce sync.Once
-
 // setupSwagger registers Swagger UI routes when enabled via config.
-// The swagger.json is compiled into the binary via //go:embed — no swag CLI needed at build or runtime.
+// Swagger spec is served from the generated docs package.
 func setupSwagger(r *gin.Engine) {
 	if !config.C.Swagger.Enabled {
 		return
 	}
 
-	// Register the embedded swagger spec with the swag registry (once).
-	// This lets gin-swagger's built-in doc.json handler serve it without
-	// needing a separate route that would conflict with the catch-all *any.
-	swaggerRegisterOnce.Do(func() {
-		swag.Register(swag.Name, &swag.Spec{
-			SwaggerTemplate: string(swaggerEmbeddedJSON),
-		})
-	})
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
+	docs.SwaggerInfo.BasePath = ""
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	// Decide whether to protect routes with Basic Auth
 	useBasicAuth := config.C.Swagger.Username != "" && config.C.Swagger.Password != ""
 
 	// ── Common OpenAPI spec endpoints (for tools like FoxAPI, Postman, etc.) ──
-		specData := func(c *gin.Context) {
-		c.Data(http.StatusOK, "application/json; charset=utf-8", swaggerEmbeddedJSON)
+	specData := func(c *gin.Context) {
+		c.Redirect(http.StatusTemporaryRedirect, "/swagger/doc.json")
 	}
 	if useBasicAuth {
 		r.GET("/openapi.json", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), specData)
@@ -160,9 +149,8 @@ func setupSwagger(r *gin.Engine) {
 		ginSwagger.PersistAuthorization(true),
 	)
 
-
 	// Redirect bare paths to Swagger UI
-		redirectToSwagger := func(c *gin.Context) {
+	redirectToSwagger := func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
 	}
 	if useBasicAuth {

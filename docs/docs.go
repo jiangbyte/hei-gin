@@ -25,17 +25,20 @@ const docTemplate = `{
     "paths": {
         "/api/v1/b/logout": {
             "post": {
-                "description": "注销当前登录状态",
+                "description": "访问 /api/v1/b/logout，后台认证登出",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "登录认证"
+                    "后台认证"
                 ],
-                "summary": "后台登出",
+                "summary": "后台认证登出",
                 "responses": {
                     "200": {
-                        "description": "注销成功",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -46,17 +49,20 @@ const docTemplate = `{
         },
         "/api/v1/c/client-user/current": {
             "get": {
-                "description": "获取当前登录的 C端 用户信息",
+                "description": "访问 /api/v1/c/client-user/current，C端用户当前信息",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "当前用户信息",
+                "summary": "C端用户当前信息",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -67,7 +73,7 @@ const docTemplate = `{
         },
         "/api/v1/c/client-user/update-avatar": {
             "post": {
-                "description": "C端用户更新头像",
+                "description": "访问 /api/v1/c/client-user/update-avatar，C端用户更新头像",
                 "consumes": [
                     "application/json"
                 ],
@@ -77,10 +83,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "修改头像",
+                "summary": "C端用户更新头像",
                 "parameters": [
                     {
-                        "description": "头像 URL",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -91,7 +97,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -102,7 +108,7 @@ const docTemplate = `{
         },
         "/api/v1/c/client-user/update-password": {
             "post": {
-                "description": "C端用户修改登录密码",
+                "description": "访问 /api/v1/c/client-user/update-password，C端用户修改密码",
                 "consumes": [
                     "application/json"
                 ],
@@ -112,10 +118,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "修改密码",
+                "summary": "C端用户修改密码",
                 "parameters": [
                     {
-                        "description": "新旧密码",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -126,7 +132,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -137,7 +143,7 @@ const docTemplate = `{
         },
         "/api/v1/c/client-user/update-profile": {
             "post": {
-                "description": "C端用户修改个人资料",
+                "description": "访问 /api/v1/c/client-user/update-profile，C端用户更新个人信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -147,10 +153,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "修改个人信息",
+                "summary": "C端用户更新个人信息",
                 "parameters": [
                     {
-                        "description": "个人信息",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -161,7 +167,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -172,7 +178,7 @@ const docTemplate = `{
         },
         "/api/v1/c/file/upload": {
             "post": {
-                "description": "客户端用户上传文件",
+                "description": "访问 /api/v1/c/file/upload，文件管理上传文件",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -180,21 +186,1390 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "C端文件"
+                    "文件管理"
                 ],
-                "summary": "C端上传文件",
+                "summary": "文件管理上传文件",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "文件",
+                        "description": "上传文件",
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储引擎",
+                        "name": "engine",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储桶",
+                        "name": "bucket",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/broadcast/detail": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/broadcast/detail，即时通讯广播详情查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播详情查询",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/broadcast/read": {
+            "post": {
+                "description": "访问 /api/v1/c/im/broadcast/read，即时通讯广播标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/broadcast.ReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/broadcast/unread-list": {
+            "get": {
+                "description": "访问 /api/v1/c/im/broadcast/unread-list，即时通讯广播未读列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播未读列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/conversation/get-or-create": {
+            "post": {
+                "description": "访问 /api/v1/c/im/conversation/get-or-create，即时通讯消息获取或创建会话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息获取或创建会话",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.GetOrCreateConversationParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/conversation/list": {
+            "get": {
+                "description": "访问 /api/v1/c/im/conversation/list，即时通讯消息会话列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/conversation/messages": {
+            "get": {
+                "description": "访问 /api/v1/c/im/conversation/messages，即时通讯消息会话消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话消息列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "conversation_id",
+                        "name": "conversation_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/conversation/read": {
+            "post": {
+                "description": "访问 /api/v1/c/im/conversation/read，即时通讯消息会话已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.ConversationReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/file/upload": {
+            "post": {
+                "description": "访问 /api/v1/c/im/file/upload，即时通讯消息上传文件",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息上传文件",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "上传文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储引擎",
+                        "name": "engine",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储桶",
+                        "name": "bucket",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "消息类型",
+                        "name": "msg_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "会话 ID",
+                        "name": "conversation_id",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/accept": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/accept，即时通讯好友接受申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友接受申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.HandleRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/block": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/block，即时通讯好友拉黑",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拉黑",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.BlockParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/block-list": {
+            "get": {
+                "description": "访问 /api/v1/c/im/friend/block-list，即时通讯好友拉黑列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拉黑列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/list": {
+            "get": {
+                "description": "访问 /api/v1/c/im/friend/list，即时通讯好友列表查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友列表查询",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/pending-requests": {
+            "get": {
+                "description": "访问 /api/v1/c/im/friend/pending-requests，即时通讯好友待处理申请列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友待处理申请列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/reject": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/reject，即时通讯好友拒绝申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拒绝申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.HandleRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/remark": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/remark，即时通讯好友设置备注",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友设置备注",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.RemarkParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/remove": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/remove，即时通讯好友删除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友删除",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.RemoveFriendParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/search": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/friend/search，即时通讯好友搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/send-request": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/send-request，即时通讯好友发送申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友发送申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.SendRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/friend/unblock": {
+            "post": {
+                "description": "访问 /api/v1/c/im/friend/unblock，即时通讯好友取消拉黑",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友取消拉黑",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.BlockParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/create": {
+            "post": {
+                "description": "访问 /api/v1/c/im/group/create，即时通讯群组创建",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组创建",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/detail": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/detail，即时通讯群组详情查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组详情查询",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/join": {
+            "post": {
+                "description": "访问 /api/v1/c/im/group/join，即时通讯群组加入群组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组加入群组",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.JoinOrLeaveParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/leave": {
+            "post": {
+                "description": "访问 /api/v1/c/im/group/leave，即时通讯群组退出群组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组退出群组",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.JoinOrLeaveParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/mark-read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/mark-read，即时通讯群组标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.MarkReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/members": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/members，即时通讯群组成员列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组成员列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/messages": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/messages，即时通讯群组消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组消息列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_id",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/my-groups": {
+            "get": {
+                "description": "访问 /api/v1/c/im/group/my-groups，即时通讯群组我的群组列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组我的群组列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/recall": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/recall，即时通讯群组撤回消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组撤回消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.RecallMessageParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/search": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/search，即时通讯群组搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_id",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/search-groups": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/search-groups，即时通讯群组群组搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组群组搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/group/send": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/send，即时通讯群组发送消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组发送消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.SendMessageParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/delete": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/delete，即时通讯消息删除消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息删除消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.DeleteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/forward": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/forward，即时通讯消息转发消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息转发消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.ForwardParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/mark-all-read": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/mark-all-read，即时通讯消息全部标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息全部标记已读",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/mark-read": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/mark-read，即时通讯消息标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/utils.IdParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/recall": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/recall，即时通讯消息撤回消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息撤回消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.RecallParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/remove": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/remove，即时通讯消息删除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息删除",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.DeleteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/search": {
+            "get": {
+                "description": "访问 /api/v1/c/im/message/search，即时通讯消息搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/message/send": {
+            "post": {
+                "description": "访问 /api/v1/c/im/message/send，即时通讯消息发送消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息发送消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.MessageSendParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/c/im/ws": {
+            "get": {
+                "description": "访问 /api/v1/c/im/ws，即时通讯连接WebSocket连接",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯连接"
+                ],
+                "summary": "即时通讯连接WebSocket连接",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -205,17 +1580,20 @@ const docTemplate = `{
         },
         "/api/v1/c/logout": {
             "post": {
-                "description": "注销客户端登录",
+                "description": "访问 /api/v1/c/logout，C端认证登出",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端登录认证"
+                    "C端认证"
                 ],
-                "summary": "C端登出",
+                "summary": "C端认证登出",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -226,7 +1604,7 @@ const docTemplate = `{
         },
         "/api/v1/client-user/create": {
             "post": {
-                "description": "创建新的客户端用户",
+                "description": "访问 /api/v1/client-user/create，C端用户创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -236,10 +1614,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "添加 C端用户",
+                "summary": "C端用户创建",
                 "parameters": [
                     {
-                        "description": "用户数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -250,7 +1628,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -261,26 +1639,28 @@ const docTemplate = `{
         },
         "/api/v1/client-user/detail": {
             "get": {
-                "description": "根据 ID 获取客户端用户详情",
+                "description": "访问 /api/v1/client-user/detail，C端用户详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "C端用户详情",
+                "summary": "C端用户详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -291,7 +1671,7 @@ const docTemplate = `{
         },
         "/api/v1/client-user/modify": {
             "post": {
-                "description": "修改客户端用户信息",
+                "description": "访问 /api/v1/client-user/modify，C端用户修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -301,10 +1681,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "编辑 C端用户",
+                "summary": "C端用户修改",
                 "parameters": [
                     {
-                        "description": "用户数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -315,7 +1695,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -326,43 +1706,42 @@ const docTemplate = `{
         },
         "/api/v1/client-user/page": {
             "get": {
-                "description": "获取 C端 用户分页列表",
+                "description": "访问 /api/v1/client-user/page，C端用户分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "C端用户分页",
+                "summary": "C端用户分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "每页条数",
                         "name": "size",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "用户状态",
                         "name": "status",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -373,7 +1752,7 @@ const docTemplate = `{
         },
         "/api/v1/client-user/remove": {
             "post": {
-                "description": "批量删除客户端用户",
+                "description": "访问 /api/v1/client-user/remove，C端用户删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -383,10 +1762,10 @@ const docTemplate = `{
                 "tags": [
                     "C端用户"
                 ],
-                "summary": "删除 C端用户",
+                "summary": "C端用户删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -397,7 +1776,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -408,17 +1787,20 @@ const docTemplate = `{
         },
         "/api/v1/client/session/analysis": {
             "get": {
-                "description": "获取 C端 会话概览数据",
+                "description": "访问 /api/v1/client/session/analysis，C端会话分析数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "会话分析统计",
+                "summary": "C端会话分析数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -429,17 +1811,20 @@ const docTemplate = `{
         },
         "/api/v1/client/session/chart-data": {
             "get": {
-                "description": "获取 C端 会话统计图表",
+                "description": "访问 /api/v1/client/session/chart-data，C端会话图表数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "会话图表数据",
+                "summary": "C端会话图表数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -450,7 +1835,7 @@ const docTemplate = `{
         },
         "/api/v1/client/session/exit": {
             "post": {
-                "description": "强制退出指定用户的所有会话",
+                "description": "访问 /api/v1/client/session/exit，C端会话强退会话",
                 "consumes": [
                     "application/json"
                 ],
@@ -460,10 +1845,10 @@ const docTemplate = `{
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "强退会话",
+                "summary": "C端会话强退会话",
                 "parameters": [
                     {
-                        "description": "用户 ID",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -474,7 +1859,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -485,7 +1870,7 @@ const docTemplate = `{
         },
         "/api/v1/client/session/exit-token": {
             "post": {
-                "description": "强制退出指定的用户会话 Token",
+                "description": "访问 /api/v1/client/session/exit-token，C端会话强退令牌",
                 "consumes": [
                     "application/json"
                 ],
@@ -495,10 +1880,10 @@ const docTemplate = `{
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "强退指定 Token",
+                "summary": "C端会话强退令牌",
                 "parameters": [
                     {
-                        "description": "用户 ID + Token",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -509,7 +1894,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -520,37 +1905,37 @@ const docTemplate = `{
         },
         "/api/v1/client/session/page": {
             "get": {
-                "description": "获取 C端 会话列表",
+                "description": "访问 /api/v1/client/session/page，C端会话分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "会话分页",
+                "summary": "C端会话分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
+                        "type": "string",
+                        "name": "keyword",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -561,26 +1946,28 @@ const docTemplate = `{
         },
         "/api/v1/client/session/tokens": {
             "get": {
-                "description": "获取指定用户的活跃 Token",
+                "description": "访问 /api/v1/client/session/tokens，C端会话令牌列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "C端会话"
                 ],
-                "summary": "会话 Token 列表",
+                "summary": "C端会话令牌列表",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "user_id",
                         "name": "user_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -591,17 +1978,20 @@ const docTemplate = `{
         },
         "/api/v1/public/b/captcha": {
             "get": {
-                "description": "生成图形验证码，返回 base64 图片和验证码 ID",
+                "description": "访问 /api/v1/public/b/captcha，后台认证获取验证码",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "验证码"
+                    "后台认证"
                 ],
-                "summary": "获取验证码",
+                "summary": "后台认证获取验证码",
                 "responses": {
                     "200": {
-                        "description": "captchaId + image base64",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -612,7 +2002,7 @@ const docTemplate = `{
         },
         "/api/v1/public/b/login": {
             "post": {
-                "description": "用户名密码登录，返回 token",
+                "description": "访问 /api/v1/public/b/login，后台认证登录",
                 "consumes": [
                     "application/json"
                 ],
@@ -620,12 +2010,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "登录认证"
+                    "后台认证"
                 ],
-                "summary": "后台登录",
+                "summary": "后台认证登录",
                 "parameters": [
                     {
-                        "description": "登录信息",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -636,7 +2026,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "登录成功，返回 token",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -647,7 +2037,7 @@ const docTemplate = `{
         },
         "/api/v1/public/b/register": {
             "post": {
-                "description": "注册新的后台用户",
+                "description": "访问 /api/v1/public/b/register，后台认证注册",
                 "consumes": [
                     "application/json"
                 ],
@@ -655,12 +2045,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "登录认证"
+                    "后台认证"
                 ],
-                "summary": "后台注册",
+                "summary": "后台认证注册",
                 "parameters": [
                     {
-                        "description": "注册信息",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -671,7 +2061,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "注册成功",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -682,17 +2072,20 @@ const docTemplate = `{
         },
         "/api/v1/public/b/sm2/public-key": {
             "get": {
-                "description": "返回 SM2 公钥，用于前端密码加密",
+                "description": "访问 /api/v1/public/b/sm2/public-key，后台认证获取公钥",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "加密"
+                    "后台认证"
                 ],
-                "summary": "获取 SM2 公钥",
+                "summary": "后台认证获取公钥",
                 "responses": {
                     "200": {
-                        "description": "publicKey 字符串",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -703,17 +2096,20 @@ const docTemplate = `{
         },
         "/api/v1/public/c/captcha": {
             "get": {
-                "description": "生成 C端 图形验证码",
+                "description": "访问 /api/v1/public/c/captcha，C端认证获取验证码",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端验证码"
+                    "C端认证"
                 ],
-                "summary": "获取验证码（C端）",
+                "summary": "C端认证获取验证码",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -724,7 +2120,7 @@ const docTemplate = `{
         },
         "/api/v1/public/c/login": {
             "post": {
-                "description": "客户端用户名密码登录",
+                "description": "访问 /api/v1/public/c/login，C端认证登录",
                 "consumes": [
                     "application/json"
                 ],
@@ -732,12 +2128,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "C端登录认证"
+                    "C端认证"
                 ],
-                "summary": "C端登录",
+                "summary": "C端认证登录",
                 "parameters": [
                     {
-                        "description": "登录信息",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -748,7 +2144,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -759,26 +2155,28 @@ const docTemplate = `{
         },
         "/api/v1/public/c/notice/detail": {
             "get": {
-                "description": "客户端查看已发布通知详情",
+                "description": "访问 /api/v1/public/c/notice/detail，通知公告详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端通知"
+                    "通知公告"
                 ],
-                "summary": "C端通知详情",
+                "summary": "通知公告详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "通知 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -789,25 +2187,27 @@ const docTemplate = `{
         },
         "/api/v1/public/c/notice/latest": {
             "get": {
-                "description": "客户端获取最新发布的 N 条通知",
+                "description": "访问 /api/v1/public/c/notice/latest，通知公告最新公告",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端通知"
+                    "通知公告"
                 ],
-                "summary": "C端最新通知",
+                "summary": "通知公告最新公告",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "获取条数（默认 5）",
                         "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -818,37 +2218,47 @@ const docTemplate = `{
         },
         "/api/v1/public/c/notice/page": {
             "get": {
-                "description": "客户端获取已发布通知分页",
+                "description": "访问 /api/v1/public/c/notice/page，通知公告分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端通知"
+                    "通知公告"
                 ],
-                "summary": "C端通知分页",
+                "summary": "通知公告分页查询",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "current",
+                        "type": "string",
+                        "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "每页条数",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "name": "size",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "通知分类",
-                        "name": "category",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -859,7 +2269,7 @@ const docTemplate = `{
         },
         "/api/v1/public/c/register": {
             "post": {
-                "description": "注册客户端用户",
+                "description": "访问 /api/v1/public/c/register，C端认证注册",
                 "consumes": [
                     "application/json"
                 ],
@@ -867,12 +2277,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "C端登录认证"
+                    "C端认证"
                 ],
-                "summary": "C端注册",
+                "summary": "C端认证注册",
                 "parameters": [
                     {
-                        "description": "注册信息",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -883,7 +2293,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -894,17 +2304,20 @@ const docTemplate = `{
         },
         "/api/v1/public/c/sm2/public-key": {
             "get": {
-                "description": "返回 C端 加密用 SM2 公钥",
+                "description": "访问 /api/v1/public/c/sm2/public-key，C端认证获取公钥",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "C端加密"
+                    "C端认证"
                 ],
-                "summary": "获取 SM2 公钥（C端）",
+                "summary": "C端认证获取公钥",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -915,17 +2328,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/analyze/dashboard": {
             "get": {
-                "description": "获取后台仪表盘统计数据（用户数、趋势、组织分布等）",
+                "description": "访问 /api/v1/sys/analyze/dashboard，系统分析仪表盘数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "仪表盘"
+                    "系统分析"
                 ],
-                "summary": "仪表盘数据",
+                "summary": "系统分析仪表盘数据",
                 "responses": {
                     "200": {
-                        "description": "DashboardVO 作为 data 字段返回",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1112,7 +2528,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/create": {
             "post": {
-                "description": "创建新的系统配置",
+                "description": "访问 /api/v1/sys/config/create，系统配置创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -1122,10 +2538,10 @@ const docTemplate = `{
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "添加配置",
+                "summary": "系统配置创建",
                 "parameters": [
                     {
-                        "description": "配置数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1136,7 +2552,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1147,26 +2563,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/detail": {
             "get": {
-                "description": "根据 ID 获取系统配置详情",
+                "description": "访问 /api/v1/sys/config/detail，系统配置详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "配置详情",
+                "summary": "系统配置详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "配置 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1177,7 +2595,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/edit-batch": {
             "post": {
-                "description": "批量更新系统配置项",
+                "description": "访问 /api/v1/sys/config/edit-batch，系统配置批量编辑",
                 "consumes": [
                     "application/json"
                 ],
@@ -1187,10 +2605,10 @@ const docTemplate = `{
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "批量编辑配置",
+                "summary": "系统配置批量编辑",
                 "parameters": [
                     {
-                        "description": "批量配置数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1201,7 +2619,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1212,7 +2630,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/edit-by-category": {
             "post": {
-                "description": "按分类批量更新系统配置",
+                "description": "访问 /api/v1/sys/config/edit-by-category，系统配置按分类批量编辑",
                 "consumes": [
                     "application/json"
                 ],
@@ -1222,10 +2640,10 @@ const docTemplate = `{
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "按分类批量编辑配置",
+                "summary": "系统配置按分类批量编辑",
                 "parameters": [
                     {
-                        "description": "分类配置数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1236,7 +2654,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1247,26 +2665,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/list-by-category": {
             "get": {
-                "description": "获取指定分类下的配置项列表",
+                "description": "访问 /api/v1/sys/config/list-by-category，系统配置按分类列表查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "按分类查询配置",
+                "summary": "系统配置按分类列表查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "配置分类",
+                        "description": "category",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1277,7 +2697,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/modify": {
             "post": {
-                "description": "修改系统配置",
+                "description": "访问 /api/v1/sys/config/modify，系统配置修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -1287,10 +2707,10 @@ const docTemplate = `{
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "编辑配置",
+                "summary": "系统配置修改",
                 "parameters": [
                     {
-                        "description": "配置数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1301,7 +2721,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1312,43 +2732,42 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/page": {
             "get": {
-                "description": "获取系统配置分页列表",
+                "description": "访问 /api/v1/sys/config/page，系统配置分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "配置分页",
+                "summary": "系统配置分页查询",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "current",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "配置分类",
                         "name": "category",
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1359,7 +2778,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/config/remove": {
             "post": {
-                "description": "批量删除系统配置",
+                "description": "访问 /api/v1/sys/config/remove，系统配置删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -1369,10 +2788,10 @@ const docTemplate = `{
                 "tags": [
                     "系统配置"
                 ],
-                "summary": "删除配置",
+                "summary": "系统配置删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1383,7 +2802,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1394,7 +2813,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/create": {
             "post": {
-                "description": "创建字典项",
+                "description": "访问 /api/v1/sys/dict/create，字典管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -1404,10 +2823,10 @@ const docTemplate = `{
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "添加字典",
+                "summary": "字典管理创建",
                 "parameters": [
                     {
-                        "description": "字典数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1418,7 +2837,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1429,26 +2848,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/detail": {
             "get": {
-                "description": "根据 ID 获取字典详情",
+                "description": "访问 /api/v1/sys/dict/detail，字典管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典详情",
+                "summary": "字典管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "字典 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1459,26 +2880,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/get-children": {
             "get": {
-                "description": "获取指定字典类型下的子项列表",
+                "description": "访问 /api/v1/sys/dict/get-children，字典管理获取子项",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典子项",
+                "summary": "字典管理获取子项",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "字典类型编码",
+                        "description": "type_code",
                         "name": "type_code",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1489,33 +2912,34 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/get-label": {
             "get": {
-                "description": "根据类型编码和值获取字典显示标签",
+                "description": "访问 /api/v1/sys/dict/get-label，字典管理获取标签",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典标签",
+                "summary": "字典管理获取标签",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "字典类型编码",
+                        "description": "type_code",
                         "name": "type_code",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "字典值",
+                        "description": "value",
                         "name": "value",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1526,32 +2950,32 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/list": {
             "get": {
-                "description": "获取指定分类的字典列表",
+                "description": "访问 /api/v1/sys/dict/list，字典管理列表查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典列表",
+                "summary": "字典管理列表查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "字典分类",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1562,7 +2986,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/modify": {
             "post": {
-                "description": "修改字典项",
+                "description": "访问 /api/v1/sys/dict/modify，字典管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -1572,10 +2996,10 @@ const docTemplate = `{
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "编辑字典",
+                "summary": "字典管理修改",
                 "parameters": [
                     {
-                        "description": "字典数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1586,7 +3010,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1597,49 +3021,52 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/page": {
             "get": {
-                "description": "获取字典分页列表",
+                "description": "访问 /api/v1/sys/dict/page，字典管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典分页",
+                "summary": "字典管理分页查询",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
+                        "type": "string",
+                        "name": "dict_group",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "字典分类",
-                        "name": "category",
+                        "name": "parent_id",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "父级 ID",
-                        "name": "parent_id",
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1650,7 +3077,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/remove": {
             "post": {
-                "description": "批量删除字典项",
+                "description": "访问 /api/v1/sys/dict/remove，字典管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -1660,10 +3087,10 @@ const docTemplate = `{
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "删除字典",
+                "summary": "字典管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1674,7 +3101,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1685,31 +3112,32 @@ const docTemplate = `{
         },
         "/api/v1/sys/dict/tree": {
             "get": {
-                "description": "获取字典树形结构数据",
+                "description": "访问 /api/v1/sys/dict/tree，字典管理树形查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "字典管理"
                 ],
-                "summary": "字典树",
+                "summary": "字典管理树形查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "字典分类",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "字典分组",
                         "name": "dict_group",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1720,26 +3148,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/detail": {
             "get": {
-                "description": "根据 ID 获取文件详情",
+                "description": "访问 /api/v1/sys/file/detail，文件管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "文件详情",
+                "summary": "文件管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "文件 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1750,75 +3180,79 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/download": {
             "get": {
-                "description": "根据文件 ID 下载文件",
-                "produces": [
-                    "application/octet-stream"
+                "description": "访问 /api/v1/sys/file/download，文件管理下载",
+                "consumes": [
+                    "application/json"
                 ],
-                "tags": [
-                    "文件管理"
-                ],
-                "summary": "下载文件",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "文件 ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/api/v1/sys/file/page": {
-            "get": {
-                "description": "获取文件分页列表",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "文件分页",
+                "summary": "文件管理下载",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "current",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "存储引擎",
-                        "name": "engine",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "存储桶",
-                        "name": "bucket",
+                        "description": "id",
+                        "name": "id",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/file/page": {
+            "get": {
+                "description": "访问 /api/v1/sys/file/page，文件管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件管理"
+                ],
+                "summary": "文件管理分页查询",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "bucket",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "engine",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1829,7 +3263,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/remove": {
             "post": {
-                "description": "逻辑删除文件记录",
+                "description": "访问 /api/v1/sys/file/remove，文件管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -1839,10 +3273,10 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "删除文件（逻辑）",
+                "summary": "文件管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1853,7 +3287,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1864,7 +3298,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/remove-absolute": {
             "post": {
-                "description": "彻底删除文件（含存储文件）",
+                "description": "访问 /api/v1/sys/file/remove-absolute，文件管理接口调用",
                 "consumes": [
                     "application/json"
                 ],
@@ -1874,10 +3308,10 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "物理删除文件",
+                "summary": "文件管理接口调用",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1888,7 +3322,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1899,7 +3333,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/upload": {
             "post": {
-                "description": "上传文件到存储引擎",
+                "description": "访问 /api/v1/sys/file/upload，文件管理上传文件",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1909,19 +3343,31 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "上传文件",
+                "summary": "文件管理上传文件",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "文件",
+                        "description": "上传文件",
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储引擎",
+                        "name": "engine",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储桶",
+                        "name": "bucket",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1932,7 +3378,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/upload/abort": {
             "post": {
-                "description": "取消分片上传并清理",
+                "description": "访问 /api/v1/sys/file/upload/abort，文件管理取消分片上传",
                 "consumes": [
                     "application/json"
                 ],
@@ -1942,10 +3388,10 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "分片上传-取消",
+                "summary": "文件管理取消分片上传",
                 "parameters": [
                     {
-                        "description": "取消参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1956,7 +3402,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1967,7 +3413,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/upload/chunk": {
             "post": {
-                "description": "上传单个文件分片",
+                "description": "访问 /api/v1/sys/file/upload/chunk，文件管理上传分片",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1977,45 +3423,36 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "分片上传-上传分片",
+                "summary": "文件管理上传分片",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "上传 ID",
-                        "name": "upload_id",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "分片索引",
+                        "description": "chunk_index",
                         "name": "chunk_index",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     },
                     {
-                        "type": "integer",
-                        "description": "总分片数",
+                        "type": "string",
+                        "description": "total_chunks",
                         "name": "total_chunks",
                         "in": "formData"
                     },
                     {
                         "type": "string",
-                        "description": "校验和",
-                        "name": "checksum",
+                        "description": "upload_id",
+                        "name": "upload_id",
                         "in": "formData"
                     },
                     {
-                        "type": "file",
-                        "description": "分片文件",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "type": "string",
+                        "description": "checksum",
+                        "name": "checksum",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2026,7 +3463,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/upload/complete": {
             "post": {
-                "description": "合并分片完成上传",
+                "description": "访问 /api/v1/sys/file/upload/complete，文件管理完成分片上传",
                 "consumes": [
                     "application/json"
                 ],
@@ -2036,10 +3473,10 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "分片上传-完成",
+                "summary": "文件管理完成分片上传",
                 "parameters": [
                     {
-                        "description": "完成参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2050,7 +3487,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2061,7 +3498,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/file/upload/init": {
             "post": {
-                "description": "初始化分片上传，获取 upload_id",
+                "description": "访问 /api/v1/sys/file/upload/init，文件管理初始化分片上传",
                 "consumes": [
                     "application/json"
                 ],
@@ -2071,10 +3508,10 @@ const docTemplate = `{
                 "tags": [
                     "文件管理"
                 ],
-                "summary": "分片上传-初始化",
+                "summary": "文件管理初始化分片上传",
                 "parameters": [
                     {
-                        "description": "分片上传初始化参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2085,7 +3522,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2096,7 +3533,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/create": {
             "post": {
-                "description": "创建用户组",
+                "description": "访问 /api/v1/sys/group/create，部门分组创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -2104,12 +3541,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "添加群组",
+                "summary": "部门分组创建",
                 "parameters": [
                     {
-                        "description": "用户组数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2120,7 +3557,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2131,26 +3568,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/detail": {
             "get": {
-                "description": "根据 ID 获取用户组详情",
+                "description": "访问 /api/v1/sys/group/detail，部门分组详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "群组详情",
+                "summary": "部门分组详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户组 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2161,7 +3600,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/modify": {
             "post": {
-                "description": "修改用户组信息",
+                "description": "访问 /api/v1/sys/group/modify，部门分组修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -2169,12 +3608,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "编辑群组",
+                "summary": "部门分组修改",
                 "parameters": [
                     {
-                        "description": "用户组数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2185,7 +3624,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2196,49 +3635,47 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/page": {
             "get": {
-                "description": "获取用户组分页列表",
+                "description": "访问 /api/v1/sys/group/page，部门分组分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "群组分页",
+                "summary": "部门分组分页查询",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "分组分类",
-                        "name": "category",
+                        "name": "org_id",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "所属机构 ID",
-                        "name": "org_id",
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2249,7 +3686,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/remove": {
             "post": {
-                "description": "批量删除用户组",
+                "description": "访问 /api/v1/sys/group/remove，部门分组删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -2257,12 +3694,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "删除群组",
+                "summary": "部门分组删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2273,7 +3710,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2284,31 +3721,32 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/tree": {
             "get": {
-                "description": "获取用户组树形结构",
+                "description": "访问 /api/v1/sys/group/tree，部门分组树形查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "群组树",
+                "summary": "部门分组树形查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "分组分类",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "所属机构 ID",
                         "name": "org_id",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2319,17 +3757,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/group/union-tree": {
             "get": {
-                "description": "获取用户组联合树（含机构）",
+                "description": "访问 /api/v1/sys/group/union-tree，部门分组联合树形查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "用户组管理"
+                    "部门分组"
                 ],
-                "summary": "联合树",
+                "summary": "部门分组联合树形查询",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2340,17 +3781,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/home": {
             "get": {
-                "description": "获取工作台首页统计、通知、快捷方式等数据",
+                "description": "访问 /api/v1/sys/home，首页配置接口调用",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "首页管理"
+                    "首页配置"
                 ],
-                "summary": "首页数据",
+                "summary": "首页配置接口调用",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2361,7 +3805,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/home/quick-actions/add": {
             "post": {
-                "description": "为当前用户添加快捷方式",
+                "description": "访问 /api/v1/sys/home/quick-actions/add，首页配置新增",
                 "consumes": [
                     "application/json"
                 ],
@@ -2369,12 +3813,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "首页管理"
+                    "首页配置"
                 ],
-                "summary": "添加快捷方式",
+                "summary": "首页配置新增",
                 "parameters": [
                     {
-                        "description": "资源 ID",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2385,7 +3829,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2396,7 +3840,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/home/quick-actions/remove": {
             "post": {
-                "description": "批量移除当前用户的快捷方式",
+                "description": "访问 /api/v1/sys/home/quick-actions/remove，首页配置删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -2404,12 +3848,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "首页管理"
+                    "首页配置"
                 ],
-                "summary": "移除快捷方式",
+                "summary": "首页配置删除",
                 "parameters": [
                     {
-                        "description": "快捷方式 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2420,7 +3864,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2431,7 +3875,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/home/quick-actions/sort": {
             "post": {
-                "description": "对当前用户的快捷方式重新排序",
+                "description": "访问 /api/v1/sys/home/quick-actions/sort，首页配置排序",
                 "consumes": [
                     "application/json"
                 ],
@@ -2439,12 +3883,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "首页管理"
+                    "首页配置"
                 ],
-                "summary": "排序快捷方式",
+                "summary": "首页配置排序",
                 "parameters": [
                     {
-                        "description": "排序后的 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2455,7 +3899,1900 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/broadcast/detail": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/broadcast/detail，即时通讯广播详情查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播详情查询",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/broadcast/list": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/broadcast/list，即时通讯广播列表查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播列表查询",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/broadcast/read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/broadcast/read，即时通讯广播标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/broadcast.ReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/broadcast/send": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/broadcast/send，即时通讯广播发送消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播发送消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/broadcast.SendBroadcastParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/broadcast/unread-list": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/broadcast/unread-list，即时通讯广播未读列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯广播"
+                ],
+                "summary": "即时通讯广播未读列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/conversation/get-or-create": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/conversation/get-or-create，即时通讯消息获取或创建会话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息获取或创建会话",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.GetOrCreateConversationParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/conversation/list": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/conversation/list，即时通讯消息会话列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/conversation/messages": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/conversation/messages，即时通讯消息会话消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话消息列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "conversation_id",
+                        "name": "conversation_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/conversation/read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/conversation/read，即时通讯消息会话已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息会话已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.ConversationReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/file/upload": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/file/upload，即时通讯消息上传文件",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息上传文件",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "上传文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储引擎",
+                        "name": "engine",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储桶",
+                        "name": "bucket",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "消息类型",
+                        "name": "msg_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "会话 ID",
+                        "name": "conversation_id",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/accept": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/accept，即时通讯好友接受申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友接受申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.HandleRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/block": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/block，即时通讯好友拉黑",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拉黑",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.BlockParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/block-list": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/friend/block-list，即时通讯好友拉黑列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拉黑列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/list": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/friend/list，即时通讯好友列表查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友列表查询",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/pending-requests": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/friend/pending-requests，即时通讯好友待处理申请列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友待处理申请列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/reject": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/reject，即时通讯好友拒绝申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友拒绝申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.HandleRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/remark": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/remark，即时通讯好友设置备注",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友设置备注",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.RemarkParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/remove": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/remove，即时通讯好友删除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友删除",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.RemoveFriendParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/search": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/friend/search，即时通讯好友搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/send-request": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/send-request，即时通讯好友发送申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友发送申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.SendRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/friend/unblock": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/friend/unblock，即时通讯好友取消拉黑",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯好友"
+                ],
+                "summary": "即时通讯好友取消拉黑",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/friend.BlockParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/create": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/create，即时通讯群组创建",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组创建",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/detail": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/detail，即时通讯群组详情查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组详情查询",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/dissolve": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/dissolve，即时通讯群组解散群组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组解散群组",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.DissolveParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/handle-join-request": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/handle-join-request，即时通讯群组处理入群申请",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组处理入群申请",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.HandleJoinRequestParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/invite": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/invite，即时通讯群组邀请成员",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组邀请成员",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.InviteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/join": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/join，即时通讯群组加入群组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组加入群组",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.JoinOrLeaveParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/kick": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/kick，即时通讯群组移除成员",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组移除成员",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.KickParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/leave": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/leave，即时通讯群组退出群组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组退出群组",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.JoinOrLeaveParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/mark-read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/mark-read，即时通讯群组标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.MarkReadParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/members": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/members，即时通讯群组成员列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组成员列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/messages": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/messages，即时通讯群组消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组消息列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_id",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/mute": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/mute，即时通讯群组禁言",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组禁言",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.MuteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/my-groups": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/my-groups，即时通讯群组我的群组列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组我的群组列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/pending-join-requests": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/pending-join-requests，即时通讯群组待处理入群申请列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组待处理入群申请列表",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/recall": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/recall，即时通讯群组撤回消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组撤回消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.RecallMessageParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/search": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/search，即时通讯群组搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_id",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/search-groups": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/group/search-groups，即时通讯群组群组搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组群组搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/send": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/send，即时通讯群组发送消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组发送消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.SendMessageParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/set-nickname": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/set-nickname，即时通讯群组设置群昵称",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组设置群昵称",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.SetNicknameParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/set-role": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/set-role，即时通讯群组设置成员角色",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组设置成员角色",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.SetRoleParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/transfer-owner": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/transfer-owner，即时通讯群组转让群主",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组转让群主",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.TransferOwnerParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/unmute": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/unmute，即时通讯群组解除禁言",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组解除禁言",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.UnmuteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/group/update": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/group/update，即时通讯群组更新",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯群组"
+                ],
+                "summary": "即时通讯群组更新",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/group.UpdateParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/delete": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/delete，即时通讯消息删除消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息删除消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.DeleteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/detail": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/message/detail，即时通讯消息详情查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息详情查询",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/forward": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/forward，即时通讯消息转发消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息转发消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.ForwardParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/mark-all-read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/mark-all-read，即时通讯消息全部标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息全部标记已读",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/mark-read": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/mark-read，即时通讯消息标记已读",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息标记已读",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/utils.IdParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/page": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/message/page，即时通讯消息分页查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息分页查询",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/recall": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/recall，即时通讯消息撤回消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息撤回消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.RecallParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/remove": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/remove，即时通讯消息删除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息删除",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.DeleteParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/search": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/message/search，即时通讯消息搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/send": {
+            "post": {
+                "description": "访问 /api/v1/sys/im/message/send，即时通讯消息发送消息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息发送消息",
+                "parameters": [
+                    {
+                        "description": "请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/message.MessageSendParam"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/message/unread-count": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/message/unread-count，即时通讯消息未读数",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯消息"
+                ],
+                "summary": "即时通讯消息未读数",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sys/im/ws": {
+            "get": {
+                "description": "访问 /api/v1/sys/im/ws，即时通讯连接WebSocket连接",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯连接"
+                ],
+                "summary": "即时通讯连接WebSocket连接",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2466,7 +5803,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/create": {
             "post": {
-                "description": "创建操作日志记录",
+                "description": "访问 /api/v1/sys/log/create，日志管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -2476,10 +5813,10 @@ const docTemplate = `{
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "添加日志",
+                "summary": "日志管理创建",
                 "parameters": [
                     {
-                        "description": "日志数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2490,7 +5827,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2501,7 +5838,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/delete-by-category": {
             "post": {
-                "description": "按分类批量删除操作日志",
+                "description": "访问 /api/v1/sys/log/delete-by-category，日志管理按分类删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -2511,10 +5848,10 @@ const docTemplate = `{
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "按分类删除日志",
+                "summary": "日志管理按分类删除",
                 "parameters": [
                     {
-                        "description": "日志分类",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2525,7 +5862,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2536,26 +5873,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/detail": {
             "get": {
-                "description": "根据 ID 获取操作日志详情",
+                "description": "访问 /api/v1/sys/log/detail，日志管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "日志详情",
+                "summary": "日志管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "日志 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2566,7 +5905,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/modify": {
             "post": {
-                "description": "修改操作日志记录",
+                "description": "访问 /api/v1/sys/log/modify，日志管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -2576,10 +5915,10 @@ const docTemplate = `{
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "编辑日志",
+                "summary": "日志管理修改",
                 "parameters": [
                     {
-                        "description": "日志数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2590,7 +5929,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2601,17 +5940,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/op/bar-chart-data": {
             "get": {
-                "description": "获取操作统计趋势数据",
+                "description": "访问 /api/v1/sys/log/op/bar-chart-data，日志管理操作柱状图数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "操作趋势折线图",
+                "summary": "日志管理操作柱状图数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2622,17 +5964,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/op/pie-chart-data": {
             "get": {
-                "description": "获取操作分类分布数据",
+                "description": "访问 /api/v1/sys/log/op/pie-chart-data，日志管理操作饼图数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "操作类型饼图",
+                "summary": "日志管理操作饼图数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2643,49 +5988,47 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/page": {
             "get": {
-                "description": "获取操作日志分页列表",
+                "description": "访问 /api/v1/sys/log/page，日志管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "日志分页",
+                "summary": "日志管理分页查询",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "current",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "日志分类",
                         "name": "category",
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
-                        "description": "执行状态",
                         "name": "exe_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2696,7 +6039,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/remove": {
             "post": {
-                "description": "批量删除操作日志",
+                "description": "访问 /api/v1/sys/log/remove，日志管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -2706,10 +6049,10 @@ const docTemplate = `{
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "删除日志",
+                "summary": "日志管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2720,7 +6063,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2731,17 +6074,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/vis/line-chart-data": {
             "get": {
-                "description": "获取登录统计趋势数据",
+                "description": "访问 /api/v1/sys/log/vis/line-chart-data，日志管理登录折线图数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "登录趋势折线图",
+                "summary": "日志管理登录折线图数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2752,17 +6098,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/log/vis/pie-chart-data": {
             "get": {
-                "description": "获取登录来源分布数据",
+                "description": "访问 /api/v1/sys/log/vis/pie-chart-data，日志管理登录饼图数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "日志管理"
                 ],
-                "summary": "登录来源饼图",
+                "summary": "日志管理登录饼图数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2773,7 +6122,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/module/create": {
             "post": {
-                "description": "创建新模块",
+                "description": "访问 /api/v1/sys/module/create，资源管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -2781,12 +6130,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "模块管理"
+                    "资源管理"
                 ],
-                "summary": "添加模块",
+                "summary": "资源管理创建",
                 "parameters": [
                     {
-                        "description": "模块数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2797,7 +6146,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2808,26 +6157,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/module/detail": {
             "get": {
-                "description": "根据 ID 获取模块详情",
+                "description": "访问 /api/v1/sys/module/detail，资源管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "模块管理"
+                    "资源管理"
                 ],
-                "summary": "模块详情",
+                "summary": "资源管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "模块 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2838,7 +6189,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/module/modify": {
             "post": {
-                "description": "修改模块信息",
+                "description": "访问 /api/v1/sys/module/modify，资源管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -2846,12 +6197,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "模块管理"
+                    "资源管理"
                 ],
-                "summary": "编辑模块",
+                "summary": "资源管理修改",
                 "parameters": [
                     {
-                        "description": "模块数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2862,7 +6213,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2873,37 +6224,32 @@ const docTemplate = `{
         },
         "/api/v1/sys/module/page": {
             "get": {
-                "description": "获取模块分页列表",
+                "description": "访问 /api/v1/sys/module/page，资源管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "模块管理"
+                    "资源管理"
                 ],
-                "summary": "模块分页",
+                "summary": "资源管理分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "每页条数",
                         "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2914,7 +6260,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/module/remove": {
             "post": {
-                "description": "批量删除模块",
+                "description": "访问 /api/v1/sys/module/remove，资源管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -2922,12 +6268,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "模块管理"
+                    "资源管理"
                 ],
-                "summary": "删除模块",
+                "summary": "资源管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2938,7 +6284,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2949,7 +6295,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/notice/create": {
             "post": {
-                "description": "创建通知公告",
+                "description": "访问 /api/v1/sys/notice/create，通知公告创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -2959,10 +6305,10 @@ const docTemplate = `{
                 "tags": [
                     "通知公告"
                 ],
-                "summary": "添加通知",
+                "summary": "通知公告创建",
                 "parameters": [
                     {
-                        "description": "通知数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -2973,7 +6319,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2984,26 +6330,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/notice/detail": {
             "get": {
-                "description": "根据 ID 获取通知详情",
+                "description": "访问 /api/v1/sys/notice/detail，通知公告详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "通知公告"
                 ],
-                "summary": "通知详情",
+                "summary": "通知公告详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "通知 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3014,7 +6362,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/notice/modify": {
             "post": {
-                "description": "修改通知公告",
+                "description": "访问 /api/v1/sys/notice/modify，通知公告修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -3024,10 +6372,10 @@ const docTemplate = `{
                 "tags": [
                     "通知公告"
                 ],
-                "summary": "编辑通知",
+                "summary": "通知公告修改",
                 "parameters": [
                     {
-                        "description": "通知数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3038,7 +6386,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3049,49 +6397,47 @@ const docTemplate = `{
         },
         "/api/v1/sys/notice/page": {
             "get": {
-                "description": "获取通知公告分页列表",
+                "description": "访问 /api/v1/sys/notice/page，通知公告分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "通知公告"
                 ],
-                "summary": "通知分页",
+                "summary": "通知公告分页查询",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "current",
+                        "type": "string",
+                        "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "每页条数",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "name": "size",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "通知分类",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "发布状态",
                         "name": "status",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3102,7 +6448,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/notice/remove": {
             "post": {
-                "description": "批量删除通知公告",
+                "description": "访问 /api/v1/sys/notice/remove，通知公告删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -3112,10 +6458,10 @@ const docTemplate = `{
                 "tags": [
                     "通知公告"
                 ],
-                "summary": "删除通知",
+                "summary": "通知公告删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3126,7 +6472,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3137,7 +6483,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/create": {
             "post": {
-                "description": "创建机构",
+                "description": "访问 /api/v1/sys/org/create，组织管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -3145,12 +6491,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "添加组织",
+                "summary": "组织管理创建",
                 "parameters": [
                     {
-                        "description": "机构数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3161,7 +6507,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3172,26 +6518,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/detail": {
             "get": {
-                "description": "根据 ID 获取机构详情",
+                "description": "访问 /api/v1/sys/org/detail，组织管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "组织详情",
+                "summary": "组织管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "机构 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3202,7 +6550,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/modify": {
             "post": {
-                "description": "修改机构信息",
+                "description": "访问 /api/v1/sys/org/modify，组织管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -3210,12 +6558,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "编辑组织",
+                "summary": "组织管理修改",
                 "parameters": [
                     {
-                        "description": "机构数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3226,7 +6574,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3237,43 +6585,42 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/page": {
             "get": {
-                "description": "获取机构分页列表",
+                "description": "访问 /api/v1/sys/org/page，组织管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "组织分页",
+                "summary": "组织管理分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "父级机构 ID",
                         "name": "parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3284,7 +6631,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/remove": {
             "post": {
-                "description": "批量删除机构",
+                "description": "访问 /api/v1/sys/org/remove，组织管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -3292,12 +6639,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "删除组织",
+                "summary": "组织管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3308,7 +6655,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3319,25 +6666,27 @@ const docTemplate = `{
         },
         "/api/v1/sys/org/tree": {
             "get": {
-                "description": "获取机构树形结构",
+                "description": "访问 /api/v1/sys/org/tree，组织管理树形查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "机构管理"
+                    "组织管理"
                 ],
-                "summary": "组织树",
+                "summary": "组织管理树形查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "机构分类",
                         "name": "category",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3348,26 +6697,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/permission/by-module": {
             "get": {
-                "description": "获取指定模块下的权限列表",
+                "description": "访问 /api/v1/sys/permission/by-module，权限管理按模块查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "权限管理"
                 ],
-                "summary": "按模块查询权限",
+                "summary": "权限管理按模块查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "模块名称",
+                        "description": "module",
                         "name": "module",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3378,17 +6729,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/permission/modules": {
             "get": {
-                "description": "获取所有权限模块列表",
+                "description": "访问 /api/v1/sys/permission/modules，权限管理模块列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "权限管理"
                 ],
-                "summary": "权限模块列表",
+                "summary": "权限管理模块列表",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3399,7 +6753,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/position/create": {
             "post": {
-                "description": "创建新岗位",
+                "description": "访问 /api/v1/sys/position/create，岗位管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -3409,10 +6763,10 @@ const docTemplate = `{
                 "tags": [
                     "岗位管理"
                 ],
-                "summary": "添加岗位",
+                "summary": "岗位管理创建",
                 "parameters": [
                     {
-                        "description": "岗位数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3423,7 +6777,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3434,26 +6788,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/position/detail": {
             "get": {
-                "description": "根据 ID 获取岗位详情",
+                "description": "访问 /api/v1/sys/position/detail，岗位管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "岗位管理"
                 ],
-                "summary": "岗位详情",
+                "summary": "岗位管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "岗位 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3464,7 +6820,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/position/modify": {
             "post": {
-                "description": "修改岗位信息",
+                "description": "访问 /api/v1/sys/position/modify，岗位管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -3474,10 +6830,10 @@ const docTemplate = `{
                 "tags": [
                     "岗位管理"
                 ],
-                "summary": "编辑岗位",
+                "summary": "岗位管理修改",
                 "parameters": [
                     {
-                        "description": "岗位数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3488,7 +6844,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3499,43 +6855,47 @@ const docTemplate = `{
         },
         "/api/v1/sys/position/page": {
             "get": {
-                "description": "获取岗位分页列表",
+                "description": "访问 /api/v1/sys/position/page，岗位管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "岗位管理"
                 ],
-                "summary": "岗位分页",
+                "summary": "岗位管理分页查询",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "岗位分类",
-                        "name": "category",
+                        "name": "org_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3546,7 +6906,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/position/remove": {
             "post": {
-                "description": "批量删除岗位",
+                "description": "访问 /api/v1/sys/position/remove，岗位管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -3556,10 +6916,10 @@ const docTemplate = `{
                 "tags": [
                     "岗位管理"
                 ],
-                "summary": "删除岗位",
+                "summary": "岗位管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3570,7 +6930,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3581,7 +6941,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/create": {
             "post": {
-                "description": "创建新资源（菜单/按钮）",
+                "description": "访问 /api/v1/sys/resource/create，资源管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -3591,10 +6951,10 @@ const docTemplate = `{
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "添加资源",
+                "summary": "资源管理创建",
                 "parameters": [
                     {
-                        "description": "资源数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3605,7 +6965,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3616,26 +6976,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/detail": {
             "get": {
-                "description": "根据 ID 获取资源详情",
+                "description": "访问 /api/v1/sys/resource/detail，资源管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "资源详情",
+                "summary": "资源管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "资源 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3646,7 +7008,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/modify": {
             "post": {
-                "description": "修改资源信息",
+                "description": "访问 /api/v1/sys/resource/modify，资源管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -3656,10 +7018,10 @@ const docTemplate = `{
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "编辑资源",
+                "summary": "资源管理修改",
                 "parameters": [
                     {
-                        "description": "资源数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3670,7 +7032,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3681,43 +7043,32 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/page": {
             "get": {
-                "description": "获取资源分页列表",
+                "description": "访问 /api/v1/sys/resource/page，资源管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "资源分页",
+                "summary": "资源管理分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "每页条数",
                         "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "资源分类",
-                        "name": "category",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3728,7 +7079,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/remove": {
             "post": {
-                "description": "批量删除资源",
+                "description": "访问 /api/v1/sys/resource/remove，资源管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -3738,10 +7089,10 @@ const docTemplate = `{
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "删除资源",
+                "summary": "资源管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3752,7 +7103,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3763,17 +7114,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/resource/tree": {
             "get": {
-                "description": "获取资源树形结构",
+                "description": "访问 /api/v1/sys/resource/tree，资源管理树形查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "资源管理"
                 ],
-                "summary": "资源树",
+                "summary": "资源管理树形查询",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3784,7 +7138,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/create": {
             "post": {
-                "description": "创建新角色",
+                "description": "访问 /api/v1/sys/role/create，角色管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -3794,10 +7148,10 @@ const docTemplate = `{
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "添加角色",
+                "summary": "角色管理创建",
                 "parameters": [
                     {
-                        "description": "角色数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3808,7 +7162,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3819,26 +7173,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/detail": {
             "get": {
-                "description": "根据 ID 获取角色详情",
+                "description": "访问 /api/v1/sys/role/detail，角色管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "角色详情",
+                "summary": "角色管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "角色 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3849,7 +7205,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/grant-permission": {
             "post": {
-                "description": "为角色分配权限",
+                "description": "访问 /api/v1/sys/role/grant-permission，角色管理分配权限",
                 "consumes": [
                     "application/json"
                 ],
@@ -3859,10 +7215,10 @@ const docTemplate = `{
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "分配角色权限",
+                "summary": "角色管理分配权限",
                 "parameters": [
                     {
-                        "description": "权限分配参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3873,7 +7229,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3884,7 +7240,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/grant-resource": {
             "post": {
-                "description": "为角色分配资源（菜单/按钮）",
+                "description": "访问 /api/v1/sys/role/grant-resource，角色管理分配资源",
                 "consumes": [
                     "application/json"
                 ],
@@ -3894,10 +7250,10 @@ const docTemplate = `{
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "分配角色资源",
+                "summary": "角色管理分配资源",
                 "parameters": [
                     {
-                        "description": "资源分配参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3908,7 +7264,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3919,7 +7275,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/modify": {
             "post": {
-                "description": "修改角色信息",
+                "description": "访问 /api/v1/sys/role/modify，角色管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -3929,10 +7285,10 @@ const docTemplate = `{
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "编辑角色",
+                "summary": "角色管理修改",
                 "parameters": [
                     {
-                        "description": "角色数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3943,7 +7299,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3954,26 +7310,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/own-permission": {
             "get": {
-                "description": "获取角色拥有的权限编码列表",
+                "description": "访问 /api/v1/sys/role/own-permission，角色管理自身权限",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "角色权限列表",
+                "summary": "角色管理自身权限",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "角色 ID",
+                        "description": "role_id",
                         "name": "role_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3984,26 +7342,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/own-permission-detail": {
             "get": {
-                "description": "获取角色权限详细信息",
+                "description": "访问 /api/v1/sys/role/own-permission-detail，角色管理自身权限详情",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "角色权限详情",
+                "summary": "角色管理自身权限详情",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "角色 ID",
+                        "description": "role_id",
                         "name": "role_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4014,26 +7374,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/own-resource": {
             "get": {
-                "description": "获取角色拥有的资源 ID 列表",
+                "description": "访问 /api/v1/sys/role/own-resource，角色管理自身资源",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "角色资源列表",
+                "summary": "角色管理自身资源",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "角色 ID",
+                        "description": "role_id",
                         "name": "role_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4044,43 +7406,42 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/page": {
             "get": {
-                "description": "获取角色分页列表",
+                "description": "访问 /api/v1/sys/role/page，角色管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "角色分页",
+                "summary": "角色管理分页查询",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "搜索关键词",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "角色分类",
-                        "name": "category",
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4091,7 +7452,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/role/remove": {
             "post": {
-                "description": "批量删除角色",
+                "description": "访问 /api/v1/sys/role/remove，角色管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -4101,10 +7462,10 @@ const docTemplate = `{
                 "tags": [
                     "角色管理"
                 ],
-                "summary": "删除角色",
+                "summary": "角色管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4115,7 +7476,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4126,17 +7487,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/analysis": {
             "get": {
-                "description": "获取后台会话概览统计数据",
+                "description": "访问 /api/v1/sys/session/analysis，会话管理分析数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "会话分析",
+                "summary": "会话管理分析数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4147,17 +7511,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/chart-data": {
             "get": {
-                "description": "获取后台会话统计图表数据",
+                "description": "访问 /api/v1/sys/session/chart-data，会话管理图表数据",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "会话图表",
+                "summary": "会话管理图表数据",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4168,7 +7535,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/exit": {
             "post": {
-                "description": "强制退出指定用户的所有会话",
+                "description": "访问 /api/v1/sys/session/exit，会话管理强退会话",
                 "consumes": [
                     "application/json"
                 ],
@@ -4178,10 +7545,10 @@ const docTemplate = `{
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "强退会话",
+                "summary": "会话管理强退会话",
                 "parameters": [
                     {
-                        "description": "用户 ID",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4192,7 +7559,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4203,7 +7570,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/exit-token": {
             "post": {
-                "description": "强制退出指定的用户会话 Token",
+                "description": "访问 /api/v1/sys/session/exit-token，会话管理强退令牌",
                 "consumes": [
                     "application/json"
                 ],
@@ -4213,10 +7580,10 @@ const docTemplate = `{
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "强退 Token",
+                "summary": "会话管理强退令牌",
                 "parameters": [
                     {
-                        "description": "用户 ID + Token",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4227,7 +7594,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4238,37 +7605,37 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/page": {
             "get": {
-                "description": "获取后台会话分页列表",
+                "description": "访问 /api/v1/sys/session/page，会话管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "会话分页",
+                "summary": "会话管理分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "每页条数",
-                        "name": "size",
+                        "type": "string",
+                        "name": "keyword",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
+                        "type": "integer",
+                        "name": "size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4279,26 +7646,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/session/tokens": {
             "get": {
-                "description": "获取指定用户的活跃 Token 列表",
+                "description": "访问 /api/v1/sys/session/tokens，会话管理令牌列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "会话管理"
                 ],
-                "summary": "会话 Token 列表",
+                "summary": "会话管理令牌列表",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "user_id",
                         "name": "user_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4309,7 +7678,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/create": {
             "post": {
-                "description": "创建后台用户",
+                "description": "访问 /api/v1/sys/user/create，用户管理创建",
                 "consumes": [
                     "application/json"
                 ],
@@ -4319,10 +7688,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "添加用户",
+                "summary": "用户管理创建",
                 "parameters": [
                     {
-                        "description": "用户数据",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4333,7 +7702,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4344,17 +7713,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/current": {
             "get": {
-                "description": "获取当前登录用户信息",
+                "description": "访问 /api/v1/sys/user/current，用户管理当前信息",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "当前用户信息",
+                "summary": "用户管理当前信息",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4365,26 +7737,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/detail": {
             "get": {
-                "description": "根据 ID 获取用户详情",
+                "description": "访问 /api/v1/sys/user/detail，用户管理详情查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户详情",
+                "summary": "用户管理详情查询",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "id",
                         "name": "id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4395,7 +7769,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/grant-permission": {
             "post": {
-                "description": "为用户分配权限",
+                "description": "访问 /api/v1/sys/user/grant-permission，用户管理分配权限",
                 "consumes": [
                     "application/json"
                 ],
@@ -4405,10 +7779,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "分配用户权限",
+                "summary": "用户管理分配权限",
                 "parameters": [
                     {
-                        "description": "权限分配参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4419,7 +7793,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4430,7 +7804,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/grant-role": {
             "post": {
-                "description": "为用户分配角色",
+                "description": "访问 /api/v1/sys/user/grant-role，用户管理分配角色",
                 "consumes": [
                     "application/json"
                 ],
@@ -4440,10 +7814,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "分配用户角色",
+                "summary": "用户管理分配角色",
                 "parameters": [
                     {
-                        "description": "角色分配参数",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4454,7 +7828,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4465,17 +7839,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/menus": {
             "get": {
-                "description": "获取当前用户的菜单树",
+                "description": "访问 /api/v1/sys/user/menus，用户管理菜单列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户菜单",
+                "summary": "用户管理菜单列表",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4486,7 +7863,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/modify": {
             "post": {
-                "description": "修改后台用户信息",
+                "description": "访问 /api/v1/sys/user/modify，用户管理修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -4496,10 +7873,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "编辑用户",
+                "summary": "用户管理修改",
                 "parameters": [
                     {
-                        "description": "用户数据（id 必填）",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4510,7 +7887,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4521,26 +7898,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/own-permission-detail": {
             "get": {
-                "description": "获取用户拥有的权限详情",
+                "description": "访问 /api/v1/sys/user/own-permission-detail，用户管理自身权限详情",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户权限详情",
+                "summary": "用户管理自身权限详情",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "user_id",
                         "name": "user_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4551,26 +7930,28 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/own-roles": {
             "get": {
-                "description": "获取用户拥有的角色列表",
+                "description": "访问 /api/v1/sys/user/own-roles，用户管理自身角色列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户角色列表",
+                "summary": "用户管理自身角色列表",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "用户 ID",
+                        "description": "user_id",
                         "name": "user_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4581,43 +7962,42 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/page": {
             "get": {
-                "description": "获取后台用户分页列表",
+                "description": "访问 /api/v1/sys/user/page，用户管理分页查询",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户分页",
+                "summary": "用户管理分页查询",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
                         "name": "current",
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "每页条数",
                         "name": "size",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "用户状态",
                         "name": "status",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4628,17 +8008,20 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/permissions": {
             "get": {
-                "description": "获取当前用户的权限编码列表",
+                "description": "访问 /api/v1/sys/user/permissions，用户管理权限列表",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "用户权限编码",
+                "summary": "用户管理权限列表",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4649,7 +8032,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/remove": {
             "post": {
-                "description": "批量删除后台用户",
+                "description": "访问 /api/v1/sys/user/remove，用户管理删除",
                 "consumes": [
                     "application/json"
                 ],
@@ -4659,10 +8042,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "删除用户",
+                "summary": "用户管理删除",
                 "parameters": [
                     {
-                        "description": "待删除 ID 列表",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4673,7 +8056,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4684,7 +8067,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/update-avatar": {
             "post": {
-                "description": "修改当前用户头像",
+                "description": "访问 /api/v1/sys/user/update-avatar，用户管理更新头像",
                 "consumes": [
                     "application/json"
                 ],
@@ -4694,10 +8077,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "更新头像",
+                "summary": "用户管理更新头像",
                 "parameters": [
                     {
-                        "description": "头像 URL",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4708,7 +8091,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4719,7 +8102,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/update-password": {
             "post": {
-                "description": "修改当前用户登录密码",
+                "description": "访问 /api/v1/sys/user/update-password，用户管理修改密码",
                 "consumes": [
                     "application/json"
                 ],
@@ -4729,10 +8112,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "修改密码",
+                "summary": "用户管理修改密码",
                 "parameters": [
                     {
-                        "description": "新旧密码",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4743,7 +8126,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4754,7 +8137,7 @@ const docTemplate = `{
         },
         "/api/v1/sys/user/update-profile": {
             "post": {
-                "description": "更新当前用户个人资料",
+                "description": "访问 /api/v1/sys/user/update-profile，用户管理更新个人信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -4764,10 +8147,10 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "修改个人信息",
+                "summary": "用户管理更新个人信息",
                 "parameters": [
                     {
-                        "description": "个人资料",
+                        "description": "请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -4778,7 +8161,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/uploads/:bucket/:file_key": {
+            "get": {
+                "description": "访问 /uploads/:bucket/:file_key，即时通讯连接接口调用",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "即时通讯连接"
+                ],
+                "summary": "即时通讯连接接口调用",
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4842,6 +8249,35 @@ const docTemplate = `{
                 },
                 "view_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "broadcast.ReadParam": {
+            "type": "object",
+            "required": [
+                "broadcast_id"
+            ],
+            "properties": {
+                "broadcast_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "broadcast.SendBroadcastParam": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "scope": {
+                    "description": "ALL | BUSINESS | CONSUMER",
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -5046,6 +8482,343 @@ const docTemplate = `{
                 },
                 "total_chunks": {
                     "type": "integer"
+                }
+            }
+        },
+        "friend.BlockParam": {
+            "type": "object",
+            "required": [
+                "blocked_id",
+                "blocked_type"
+            ],
+            "properties": {
+                "blocked_id": {
+                    "type": "string"
+                },
+                "blocked_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "friend.HandleRequestParam": {
+            "type": "object",
+            "required": [
+                "request_id"
+            ],
+            "properties": {
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "friend.RemarkParam": {
+            "type": "object",
+            "required": [
+                "friend_id",
+                "friend_type"
+            ],
+            "properties": {
+                "friend_id": {
+                    "type": "string"
+                },
+                "friend_type": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                }
+            }
+        },
+        "friend.RemoveFriendParam": {
+            "type": "object",
+            "required": [
+                "friend_id",
+                "friend_type"
+            ],
+            "properties": {
+                "friend_id": {
+                    "type": "string"
+                },
+                "friend_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "friend.SendRequestParam": {
+            "type": "object",
+            "required": [
+                "receiver_id",
+                "receiver_type"
+            ],
+            "properties": {
+                "receiver_id": {
+                    "type": "string"
+                },
+                "receiver_type": {
+                    "description": "BUSINESS | CONSUMER",
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.DissolveParam": {
+            "type": "object",
+            "required": [
+                "group_id"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.HandleJoinRequestParam": {
+            "type": "object",
+            "required": [
+                "action",
+                "request_id"
+            ],
+            "properties": {
+                "action": {
+                    "description": "approved | rejected",
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.InviteParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "user_ids",
+                "user_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.JoinOrLeaveParam": {
+            "type": "object",
+            "required": [
+                "group_id"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.KickParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "user_id",
+                "user_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.MarkReadParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "message_id"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.MuteParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "user_id",
+                "user_type"
+            ],
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.RecallMessageParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "message_id"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.SendMessageParam": {
+            "type": "object",
+            "required": [
+                "group_id"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "extra": {
+                    "description": "JSON TEXT",
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "msg_type": {
+                    "type": "string"
+                },
+                "reply_to": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.SetNicknameParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "user_id",
+                "user_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.SetRoleParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "role",
+                "user_id",
+                "user_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "admin | owner",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.TransferOwnerParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "new_owner_id",
+                "new_owner_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "new_owner_id": {
+                    "type": "string"
+                },
+                "new_owner_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.UnmuteParam": {
+            "type": "object",
+            "required": [
+                "group_id",
+                "user_id",
+                "user_type"
+            ],
+            "properties": {
+                "group_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "group.UpdateParam": {
+            "type": "object",
+            "required": [
+                "group_id"
+            ],
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notice": {
+                    "type": "string"
                 }
             }
         },
@@ -5401,6 +9174,84 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_by": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.ConversationReadParam": {
+            "type": "object",
+            "properties": {
+                "conversation_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.DeleteParam": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "message.ForwardParam": {
+            "type": "object",
+            "properties": {
+                "message_id": {
+                    "type": "string"
+                },
+                "target_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "target_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.GetOrCreateConversationParam": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string"
+                },
+                "user_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.MessageSendParam": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "extra": {
+                    "type": "string"
+                },
+                "msg_type": {
+                    "type": "string"
+                },
+                "receiver_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "receiver_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.RecallParam": {
+            "type": "object",
+            "properties": {
+                "message_id": {
                     "type": "string"
                 }
             }
@@ -5979,6 +9830,14 @@ const docTemplate = `{
                 }
             }
         },
+        "utils.IdParam": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
         "utils.IdsParam": {
             "type": "object",
             "properties": {
@@ -6004,8 +9863,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0.0",
-	Host:             "localhost:18885",
-	BasePath:         "/api/v1",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Hei Gin API",
 	Description:      "Hei Gin 后台管理系统 API 文档",

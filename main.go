@@ -8,8 +8,6 @@ package main
 // @contact.url     https://github.com/jiangbyte
 // @license.name    MIT
 // @license.url     https://github.com/jiangbyte/hei-gin/blob/main/LICENSE
-// @host            localhost:18885
-// @BasePath        /api/v1
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization

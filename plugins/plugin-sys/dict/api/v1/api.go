@@ -76,6 +76,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/dict/page
+// @Summary      字典管理分页查询
+// @Description  访问 /api/v1/sys/dict/page，字典管理分页查询
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  dict.DictPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/page [get]
 func pageHandler(c *gin.Context) {
 	var param dict.DictPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -87,6 +95,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // listHandler handles GET /api/v1/sys/dict/list
+// @Summary      字典管理列表查询
+// @Description  访问 /api/v1/sys/dict/list，字典管理列表查询
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  dict.DictListParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/list [get]
 func listHandler(c *gin.Context) {
 	var param dict.DictListParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -99,6 +115,14 @@ func listHandler(c *gin.Context) {
 }
 
 // treeHandler handles GET /api/v1/sys/dict/tree
+// @Summary      字典管理树形查询
+// @Description  访问 /api/v1/sys/dict/tree，字典管理树形查询
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  dict.DictTreeParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/tree [get]
 func treeHandler(c *gin.Context) {
 	var param dict.DictTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -111,6 +135,14 @@ func treeHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/dict/create
+// @Summary      字典管理创建
+// @Description  访问 /api/v1/sys/dict/create，字典管理创建
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  dict.DictVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/create [post]
 func createHandler(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -123,6 +155,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/dict/modify
+// @Summary      字典管理修改
+// @Description  访问 /api/v1/sys/dict/modify，字典管理修改
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  dict.DictVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -135,6 +175,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/dict/remove
+// @Summary      字典管理删除
+// @Description  访问 /api/v1/sys/dict/remove，字典管理删除
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -147,18 +195,43 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/dict/detail
+// @Summary      字典管理详情查询
+// @Description  访问 /api/v1/sys/dict/detail，字典管理详情查询
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := dict.DictDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // getLabelHandler handles GET /api/v1/sys/dict/get-label
+// @Summary      字典管理获取标签
+// @Description  访问 /api/v1/sys/dict/get-label，字典管理获取标签
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        type_code  query  string  false  "type_code"
+// @Param        value  query  string  false  "value"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/get-label [get]
 func getLabelHandler(c *gin.Context) {
 	data := dict.DictGetLabel(c, c.Query("type_code"), c.Query("value"))
 	result.Success(c, data)
 }
 
 // getChildrenHandler handles GET /api/v1/sys/dict/get-children
+// @Summary      字典管理获取子项
+// @Description  访问 /api/v1/sys/dict/get-children，字典管理获取子项
+// @Tags         字典管理
+// @Accept       json
+// @Produce      json
+// @Param        type_code  query  string  false  "type_code"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/dict/get-children [get]
 func getChildrenHandler(c *gin.Context) {
 	data := dict.DictGetChildren(c, c.Query("type_code"))
 	result.Success(c, data)

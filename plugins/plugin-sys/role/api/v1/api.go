@@ -87,6 +87,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/role/page
+// @Summary      角色管理分页查询
+// @Description  访问 /api/v1/sys/role/page，角色管理分页查询
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  role.RolePageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/page [get]
 func pageHandler(c *gin.Context) {
 	var param role.RolePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -98,6 +106,14 @@ func pageHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/role/create
+// @Summary      角色管理创建
+// @Description  访问 /api/v1/sys/role/create，角色管理创建
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  role.RoleVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/create [post]
 func createHandler(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -109,6 +125,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/role/modify
+// @Summary      角色管理修改
+// @Description  访问 /api/v1/sys/role/modify，角色管理修改
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  role.RoleVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -121,6 +145,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/role/remove
+// @Summary      角色管理删除
+// @Description  访问 /api/v1/sys/role/remove，角色管理删除
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -133,6 +165,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/role/detail
+// @Summary      角色管理详情查询
+// @Description  访问 /api/v1/sys/role/detail，角色管理详情查询
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/detail [get]
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
 	vo := role.RoleDetail(c, id)
@@ -140,6 +180,14 @@ func detailHandler(c *gin.Context) {
 }
 
 // grantPermissionHandler handles POST /api/v1/sys/role/grant-permission
+// @Summary      角色管理分配权限
+// @Description  访问 /api/v1/sys/role/grant-permission，角色管理分配权限
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  role.GrantPermissionParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/grant-permission [post]
 func grantPermissionHandler(c *gin.Context) {
 	var param role.GrantPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -152,6 +200,14 @@ func grantPermissionHandler(c *gin.Context) {
 }
 
 // grantResourceHandler handles POST /api/v1/sys/role/grant-resource
+// @Summary      角色管理分配资源
+// @Description  访问 /api/v1/sys/role/grant-resource，角色管理分配资源
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  role.GrantResourceParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/grant-resource [post]
 func grantResourceHandler(c *gin.Context) {
 	var param role.GrantResourceParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -164,18 +220,42 @@ func grantResourceHandler(c *gin.Context) {
 }
 
 // ownPermissionHandler handles GET /api/v1/sys/role/own-permission
+// @Summary      角色管理自身权限
+// @Description  访问 /api/v1/sys/role/own-permission，角色管理自身权限
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        role_id  query  string  false  "role_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/own-permission [get]
 func ownPermissionHandler(c *gin.Context) {
 	codes := role.RoleOwnPermissionCodes(c, c.Query("role_id"))
 	result.Success(c, codes)
 }
 
 // ownPermissionDetailHandler handles GET /api/v1/sys/role/own-permission-detail
+// @Summary      角色管理自身权限详情
+// @Description  访问 /api/v1/sys/role/own-permission-detail，角色管理自身权限详情
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        role_id  query  string  false  "role_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/own-permission-detail [get]
 func ownPermissionDetailHandler(c *gin.Context) {
 	details := role.RoleOwnPermissionDetails(c, c.Query("role_id"))
 	result.Success(c, details)
 }
 
 // ownResourceHandler handles GET /api/v1/sys/role/own-resource
+// @Summary      角色管理自身资源
+// @Description  访问 /api/v1/sys/role/own-resource，角色管理自身资源
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        role_id  query  string  false  "role_id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/own-resource [get]
 func ownResourceHandler(c *gin.Context) {
 	ids := role.RoleOwnResourceIDs(c, c.Query("role_id"))
 	result.Success(c, ids)

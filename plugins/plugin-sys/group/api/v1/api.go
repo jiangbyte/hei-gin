@@ -65,6 +65,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/group/page
+// @Summary      部门分组分页查询
+// @Description  访问 /api/v1/sys/group/page，部门分组分页查询
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        query  query  group.GroupPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/page [get]
 func pageHandler(c *gin.Context) {
 	var param group.GroupPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -76,12 +84,27 @@ func pageHandler(c *gin.Context) {
 }
 
 // unionTreeHandler handles GET /api/v1/sys/group/union-tree
+// @Summary      部门分组联合树形查询
+// @Description  访问 /api/v1/sys/group/union-tree，部门分组联合树形查询
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/union-tree [get]
 func unionTreeHandler(c *gin.Context) {
 	data := group.GroupOptions(c)
 	result.Success(c, data)
 }
 
 // treeHandler handles GET /api/v1/sys/group/tree
+// @Summary      部门分组树形查询
+// @Description  访问 /api/v1/sys/group/tree，部门分组树形查询
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        query  query  group.GroupTreeParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/tree [get]
 func treeHandler(c *gin.Context) {
 	var param group.GroupTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -94,6 +117,14 @@ func treeHandler(c *gin.Context) {
 }
 
 // createHandler handles POST /api/v1/sys/group/create
+// @Summary      部门分组创建
+// @Description  访问 /api/v1/sys/group/create，部门分组创建
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.GroupVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/create [post]
 func createHandler(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -106,6 +137,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/group/modify
+// @Summary      部门分组修改
+// @Description  访问 /api/v1/sys/group/modify，部门分组修改
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.GroupVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -118,6 +157,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/group/remove
+// @Summary      部门分组删除
+// @Description  访问 /api/v1/sys/group/remove，部门分组删除
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -130,6 +177,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/group/detail
+// @Summary      部门分组详情查询
+// @Description  访问 /api/v1/sys/group/detail，部门分组详情查询
+// @Tags         部门分组
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/group/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := group.GroupDetail(c, c.Query("id"))
 	result.Success(c, vo)

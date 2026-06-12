@@ -155,6 +155,14 @@ func init() {
 }
 
 // sendRequestHandler handles POST /api/v1/sys/im/friend/send-request
+// @Summary      即时通讯好友发送申请
+// @Description  访问 /api/v1/sys/im/friend/send-request，即时通讯好友发送申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.SendRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/send-request [post]
 func sendRequestHandler(c *gin.Context) {
 	var param friend.SendRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -166,6 +174,14 @@ func sendRequestHandler(c *gin.Context) {
 }
 
 // clientSendRequestHandler handles POST /api/v1/c/im/friend/send-request
+// @Summary      即时通讯好友发送申请
+// @Description  访问 /api/v1/c/im/friend/send-request，即时通讯好友发送申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.SendRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/send-request [post]
 func clientSendRequestHandler(c *gin.Context) {
 	var param friend.SendRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -177,6 +193,14 @@ func clientSendRequestHandler(c *gin.Context) {
 }
 
 // acceptHandler handles POST /api/v1/sys/im/friend/accept
+// @Summary      即时通讯好友接受申请
+// @Description  访问 /api/v1/sys/im/friend/accept，即时通讯好友接受申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.HandleRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/accept [post]
 func acceptHandler(c *gin.Context) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -188,6 +212,14 @@ func acceptHandler(c *gin.Context) {
 }
 
 // clientAcceptHandler handles POST /api/v1/c/im/friend/accept
+// @Summary      即时通讯好友接受申请
+// @Description  访问 /api/v1/c/im/friend/accept，即时通讯好友接受申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.HandleRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/accept [post]
 func clientAcceptHandler(c *gin.Context) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -199,6 +231,14 @@ func clientAcceptHandler(c *gin.Context) {
 }
 
 // rejectHandler handles POST /api/v1/sys/im/friend/reject
+// @Summary      即时通讯好友拒绝申请
+// @Description  访问 /api/v1/sys/im/friend/reject，即时通讯好友拒绝申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.HandleRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/reject [post]
 func rejectHandler(c *gin.Context) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -210,6 +250,14 @@ func rejectHandler(c *gin.Context) {
 }
 
 // clientRejectHandler handles POST /api/v1/c/im/friend/reject
+// @Summary      即时通讯好友拒绝申请
+// @Description  访问 /api/v1/c/im/friend/reject，即时通讯好友拒绝申请
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.HandleRequestParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/reject [post]
 func clientRejectHandler(c *gin.Context) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -221,30 +269,66 @@ func clientRejectHandler(c *gin.Context) {
 }
 
 // listHandler handles GET /api/v1/sys/im/friend/list
+// @Summary      即时通讯好友列表查询
+// @Description  访问 /api/v1/sys/im/friend/list，即时通讯好友列表查询
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/list [get]
 func listHandler(c *gin.Context) {
 	list := friend.FriendList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
 // clientListHandler handles GET /api/v1/c/im/friend/list
+// @Summary      即时通讯好友列表查询
+// @Description  访问 /api/v1/c/im/friend/list，即时通讯好友列表查询
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/list [get]
 func clientListHandler(c *gin.Context) {
 	list := friend.FriendList(c, string(enums.LoginTypeConsumer))
 	result.Success(c, list)
 }
 
 // pendingRequestsHandler handles GET /api/v1/sys/im/friend/pending-requests
+// @Summary      即时通讯好友待处理申请列表
+// @Description  访问 /api/v1/sys/im/friend/pending-requests，即时通讯好友待处理申请列表
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/pending-requests [get]
 func pendingRequestsHandler(c *gin.Context) {
 	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeBusiness))
 	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
 }
 
 // clientPendingRequestsHandler handles GET /api/v1/c/im/friend/pending-requests
+// @Summary      即时通讯好友待处理申请列表
+// @Description  访问 /api/v1/c/im/friend/pending-requests，即时通讯好友待处理申请列表
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/pending-requests [get]
 func clientPendingRequestsHandler(c *gin.Context) {
 	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeConsumer))
 	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
 }
 
 // removeHandler handles POST /api/v1/sys/im/friend/remove
+// @Summary      即时通讯好友删除
+// @Description  访问 /api/v1/sys/im/friend/remove，即时通讯好友删除
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.RemoveFriendParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/remove [post]
 func removeHandler(c *gin.Context) {
 	var param friend.RemoveFriendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -256,6 +340,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // clientRemoveHandler handles POST /api/v1/c/im/friend/remove
+// @Summary      即时通讯好友删除
+// @Description  访问 /api/v1/c/im/friend/remove，即时通讯好友删除
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.RemoveFriendParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/remove [post]
 func clientRemoveHandler(c *gin.Context) {
 	var param friend.RemoveFriendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -267,6 +359,14 @@ func clientRemoveHandler(c *gin.Context) {
 }
 
 // blockHandler handles POST /api/v1/sys/im/friend/block
+// @Summary      即时通讯好友拉黑
+// @Description  访问 /api/v1/sys/im/friend/block，即时通讯好友拉黑
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.BlockParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/block [post]
 func blockHandler(c *gin.Context) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -278,6 +378,14 @@ func blockHandler(c *gin.Context) {
 }
 
 // clientBlockHandler handles POST /api/v1/c/im/friend/block
+// @Summary      即时通讯好友拉黑
+// @Description  访问 /api/v1/c/im/friend/block，即时通讯好友拉黑
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.BlockParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/block [post]
 func clientBlockHandler(c *gin.Context) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -289,6 +397,14 @@ func clientBlockHandler(c *gin.Context) {
 }
 
 // unblockHandler handles POST /api/v1/sys/im/friend/unblock
+// @Summary      即时通讯好友取消拉黑
+// @Description  访问 /api/v1/sys/im/friend/unblock，即时通讯好友取消拉黑
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.BlockParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/unblock [post]
 func unblockHandler(c *gin.Context) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -300,6 +416,14 @@ func unblockHandler(c *gin.Context) {
 }
 
 // clientUnblockHandler handles POST /api/v1/c/im/friend/unblock
+// @Summary      即时通讯好友取消拉黑
+// @Description  访问 /api/v1/c/im/friend/unblock，即时通讯好友取消拉黑
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.BlockParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/unblock [post]
 func clientUnblockHandler(c *gin.Context) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -311,18 +435,40 @@ func clientUnblockHandler(c *gin.Context) {
 }
 
 // blockListHandler handles GET /api/v1/sys/im/friend/block-list
+// @Summary      即时通讯好友拉黑列表
+// @Description  访问 /api/v1/sys/im/friend/block-list，即时通讯好友拉黑列表
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/block-list [get]
 func blockListHandler(c *gin.Context) {
 	list := friend.FriendBlockList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
 // clientBlockListHandler handles GET /api/v1/c/im/friend/block-list
+// @Summary      即时通讯好友拉黑列表
+// @Description  访问 /api/v1/c/im/friend/block-list，即时通讯好友拉黑列表
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/block-list [get]
 func clientBlockListHandler(c *gin.Context) {
 	list := friend.FriendBlockList(c, string(enums.LoginTypeConsumer))
 	result.Success(c, list)
 }
 
 // remarkHandler handles POST /api/v1/sys/im/friend/remark
+// @Summary      即时通讯好友设置备注
+// @Description  访问 /api/v1/sys/im/friend/remark，即时通讯好友设置备注
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.RemarkParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/remark [post]
 func remarkHandler(c *gin.Context) {
 	var param friend.RemarkParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -334,6 +480,14 @@ func remarkHandler(c *gin.Context) {
 }
 
 // clientRemarkHandler handles POST /api/v1/c/im/friend/remark
+// @Summary      即时通讯好友设置备注
+// @Description  访问 /api/v1/c/im/friend/remark，即时通讯好友设置备注
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        body  body  friend.RemarkParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/friend/remark [post]
 func clientRemarkHandler(c *gin.Context) {
 	var param friend.RemarkParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -345,6 +499,16 @@ func clientRemarkHandler(c *gin.Context) {
 }
 
 // searchHandler handles GET /api/v1/sys/im/friend/search and GET /api/v1/c/im/friend/search
+// @Summary      即时通讯好友搜索
+// @Description  访问 /api/v1/sys/im/friend/search，即时通讯好友搜索
+// @Tags         即时通讯好友
+// @Accept       json
+// @Produce      json
+// @Param        keyword  query  string  false  "keyword"
+// @Param        size  query  string  false  "size"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/friend/search [get]
+// @Router       /api/v1/c/im/friend/search [get]
 func searchHandler(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20

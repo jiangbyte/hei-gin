@@ -81,6 +81,16 @@ func init() {
 }
 
 // uploadHandler handles POST /api/v1/sys/file/upload
+// @Summary      文件管理上传文件
+// @Description  访问 /api/v1/sys/file/upload，文件管理上传文件
+// @Tags         文件管理
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file  formData  file  true  "上传文件"
+// @Param        engine  formData  string  false  "存储引擎"
+// @Param        bucket  formData  string  false  "存储桶"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/upload [post]
 func uploadHandler(c *gin.Context) {
 	data, err := file.FileUpload(c)
 	if err != nil {
@@ -91,6 +101,16 @@ func uploadHandler(c *gin.Context) {
 }
 
 // clientUploadHandler handles POST /api/v1/c/file/upload
+// @Summary      文件管理上传文件
+// @Description  访问 /api/v1/c/file/upload，文件管理上传文件
+// @Tags         文件管理
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file  formData  file  true  "上传文件"
+// @Param        engine  formData  string  false  "存储引擎"
+// @Param        bucket  formData  string  false  "存储桶"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/file/upload [post]
 func clientUploadHandler(c *gin.Context) {
 	data, err := file.FileUpload(c)
 	if err != nil {
@@ -101,6 +121,14 @@ func clientUploadHandler(c *gin.Context) {
 }
 
 // downloadHandler handles GET /api/v1/sys/file/download
+// @Summary      文件管理下载
+// @Description  访问 /api/v1/sys/file/download，文件管理下载
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/download [get]
 func downloadHandler(c *gin.Context) {
 	if err := file.FileDownload(c, c.Query("id")); err != nil {
 		result.Failure(c, err.Error(), 400)
@@ -108,6 +136,14 @@ func downloadHandler(c *gin.Context) {
 }
 
 // pageHandler handles GET /api/v1/sys/file/page
+// @Summary      文件管理分页查询
+// @Description  访问 /api/v1/sys/file/page，文件管理分页查询
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        query  query  file.FilePageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/page [get]
 func pageHandler(c *gin.Context) {
 	var param file.FilePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -119,12 +155,28 @@ func pageHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/file/detail
+// @Summary      文件管理详情查询
+// @Description  访问 /api/v1/sys/file/detail，文件管理详情查询
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := file.FileDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // removeHandler handles POST /api/v1/sys/file/remove
+// @Summary      文件管理删除
+// @Description  访问 /api/v1/sys/file/remove，文件管理删除
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -137,6 +189,14 @@ func removeHandler(c *gin.Context) {
 }
 
 // removeAbsoluteHandler handles POST /api/v1/sys/file/remove-absolute
+// @Summary      文件管理接口调用
+// @Description  访问 /api/v1/sys/file/remove-absolute，文件管理接口调用
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/remove-absolute [post]
 func removeAbsoluteHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -149,6 +209,14 @@ func removeAbsoluteHandler(c *gin.Context) {
 }
 
 // uploadInitHandler handles POST /api/v1/sys/file/upload/init
+// @Summary      文件管理初始化分片上传
+// @Description  访问 /api/v1/sys/file/upload/init，文件管理初始化分片上传
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  file.ChunkUploadInitParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/upload/init [post]
 func uploadInitHandler(c *gin.Context) {
 	var param file.ChunkUploadInitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -165,6 +233,17 @@ func uploadInitHandler(c *gin.Context) {
 }
 
 // uploadChunkHandler handles POST /api/v1/sys/file/upload/chunk
+// @Summary      文件管理上传分片
+// @Description  访问 /api/v1/sys/file/upload/chunk，文件管理上传分片
+// @Tags         文件管理
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        chunk_index  formData  string  false  "chunk_index"
+// @Param        total_chunks  formData  string  false  "total_chunks"
+// @Param        upload_id  formData  string  false  "upload_id"
+// @Param        checksum  formData  string  false  "checksum"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/upload/chunk [post]
 func uploadChunkHandler(c *gin.Context) {
 	chunkIndex, err := strconv.Atoi(c.PostForm("chunk_index"))
 	if err != nil {
@@ -198,6 +277,14 @@ func uploadChunkHandler(c *gin.Context) {
 }
 
 // uploadCompleteHandler handles POST /api/v1/sys/file/upload/complete
+// @Summary      文件管理完成分片上传
+// @Description  访问 /api/v1/sys/file/upload/complete，文件管理完成分片上传
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  file.ChunkCompleteParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/upload/complete [post]
 func uploadCompleteHandler(c *gin.Context) {
 	var param file.ChunkCompleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -214,6 +301,14 @@ func uploadCompleteHandler(c *gin.Context) {
 }
 
 // uploadAbortHandler handles POST /api/v1/sys/file/upload/abort
+// @Summary      文件管理取消分片上传
+// @Description  访问 /api/v1/sys/file/upload/abort，文件管理取消分片上传
+// @Tags         文件管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  file.ChunkAbortParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/file/upload/abort [post]
 func uploadAbortHandler(c *gin.Context) {
 	var param file.ChunkAbortParam
 	if err := c.ShouldBindJSON(&param); err != nil {

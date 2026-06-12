@@ -75,6 +75,14 @@ func init() {
 }
 
 // sendHandler handles POST /api/v1/sys/im/broadcast/send
+// @Summary      即时通讯广播发送消息
+// @Description  访问 /api/v1/sys/im/broadcast/send，即时通讯广播发送消息
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Param        body  body  broadcast.SendBroadcastParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/broadcast/send [post]
 func sendHandler(c *gin.Context) {
 	var param broadcast.SendBroadcastParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -86,6 +94,15 @@ func sendHandler(c *gin.Context) {
 }
 
 // listHandler handles GET /api/v1/sys/im/broadcast/list
+// @Summary      即时通讯广播列表查询
+// @Description  访问 /api/v1/sys/im/broadcast/list，即时通讯广播列表查询
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Param        cursor  query  string  false  "cursor"
+// @Param        size  query  string  false  "size"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/broadcast/list [get]
 func listHandler(c *gin.Context) {
 	cursor := c.Query("cursor")
 	size := 20
@@ -99,18 +116,40 @@ func listHandler(c *gin.Context) {
 }
 
 // unreadListHandler handles GET /api/v1/sys/im/broadcast/unread-list
+// @Summary      即时通讯广播未读列表
+// @Description  访问 /api/v1/sys/im/broadcast/unread-list，即时通讯广播未读列表
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/broadcast/unread-list [get]
 func unreadListHandler(c *gin.Context) {
 	list := broadcast.BroadcastUnreadList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
 // clientUnreadListHandler handles GET /api/v1/c/im/broadcast/unread-list
+// @Summary      即时通讯广播未读列表
+// @Description  访问 /api/v1/c/im/broadcast/unread-list，即时通讯广播未读列表
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/broadcast/unread-list [get]
 func clientUnreadListHandler(c *gin.Context) {
 	list := broadcast.BroadcastUnreadList(c, string(enums.LoginTypeConsumer))
 	result.Success(c, list)
 }
 
 // readHandler handles POST /api/v1/sys/im/broadcast/read
+// @Summary      即时通讯广播标记已读
+// @Description  访问 /api/v1/sys/im/broadcast/read，即时通讯广播标记已读
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Param        body  body  broadcast.ReadParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/broadcast/read [post]
 func readHandler(c *gin.Context) {
 	var param broadcast.ReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -122,6 +161,14 @@ func readHandler(c *gin.Context) {
 }
 
 // clientReadHandler handles POST /api/v1/c/im/broadcast/read
+// @Summary      即时通讯广播标记已读
+// @Description  访问 /api/v1/c/im/broadcast/read，即时通讯广播标记已读
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Param        body  body  broadcast.ReadParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/c/im/broadcast/read [post]
 func clientReadHandler(c *gin.Context) {
 	var param broadcast.ReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -133,6 +180,15 @@ func clientReadHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/im/broadcast/detail and GET /api/v1/c/im/broadcast/detail
+// @Summary      即时通讯广播详情查询
+// @Description  访问 /api/v1/sys/im/broadcast/detail，即时通讯广播详情查询
+// @Tags         即时通讯广播
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/broadcast/detail [get]
+// @Router       /api/v1/c/im/broadcast/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := broadcast.BroadcastDetail(c, c.Query("id"))
 	result.Success(c, vo)

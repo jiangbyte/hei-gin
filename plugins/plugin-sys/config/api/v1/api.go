@@ -66,6 +66,14 @@ func init() {
 }
 
 // pageHandler handles GET /api/v1/sys/config/page
+// @Summary      系统配置分页查询
+// @Description  访问 /api/v1/sys/config/page，系统配置分页查询
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        query  query  config.ConfigPageParam  false  "查询参数"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/page [get]
 func pageHandler(c *gin.Context) {
 	var param config.ConfigPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -77,12 +85,28 @@ func pageHandler(c *gin.Context) {
 }
 
 // listByCategoryHandler handles GET /api/v1/sys/config/list-by-category
+// @Summary      系统配置按分类列表查询
+// @Description  访问 /api/v1/sys/config/list-by-category，系统配置按分类列表查询
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        category  query  string  false  "category"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/list-by-category [get]
 func listByCategoryHandler(c *gin.Context) {
 	vos := config.ConfigListByCategory(c, c.Query("category"))
 	result.Success(c, vos)
 }
 
 // createHandler handles POST /api/v1/sys/config/create
+// @Summary      系统配置创建
+// @Description  访问 /api/v1/sys/config/create，系统配置创建
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  config.ConfigVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/create [post]
 func createHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -95,6 +119,14 @@ func createHandler(c *gin.Context) {
 }
 
 // modifyHandler handles POST /api/v1/sys/config/modify
+// @Summary      系统配置修改
+// @Description  访问 /api/v1/sys/config/modify，系统配置修改
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  config.ConfigVO  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -107,6 +139,14 @@ func modifyHandler(c *gin.Context) {
 }
 
 // removeHandler handles POST /api/v1/sys/config/remove
+// @Summary      系统配置删除
+// @Description  访问 /api/v1/sys/config/remove，系统配置删除
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -119,12 +159,28 @@ func removeHandler(c *gin.Context) {
 }
 
 // detailHandler handles GET /api/v1/sys/config/detail
+// @Summary      系统配置详情查询
+// @Description  访问 /api/v1/sys/config/detail，系统配置详情查询
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        id  query  string  false  "id"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := config.ConfigDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
 // editBatchHandler handles POST /api/v1/sys/config/edit-batch
+// @Summary      系统配置批量编辑
+// @Description  访问 /api/v1/sys/config/edit-batch，系统配置批量编辑
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  config.ConfigBatchEditParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/edit-batch [post]
 func editBatchHandler(c *gin.Context) {
 	var param config.ConfigBatchEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -137,6 +193,14 @@ func editBatchHandler(c *gin.Context) {
 }
 
 // editByCategoryHandler handles POST /api/v1/sys/config/edit-by-category
+// @Summary      系统配置按分类批量编辑
+// @Description  访问 /api/v1/sys/config/edit-by-category，系统配置按分类批量编辑
+// @Tags         系统配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  config.ConfigCategoryEditParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/config/edit-by-category [post]
 func editByCategoryHandler(c *gin.Context) {
 	var param config.ConfigCategoryEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {

@@ -46,12 +46,27 @@ func init() {
 }
 
 // getHandler handles GET /api/v1/sys/home
+// @Summary      首页配置接口调用
+// @Description  访问 /api/v1/sys/home，首页配置接口调用
+// @Tags         首页配置
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/home [get]
 func getHandler(c *gin.Context) {
 	data := home.HomeGet(c)
 	result.Success(c, data)
 }
 
 // addQuickActionHandler handles POST /api/v1/sys/home/quick-actions/add
+// @Summary      首页配置新增
+// @Description  访问 /api/v1/sys/home/quick-actions/add，首页配置新增
+// @Tags         首页配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  home.AddQuickActionParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/home/quick-actions/add [post]
 func addQuickActionHandler(c *gin.Context) {
 	var param home.AddQuickActionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -63,6 +78,14 @@ func addQuickActionHandler(c *gin.Context) {
 }
 
 // removeQuickActionHandler handles POST /api/v1/sys/home/quick-actions/remove
+// @Summary      首页配置删除
+// @Description  访问 /api/v1/sys/home/quick-actions/remove，首页配置删除
+// @Tags         首页配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/home/quick-actions/remove [post]
 func removeQuickActionHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -74,6 +97,14 @@ func removeQuickActionHandler(c *gin.Context) {
 }
 
 // sortQuickActionsHandler handles POST /api/v1/sys/home/quick-actions/sort
+// @Summary      首页配置排序
+// @Description  访问 /api/v1/sys/home/quick-actions/sort，首页配置排序
+// @Tags         首页配置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/home/quick-actions/sort [post]
 func sortQuickActionsHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
