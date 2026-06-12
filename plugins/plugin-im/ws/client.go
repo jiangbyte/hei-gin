@@ -55,6 +55,10 @@ func (c *Client) ReadPump() {
 		switch msg.Type {
 		case MsgHeartbeat:
 			c.SendPong()
+		case "auth":
+			// Browser clients that still send a post-connect auth frame are tolerated.
+			// Authentication is already completed during the HTTP upgrade.
+			continue
 		}
 	}
 }
