@@ -4,11 +4,11 @@ import (
 	message "hei-gin/plugins/plugin-im/message"
 	ws "hei-gin/plugins/plugin-im/ws"
 	file "hei-gin/plugins/plugin-sys/file"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/plugin"
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/result"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/kernel/plugin"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 

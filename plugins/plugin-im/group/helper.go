@@ -7,8 +7,8 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/storage"
+	"hei-gin/sdk/infra/storage"
+	"hei-gin/sdk/web/exception"
 
 	imModel "hei-gin/plugins/plugin-im/model"
 

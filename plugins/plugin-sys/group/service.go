@@ -6,9 +6,9 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

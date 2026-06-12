@@ -3,12 +3,12 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 
-	"hei-gin/sdk/registry"
+	resource "hei-gin/plugins/plugin-sys/resource"
 	authmw "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/result"
-	resource "hei-gin/plugins/plugin-sys/resource"
+	"hei-gin/sdk/web/result"
 )
 
 // RegisterRoutes registers all module and resource routes on the given gin engine.

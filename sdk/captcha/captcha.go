@@ -1,13 +1,13 @@
 package captcha
 
 import (
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/plugin"
 	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/kernel/plugin"
 	"image"
 	"image/color"
 	"image/draw"
@@ -17,7 +17,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -264,7 +263,6 @@ var (
 	BCaptcha = NewCaptchaService("BUSINESS:captcha:")
 	CCaptcha = NewCaptchaService("CONSUMER:captcha:")
 )
-
 
 // ---- plugin registration ----
 

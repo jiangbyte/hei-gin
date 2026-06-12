@@ -4,7 +4,7 @@ import (
 	"context"
 
 	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
 )
 

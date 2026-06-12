@@ -11,9 +11,9 @@ import (
 	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
-	"hei-gin/sdk/contracts"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/shared/contracts"
 )
 
 type PermissionProvider struct{}

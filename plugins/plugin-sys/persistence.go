@@ -4,8 +4,8 @@ import (
 	"time"
 
 	syslog "hei-gin/plugins/plugin-sys/log"
-	"hei-gin/sdk/contracts"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/shared/contracts"
 	"hei-gin/sdk/utils"
 )
 

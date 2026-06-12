@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 
 	"github.com/gin-gonic/gin"
 

@@ -7,7 +7,7 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/result"
+	"hei-gin/sdk/web/result"
 )
 
 // AuthResult holds the result of WebSocket authentication.

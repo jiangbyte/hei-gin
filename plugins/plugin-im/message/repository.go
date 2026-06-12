@@ -3,10 +3,10 @@ package message
 import (
 	"context"
 
-	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/utils"
 	"gorm.io/gorm/clause"
+	imModel "hei-gin/plugins/plugin-im/model"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/utils"
 )
 
 func CreateMessages(ctx context.Context, records []imModel.Message) error {
@@ -35,7 +35,7 @@ func Page(ctx context.Context, userID, userType, status string, current, size in
 	var total int64
 	query.Count(&total)
 	var records []imModel.Message
-	query.Order("created_at DESC").Limit(size).Offset((current-1)*size).Find(&records)
+	query.Order("created_at DESC").Limit(size).Offset((current - 1) * size).Find(&records)
 	return records, total
 }
 

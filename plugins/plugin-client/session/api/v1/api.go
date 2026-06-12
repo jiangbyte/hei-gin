@@ -1,9 +1,9 @@
 package v1
 
 import (
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/result"
 	clientsession "hei-gin/plugins/plugin-client/session"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

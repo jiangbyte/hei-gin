@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 )
 
 type service struct {

@@ -20,8 +20,8 @@ import (
 	"hei-gin/plugins/plugin-sys/resource"
 	"hei-gin/plugins/plugin-sys/role"
 	"hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
 )
 

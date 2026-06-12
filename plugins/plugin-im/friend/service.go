@@ -3,12 +3,12 @@ package friend
 import (
 	imModel "hei-gin/plugins/plugin-im/model"
 
+	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	"hei-gin/plugins/plugin-im/ws"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

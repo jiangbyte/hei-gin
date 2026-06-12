@@ -2,7 +2,7 @@ package plugin_im
 
 import (
 	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 func init() {

@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"hei-gin/sdk/result"
 	"context"
 	"fmt"
+	"hei-gin/sdk/web/result"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -96,7 +96,7 @@ func HasPermission(c *gin.Context, permission, loginType string) bool {
 
 func CheckPermission(c *gin.Context, permission, loginType string) {
 	if !HasPermission(c, permission, loginType) {
-		result.Failure(c,  fmt.Sprintf("缺少权限: %s", permission), 403)
+		result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403)
 	}
 }
 
@@ -111,7 +111,7 @@ func HasPermissionAnd(c *gin.Context, loginType string, permissions ...string) b
 func CheckPermissionAnd(c *gin.Context, loginType string, permissions ...string) {
 	for _, permission := range permissions {
 		if !HasPermission(c, permission, loginType) {
-			result.Failure(c,  fmt.Sprintf("缺少权限: %s", permission), 403)
+			result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403)
 			return
 		}
 	}
@@ -127,7 +127,7 @@ func HasPermissionOr(c *gin.Context, loginType string, permissions ...string) bo
 
 func CheckPermissionOr(c *gin.Context, loginType string, permissions ...string) {
 	if !HasPermissionOr(c, loginType, permissions...) {
-		result.Failure(c,  fmt.Sprintf("缺少权限: %v", permissions), 403)
+		result.Failure(c, fmt.Sprintf("缺少权限: %v", permissions), 403)
 	}
 }
 
@@ -146,7 +146,7 @@ func HasRole(c *gin.Context, role, loginType string) bool {
 
 func CheckRole(c *gin.Context, role, loginType string) {
 	if !HasRole(c, role, loginType) {
-		result.Failure(c,  fmt.Sprintf("缺少角色: %s", role), 403)
+		result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403)
 	}
 }
 
@@ -170,7 +170,7 @@ func HasRoleAnd(c *gin.Context, loginType string, roles ...string) bool {
 func CheckRoleAnd(c *gin.Context, loginType string, roles ...string) {
 	for _, role := range roles {
 		if !HasRole(c, role, loginType) {
-			result.Failure(c,  fmt.Sprintf("缺少角色: %s", role), 403)
+			result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403)
 			return
 		}
 	}
@@ -195,7 +195,7 @@ func HasRoleOr(c *gin.Context, loginType string, roles ...string) bool {
 
 func CheckRoleOr(c *gin.Context, loginType string, roles ...string) {
 	if !HasRoleOr(c, loginType, roles...) {
-		result.Failure(c,  fmt.Sprintf("缺少角色: %v", roles), 403)
+		result.Failure(c, fmt.Sprintf("缺少角色: %v", roles), 403)
 	}
 }
 

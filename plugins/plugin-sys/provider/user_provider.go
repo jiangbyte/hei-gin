@@ -2,7 +2,7 @@ package provider
 
 import (
 	"hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 type UserProvider struct{}

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	imModel "hei-gin/plugins/plugin-im/model"
 	ws "hei-gin/plugins/plugin-im/ws"

@@ -3,8 +3,8 @@ package v1
 import (
 	"hei-gin/plugins/plugin-sys/auth/username"
 	"hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/registry"
 
 	"github.com/gin-gonic/gin"
 )

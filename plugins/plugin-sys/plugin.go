@@ -6,9 +6,9 @@ import (
 
 	"hei-gin/plugins/plugin-sys/provider"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/contracts"
+	"hei-gin/sdk/kernel/plugin"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/shared/contracts"
 	"hei-gin/sdk/utils"
 )
 

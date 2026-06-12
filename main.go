@@ -14,7 +14,7 @@ package main
 // @description                 Bearer token authentication
 
 import (
-	"hei-gin/sdk/app"
+	"hei-gin/sdk/kernel/app"
 
 	// Plugin route/permission self-registration
 	_ "hei-gin/plugins/plugin-client"

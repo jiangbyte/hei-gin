@@ -6,7 +6,7 @@ import (
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/kernel/plugin"
 
 	"github.com/gin-gonic/gin"
 )

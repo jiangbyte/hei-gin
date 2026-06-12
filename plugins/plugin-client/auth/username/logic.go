@@ -3,15 +3,15 @@ package username
 import (
 	"golang.org/x/crypto/bcrypt"
 
+	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/captcha"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	cliUser "hei-gin/plugins/plugin-client/user"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

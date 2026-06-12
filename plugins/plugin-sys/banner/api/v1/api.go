@@ -3,10 +3,10 @@ package v1
 import (
 	banner "hei-gin/plugins/plugin-sys/banner"
 	"hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

@@ -11,7 +11,7 @@ import (
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/constants"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 // permissionCacheTTL is the TTL for the Redis permission cache.

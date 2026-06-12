@@ -3,9 +3,9 @@ package v1
 import (
 	"hei-gin/plugins/plugin-client/auth/username"
 	"hei-gin/sdk/auth/middleware"
-	"hei-gin/sdk/log"
-	"hei-gin/sdk/registry"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/log"
 
 	"github.com/gin-gonic/gin"
 )

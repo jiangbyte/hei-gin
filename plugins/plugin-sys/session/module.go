@@ -1,7 +1,7 @@
 package session
 
 import (
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 type module struct {

@@ -1,12 +1,12 @@
 package v1
 
 import (
-	"hei-gin/sdk/auth/middleware"
-	"hei-gin/sdk/log"
-	"hei-gin/sdk/result"
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/utils"
 	home "hei-gin/plugins/plugin-sys/home"
+	"hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/log"
+	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

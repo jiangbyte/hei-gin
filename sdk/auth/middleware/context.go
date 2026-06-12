@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 
 	"github.com/gin-gonic/gin"
 )

@@ -11,7 +11,7 @@ import (
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/eventbus"
+	"hei-gin/sdk/infra/eventbus"
 
 	"github.com/redis/go-redis/v9"
 )

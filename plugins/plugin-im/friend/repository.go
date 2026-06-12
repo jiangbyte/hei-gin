@@ -6,7 +6,7 @@ import (
 	cliUser "hei-gin/plugins/plugin-client/user"
 	imModel "hei-gin/plugins/plugin-im/model"
 	sysUser "hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 func CountFriendship(ctx context.Context, userID, userType, friendID, friendType string) int64 {

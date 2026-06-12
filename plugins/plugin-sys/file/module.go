@@ -1,6 +1,6 @@
 package file
 
-import "hei-gin/sdk/db"
+import "hei-gin/sdk/infra/db"
 
 type module struct {
 	service *service

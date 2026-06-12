@@ -3,14 +3,14 @@ package v1
 import (
 	"strconv"
 
-	"hei-gin/sdk/result"
 	"hei-gin/plugins/plugin-im/group"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/middleware"
 	authMW "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
+	"hei-gin/sdk/web/middleware"
 )
 
 func RegisterRoutes(r *gin.Engine) {

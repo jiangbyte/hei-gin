@@ -1,9 +1,9 @@
 package v1
 
 import (
-	"hei-gin/sdk/registry"
-	"hei-gin/sdk/result"
 	analyze "hei-gin/plugins/plugin-sys/analyze"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

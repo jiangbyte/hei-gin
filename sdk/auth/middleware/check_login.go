@@ -3,7 +3,7 @@ package middleware
 import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/result"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

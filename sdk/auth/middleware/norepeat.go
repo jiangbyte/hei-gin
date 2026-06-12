@@ -12,7 +12,7 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"

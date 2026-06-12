@@ -6,9 +6,9 @@ import (
 
 	"gorm.io/gorm/clause"
 	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/exception"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
 )
 
 type groupCountRow struct {

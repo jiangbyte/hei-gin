@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"hei-gin/sdk/exception"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
 
 	"github.com/gin-gonic/gin"
 )

@@ -5,9 +5,9 @@ import (
 
 	resModel "hei-gin/plugins/plugin-sys/resource"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

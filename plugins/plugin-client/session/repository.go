@@ -4,7 +4,7 @@ import (
 	"context"
 
 	cliUser "hei-gin/plugins/plugin-client/user"
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 func LoadUsers(ctx context.Context, userIDs []string) map[string]*cliUser.ClientUser {

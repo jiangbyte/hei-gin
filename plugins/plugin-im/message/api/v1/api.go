@@ -7,13 +7,13 @@ import (
 	"hei-gin/plugins/plugin-im/message"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 	authMW "hei-gin/sdk/auth/middleware"
-	"hei-gin/sdk/middleware"
-	"hei-gin/sdk/registry"
+	"hei-gin/sdk/kernel/registry"
+	"hei-gin/sdk/web/middleware"
 )
 
 func RegisterRoutes(r *gin.Engine) {

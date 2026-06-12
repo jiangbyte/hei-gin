@@ -9,7 +9,7 @@ import (
 	"time"
 
 	logModel "hei-gin/plugins/plugin-sys/log"
-	"hei-gin/sdk/result"
+	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
 )

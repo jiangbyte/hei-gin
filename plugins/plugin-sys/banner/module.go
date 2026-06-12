@@ -1,6 +1,6 @@
 package banner
 
-import "hei-gin/sdk/db"
+import "hei-gin/sdk/infra/db"
 
 type Module struct {
 	service *Service

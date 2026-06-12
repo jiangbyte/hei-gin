@@ -1,13 +1,13 @@
 package plugin_client
 
 import (
-	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/kernel/plugin"
 
 	// Blank-import to trigger model registration and route registration
-	_ "hei-gin/plugins/plugin-client/user"
-	_ "hei-gin/plugins/plugin-client/user/api/v1"
 	_ "hei-gin/plugins/plugin-client/session"
 	_ "hei-gin/plugins/plugin-client/session/api/v1"
+	_ "hei-gin/plugins/plugin-client/user"
+	_ "hei-gin/plugins/plugin-client/user/api/v1"
 
 	_ "hei-gin/plugins/plugin-client/auth/captcha/api/v1"
 	_ "hei-gin/plugins/plugin-client/auth/sm2/api/v1"

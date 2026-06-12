@@ -8,12 +8,12 @@ import (
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/captcha"
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
+	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 )
 
 // DoLogin handles username/password login.

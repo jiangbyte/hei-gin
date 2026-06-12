@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 
-	"hei-gin/sdk/db"
+	"hei-gin/sdk/infra/db"
 )
 
 func Page(ctx context.Context, p *ClientUserPageParam) ([]ClientUser, int64) {
@@ -18,7 +18,7 @@ func Page(ctx context.Context, p *ClientUserPageParam) ([]ClientUser, int64) {
 	var total int64
 	q.Count(&total)
 	var rows []ClientUser
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 

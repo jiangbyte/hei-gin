@@ -7,9 +7,9 @@ import (
 
 	imModel "hei-gin/plugins/plugin-im/model"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 
 	"hei-gin/plugins/plugin-im/group"
 

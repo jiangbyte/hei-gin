@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"hei-gin/sdk/contracts"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/shared/contracts"
 )
 
 var PermissionDelegate contracts.PermissionAPI

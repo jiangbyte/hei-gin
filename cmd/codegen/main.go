@@ -340,7 +340,7 @@ replace hei-gin/sdk => ../../sdk
 var pluginGoTmpl = `package @PKG@
 
 import (
-	"hei-gin/sdk/plugin"
+	"hei-gin/sdk/kernel/plugin"
 )
 
 type @PASCAL@Plugin struct {
@@ -392,7 +392,7 @@ func (@MODULE_PASCAL@) TableName() string { return "sys_@MODULE@_template" }
 
 var migrateGoTmpl = `package @MODULE@
 
-import "hei-gin/sdk/db"
+import "hei-gin/sdk/infra/db"
 
 func init() {
 	db.RegisterModel(&@MODULE_PASCAL@{})
@@ -471,9 +471,9 @@ var serviceGoTmpl = `package @MODULE@
 import (
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
+	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/web/exception"
+	"hei-gin/sdk/web/result"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 
@@ -591,8 +591,8 @@ var apiV1GoTmpl = `package v1
 
 import (
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/result"
-	"hei-gin/sdk/registry"
+	"hei-gin/sdk/web/result"
+	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
 	@MODULE@ "hei-gin/plugins/@FULL@/@MODULE@"
 
