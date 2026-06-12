@@ -7,7 +7,6 @@ require (
 	github.com/redis/go-redis/v9 v9.19.0
 	golang.org/x/crypto v0.51.0
 	gorm.io/gorm v1.25.12
-	hei-gin/api v0.0.0
 	hei-gin/sdk v0.0.0
 )
 
@@ -84,7 +83,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 )
-
-replace hei-gin/api => ../../api
 
 replace hei-gin/sdk => ../../sdk

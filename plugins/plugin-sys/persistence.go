@@ -3,16 +3,16 @@ package plugin_sys
 import (
 	"time"
 
-	"hei-gin/api"
-	"hei-gin/sdk/db"
 	syslog "hei-gin/plugins/plugin-sys/log"
+	"hei-gin/sdk/contracts"
+	"hei-gin/sdk/db"
 	"hei-gin/sdk/utils"
 )
 
-// logPersister implements api.LogPersistenceAPI by saving to the sys_log table.
+// logPersister implements contracts.LogPersistenceAPI by saving to the sys_log table.
 type logPersister struct{}
 
-func (p *logPersister) SaveLog(entry api.LogEntry) error {
+func (p *logPersister) SaveLog(entry contracts.LogEntry) error {
 	now := time.Now()
 	sysEntry := syslog.SysLog{
 		ID:         utils.GenerateID(),
@@ -42,4 +42,4 @@ func (p *logPersister) SaveLog(entry api.LogEntry) error {
 }
 
 // Ensure compile-time check.
-var _ api.LogPersistenceAPI = (*logPersister)(nil)
+var _ contracts.LogPersistenceAPI = (*logPersister)(nil)

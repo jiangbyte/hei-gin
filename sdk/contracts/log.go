@@ -1,4 +1,4 @@
-package api
+package contracts
 
 type LogPersistenceAPI interface {
 	SaveLog(entry LogEntry) error

@@ -7,13 +7,13 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/api"
+	roleModel "hei-gin/plugins/plugin-sys/role"
+	userModel "hei-gin/plugins/plugin-sys/user"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/constants"
+	"hei-gin/sdk/contracts"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/auth"
-	userModel "hei-gin/plugins/plugin-sys/user"
-	roleModel "hei-gin/plugins/plugin-sys/role"
 )
 
 type PermissionProvider struct{}
@@ -60,7 +60,6 @@ func (p *PermissionProvider) isSuperAdmin(ctx context.Context, roleIDs []string)
 }
 
 func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error) {
-	
 
 	roleIDs, err := p.getRoleIDs(ctx, loginID)
 	if err != nil {
@@ -104,7 +103,6 @@ func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID stri
 }
 
 func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType string) ([]string, error) {
-	
 
 	roleIDs, err := p.getRoleIDs(ctx, loginID)
 	if err != nil || len(roleIDs) == 0 {
@@ -124,11 +122,10 @@ func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType
 	return roleCodes, nil
 }
 
-func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID, loginType string) (map[string]api.ScopeInfo, error) {
-	
+func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID, loginType string) (map[string]contracts.ScopeInfo, error) {
 
 	if loginType != string(enums.LoginTypeBusiness) && loginType != string(enums.LoginTypeConsumer) {
-		return map[string]api.ScopeInfo{}, nil
+		return map[string]contracts.ScopeInfo{}, nil
 	}
 
 	// Single call to get role IDs — reused below instead of calling getRoleIDs twice
@@ -147,9 +144,9 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID,
 				if cacheErr != nil {
 					return nil, cacheErr
 				}
-				result := make(map[string]api.ScopeInfo, len(allCodes))
+				result := make(map[string]contracts.ScopeInfo, len(allCodes))
 				for _, code := range allCodes {
-					result[code] = api.ScopeInfo{
+					result[code] = contracts.ScopeInfo{
 						GroupScope:     string(enums.DataScopeAll),
 						OrgScope:       string(enums.DataScopeAll),
 						CustomGroupIDs: []string{},
@@ -197,9 +194,9 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID,
 		auth.MergeScope(permScope, string(enums.PermissionPathDirect), scopeRows)
 	}
 
-	result := make(map[string]api.ScopeInfo, len(permScope))
+	result := make(map[string]contracts.ScopeInfo, len(permScope))
 	for k, v := range permScope {
-		result[k] = api.ScopeInfo{
+		result[k] = contracts.ScopeInfo{
 			GroupScope:     safeString(v["group_scope"]),
 			OrgScope:       safeString(v["org_scope"]),
 			CustomGroupIDs: safeStringSlice(v["custom_group_ids"]),

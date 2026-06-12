@@ -1,4 +1,4 @@
-package api
+package contracts
 
 type Event struct {
 	Topic string

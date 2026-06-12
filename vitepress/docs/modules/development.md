@@ -42,16 +42,15 @@ plugins/<plugin-name>/
 package plugin_sys
 
 import (
-    "hei-gin/api"
-    "hei-gin/sdk/module"
+    "hei-gin/sdk/plugin"
 )
 
 type SysPlugin struct {
-    module.NoopModule
+    plugin.NoopPlugin
 }
 
-func (p *SysPlugin) Info() api.PluginInfo {
-    return api.PluginInfo{
+func (p *SysPlugin) Info() plugin.PluginInfo {
+    return plugin.PluginInfo{
         Name:        "plugin-sys",
         Version:     "1.0.0",
         Description: "System management plugin",
@@ -175,7 +174,7 @@ func (s *Service) Create(req *UserCreateReq) error {
 ### api/v1/api.go - 路由注册 + Handler
 
 ```go
-package api
+package v1
 
 import (
     "github.com/gin-gonic/gin"
@@ -253,9 +252,7 @@ go mod init hei-gin/plugins/plugin-<name>
 
 ```bash
 go mod edit -require hei-gin/sdk@v0.0.0
-go mod edit -require hei-gin/api@v0.0.0
 go mod edit -replace hei-gin/sdk=../../sdk
-go mod edit -replace hei-gin/api=../../api
 ```
 
 ### 第三步：创建子模块目录

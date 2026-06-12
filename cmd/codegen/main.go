@@ -329,13 +329,10 @@ var goModTmpl = `module hei-gin/plugins/@FULL@
 go 1.25.10
 
 require (
-	hei-gin/api v0.0.0
 	hei-gin/sdk v0.0.0
 	github.com/gin-gonic/gin v1.12.0
 	gorm.io/gorm v1.25.12
 )
-
-replace hei-gin/api => ../../api
 
 replace hei-gin/sdk => ../../sdk
 `
@@ -374,7 +371,6 @@ import (
 	_ "hei-gin/plugins/@FULL@/@MODULE@/api/v1"
 )
 `
-
 
 var modelGoTmpl = `package @MODULE@
 

@@ -1,9 +1,7 @@
-package api
+package contracts
 
 import "context"
 
-// PermissionAPI defines the interface for permission queries.
-// Context is passed through for tracing and timeout propagation.
 type PermissionAPI interface {
 	GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error)
 	GetRoleList(ctx context.Context, loginID string, loginType string) ([]string, error)

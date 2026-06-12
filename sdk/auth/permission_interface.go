@@ -4,22 +4,20 @@ import (
 	"encoding/json"
 	"log"
 
-	"hei-gin/api"
+	"hei-gin/sdk/contracts"
 	"hei-gin/sdk/enums"
 )
 
-var PermissionDelegate api.PermissionAPI
+var PermissionDelegate contracts.PermissionAPI
 
-func RegisterInterface(impl api.PermissionAPI) {
+func RegisterInterface(impl contracts.PermissionAPI) {
 	PermissionDelegate = impl
 	log.Println("[auth] PermissionInterface registered via delegate")
 }
 
-// ScopeRow is an alias for api.ScopeRow to avoid import conflicts.
-type ScopeRow = api.ScopeRow
+type ScopeRow = contracts.ScopeRow
 
-// ScopeInfo is an alias for api.ScopeInfo.
-type ScopeInfo = api.ScopeInfo
+type ScopeInfo = contracts.ScopeInfo
 
 func MergeScope(permScope map[string]map[string]interface{}, path string, rows []ScopeRow) {
 	priority := map[string]int{
@@ -119,4 +117,3 @@ func safeStrPtr(s *string) string {
 	}
 	return *s
 }
-

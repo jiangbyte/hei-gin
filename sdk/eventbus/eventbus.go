@@ -3,18 +3,18 @@ package eventbus
 import (
 	"sync"
 
-	"hei-gin/api"
+	"hei-gin/sdk/contracts"
 	"hei-gin/sdk/middleware"
 )
 
 // DefaultBus is the global event bus instance.
-var DefaultBus api.EventBus = newBus()
+var DefaultBus contracts.EventBus = newBus()
 
 const maxConcurrentSubscribers = 256
 
 type subscriberEntry struct {
 	id uint64
-	fn api.EventSubscriber
+	fn contracts.EventSubscriber
 }
 
 type bus struct {
@@ -44,7 +44,7 @@ func (b *bus) Publish(topic string, data any) {
 	if !ok {
 		return
 	}
-	event := api.Event{Topic: topic, Data: data}
+	event := contracts.Event{Topic: topic, Data: data}
 	for _, entry := range subs {
 		entry := entry
 		select {
@@ -68,7 +68,7 @@ func (b *bus) Publish(topic string, data any) {
 	}
 }
 
-func (b *bus) Subscribe(topic string, sub api.EventSubscriber) func() {
+func (b *bus) Subscribe(topic string, sub contracts.EventSubscriber) func() {
 	b.mu.Lock()
 	b.subIDSeq++
 	id := b.subIDSeq

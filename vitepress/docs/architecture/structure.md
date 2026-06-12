@@ -7,11 +7,11 @@ Hei Gin 项目采用 **Go Workspace 多模块架构**，将 SDK 框架、API 接
 ```
 hei-gin/                   (根模块)
 ├── main.go                # 应用入口：导入插件，调用 sdk/app.Run()
-├── go.mod                 # 根模块依赖 sdk 和 api
+├── go.mod                 # 根模块依赖 sdk
 ├── go.work                # Workspace 定义：聚合所有子模块
 │
 ├── sdk/                   # 框架 SDK（独立 Go 模块：hei-gin/sdk）
-├── api/                   # 接口定义层（独立 Go 模块：hei-gin/api）
+├── sdk/contracts/         # 公共契约（位于 SDK 内）
 ├── plugins/plugin-sys/    # 系统管理插件（独立 Go 模块）
 ├── plugins/plugin-client/ # 客户端插件（独立 Go 模块）
 ├── plugins/plugin-im/     # IM 插件（独立 Go 模块）
@@ -72,16 +72,11 @@ hei-gin/
 │   ├── storage/                     # 文件存储抽象（Engine 接口）
 │   └── utils/                       # 工具函数（雪花 ID、加密、IP 等）
 │
-├── api/                             # 接口定义层（独立模块）
-│   ├── go.mod                       # 仅依赖 Go 标准库
-│   ├── plugin.go                    # PluginInfo / Plugin 接口
-│   ├── auth.go                      # 认证相关接口
-│   ├── event.go                     # 事件总线接口
-│   └── log.go                       # 日志持久化接口
+│   ├── contracts/                   # 公共契约（权限/事件/日志接口）
 │
 ├── plugins/                         # 业务插件目录
 │   ├── plugin-sys/                  # 系统管理插件（B 端）
-│   │   ├── go.mod                   # 依赖 sdk 和 api
+│   │   ├── go.mod                   # 依赖 sdk
 │   │   ├── plugin.go               # 插件入口
 │   │   ├── imports.go              # 导入所有子模块
 │   │   ├── persistence.go          # 日志持久化

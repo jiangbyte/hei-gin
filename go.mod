@@ -20,7 +20,6 @@ require (
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/image v0.40.0 // indirect
-	hei-gin/api v0.0.0 // indirect
 )
 
 require (
@@ -75,5 +74,3 @@ require (
 )
 
 replace hei-gin/sdk => ./sdk
-
-replace hei-gin/api => ./api

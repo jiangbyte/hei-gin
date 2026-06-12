@@ -1,15 +1,15 @@
 package plugin_sys
 
 import (
-	"time"
 	stdlog "log"
+	"time"
 
-	"hei-gin/api"
+	"hei-gin/plugins/plugin-sys/provider"
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/contracts"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/plugin"
 	"hei-gin/sdk/utils"
-	"hei-gin/plugins/plugin-sys/provider"
 )
 
 type SysPlugin struct {
@@ -34,7 +34,7 @@ func (p *SysPlugin) Init() error {
 
 	auth.RegisterInterface(p.permProvider)
 
-	var persister api.LogPersistenceAPI = &logPersister{}
+	var persister contracts.LogPersistenceAPI = &logPersister{}
 
 	log.RegisterPersistence(func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{}) {
 		opTimeStr := ""
@@ -44,7 +44,7 @@ func (p *SysPlugin) Init() error {
 			opTimeStr = s
 		}
 
-		entry := api.LogEntry{
+		entry := contracts.LogEntry{
 			ID:         utils.GenerateID(),
 			Category:   category,
 			Name:       name,

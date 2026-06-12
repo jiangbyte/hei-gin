@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"hei-gin/api"
+	"hei-gin/sdk/contracts"
 )
 
 func TestPublishUsesSubscriberSnapshot(t *testing.T) {
 	b := newBus()
 	var calls atomic.Int32
 
-	unsubscribe := b.Subscribe("topic", func(event api.Event) {
+	unsubscribe := b.Subscribe("topic", func(event contracts.Event) {
 		calls.Add(1)
 	})
 	unsubscribe()
@@ -35,7 +35,7 @@ func TestPublishLimitsConcurrentSubscribers(t *testing.T) {
 	var peak atomic.Int32
 
 	for i := 0; i < subscribers; i++ {
-		b.Subscribe("topic", func(event api.Event) {
+		b.Subscribe("topic", func(event contracts.Event) {
 			current := running.Add(1)
 			for {
 				old := peak.Load()
