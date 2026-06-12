@@ -3,10 +3,15 @@ package analyze
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	logModel "hei-gin/plugins/plugin-sys/log"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 )
+
+type repository struct {
+	db *gorm.DB
+}
 
 type monthlyCount struct {
 	Month string
@@ -28,8 +33,8 @@ type catCount struct {
 	Count    int
 }
 
-func Page(ctx context.Context, p *logModel.LogPageParam) ([]logModel.SysLog, int64) {
-	q := db.DB.WithContext(ctx).Model(&logModel.SysLog{})
+func (r *repository) Page(ctx context.Context, p *logModel.LogPageParam) ([]logModel.SysLog, int64) {
+	q := r.db.WithContext(ctx).Model(&logModel.SysLog{})
 	if p.Category != "" {
 		q = q.Where("category = ?", p.Category)
 	}
@@ -40,43 +45,43 @@ func Page(ctx context.Context, p *logModel.LogPageParam) ([]logModel.SysLog, int
 	var total int64
 	q.Count(&total)
 	var rows []logModel.SysLog
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 
-func CountLogsByCategory(ctx context.Context, category string) int64 {
+func (r *repository) CountLogsByCategory(ctx context.Context, category string) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Count(&count)
+	r.db.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Count(&count)
 	return count
 }
 
-func CountLogsByCategoryAndStatus(ctx context.Context, category, status string) int64 {
+func (r *repository) CountLogsByCategoryAndStatus(ctx context.Context, category, status string) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Where("exe_status = ?", status).Count(&count)
+	r.db.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Where("exe_status = ?", status).Count(&count)
 	return count
 }
 
-func CountLogsByCategoryBetween(ctx context.Context, category string, start, end interface{}) int64 {
+func (r *repository) CountLogsByCategoryBetween(ctx context.Context, category string, start, end interface{}) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Where("op_time >= ? AND op_time < ?", start, end).Count(&count)
+	r.db.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", category).Where("op_time >= ? AND op_time < ?", start, end).Count(&count)
 	return count
 }
 
-func CountTable(ctx context.Context, table string) int64 {
+func (r *repository) CountTable(ctx context.Context, table string) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Table(table).Count(&count)
+	r.db.WithContext(ctx).Table(table).Count(&count)
 	return count
 }
 
-func CountTableByStatus(ctx context.Context, table, status string) int64 {
+func (r *repository) CountTableByStatus(ctx context.Context, table, status string) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Table(table).Where("status = ?", status).Count(&count)
+	r.db.WithContext(ctx).Table(table).Where("status = ?", status).Count(&count)
 	return count
 }
 
-func MonthlyTrend(ctx context.Context, table string) []monthlyCount {
+func (r *repository) MonthlyTrend(ctx context.Context, table string) []monthlyCount {
 	var rows []monthlyCount
-	db.DB.WithContext(ctx).Table(table).
+	r.db.WithContext(ctx).Table(table).
 		Select("DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count").
 		Where("created_at IS NOT NULL").
 		Group("month").
@@ -86,9 +91,9 @@ func MonthlyTrend(ctx context.Context, table string) []monthlyCount {
 	return rows
 }
 
-func OrgUserCounts(ctx context.Context) []orgCount {
+func (r *repository) OrgUserCounts(ctx context.Context) []orgCount {
 	var rows []orgCount
-	db.DB.WithContext(ctx).Table("sys_user").
+	r.db.WithContext(ctx).Table("sys_user").
 		Select("org_id, COUNT(*) AS count").
 		Where("org_id IS NOT NULL AND org_id != ''").
 		Group("org_id").
@@ -96,21 +101,21 @@ func OrgUserCounts(ctx context.Context) []orgCount {
 	return rows
 }
 
-func OrgNames(ctx context.Context, orgIDs []string) []orgNameRow {
+func (r *repository) OrgNames(ctx context.Context, orgIDs []string) []orgNameRow {
 	var rows []orgNameRow
-	db.DB.WithContext(ctx).Table("sys_org").Select("id, name").Where("id IN ?", orgIDs).Find(&rows)
+	r.db.WithContext(ctx).Table("sys_org").Select("id, name").Where("id IN ?", orgIDs).Find(&rows)
 	return rows
 }
 
-func RoleCategoryCounts(ctx context.Context) []catCount {
+func (r *repository) RoleCategoryCounts(ctx context.Context) []catCount {
 	var rows []catCount
-	db.DB.WithContext(ctx).Table("sys_role").
+	r.db.WithContext(ctx).Table("sys_role").
 		Select("category, COUNT(*) AS count").
 		Group("category").
 		Find(&rows)
 	return rows
 }
 
-func ActiveStatus() string {
+func (r *repository) ActiveStatus() string {
 	return string(enums.UserStatusActive)
 }

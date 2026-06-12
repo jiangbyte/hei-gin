@@ -14,6 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type service struct {
+	repo *repository
+}
+
 // Server start time, used for computing uptime/runtime display
 var serverStartTime = time.Now()
 
@@ -46,7 +50,7 @@ func formatDuration(d time.Duration) string {
 
 // ===== Page =====
 
-func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
+func (s *service) AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -58,20 +62,20 @@ func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 	result.PageDataResult(c, rows, total, p.Current, p.Size)
 }
 
 // ===== LoginAnalysis =====
 
-func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
+func (s *service) AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
 
-	loginTotal := CountLogsByCategory(ctx, "LOGIN")
-	failedTotal := CountLogsByCategoryAndStatus(ctx, "LOGIN", "FAIL")
-	loginToday := CountLogsByCategoryBetween(ctx, "LOGIN", todayStart, tomorrowStart)
+	loginTotal := s.repo.CountLogsByCategory(ctx, "LOGIN")
+	failedTotal := s.repo.CountLogsByCategoryAndStatus(ctx, "LOGIN", "FAIL")
+	loginToday := s.repo.CountLogsByCategoryBetween(ctx, "LOGIN", todayStart, tomorrowStart)
 
 	log.Printf("[Analyze] Login stats: total=%d, failed=%d, today=%d", loginTotal, failedTotal, loginToday)
 
@@ -84,14 +88,14 @@ func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 
 // ===== LogAnalysis =====
 
-func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
+func (s *service) AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
 
-	logTotal := CountTable(ctx, "sys_log")
-	exceptionTotal := CountLogsByCategory(ctx, "EXCEPTION")
-	exceptionToday := CountLogsByCategoryBetween(ctx, "EXCEPTION", todayStart, tomorrowStart)
+	logTotal := s.repo.CountTable(ctx, "sys_log")
+	exceptionTotal := s.repo.CountLogsByCategory(ctx, "EXCEPTION")
+	exceptionToday := s.repo.CountLogsByCategoryBetween(ctx, "EXCEPTION", todayStart, tomorrowStart)
 
 	return &LogAnalysisData{
 		LogTotal:       int(logTotal),
@@ -102,30 +106,30 @@ func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 
 // ===== Dashboard =====
 
-func AnalyzeDashboard(c *gin.Context) *DashboardVO {
+func (s *service) AnalyzeDashboard(c *gin.Context) *DashboardVO {
 	ctx := c.Request.Context()
 	stats := DashboardStats{}
 
-	stats.TotalUsers = CountTable(ctx, "sys_user")
-	stats.ActiveUsers = CountTableByStatus(ctx, "sys_user", ActiveStatus())
-	stats.TotalRoles = CountTable(ctx, "sys_role")
-	stats.TotalOrgs = CountTable(ctx, "sys_org")
-	stats.TotalConfigs = CountTable(ctx, "sys_config")
-	stats.TotalNotices = CountTable(ctx, "sys_notice")
+	stats.TotalUsers = s.repo.CountTable(ctx, "sys_user")
+	stats.ActiveUsers = s.repo.CountTableByStatus(ctx, "sys_user", s.repo.ActiveStatus())
+	stats.TotalRoles = s.repo.CountTable(ctx, "sys_role")
+	stats.TotalOrgs = s.repo.CountTable(ctx, "sys_org")
+	stats.TotalConfigs = s.repo.CountTable(ctx, "sys_config")
+	stats.TotalNotices = s.repo.CountTable(ctx, "sys_notice")
 
 	clientStats := ClientStats{}
-	clientStats.TotalUsers = CountTable(ctx, "client_user")
-	clientStats.ActiveUsers = CountTableByStatus(ctx, "client_user", ActiveStatus())
+	clientStats.TotalUsers = s.repo.CountTable(ctx, "client_user")
+	clientStats.ActiveUsers = s.repo.CountTableByStatus(ctx, "client_user", s.repo.ActiveStatus())
 
 	// User growth trend: monthly registration counts over the last 12 months
-	userTrend := getMonthlyTrend(ctx, "sys_user")
-	clientTrend := getMonthlyTrend(ctx, "client_user")
+	userTrend := s.getMonthlyTrend(ctx, "sys_user")
+	clientTrend := s.getMonthlyTrend(ctx, "client_user")
 
 	// Org user distribution
-	orgDist := getOrgUserDistribution(ctx)
+	orgDist := s.getOrgUserDistribution(ctx)
 
 	// Role category distribution
-	roleDist := getRoleCategoryDistribution(ctx)
+	roleDist := s.getRoleCategoryDistribution(ctx)
 
 	sysInfo := SysInfo{
 		OsName:   runtime.GOOS,
@@ -144,8 +148,8 @@ func AnalyzeDashboard(c *gin.Context) *DashboardVO {
 	}
 }
 
-func getMonthlyTrend(ctx context.Context, table string) []TrendItem {
-	rows := MonthlyTrend(ctx, table)
+func (s *service) getMonthlyTrend(ctx context.Context, table string) []TrendItem {
+	rows := s.repo.MonthlyTrend(ctx, table)
 	result := make([]TrendItem, len(rows))
 	for i, r := range rows {
 		result[i] = TrendItem{Month: r.Month, Count: r.Count}
@@ -156,15 +160,15 @@ func getMonthlyTrend(ctx context.Context, table string) []TrendItem {
 	return result
 }
 
-func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
-	rows := OrgUserCounts(ctx)
+func (s *service) getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
+	rows := s.repo.OrgUserCounts(ctx)
 	orgIDs := make([]string, len(rows))
 	for i, r := range rows {
 		orgIDs[i] = r.OrgID
 	}
 	orgNames := make(map[string]string)
 	if len(orgIDs) > 0 {
-		orgRows := OrgNames(ctx, orgIDs)
+		orgRows := s.repo.OrgNames(ctx, orgIDs)
 		for _, o := range orgRows {
 			orgNames[o.ID] = o.Name
 		}
@@ -183,8 +187,8 @@ func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
 	return result
 }
 
-func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
-	rows := RoleCategoryCounts(ctx)
+func (s *service) getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
+	rows := s.repo.RoleCategoryCounts(ctx)
 	result := make([]CategoryDistribution, len(rows))
 	for i, r := range rows {
 		result[i] = CategoryDistribution{Category: r.Category, Count: r.Count}
@@ -193,4 +197,20 @@ func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
 		result = []CategoryDistribution{}
 	}
 	return result
+}
+
+func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
+	defaultModule.service.AnalyzePage(c, p)
+}
+
+func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
+	return defaultModule.service.AnalyzeLoginAnalysis(c)
+}
+
+func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
+	return defaultModule.service.AnalyzeLogAnalysis(c)
+}
+
+func AnalyzeDashboard(c *gin.Context) *DashboardVO {
+	return defaultModule.service.AnalyzeDashboard(c)
 }

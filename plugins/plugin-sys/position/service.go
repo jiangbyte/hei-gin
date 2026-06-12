@@ -11,7 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PositionPage(c *gin.Context, p *PositionPageParam) {
+type service struct {
+	repo *repository
+}
+
+func (s *service) PositionPage(c *gin.Context, p *PositionPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -23,7 +27,7 @@ func PositionPage(c *gin.Context, p *PositionPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*PositionVO, len(rows))
 	for i, r := range rows {
@@ -32,13 +36,13 @@ func PositionPage(c *gin.Context, p *PositionPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func PositionDetail(c *gin.Context, id string) *PositionVO {
+func (s *service) PositionDetail(c *gin.Context, id string) *PositionVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -50,25 +54,25 @@ func PositionDetail(c *gin.Context, id string) *PositionVO {
 	return SysPositionToPositionVO(e)
 }
 
-func PositionCreate(c *gin.Context, vo *PositionVO) {
+func (s *service) PositionCreate(c *gin.Context, vo *PositionVO) {
 	ctx := c.Request.Context()
 
 	e := PositionVOToSysPosition(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加职位失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func PositionModify(c *gin.Context, vo *PositionVO) {
+func (s *service) PositionModify(c *gin.Context, vo *PositionVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	_, err := FindByID(ctx, vo.ID)
+	_, err := s.repo.FindByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -97,30 +101,54 @@ func PositionModify(c *gin.Context, vo *PositionVO) {
 	if vo.Status != "" {
 		up["status"] = vo.Status
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑职位失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func PositionRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) PositionRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	if err := DeleteByIDs(ctx, ids); err != nil {
+	if err := s.repo.DeleteByIDs(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除职位失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func PositionOptions(c *gin.Context) []any {
+func (s *service) PositionOptions(c *gin.Context) []any {
 	ctx := c.Request.Context()
-	rows := ListAll(ctx)
+	rows := s.repo.ListAll(ctx)
 	vos := make([]any, len(rows))
 	for i, r := range rows {
 		vos[i] = SysPositionToPositionVO(&r)
 	}
 	return vos
+}
+
+func PositionPage(c *gin.Context, p *PositionPageParam) {
+	defaultModule.service.PositionPage(c, p)
+}
+
+func PositionDetail(c *gin.Context, id string) *PositionVO {
+	return defaultModule.service.PositionDetail(c, id)
+}
+
+func PositionCreate(c *gin.Context, vo *PositionVO) {
+	defaultModule.service.PositionCreate(c, vo)
+}
+
+func PositionModify(c *gin.Context, vo *PositionVO) {
+	defaultModule.service.PositionModify(c, vo)
+}
+
+func PositionRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.PositionRemove(c, param)
+}
+
+func PositionOptions(c *gin.Context) []any {
+	return defaultModule.service.PositionOptions(c)
 }

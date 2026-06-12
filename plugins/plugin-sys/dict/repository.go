@@ -3,11 +3,15 @@ package dict
 import (
 	"context"
 
-	"hei-gin/sdk/db"
+	"gorm.io/gorm"
 )
 
-func Page(ctx context.Context, p *DictPageParam) ([]SysDict, int64) {
-	q := db.DB.WithContext(ctx).Model(&SysDict{})
+type repository struct {
+	db *gorm.DB
+}
+
+func (r *repository) Page(ctx context.Context, p *DictPageParam) ([]SysDict, int64) {
+	q := r.db.WithContext(ctx).Model(&SysDict{})
 	if p.Keyword != "" {
 		like := "%" + p.Keyword + "%"
 		q = q.Where("code LIKE ? OR label LIKE ? OR value LIKE ?", like, like, like)
@@ -27,12 +31,12 @@ func Page(ctx context.Context, p *DictPageParam) ([]SysDict, int64) {
 	var total int64
 	q.Count(&total)
 	var rows []SysDict
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 
-func ListForTree(ctx context.Context, category, dictGroup string) []SysDict {
-	q := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
+func (r *repository) ListForTree(ctx context.Context, category, dictGroup string) []SysDict {
+	q := r.db.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
@@ -47,28 +51,28 @@ func ListForTree(ctx context.Context, category, dictGroup string) []SysDict {
 	return all
 }
 
-func FindByID(ctx context.Context, id string) (*SysDict, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*SysDict, error) {
 	var e SysDict
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func Create(ctx context.Context, entity *SysDict) error {
-	return db.DB.WithContext(ctx).Create(entity).Error
+func (r *repository) Create(ctx context.Context, entity *SysDict) error {
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
-	return db.DB.WithContext(ctx).Model(&SysDict{}).Where("id = ?", id).Updates(up).Error
+func (r *repository) UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&SysDict{}).Where("id = ?", id).Updates(up).Error
 }
 
-func DeleteByIDs(ctx context.Context, ids []string) error {
-	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysDict{}).Error
+func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
+	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&SysDict{}).Error
 }
 
-func ListOptions(ctx context.Context, category, parentID string) []SysDict {
-	q := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
+func (r *repository) ListOptions(ctx context.Context, category, parentID string) []SysDict {
+	q := r.db.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
@@ -80,8 +84,8 @@ func ListOptions(ctx context.Context, category, parentID string) []SysDict {
 	return records
 }
 
-func ListByCategoryAndKeyword(ctx context.Context, category, keyword string) []SysDict {
-	q := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
+func (r *repository) ListByCategoryAndKeyword(ctx context.Context, category, keyword string) []SysDict {
+	q := r.db.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
@@ -94,9 +98,9 @@ func ListByCategoryAndKeyword(ctx context.Context, category, keyword string) []S
 	return records
 }
 
-func FindByTypeCodeAndValue(ctx context.Context, typeCode, value string) (*SysDict, error) {
+func (r *repository) FindByTypeCodeAndValue(ctx context.Context, typeCode, value string) (*SysDict, error) {
 	var entity SysDict
-	if err := db.DB.WithContext(ctx).
+	if err := r.db.WithContext(ctx).
 		Where("parent_id IN (SELECT id FROM sys_dict WHERE code = ?)", typeCode).
 		Where("value = ?", value).
 		First(&entity).Error; err != nil {
@@ -105,23 +109,23 @@ func FindByTypeCodeAndValue(ctx context.Context, typeCode, value string) (*SysDi
 	return &entity, nil
 }
 
-func FindByCode(ctx context.Context, code string) (*SysDict, error) {
+func (r *repository) FindByCode(ctx context.Context, code string) (*SysDict, error) {
 	var parent SysDict
-	if err := db.DB.WithContext(ctx).Where("code = ?", code).First(&parent).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&parent).Error; err != nil {
 		return nil, err
 	}
 	return &parent, nil
 }
 
-func ListChildren(ctx context.Context, parentID string) []SysDict {
+func (r *repository) ListChildren(ctx context.Context, parentID string) []SysDict {
 	var records []SysDict
-	db.DB.WithContext(ctx).Where("parent_id = ?", parentID).Order("sort_code ASC").Find(&records)
+	r.db.WithContext(ctx).Where("parent_id = ?", parentID).Order("sort_code ASC").Find(&records)
 	return records
 }
 
-func CountDuplicateValue(ctx context.Context, parentID *string, value string, excludeID string) int64 {
+func (r *repository) CountDuplicateValue(ctx context.Context, parentID *string, value string, excludeID string) int64 {
 	var count int64
-	q := db.DB.WithContext(ctx).Model(&SysDict{}).Where("parent_id = ?", parentID).Where("value = ?", value)
+	q := r.db.WithContext(ctx).Model(&SysDict{}).Where("parent_id = ?", parentID).Where("value = ?", value)
 	if excludeID != "" {
 		q = q.Where("id != ?", excludeID)
 	}
@@ -129,8 +133,8 @@ func CountDuplicateValue(ctx context.Context, parentID *string, value string, ex
 	return count
 }
 
-func ListAll(ctx context.Context) []SysDict {
+func (r *repository) ListAll(ctx context.Context) []SysDict {
 	var all []SysDict
-	db.DB.WithContext(ctx).Find(&all)
+	r.db.WithContext(ctx).Find(&all)
 	return all
 }

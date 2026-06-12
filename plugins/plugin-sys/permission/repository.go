@@ -4,9 +4,14 @@ import (
 	"context"
 
 	"hei-gin/sdk/constants"
-	"hei-gin/sdk/db"
+
+	"github.com/redis/go-redis/v9"
 )
 
-func Cache(ctx context.Context) (string, error) {
-	return db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+type repository struct {
+	rdb redis.UniversalClient
+}
+
+func (r *repository) Cache(ctx context.Context) (string, error) {
+	return r.rdb.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 }

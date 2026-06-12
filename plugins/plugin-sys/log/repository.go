@@ -2,13 +2,16 @@ package log
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"time"
-
-	"hei-gin/sdk/db"
 )
 
-func Page(ctx context.Context, p *LogPageParam) ([]SysLog, int64) {
-	q := db.DB.WithContext(ctx).Model(&SysLog{})
+type repository struct {
+	db *gorm.DB
+}
+
+func (r *repository) Page(ctx context.Context, p *LogPageParam) ([]SysLog, int64) {
+	q := r.db.WithContext(ctx).Model(&SysLog{})
 	if p.Category != "" {
 		q = q.Where("category = ?", p.Category)
 	}
@@ -22,42 +25,42 @@ func Page(ctx context.Context, p *LogPageParam) ([]SysLog, int64) {
 	var total int64
 	q.Count(&total)
 	var rows []SysLog
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 
-func FindByID(ctx context.Context, id string) (*SysLog, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*SysLog, error) {
 	var e SysLog
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func Create(ctx context.Context, entity *SysLog) error {
-	return db.DB.WithContext(ctx).Create(entity).Error
+func (r *repository) Create(ctx context.Context, entity *SysLog) error {
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
-	return db.DB.WithContext(ctx).Model(&SysLog{}).Where("id = ?", id).Updates(up).Error
+func (r *repository) UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&SysLog{}).Where("id = ?", id).Updates(up).Error
 }
 
-func DeleteByIDs(ctx context.Context, ids []string) error {
-	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysLog{}).Error
+func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
+	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&SysLog{}).Error
 }
 
-func DeleteByCategory(ctx context.Context, category string) error {
-	return db.DB.WithContext(ctx).Where("category = ?", category).Delete(&SysLog{}).Error
+func (r *repository) DeleteByCategory(ctx context.Context, category string) error {
+	return r.db.WithContext(ctx).Where("category = ?", category).Delete(&SysLog{}).Error
 }
 
-func ListByCategoriesSince(ctx context.Context, categories []string, since time.Time) []SysLog {
+func (r *repository) ListByCategoriesSince(ctx context.Context, categories []string, since time.Time) []SysLog {
 	var records []SysLog
-	db.DB.WithContext(ctx).Where("category IN ?", categories).Where("op_time >= ?", since).Find(&records)
+	r.db.WithContext(ctx).Where("category IN ?", categories).Where("op_time >= ?", since).Find(&records)
 	return records
 }
 
-func CountByCategory(ctx context.Context, category string) int64 {
+func (r *repository) CountByCategory(ctx context.Context, category string) int64 {
 	var count int64
-	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", category).Count(&count)
+	r.db.WithContext(ctx).Model(&SysLog{}).Where("category = ?", category).Count(&count)
 	return count
 }

@@ -3,13 +3,15 @@ package config
 import (
 	"context"
 
-	"hei-gin/sdk/db"
-
 	"gorm.io/gorm"
 )
 
-func pageQuery(ctx context.Context, p *ConfigPageParam) *gorm.DB {
-	q := db.DB.WithContext(ctx).Model(&SysConfig{})
+type repository struct {
+	db *gorm.DB
+}
+
+func (r *repository) pageQuery(ctx context.Context, p *ConfigPageParam) *gorm.DB {
+	q := r.db.WithContext(ctx).Model(&SysConfig{})
 	if p.Keyword != "" {
 		like := "%" + p.Keyword + "%"
 		q = q.Where("config_key LIKE ? OR remark LIKE ?", like, like)
@@ -20,49 +22,49 @@ func pageQuery(ctx context.Context, p *ConfigPageParam) *gorm.DB {
 	return q
 }
 
-func Page(ctx context.Context, p *ConfigPageParam) ([]SysConfig, int64) {
-	q := pageQuery(ctx, p)
+func (r *repository) Page(ctx context.Context, p *ConfigPageParam) ([]SysConfig, int64) {
+	q := r.pageQuery(ctx, p)
 	var total int64
 	q.Count(&total)
 	var rows []SysConfig
-	q.Order("sort_code ASC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("sort_code ASC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 
-func FindByID(ctx context.Context, id string) (*SysConfig, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*SysConfig, error) {
 	var e SysConfig
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func Create(ctx context.Context, entity *SysConfig) error {
-	return db.DB.WithContext(ctx).Create(entity).Error
+func (r *repository) Create(ctx context.Context, entity *SysConfig) error {
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
-	return db.DB.WithContext(ctx).Model(&SysConfig{}).Where("id = ?", id).Updates(up).Error
+func (r *repository) UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&SysConfig{}).Where("id = ?", id).Updates(up).Error
 }
 
-func DeleteByIDs(ctx context.Context, ids []string) error {
-	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysConfig{}).Error
+func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
+	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&SysConfig{}).Error
 }
 
-func ListAll(ctx context.Context) []SysConfig {
+func (r *repository) ListAll(ctx context.Context) []SysConfig {
 	var rows []SysConfig
-	db.DB.WithContext(ctx).Model(&SysConfig{}).Order("sort_code ASC").Find(&rows)
+	r.db.WithContext(ctx).Model(&SysConfig{}).Order("sort_code ASC").Find(&rows)
 	return rows
 }
 
-func ListByCategory(ctx context.Context, category string) []SysConfig {
+func (r *repository) ListByCategory(ctx context.Context, category string) []SysConfig {
 	var rows []SysConfig
-	db.DB.WithContext(ctx).Where("category = ?", category).Order("sort_code ASC").Find(&rows)
+	r.db.WithContext(ctx).Where("category = ?", category).Order("sort_code ASC").Find(&rows)
 	return rows
 }
 
-func EditBatch(ctx context.Context, items []ConfigBatchEditItem) error {
-	tx := db.DB.WithContext(ctx).Begin()
+func (r *repository) EditBatch(ctx context.Context, items []ConfigBatchEditItem) error {
+	tx := r.db.WithContext(ctx).Begin()
 	for _, item := range items {
 		up := map[string]interface{}{}
 		if item.ConfigKey != nil {
@@ -88,6 +90,6 @@ func EditBatch(ctx context.Context, items []ConfigBatchEditItem) error {
 	return tx.Commit().Error
 }
 
-func EditByCategory(ctx context.Context, category string, up map[string]interface{}) error {
-	return db.DB.WithContext(ctx).Model(&SysConfig{}).Where("category = ?", category).Updates(up).Error
+func (r *repository) EditByCategory(ctx context.Context, category string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&SysConfig{}).Where("category = ?", category).Updates(up).Error
 }

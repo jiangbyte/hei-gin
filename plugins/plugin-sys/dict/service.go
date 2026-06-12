@@ -6,17 +6,21 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
+type service struct {
+	repo *repository
+}
+
 // ===== Page =====
 
-func DictPage(c *gin.Context, p *DictPageParam) {
+func (s *service) DictPage(c *gin.Context, p *DictPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -28,7 +32,7 @@ func DictPage(c *gin.Context, p *DictPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*DictVO, len(rows))
 	for i, r := range rows {
@@ -39,9 +43,9 @@ func DictPage(c *gin.Context, p *DictPageParam) {
 
 // ===== Tree =====
 
-func DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
+func (s *service) DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
-	all := ListForTree(ctx, param.Category, param.DictGroup)
+	all := s.repo.ListForTree(ctx, param.Category, param.DictGroup)
 	if len(all) == 0 {
 		return make([]map[string]interface{}, 0)
 	}
@@ -82,20 +86,20 @@ func buildTreeChildren(childrenMap map[string][]SysDict, parentID string, depth 
 
 // ===== Create =====
 
-func DictCreate(c *gin.Context, vo *DictVO) {
+func (s *service) DictCreate(c *gin.Context, vo *DictVO) {
 	ctx := c.Request.Context()
-	if err := dictCheckDuplicate(ctx, vo, ""); err != nil {
+	if err := s.dictCheckDuplicate(ctx, vo, ""); err != nil {
 		result.WriteError(c, err)
 		return
 	}
-	if err := dictCheckCircularParent(ctx, "", utils.SafeStrPtr(vo.ParentID)); err != nil {
+	if err := s.dictCheckCircularParent(ctx, "", utils.SafeStrPtr(vo.ParentID)); err != nil {
 		result.WriteError(c, err)
 		return
 	}
 
 	e := DictVOToSysDict(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加字典失败: "+err.Error(), 500))
 		return
 	}
@@ -103,14 +107,14 @@ func DictCreate(c *gin.Context, vo *DictVO) {
 
 // ===== Modify =====
 
-func DictModify(c *gin.Context, vo *DictVO) {
+func (s *service) DictModify(c *gin.Context, vo *DictVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	e, err := FindByID(ctx, vo.ID)
+	e, err := s.repo.FindByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -120,12 +124,12 @@ func DictModify(c *gin.Context, vo *DictVO) {
 		return
 	}
 
-	if err := dictCheckDuplicate(ctx, vo, vo.ID); err != nil {
+	if err := s.dictCheckDuplicate(ctx, vo, vo.ID); err != nil {
 		result.WriteError(c, err)
 		return
 	}
 	if vo.ParentID != nil && *vo.ParentID != "" && *vo.ParentID != getParentIDKey(e.ParentID) {
-		if err := dictCheckCircularParent(ctx, vo.ID, utils.SafeStrPtr(vo.ParentID)); err != nil {
+		if err := s.dictCheckCircularParent(ctx, vo.ID, utils.SafeStrPtr(vo.ParentID)); err != nil {
 			result.WriteError(c, err)
 			return
 		}
@@ -151,7 +155,7 @@ func DictModify(c *gin.Context, vo *DictVO) {
 	} else {
 		up["parent_id"] = nil
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑字典失败: "+err.Error(), 500))
 		return
 	}
@@ -159,14 +163,14 @@ func DictModify(c *gin.Context, vo *DictVO) {
 
 // ===== Remove =====
 
-func DictRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) DictRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	allIDs := dictCollectDescendantIDs(ctx, ids)
-	if err := DeleteByIDs(ctx, allIDs); err != nil {
+	allIDs := s.dictCollectDescendantIDs(ctx, ids)
+	if err := s.repo.DeleteByIDs(ctx, allIDs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除字典失败: "+err.Error(), 500))
 		return
 	}
@@ -174,13 +178,13 @@ func DictRemove(c *gin.Context, param *utils.IdsParam) {
 
 // ===== Detail =====
 
-func DictDetail(c *gin.Context, id string) *DictVO {
+func (s *service) DictDetail(c *gin.Context, id string) *DictVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -194,9 +198,9 @@ func DictDetail(c *gin.Context, id string) *DictVO {
 
 // ===== Options =====
 
-func DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
+func (s *service) DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
 	ctx := c.Request.Context()
-	records := ListOptions(ctx, param.Category, param.ParentID)
+	records := s.repo.ListOptions(ctx, param.Category, param.ParentID)
 	vos := make([]*DictVO, len(records))
 	for i, r := range records {
 		vos[i] = SysDictToDictVO(&r)
@@ -206,9 +210,9 @@ func DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
 
 // ===== List =====
 
-func DictList(c *gin.Context, param *DictListParam) []*DictVO {
+func (s *service) DictList(c *gin.Context, param *DictListParam) []*DictVO {
 	ctx := c.Request.Context()
-	records := ListByCategoryAndKeyword(ctx, param.Category, param.Keyword)
+	records := s.repo.ListByCategoryAndKeyword(ctx, param.Category, param.Keyword)
 	vos := make([]*DictVO, len(records))
 	for i, r := range records {
 		vos[i] = SysDictToDictVO(&r)
@@ -218,9 +222,9 @@ func DictList(c *gin.Context, param *DictListParam) []*DictVO {
 
 // ===== GetLabel =====
 
-func DictGetLabel(c *gin.Context, typeCode, value string) *string {
+func (s *service) DictGetLabel(c *gin.Context, typeCode, value string) *string {
 	ctx := c.Request.Context()
-	entity, err := FindByTypeCodeAndValue(ctx, typeCode, value)
+	entity, err := s.repo.FindByTypeCodeAndValue(ctx, typeCode, value)
 	if err != nil {
 		return nil
 	}
@@ -229,13 +233,13 @@ func DictGetLabel(c *gin.Context, typeCode, value string) *string {
 
 // ===== GetChildren =====
 
-func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
+func (s *service) DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
 	ctx := c.Request.Context()
-	parent, err := FindByCode(ctx, typeCode)
+	parent, err := s.repo.FindByCode(ctx, typeCode)
 	if err != nil {
 		return make([]*DictVO, 0)
 	}
-	records := ListChildren(ctx, parent.ID)
+	records := s.repo.ListChildren(ctx, parent.ID)
 	vos := make([]*DictVO, len(records))
 	for i, r := range records {
 		vos[i] = SysDictToDictVO(&r)
@@ -245,10 +249,9 @@ func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
 
 // ===== Internal helpers =====
 
-
-func dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) error {
+func (s *service) dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) error {
 	if vo.Value != nil && *vo.Value != "" {
-		cnt := CountDuplicateValue(ctx, vo.ParentID, *vo.Value, excludeID)
+		cnt := s.repo.CountDuplicateValue(ctx, vo.ParentID, *vo.Value, excludeID)
 		if cnt > 0 {
 			return exception.NewBusinessError("同一父字典下已存在相同值"+*vo.Value, 400)
 		}
@@ -256,12 +259,12 @@ func dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) error
 	return nil
 }
 
-func dictCheckCircularParent(ctx context.Context, entityID, newParentID string) error {
+func (s *service) dictCheckCircularParent(ctx context.Context, entityID, newParentID string) error {
 	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return nil
 	}
 
-	all := ListAll(ctx)
+	all := s.repo.ListAll(ctx)
 	parentMap := make(map[string]string)
 	for _, e := range all {
 		if e.ParentID != nil {
@@ -278,8 +281,8 @@ func dictCheckCircularParent(ctx context.Context, entityID, newParentID string) 
 	return nil
 }
 
-func dictCollectDescendantIDs(ctx context.Context, ids []string) []string {
-	all := ListAll(ctx)
+func (s *service) dictCollectDescendantIDs(ctx context.Context, ids []string) []string {
+	all := s.repo.ListAll(ctx)
 	childrenMap := make(map[string][]string)
 	for _, r := range all {
 		pid := getParentIDKey(r.ParentID)
@@ -348,4 +351,44 @@ func getParentIDKey(parentID *string) string {
 		return ""
 	}
 	return *parentID
+}
+
+func DictPage(c *gin.Context, p *DictPageParam) {
+	defaultModule.service.DictPage(c, p)
+}
+
+func DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
+	return defaultModule.service.DictTree(c, param)
+}
+
+func DictCreate(c *gin.Context, vo *DictVO) {
+	defaultModule.service.DictCreate(c, vo)
+}
+
+func DictModify(c *gin.Context, vo *DictVO) {
+	defaultModule.service.DictModify(c, vo)
+}
+
+func DictRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.DictRemove(c, param)
+}
+
+func DictDetail(c *gin.Context, id string) *DictVO {
+	return defaultModule.service.DictDetail(c, id)
+}
+
+func DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
+	return defaultModule.service.DictOptions(c, param)
+}
+
+func DictList(c *gin.Context, param *DictListParam) []*DictVO {
+	return defaultModule.service.DictList(c, param)
+}
+
+func DictGetLabel(c *gin.Context, typeCode, value string) *string {
+	return defaultModule.service.DictGetLabel(c, typeCode, value)
+}
+
+func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
+	return defaultModule.service.DictGetChildren(c, typeCode)
 }

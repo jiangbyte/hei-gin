@@ -3,16 +3,21 @@ package session
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	userModel "hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/db"
 )
 
-func LoadUsers(ctx context.Context, userIDs []string) map[string]*userModel.SysUser {
+type repository struct {
+	db *gorm.DB
+}
+
+func (r *repository) LoadUsers(ctx context.Context, userIDs []string) map[string]*userModel.SysUser {
 	if len(userIDs) == 0 {
 		return map[string]*userModel.SysUser{}
 	}
 	var users []userModel.SysUser
-	db.DB.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
+	r.db.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
 	result := make(map[string]*userModel.SysUser, len(users))
 	for i := range users {
 		user := users[i]
@@ -21,10 +26,10 @@ func LoadUsers(ctx context.Context, userIDs []string) map[string]*userModel.SysU
 	return result
 }
 
-func FindUserIDs(ctx context.Context, keyword string, limit int) []string {
+func (r *repository) FindUserIDs(ctx context.Context, keyword string, limit int) []string {
 	like := keyword + "%"
 	var ids []string
-	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).
+	r.db.WithContext(ctx).Model(&userModel.SysUser{}).
 		Select("id").
 		Where("id = ? OR id LIKE ? OR username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?",
 			keyword, like, like, like, like, like).

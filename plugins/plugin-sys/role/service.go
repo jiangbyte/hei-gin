@@ -6,16 +6,20 @@ import (
 
 	"gorm.io/gorm"
 
+	userModel "hei-gin/plugins/plugin-sys/user"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
-	userModel "hei-gin/plugins/plugin-sys/user"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RolePage(c *gin.Context, p *RolePageParam) {
+type service struct {
+	repo *repository
+}
+
+func (s *service) RolePage(c *gin.Context, p *RolePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -27,7 +31,7 @@ func RolePage(c *gin.Context, p *RolePageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*RoleVO, len(rows))
 	for i, r := range rows {
@@ -36,25 +40,25 @@ func RolePage(c *gin.Context, p *RolePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func RoleCreate(c *gin.Context, vo *RoleVO) {
+func (s *service) RoleCreate(c *gin.Context, vo *RoleVO) {
 	ctx := c.Request.Context()
 
 	e := RoleVOToSysRole(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加角色失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func RoleModify(c *gin.Context, vo *RoleVO) {
+func (s *service) RoleModify(c *gin.Context, vo *RoleVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	if _, err := FindByID(ctx, vo.ID); err != nil {
+	if _, err := s.repo.FindByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -76,38 +80,38 @@ func RoleModify(c *gin.Context, vo *RoleVO) {
 	if vo.Extra != nil {
 		up["extra"] = *vo.Extra
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑角色失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func RoleRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) RoleRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
 
-	cnt := CountUserRoleRefs(ctx, ids)
+	cnt := s.repo.CountUserRoleRefs(ctx, ids)
 	if cnt > 0 {
 		result.WriteError(c, exception.NewBusinessError("角色存在关联用户，无法删除", 400))
 		return
 	}
 
-	if err := DeleteCascade(ctx, ids); err != nil {
+	if err := s.repo.DeleteCascade(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除角色失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func RoleDetail(c *gin.Context, id string) *RoleVO {
+func (s *service) RoleDetail(c *gin.Context, id string) *RoleVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -119,9 +123,9 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 	return SysRoleToRoleVO(e)
 }
 
-func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
+func (s *service) RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
-	perms := FindRolePermissionCodes(ctx, roleID)
+	perms := s.repo.FindRolePermissionCodes(ctx, roleID)
 	codes := make([]string, len(perms))
 	for i, p := range perms {
 		codes[i] = p.PermissionCode
@@ -129,9 +133,9 @@ func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 	return codes
 }
 
-func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
+func (s *service) RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
 	ctx := c.Request.Context()
-	perms := FindRolePermissions(ctx, roleID)
+	perms := s.repo.FindRolePermissions(ctx, roleID)
 	r := make([]map[string]interface{}, len(perms))
 	for i, p := range perms {
 		r[i] = map[string]interface{}{
@@ -144,9 +148,9 @@ func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interf
 	return r
 }
 
-func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
+func (s *service) RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
-	resources := FindRoleResources(ctx, roleID)
+	resources := s.repo.FindRoleResources(ctx, roleID)
 	ids := make([]string, len(resources))
 	for i, r := range resources {
 		ids[i] = r.ResourceID
@@ -154,7 +158,7 @@ func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
 	return ids
 }
 
-func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
+func (s *service) RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 	roleID := param.RoleID
 	if roleID == "" {
 		result.WriteError(c, exception.NewBusinessError("角色ID不能为空", 400))
@@ -165,9 +169,9 @@ func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 	permBatch := make([]userModel.RelRolePermission, len(param.Permissions))
 	for i, p := range param.Permissions {
 		r := userModel.RelRolePermission{
-			RoleID: roleID,
-			PermissionCode: p.PermissionCode, 
-			Scope: p.Scope,
+			RoleID:         roleID,
+			PermissionCode: p.PermissionCode,
+			Scope:          p.Scope,
 		}
 		if p.CustomScopeGroupIds != nil {
 			r.CustomScopeGroupIds = p.CustomScopeGroupIds
@@ -177,13 +181,13 @@ func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 		}
 		permBatch[i] = r
 	}
-	if err := ReplaceRolePermissions(ctx, roleID, permBatch); err != nil {
+	if err := s.repo.ReplaceRolePermissions(ctx, roleID, permBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
+func (s *service) RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
 	roleID := param.RoleID
 	if roleID == "" {
 		result.WriteError(c, exception.NewBusinessError("角色ID不能为空", 400))
@@ -206,8 +210,8 @@ func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
 			RoleID: roleID, ResourceID: id,
 		}
 	}
-	res := FindResourceExtras(ctx, uIDs)
-	existingPerms := FindRolePermissionCodes(ctx, roleID)
+	res := s.repo.FindResourceExtras(ctx, uIDs)
+	existingPerms := s.repo.FindRolePermissionCodes(ctx, roleID)
 	epm := make(map[string]bool)
 	for _, p := range existingPerms {
 		epm[p.PermissionCode] = true
@@ -230,8 +234,31 @@ func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
 			ID: utils.GenerateID(), RoleID: roleID, PermissionCode: pc, Scope: "ALL",
 		})
 	}
-	if err := ReplaceRoleResourcesAndAppendPerms(ctx, roleID, rrBatch, uIDs, permBatch); err != nil {
+	if err := s.repo.ReplaceRoleResourcesAndAppendPerms(ctx, roleID, rrBatch, uIDs, permBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("分配资源权限失败: "+err.Error(), 500))
 		return
 	}
+}
+
+func RolePage(c *gin.Context, p *RolePageParam) { defaultModule.service.RolePage(c, p) }
+func RoleCreate(c *gin.Context, vo *RoleVO)     { defaultModule.service.RoleCreate(c, vo) }
+func RoleModify(c *gin.Context, vo *RoleVO)     { defaultModule.service.RoleModify(c, vo) }
+func RoleRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.RoleRemove(c, param)
+}
+func RoleDetail(c *gin.Context, id string) *RoleVO { return defaultModule.service.RoleDetail(c, id) }
+func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
+	return defaultModule.service.RoleOwnPermissionCodes(c, roleID)
+}
+func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
+	return defaultModule.service.RoleOwnPermissionDetails(c, roleID)
+}
+func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
+	return defaultModule.service.RoleOwnResourceIDs(c, roleID)
+}
+func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
+	defaultModule.service.RoleGrantPermissions(c, param)
+}
+func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
+	defaultModule.service.RoleGrantResources(c, param)
 }

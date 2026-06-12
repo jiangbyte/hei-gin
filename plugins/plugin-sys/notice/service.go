@@ -10,7 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NoticePage(c *gin.Context, p *NoticePageParam) {
+type service struct {
+	repo *repository
+}
+
+func (s *service) NoticePage(c *gin.Context, p *NoticePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -22,7 +26,7 @@ func NoticePage(c *gin.Context, p *NoticePageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*NoticeVO, len(rows))
 	for i, r := range rows {
@@ -31,13 +35,13 @@ func NoticePage(c *gin.Context, p *NoticePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func NoticeDetail(c *gin.Context, id string) *NoticeVO {
+func (s *service) NoticeDetail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -49,24 +53,24 @@ func NoticeDetail(c *gin.Context, id string) *NoticeVO {
 	return SysNoticeToNoticeVO(e)
 }
 
-func NoticeCreate(c *gin.Context, vo *NoticeVO) {
+func (s *service) NoticeCreate(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
 
 	e := NoticeVOToSysNotice(vo)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加通知失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func NoticeModify(c *gin.Context, vo *NoticeVO) {
+func (s *service) NoticeModify(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	_, err := FindByID(ctx, vo.ID)
+	_, err := s.repo.FindByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -107,27 +111,27 @@ func NoticeModify(c *gin.Context, vo *NoticeVO) {
 	if vo.ExpireAt != nil {
 		up["expire_at"] = utils.ParseDateTimePtr(vo.ExpireAt)
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑通知失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func NoticeRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) NoticeRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	if err := DeleteByIDs(ctx, ids); err != nil {
+	if err := s.repo.DeleteByIDs(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除通知失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func NoticeOptions(c *gin.Context) []any {
+func (s *service) NoticeOptions(c *gin.Context) []any {
 	ctx := c.Request.Context()
-	rows := ListAll(ctx)
+	rows := s.repo.ListAll(ctx)
 	vos := make([]any, len(rows))
 	for i, r := range rows {
 		vos[i] = SysNoticeToNoticeVO(&r)
@@ -135,13 +139,13 @@ func NoticeOptions(c *gin.Context) []any {
 	return vos
 }
 
-func NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
+func (s *service) NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
 		return nil
@@ -149,7 +153,7 @@ func NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
 	return SysNoticeToNoticeVO(e)
 }
 
-func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
+func (s *service) NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
 	if param.Size < 1 {
 		param.Size = 5
 	}
@@ -158,7 +162,7 @@ func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
 	}
 
 	ctx := c.Request.Context()
-	rows := Latest(ctx, param.Size)
+	rows := s.repo.Latest(ctx, param.Size)
 	vos := make([]*NoticeVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysNoticeToNoticeVO(&r)
@@ -166,7 +170,7 @@ func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
 	return vos
 }
 
-func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
+func (s *service) NoticePublicPage(c *gin.Context, p *NoticePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -178,7 +182,7 @@ func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
 		p.Size = 100
 	}
 
-	rows, total := PublicPage(ctx, p)
+	rows, total := s.repo.PublicPage(ctx, p)
 
 	vos := make([]*NoticeVO, len(rows))
 	for i, r := range rows {
@@ -187,13 +191,13 @@ func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
+func (s *service) NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindEnabledByID(ctx, id)
+	e, err := s.repo.FindEnabledByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -203,4 +207,44 @@ func NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
 		return nil
 	}
 	return SysNoticeToNoticeVO(e)
+}
+
+func NoticePage(c *gin.Context, p *NoticePageParam) {
+	defaultModule.service.NoticePage(c, p)
+}
+
+func NoticeDetail(c *gin.Context, id string) *NoticeVO {
+	return defaultModule.service.NoticeDetail(c, id)
+}
+
+func NoticeCreate(c *gin.Context, vo *NoticeVO) {
+	defaultModule.service.NoticeCreate(c, vo)
+}
+
+func NoticeModify(c *gin.Context, vo *NoticeVO) {
+	defaultModule.service.NoticeModify(c, vo)
+}
+
+func NoticeRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.NoticeRemove(c, param)
+}
+
+func NoticeOptions(c *gin.Context) []any {
+	return defaultModule.service.NoticeOptions(c)
+}
+
+func NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
+	return defaultModule.service.NoticeDetailByID(c, id)
+}
+
+func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
+	return defaultModule.service.NoticeLatest(c, param)
+}
+
+func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
+	defaultModule.service.NoticePublicPage(c, p)
+}
+
+func NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
+	return defaultModule.service.NoticePublicDetail(c, id)
 }

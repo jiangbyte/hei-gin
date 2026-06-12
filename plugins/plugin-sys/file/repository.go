@@ -5,19 +5,25 @@ import (
 	"encoding/json"
 	"time"
 
-	"hei-gin/sdk/db"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
-func SaveChunkState(ctx context.Context, uploadID string, state chunkUploadState) error {
+type repository struct {
+	db  *gorm.DB
+	rdb redis.UniversalClient
+}
+
+func (r *repository) SaveChunkState(ctx context.Context, uploadID string, state chunkUploadState) error {
 	data, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
-	return db.Redis.SetEx(ctx, chunkStateKey(uploadID), data, 24*time.Hour).Err()
+	return r.rdb.SetEx(ctx, chunkStateKey(uploadID), data, 24*time.Hour).Err()
 }
 
-func LoadChunkState(ctx context.Context, uploadID string) (*chunkUploadState, error) {
-	data, err := db.Redis.Get(ctx, chunkStateKey(uploadID)).Bytes()
+func (r *repository) LoadChunkState(ctx context.Context, uploadID string) (*chunkUploadState, error) {
+	data, err := r.rdb.Get(ctx, chunkStateKey(uploadID)).Bytes()
 	if err != nil {
 		return nil, err
 	}
@@ -28,12 +34,12 @@ func LoadChunkState(ctx context.Context, uploadID string) (*chunkUploadState, er
 	return &state, nil
 }
 
-func DeleteChunkState(ctx context.Context, uploadID string) error {
-	return db.Redis.Del(ctx, chunkStateKey(uploadID)).Err()
+func (r *repository) DeleteChunkState(ctx context.Context, uploadID string) error {
+	return r.rdb.Del(ctx, chunkStateKey(uploadID)).Err()
 }
 
-func Page(ctx context.Context, p *FilePageParam) ([]SysFile, int64) {
-	query := db.DB.WithContext(ctx).Model(&SysFile{})
+func (r *repository) Page(ctx context.Context, p *FilePageParam) ([]SysFile, int64) {
+	query := r.db.WithContext(ctx).Model(&SysFile{})
 	if p.Engine != "" {
 		query = query.Where("engine = ?", p.Engine)
 	}
@@ -51,34 +57,34 @@ func Page(ctx context.Context, p *FilePageParam) ([]SysFile, int64) {
 	return rows, total
 }
 
-func FindByID(ctx context.Context, id string) (*SysFile, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*SysFile, error) {
 	var entity SysFile
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &entity, nil
 }
 
-func ListByIDs(ctx context.Context, ids []string) []SysFile {
+func (r *repository) ListByIDs(ctx context.Context, ids []string) []SysFile {
 	var files []SysFile
 	if len(ids) == 0 {
 		return files
 	}
-	db.DB.WithContext(ctx).Where("id IN ?", ids).Find(&files)
+	r.db.WithContext(ctx).Where("id IN ?", ids).Find(&files)
 	return files
 }
 
-func DeleteByIDs(ctx context.Context, ids []string) error {
-	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error
+func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
+	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error
 }
 
-func Create(ctx context.Context, entity *SysFile) error {
-	return db.DB.WithContext(ctx).Create(entity).Error
+func (r *repository) Create(ctx context.Context, entity *SysFile) error {
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func FindByKey(ctx context.Context, bucket, fileKey string) (*SysFile, error) {
+func (r *repository) FindByKey(ctx context.Context, bucket, fileKey string) (*SysFile, error) {
 	var entity SysFile
-	if err := db.DB.WithContext(ctx).
+	if err := r.db.WithContext(ctx).
 		First(&entity, "bucket = ? AND file_key = ?", bucket, fileKey).Error; err != nil {
 		return nil, err
 	}

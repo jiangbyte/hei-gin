@@ -3,9 +3,12 @@ package user
 import (
 	"context"
 
-	"hei-gin/sdk/db"
 	"gorm.io/gorm"
 )
+
+type repository struct {
+	db *gorm.DB
+}
 
 type cacheOrg struct {
 	ID       string
@@ -50,8 +53,8 @@ type rawResource struct {
 	Status        string
 }
 
-func Page(ctx context.Context, p *UserPageParam) ([]SysUser, int64) {
-	q := db.DB.WithContext(ctx).Model(&SysUser{})
+func (r *repository) Page(ctx context.Context, p *UserPageParam) ([]SysUser, int64) {
+	q := r.db.WithContext(ctx).Model(&SysUser{})
 	if p.Keyword != "" {
 		like := "%" + p.Keyword + "%"
 		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
@@ -62,21 +65,21 @@ func Page(ctx context.Context, p *UserPageParam) ([]SysUser, int64) {
 	var total int64
 	q.Count(&total)
 	var rows []SysUser
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current-1)*p.Size).Find(&rows)
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 	return rows, total
 }
 
-func FindByID(ctx context.Context, id string) (*SysUser, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*SysUser, error) {
 	var e SysUser
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func CountByUsername(ctx context.Context, username, excludeID string) int64 {
+func (r *repository) CountByUsername(ctx context.Context, username, excludeID string) int64 {
 	var count int64
-	q := db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", username)
+	q := r.db.WithContext(ctx).Model(&SysUser{}).Where("username = ?", username)
 	if excludeID != "" {
 		q = q.Where("id != ?", excludeID)
 	}
@@ -84,16 +87,16 @@ func CountByUsername(ctx context.Context, username, excludeID string) int64 {
 	return count
 }
 
-func Create(ctx context.Context, entity *SysUser) error {
-	return db.DB.WithContext(ctx).Create(entity).Error
+func (r *repository) Create(ctx context.Context, entity *SysUser) error {
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
-	return db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", id).Updates(up).Error
+func (r *repository) UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&SysUser{}).Where("id = ?", id).Updates(up).Error
 }
 
-func DeleteUsersCascade(ctx context.Context, ids []string) error {
-	tx := db.DB.WithContext(ctx).Begin()
+func (r *repository) DeleteUsersCascade(ctx context.Context, ids []string) error {
+	tx := r.db.WithContext(ctx).Begin()
 	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -113,8 +116,8 @@ func DeleteUsersCascade(ctx context.Context, ids []string) error {
 	return tx.Commit().Error
 }
 
-func ReplaceUserRoles(ctx context.Context, userID string, roles []RelUserRole) error {
-	tx := db.DB.WithContext(ctx).Begin()
+func (r *repository) ReplaceUserRoles(ctx context.Context, userID string, roles []RelUserRole) error {
+	tx := r.db.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", userID).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -128,8 +131,8 @@ func ReplaceUserRoles(ctx context.Context, userID string, roles []RelUserRole) e
 	return tx.Commit().Error
 }
 
-func ReplaceUserPermissions(ctx context.Context, userID string, perms []RelUserPermission) error {
-	tx := db.DB.WithContext(ctx).Begin()
+func (r *repository) ReplaceUserPermissions(ctx context.Context, userID string, perms []RelUserPermission) error {
+	tx := r.db.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", userID).Delete(&RelUserPermission{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -143,88 +146,86 @@ func ReplaceUserPermissions(ctx context.Context, userID string, perms []RelUserP
 	return tx.Commit().Error
 }
 
-func UpdateStatusByIDs(ctx context.Context, ids []string, status string) error {
-	return db.DB.WithContext(ctx).Model(&SysUser{}).Where("id IN ?", ids).Updates(map[string]interface{}{"status": status}).Error
+func (r *repository) UpdateStatusByIDs(ctx context.Context, ids []string, status string) error {
+	return r.db.WithContext(ctx).Model(&SysUser{}).Where("id IN ?", ids).Updates(map[string]interface{}{"status": status}).Error
 }
 
-func FindRoleRelsByUserIDs(ctx context.Context, userIDs []string) []RelUserRole {
+func (r *repository) FindRoleRelsByUserIDs(ctx context.Context, userIDs []string) []RelUserRole {
 	var rows []RelUserRole
-	db.DB.WithContext(ctx).Where("user_id IN ?", userIDs).Find(&rows)
+	r.db.WithContext(ctx).Where("user_id IN ?", userIDs).Find(&rows)
 	return rows
 }
 
-func FindRoleRelsByUserID(ctx context.Context, userID string) []RelUserRole {
+func (r *repository) FindRoleRelsByUserID(ctx context.Context, userID string) []RelUserRole {
 	var rows []RelUserRole
-	db.DB.WithContext(ctx).Where("user_id = ?", userID).Find(&rows)
+	r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&rows)
 	return rows
 }
 
-func FindPermissionRelsByUserID(ctx context.Context, userID string) []RelUserPermission {
+func (r *repository) FindPermissionRelsByUserID(ctx context.Context, userID string) []RelUserPermission {
 	var rows []RelUserPermission
-	db.DB.WithContext(ctx).Where("user_id = ?", userID).Find(&rows)
+	r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&rows)
 	return rows
 }
 
-func FindDistinctUserPermissionCodes(ctx context.Context, userID string) []RelUserPermission {
+func (r *repository) FindDistinctUserPermissionCodes(ctx context.Context, userID string) []RelUserPermission {
 	var rows []RelUserPermission
-	db.DB.WithContext(ctx).Where("user_id = ?", userID).Select("DISTINCT permission_code").Find(&rows)
+	r.db.WithContext(ctx).Where("user_id = ?", userID).Select("DISTINCT permission_code").Find(&rows)
 	return rows
 }
 
-func FindDistinctRolePermissionCodes(ctx context.Context, roleIDs []string) []RelRolePermission {
+func (r *repository) FindDistinctRolePermissionCodes(ctx context.Context, roleIDs []string) []RelRolePermission {
 	var rows []RelRolePermission
-	db.DB.WithContext(ctx).Where("role_id IN ?", roleIDs).Select("DISTINCT permission_code").Find(&rows)
+	r.db.WithContext(ctx).Where("role_id IN ?", roleIDs).Select("DISTINCT permission_code").Find(&rows)
 	return rows
 }
 
-func FindOrgCacheRows(ctx context.Context) []cacheOrg {
+func (r *repository) FindOrgCacheRows(ctx context.Context) []cacheOrg {
 	var rows []cacheOrg
-	db.DB.WithContext(ctx).Table("sys_org").Select("id,name,parent_id").Find(&rows)
+	r.db.WithContext(ctx).Table("sys_org").Select("id,name,parent_id").Find(&rows)
 	return rows
 }
 
-func FindGroupCacheRows(ctx context.Context) []cacheGroup {
+func (r *repository) FindGroupCacheRows(ctx context.Context) []cacheGroup {
 	var rows []cacheGroup
-	db.DB.WithContext(ctx).Table("sys_group").Select("id,name,parent_id").Find(&rows)
+	r.db.WithContext(ctx).Table("sys_group").Select("id,name,parent_id").Find(&rows)
 	return rows
 }
 
-func FindPositionRows(ctx context.Context, ids []string) []positionRow {
+func (r *repository) FindPositionRows(ctx context.Context, ids []string) []positionRow {
 	var rows []positionRow
-	db.DB.WithContext(ctx).Table("sys_position").Where("id IN ?", ids).Find(&rows)
+	r.db.WithContext(ctx).Table("sys_position").Where("id IN ?", ids).Find(&rows)
 	return rows
 }
 
-func UpdateAvatar(ctx context.Context, entity *SysUser, avatar string) error {
-	return db.DB.WithContext(ctx).Model(entity).Update("avatar", avatar).Error
+func (r *repository) UpdateAvatar(ctx context.Context, entity *SysUser, avatar string) error {
+	return r.db.WithContext(ctx).Model(entity).Update("avatar", avatar).Error
 }
 
-func UpdatePassword(ctx context.Context, userID, password string) error {
-	return db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", userID).Update("password", password).Error
+func (r *repository) UpdatePassword(ctx context.Context, userID, password string) error {
+	return r.db.WithContext(ctx).Model(&SysUser{}).Where("id = ?", userID).Update("password", password).Error
 }
 
-func FindRoleCodesByIDs(ctx context.Context, ids []string) []roleCodeRow {
+func (r *repository) FindRoleCodesByIDs(ctx context.Context, ids []string) []roleCodeRow {
 	var rows []roleCodeRow
-	db.DB.WithContext(ctx).Table("sys_role").Where("id IN ?", ids).Find(&rows)
+	r.db.WithContext(ctx).Table("sys_role").Where("id IN ?", ids).Find(&rows)
 	return rows
 }
 
-func FindEnabledResources(ctx context.Context) []rawResource {
+func (r *repository) FindEnabledResources(ctx context.Context) []rawResource {
 	var resources []rawResource
-	db.DB.WithContext(ctx).Table("sys_resource").Where("status = ?", "ENABLED").Order("sort_code ASC").Find(&resources)
+	r.db.WithContext(ctx).Table("sys_resource").Where("status = ?", "ENABLED").Order("sort_code ASC").Find(&resources)
 	return resources
 }
 
-func FindRoleResourcesByRoleIDs(ctx context.Context, roleIDs []string) []RelRoleResource {
+func (r *repository) FindRoleResourcesByRoleIDs(ctx context.Context, roleIDs []string) []RelRoleResource {
 	var rows []RelRoleResource
-	db.DB.WithContext(ctx).Where("role_id IN ?", roleIDs).Find(&rows)
+	r.db.WithContext(ctx).Where("role_id IN ?", roleIDs).Find(&rows)
 	return rows
 }
 
-func FindEnabledResourcesByIDs(ctx context.Context, ids []string) []rawResource {
+func (r *repository) FindEnabledResourcesByIDs(ctx context.Context, ids []string) []rawResource {
 	var resources []rawResource
-	db.DB.WithContext(ctx).Table("sys_resource").Where("id IN ? AND status = ?", ids, "ENABLED").Order("sort_code ASC").Find(&resources)
+	r.db.WithContext(ctx).Table("sys_resource").Where("id IN ? AND status = ?", ids, "ENABLED").Order("sort_code ASC").Find(&resources)
 	return resources
 }
-
-var _ *gorm.DB

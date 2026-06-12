@@ -7,10 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type service struct {
+	repo *repository
+}
+
 // PermissionListModules returns sorted permission module names from Redis.
-func PermissionListModules(c *gin.Context) []string {
+func (s *service) PermissionListModules(c *gin.Context) []string {
 	ctx := c.Request.Context()
-	data, err := Cache(ctx)
+	data, err := s.repo.Cache(ctx)
 	if err != nil {
 		return []string{}
 	}
@@ -27,9 +31,9 @@ func PermissionListModules(c *gin.Context) []string {
 }
 
 // PermissionListByModule returns permission list for a specific module from Redis.
-func PermissionListByModule(c *gin.Context, module string) []interface{} {
+func (s *service) PermissionListByModule(c *gin.Context, module string) []interface{} {
 	ctx := c.Request.Context()
-	data, err := Cache(ctx)
+	data, err := s.repo.Cache(ctx)
 	if err != nil {
 		return []interface{}{}
 	}
@@ -46,4 +50,12 @@ func PermissionListByModule(c *gin.Context, module string) []interface{} {
 		perms = append(perms, v)
 	}
 	return perms
+}
+
+func PermissionListModules(c *gin.Context) []string {
+	return defaultModule.service.PermissionListModules(c)
+}
+
+func PermissionListByModule(c *gin.Context, module string) []interface{} {
+	return defaultModule.service.PermissionListByModule(c, module)
 }

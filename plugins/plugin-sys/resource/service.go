@@ -17,6 +17,10 @@ import (
 	"hei-gin/sdk/utils"
 )
 
+type service struct {
+	repo *repository
+}
+
 const resourceTreeCacheTTL = 30 * time.Second
 
 type resourceTreeCacheEntry struct {
@@ -47,7 +51,7 @@ type relRolePermission struct {
 	PermissionCode string
 }
 
-func ModulePage(c *gin.Context, param *ModulePageParam) {
+func (s *service) ModulePage(c *gin.Context, param *ModulePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -59,7 +63,7 @@ func ModulePage(c *gin.Context, param *ModulePageParam) {
 		param.Size = 100
 	}
 
-	records, total := ModulePageQuery(ctx, param.Current, param.Size)
+	records, total := s.repo.ModulePageQuery(ctx, param.Current, param.Size)
 
 	vos := make([]*ModuleVO, len(records))
 	for i, r := range records {
@@ -68,13 +72,13 @@ func ModulePage(c *gin.Context, param *ModulePageParam) {
 	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-func ModuleDetail(c *gin.Context, id string) *ModuleVO {
+func (s *service) ModuleDetail(c *gin.Context, id string) *ModuleVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindModuleByID(ctx, id)
+	e, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -86,28 +90,28 @@ func ModuleDetail(c *gin.Context, id string) *ModuleVO {
 	return SysModuleToModuleVO(e)
 }
 
-func ModuleCreate(c *gin.Context, vo *ModuleVO) {
+func (s *service) ModuleCreate(c *gin.Context, vo *ModuleVO) {
 	ctx := c.Request.Context()
 
 	e := ModuleVOToSysModule(vo)
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := CreateModule(ctx, e); err != nil {
+	if err := s.repo.CreateModule(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加模块失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
-func ModuleModify(c *gin.Context, vo *ModuleVO) {
+func (s *service) ModuleModify(c *gin.Context, vo *ModuleVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	if _, err := FindModuleByID(ctx, vo.ID); err != nil {
+	if _, err := s.repo.FindModuleByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -143,27 +147,27 @@ func ModuleModify(c *gin.Context, vo *ModuleVO) {
 	if vo.Status != "" {
 		up["status"] = vo.Status
 	}
-	if err := UpdateModuleByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateModuleByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑模块失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
-func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) ModuleRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	if err := DeleteModules(ctx, ids); err != nil {
+	if err := s.repo.DeleteModules(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除模块失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
-func ResourcePage(c *gin.Context, param *ResourcePageParam) {
+func (s *service) ResourcePage(c *gin.Context, param *ResourcePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -175,7 +179,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) {
 		param.Size = 100
 	}
 
-	records, total := ResourcePageQuery(ctx, param.Current, param.Size)
+	records, total := s.repo.ResourcePageQuery(ctx, param.Current, param.Size)
 
 	vos := make([]*ResourceVO, len(records))
 	for i, r := range records {
@@ -184,7 +188,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) {
 	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
+func (s *service) ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 	cacheKey := "tree:" + category
 	resourceTreeMu.RLock()
 	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -194,7 +198,7 @@ func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 	resourceTreeMu.RUnlock()
 
 	ctx := c.Request.Context()
-	all, err := ListResources(ctx, category)
+	all, err := s.repo.ListResources(ctx, category)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询资源树失败: "+err.Error(), 500))
 		return nil
@@ -251,7 +255,7 @@ func resToNode(r *SysResource) map[string]interface{} {
 	return n
 }
 
-func ResourceMenu(c *gin.Context) []map[string]interface{} {
+func (s *service) ResourceMenu(c *gin.Context) []map[string]interface{} {
 	cacheKey := "menu"
 	resourceTreeMu.RLock()
 	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -261,7 +265,7 @@ func ResourceMenu(c *gin.Context) []map[string]interface{} {
 	resourceTreeMu.RUnlock()
 
 	ctx := c.Request.Context()
-	all, err := ListAllResources(ctx)
+	all, err := s.repo.ListAllResources(ctx)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询资源菜单失败: "+err.Error(), 500))
 		return nil
@@ -324,13 +328,13 @@ func menuNode(r *SysResource) map[string]interface{} {
 	return n
 }
 
-func ResourceDetail(c *gin.Context, id string) *ResourceVO {
+func (s *service) ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindResourceByID(ctx, id)
+	e, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -342,28 +346,28 @@ func ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	return SysResourceToResourceVO(e)
 }
 
-func ResourceCreate(c *gin.Context, vo *ResourceVO) {
+func (s *service) ResourceCreate(c *gin.Context, vo *ResourceVO) {
 	ctx := c.Request.Context()
 
 	e := ResourceVOToSysResource(vo)
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := CreateResource(ctx, e); err != nil {
+	if err := s.repo.CreateResource(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加资源失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
-func ResourceModify(c *gin.Context, vo *ResourceVO) {
+func (s *service) ResourceModify(c *gin.Context, vo *ResourceVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	old, err := FindResourceByID(ctx, vo.ID)
+	old, err := s.repo.FindResourceByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -439,33 +443,33 @@ func ResourceModify(c *gin.Context, vo *ResourceVO) {
 		up["status"] = vo.Status
 	}
 
-	if err := UpdateResourceByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateResourceByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑资源失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 
-	if err := SyncPermissions(ctx, vo.ID, extractPermCode(oldExtra), extractPermCode(vo.Extra)); err != nil {
+	if err := s.repo.SyncPermissions(ctx, vo.ID, extractPermCode(oldExtra), extractPermCode(vo.Extra)); err != nil {
 		log.Printf("[RESOURCE] Failed to sync permissions: %v", err)
 	}
 }
 
-func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) ResourceRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	all := CollectResourceDescendants(ctx, ids)
-	if err := DeleteResourcesCascade(ctx, all); err != nil {
+	all := s.repo.CollectResourceDescendants(ctx, ids)
+	if err := s.repo.DeleteResourcesCascade(ctx, all); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除资源失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
-func collectDescendant(ctx context.Context, ids []string) []string {
-	return CollectResourceDescendants(ctx, ids)
+func (s *service) collectDescendant(ctx context.Context, ids []string) []string {
+	return s.repo.CollectResourceDescendants(ctx, ids)
 }
 
 func extractPermCode(extra *string) string {
@@ -478,4 +482,31 @@ func extractPermCode(extra *string) string {
 	}
 	code, _ := m["permission_code"].(string)
 	return code
+}
+
+func ModulePage(c *gin.Context, param *ModulePageParam) { defaultModule.service.ModulePage(c, param) }
+func ModuleDetail(c *gin.Context, id string) *ModuleVO {
+	return defaultModule.service.ModuleDetail(c, id)
+}
+func ModuleCreate(c *gin.Context, vo *ModuleVO) { defaultModule.service.ModuleCreate(c, vo) }
+func ModuleModify(c *gin.Context, vo *ModuleVO) { defaultModule.service.ModuleModify(c, vo) }
+func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.ModuleRemove(c, param)
+}
+func ResourcePage(c *gin.Context, param *ResourcePageParam) {
+	defaultModule.service.ResourcePage(c, param)
+}
+func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
+	return defaultModule.service.ResourceTree(c, category)
+}
+func ResourceMenu(c *gin.Context) []map[string]interface{} {
+	return defaultModule.service.ResourceMenu(c)
+}
+func ResourceDetail(c *gin.Context, id string) *ResourceVO {
+	return defaultModule.service.ResourceDetail(c, id)
+}
+func ResourceCreate(c *gin.Context, vo *ResourceVO) { defaultModule.service.ResourceCreate(c, vo) }
+func ResourceModify(c *gin.Context, vo *ResourceVO) { defaultModule.service.ResourceModify(c, vo) }
+func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.ResourceRemove(c, param)
 }

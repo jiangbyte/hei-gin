@@ -10,9 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type service struct {
+	repo *repository
+}
+
 // ===== Page =====
 
-func ConfigPage(c *gin.Context, p *ConfigPageParam) {
+func (s *service) ConfigPage(c *gin.Context, p *ConfigPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -24,7 +28,7 @@ func ConfigPage(c *gin.Context, p *ConfigPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*ConfigVO, len(rows))
 	for i, r := range rows {
@@ -35,13 +39,13 @@ func ConfigPage(c *gin.Context, p *ConfigPageParam) {
 
 // ===== Detail =====
 
-func ConfigDetail(c *gin.Context, id string) *ConfigVO {
+func (s *service) ConfigDetail(c *gin.Context, id string) *ConfigVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -55,11 +59,11 @@ func ConfigDetail(c *gin.Context, id string) *ConfigVO {
 
 // ===== Create =====
 
-func ConfigCreate(c *gin.Context, vo *ConfigVO) {
+func (s *service) ConfigCreate(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
 
 	e := ConfigVOToSysConfig(vo)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加配置失败: "+err.Error(), 500))
 		return
 	}
@@ -67,14 +71,14 @@ func ConfigCreate(c *gin.Context, vo *ConfigVO) {
 
 // ===== Modify =====
 
-func ConfigModify(c *gin.Context, vo *ConfigVO) {
+func (s *service) ConfigModify(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	if _, err := FindByID(ctx, vo.ID); err != nil {
+	if _, err := s.repo.FindByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -101,7 +105,7 @@ func ConfigModify(c *gin.Context, vo *ConfigVO) {
 	if vo.Extra != nil {
 		up["extra"] = *vo.Extra
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑配置失败: "+err.Error(), 500))
 		return
 	}
@@ -109,12 +113,12 @@ func ConfigModify(c *gin.Context, vo *ConfigVO) {
 
 // ===== Remove =====
 
-func ConfigRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) ConfigRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
-	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
+	if err := s.repo.DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除配置失败: "+err.Error(), 500))
 		return
 	}
@@ -122,9 +126,9 @@ func ConfigRemove(c *gin.Context, param *utils.IdsParam) {
 
 // ===== Options =====
 
-func ConfigOptions(c *gin.Context) []*ConfigVO {
+func (s *service) ConfigOptions(c *gin.Context) []*ConfigVO {
 	ctx := c.Request.Context()
-	rows := ListAll(ctx)
+	rows := s.repo.ListAll(ctx)
 	vos := make([]*ConfigVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysConfigToConfigVO(&r)
@@ -134,9 +138,9 @@ func ConfigOptions(c *gin.Context) []*ConfigVO {
 
 // ===== ListByCategory =====
 
-func ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
+func (s *service) ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
 	ctx := c.Request.Context()
-	rows := ListByCategory(ctx, category)
+	rows := s.repo.ListByCategory(ctx, category)
 	vos := make([]*ConfigVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysConfigToConfigVO(&r)
@@ -146,9 +150,9 @@ func ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
 
 // ===== EditBatch =====
 
-func ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
+func (s *service) ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
 	ctx := c.Request.Context()
-	if err := EditBatch(ctx, param.Configs); err != nil {
+	if err := s.repo.EditBatch(ctx, param.Configs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("批量编辑配置失败: "+err.Error(), 500))
 		return
 	}
@@ -156,7 +160,7 @@ func ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
 
 // ===== EditByCategory =====
 
-func ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
+func (s *service) ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
 	ctx := c.Request.Context()
 
 	up := map[string]interface{}{}
@@ -172,8 +176,44 @@ func ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
 	if len(up) == 0 {
 		return
 	}
-	if err := EditByCategory(ctx, param.Category, up); err != nil {
+	if err := s.repo.EditByCategory(ctx, param.Category, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("按分类编辑配置失败: "+err.Error(), 500))
 		return
 	}
+}
+
+func ConfigPage(c *gin.Context, p *ConfigPageParam) {
+	defaultModule.service.ConfigPage(c, p)
+}
+
+func ConfigDetail(c *gin.Context, id string) *ConfigVO {
+	return defaultModule.service.ConfigDetail(c, id)
+}
+
+func ConfigCreate(c *gin.Context, vo *ConfigVO) {
+	defaultModule.service.ConfigCreate(c, vo)
+}
+
+func ConfigModify(c *gin.Context, vo *ConfigVO) {
+	defaultModule.service.ConfigModify(c, vo)
+}
+
+func ConfigRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.ConfigRemove(c, param)
+}
+
+func ConfigOptions(c *gin.Context) []*ConfigVO {
+	return defaultModule.service.ConfigOptions(c)
+}
+
+func ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
+	return defaultModule.service.ConfigListByCategory(c, category)
+}
+
+func ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
+	defaultModule.service.ConfigEditBatch(c, param)
+}
+
+func ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
+	defaultModule.service.ConfigEditByCategory(c, param)
 }

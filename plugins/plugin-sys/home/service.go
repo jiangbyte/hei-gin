@@ -3,16 +3,20 @@ package home
 import (
 	"context"
 
+	resModel "hei-gin/plugins/plugin-sys/resource"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	resModel "hei-gin/plugins/plugin-sys/resource"
 
 	"github.com/gin-gonic/gin"
 )
 
-func HomeGet(c *gin.Context) *HomeVO {
+type service struct {
+	repo *repository
+}
+
+func (s *service) HomeGet(c *gin.Context) *HomeVO {
 	userID := auth.GetLoginIDDefaultNull(c)
 	vo := &HomeVO{
 		QuickActions:       make([]QuickActionVO, 0),
@@ -20,15 +24,15 @@ func HomeGet(c *gin.Context) *HomeVO {
 		Notices:            make([]HomeNotice, 0),
 	}
 	if userID != "" {
-		vo.QuickActions = findQuickActionsByUserID(c.Request.Context(), userID)
-		vo.AvailableResources = getAvailableResources(c.Request.Context(), userID)
+		vo.QuickActions = s.findQuickActionsByUserID(c.Request.Context(), userID)
+		vo.AvailableResources = s.getAvailableResources(c.Request.Context(), userID)
 	}
-	vo.Notices = getNotices(c.Request.Context())
-	vo.Stats.TotalUsers = UserCount(c.Request.Context())
+	vo.Notices = s.getNotices(c.Request.Context())
+	vo.Stats.TotalUsers = s.repo.UserCount(c.Request.Context())
 	return vo
 }
 
-func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
+func (s *service) HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
@@ -36,49 +40,49 @@ func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 	}
 	ctx := c.Request.Context()
 
-	if QuickActionExists(ctx, userID, param.ResourceID) {
+	if s.repo.QuickActionExists(ctx, userID, param.ResourceID) {
 		return
 	}
 
-	actionCount := QuickActionCount(ctx, userID)
+	actionCount := s.repo.QuickActionCount(ctx, userID)
 	entity := SysQuickAction{
 		UserID: userID, ResourceID: param.ResourceID,
 		SortCode: int(actionCount+1) * 10,
 	}
-	if err := CreateQuickAction(ctx, &entity); err != nil {
+	if err := s.repo.CreateQuickAction(ctx, &entity); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加快捷方式失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
+func (s *service) HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
 	}
 	ctx := c.Request.Context()
-	if err := DeleteQuickActions(ctx, param.IDs); err != nil {
+	if err := s.repo.DeleteQuickActions(ctx, param.IDs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("移除快捷方式失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
+func (s *service) HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
 	}
 	ctx := c.Request.Context()
-	if err := SortQuickActions(ctx, param.IDs); err != nil {
+	if err := s.repo.SortQuickActions(ctx, param.IDs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("排序快捷方式提交事务失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
-	actions := ListQuickActions(ctx, userID)
+func (s *service) findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
+	actions := s.repo.ListQuickActions(ctx, userID)
 	if len(actions) == 0 {
 		return make([]QuickActionVO, 0)
 	}
@@ -88,7 +92,7 @@ func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionV
 		resourceIDs[i] = a.ResourceID
 	}
 
-	resources := ListResourcesByIDs(ctx, resourceIDs)
+	resources := s.repo.ListResourcesByIDs(ctx, resourceIDs)
 	resourceMap := make(map[string]resModel.SysResource)
 	for _, r := range resources {
 		resourceMap[r.ID] = r
@@ -115,9 +119,9 @@ func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionV
 	return vos
 }
 
-func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
-	actionIDs := QuickActionResourceIDs(ctx, userID)
-	resources := AvailableResources(ctx, actionIDs)
+func (s *service) getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
+	actionIDs := s.repo.QuickActionResourceIDs(ctx, userID)
+	resources := s.repo.AvailableResources(ctx, actionIDs)
 
 	vos := make([]QuickActionVO, len(resources))
 	for i, r := range resources {
@@ -137,8 +141,8 @@ func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
 	return vos
 }
 
-func getNotices(ctx context.Context) []HomeNotice {
-	rows := LatestNotices(ctx)
+func (s *service) getNotices(ctx context.Context) []HomeNotice {
+	rows := s.repo.LatestNotices(ctx)
 
 	results := make([]HomeNotice, len(rows))
 	for i, r := range rows {
@@ -148,4 +152,20 @@ func getNotices(ctx context.Context) []HomeNotice {
 		}
 	}
 	return results
+}
+
+func HomeGet(c *gin.Context) *HomeVO {
+	return defaultModule.service.HomeGet(c)
+}
+
+func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
+	defaultModule.service.HomeAddQuickAction(c, param)
+}
+
+func HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.HomeRemoveQuickAction(c, param)
+}
+
+func HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.HomeSortQuickActions(c, param)
 }

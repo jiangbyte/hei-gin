@@ -1,15 +1,25 @@
 package v1
 
 import (
+	banner "hei-gin/plugins/plugin-sys/banner"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
-	"hei-gin/sdk/utils"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/registry"
-	banner "hei-gin/plugins/plugin-sys/banner"
+	"hei-gin/sdk/result"
+	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+type handler struct {
+	service *banner.Service
+}
+
+var defaultHandler = newHandler(banner.DefaultModule)
+
+func newHandler(module *banner.Module) *handler {
+	return &handler{service: module.Service()}
+}
 
 // RegisterRoutes registers all banner routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
@@ -17,7 +27,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/banner/page",
 		registry.Perm("sys:banner:page", "横幅分页"),
 		log.SysLog("获取Banner列表"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/banner/create
@@ -25,27 +35,27 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:banner:create", "添加横幅"),
 		log.SysLog("添加Banner"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/banner/modify
 	r.POST("/api/v1/sys/banner/modify",
 		registry.Perm("sys:banner:modify", "编辑横幅"),
 		log.SysLog("编辑Banner"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/banner/remove
 	r.POST("/api/v1/sys/banner/remove",
 		registry.Perm("sys:banner:remove", "删除横幅"),
 		log.SysLog("删除Banner"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/banner/detail
 	r.GET("/api/v1/sys/banner/detail",
 		registry.Perm("sys:banner:detail", "横幅详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
@@ -62,14 +72,14 @@ func init() {
 // @Param        size     query  int  false  "每页条数（默认 10，最大 100）"
 // @Success      200  {object}  map[string]any  "分页数据"
 // @Router       /api/v1/sys/banner/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param banner.BannerPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	banner.BannerPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // @Summary      添加横幅
@@ -80,14 +90,14 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  banner.BannerVO  true  "横幅数据"
 // @Success      200  {object}  map[string]any  "创建成功"
 // @Router       /api/v1/sys/banner/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo banner.BannerVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	banner.BannerCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -99,14 +109,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  banner.BannerVO  true  "横幅数据（id 必填）"
 // @Success      200  {object}  map[string]any  "修改成功"
 // @Router       /api/v1/sys/banner/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo banner.BannerVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	banner.BannerModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -118,14 +128,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "待删除 ID 列表"
 // @Success      200  {object}  map[string]any  "删除成功"
 // @Router       /api/v1/sys/banner/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	banner.BannerRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -137,7 +147,7 @@ func removeHandler(c *gin.Context) {
 // @Param        id   query  string  true  "横幅 ID"
 // @Success      200  {object}  map[string]any
 // @Router       /api/v1/sys/banner/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := banner.BannerDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }

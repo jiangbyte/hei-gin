@@ -10,9 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ===== Page =====
+type Service struct {
+	repo *repository
+}
 
-func BannerPage(c *gin.Context, p *BannerPageParam) {
+func (s *Service) Page(c *gin.Context, p *BannerPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -24,7 +26,7 @@ func BannerPage(c *gin.Context, p *BannerPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*BannerVO, len(rows))
 	for i, r := range rows {
@@ -33,15 +35,13 @@ func BannerPage(c *gin.Context, p *BannerPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-// ===== Detail =====
-
-func BannerDetail(c *gin.Context, id string) *BannerVO {
+func (s *Service) Detail(c *gin.Context, id string) *BannerVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -53,28 +53,24 @@ func BannerDetail(c *gin.Context, id string) *BannerVO {
 	return SysBannerToBannerVO(e)
 }
 
-// ===== Create =====
-
-func BannerCreate(c *gin.Context, vo *BannerVO) {
+func (s *Service) Create(c *gin.Context, vo *BannerVO) {
 	ctx := c.Request.Context()
 
 	e := BannerVOToSysBanner(vo)
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加横幅失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Modify =====
-
-func BannerModify(c *gin.Context, vo *BannerVO) {
+func (s *Service) Modify(c *gin.Context, vo *BannerVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	_, err := FindByID(ctx, vo.ID)
+	_, err := s.repo.FindByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -100,30 +96,26 @@ func BannerModify(c *gin.Context, vo *BannerVO) {
 	if vo.Description != nil {
 		up["description"] = *vo.Description
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑横幅失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Remove =====
-
-func BannerRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
-	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
+	if err := s.repo.DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除横幅失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Options =====
-
-func BannerOptions(c *gin.Context) []*BannerVO {
+func (s *Service) Options(c *gin.Context) []*BannerVO {
 	ctx := c.Request.Context()
-	rows := ListAll(ctx)
+	rows := s.repo.ListAll(ctx)
 	vos := make([]*BannerVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysBannerToBannerVO(&r)

@@ -5,13 +5,17 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+type service struct {
+	repo *repository
+}
 
 func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	n := map[string]interface{}{
@@ -28,7 +32,7 @@ func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	return n
 }
 
-func GroupPage(c *gin.Context, p *GroupPageParam) {
+func (s *service) GroupPage(c *gin.Context, p *GroupPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -40,7 +44,7 @@ func GroupPage(c *gin.Context, p *GroupPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*GroupVO, len(rows))
 	for i, r := range rows {
@@ -49,9 +53,9 @@ func GroupPage(c *gin.Context, p *GroupPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func GroupTree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
+func (s *service) GroupTree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
-	all := List(ctx, param.Category, param.OrgID)
+	all := s.repo.List(ctx, param.Category, param.OrgID)
 
 	if len(all) == 0 {
 		return make([]map[string]interface{}, 0)
@@ -89,13 +93,13 @@ func buildTree(node map[string]interface{}, parent *SysGroup, childrenMap map[st
 	node["children"] = childNodes
 }
 
-func GroupDetail(c *gin.Context, id string) *GroupVO {
+func (s *service) GroupDetail(c *gin.Context, id string) *GroupVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -107,27 +111,27 @@ func GroupDetail(c *gin.Context, id string) *GroupVO {
 	return SysGroupToGroupVO(e)
 }
 
-func GroupCreate(c *gin.Context, vo *GroupVO) {
+func (s *service) GroupCreate(c *gin.Context, vo *GroupVO) {
 	ctx := c.Request.Context()
 
 	e := GroupVOToSysGroup(vo)
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加群组失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func GroupModify(c *gin.Context, vo *GroupVO) {
+func (s *service) GroupModify(c *gin.Context, vo *GroupVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	_, err := FindByID(ctx, vo.ID)
+	_, err := s.repo.FindByID(ctx, vo.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -145,26 +149,26 @@ func GroupModify(c *gin.Context, vo *GroupVO) {
 	if vo.Description != nil {
 		up["description"] = *vo.Description
 	}
-	if err := UpdateByID(ctx, vo.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑群组失败: "+err.Error(), 500))
 		return
 	}
 }
 
-func GroupRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *service) GroupRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
 	ctx := c.Request.Context()
-	allIDs := getAllDescendantIDs(ctx, ids)
-	ClearUserGroupIDs(ctx, allIDs)
-	_ = DeleteByIDs(ctx, allIDs)
+	allIDs := s.getAllDescendantIDs(ctx, ids)
+	s.repo.ClearUserGroupIDs(ctx, allIDs)
+	_ = s.repo.DeleteByIDs(ctx, allIDs)
 }
 
-func GroupOptions(c *gin.Context) []*GroupVO {
+func (s *service) GroupOptions(c *gin.Context) []*GroupVO {
 	ctx := c.Request.Context()
-	records := ListAll(ctx)
+	records := s.repo.ListAll(ctx)
 	vos := make([]*GroupVO, len(records))
 	for i, r := range records {
 		vos[i] = SysGroupToGroupVO(&r)
@@ -172,9 +176,9 @@ func GroupOptions(c *gin.Context) []*GroupVO {
 	return vos
 }
 
-func GroupGetAll(c *gin.Context) []*GroupVO {
+func (s *service) GroupGetAll(c *gin.Context) []*GroupVO {
 	ctx := c.Request.Context()
-	records := ListAll(ctx)
+	records := s.repo.ListAll(ctx)
 	vos := make([]*GroupVO, len(records))
 	for i, r := range records {
 		vos[i] = SysGroupToGroupVO(&r)
@@ -182,13 +186,13 @@ func GroupGetAll(c *gin.Context) []*GroupVO {
 	return vos
 }
 
-func getAllDescendantIDs(ctx context.Context, ids []string) []string {
+func (s *service) getAllDescendantIDs(ctx context.Context, ids []string) []string {
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
 	}
 
-	all := ListAll(ctx)
+	all := s.repo.ListAll(ctx)
 	cm := make(map[string][]string)
 	for _, g := range all {
 		if g.ParentID != nil && *g.ParentID != "" {
@@ -214,3 +218,16 @@ func getAllDescendantIDs(ctx context.Context, ids []string) []string {
 	}
 	return r
 }
+
+func GroupPage(c *gin.Context, p *GroupPageParam) { defaultModule.service.GroupPage(c, p) }
+func GroupTree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
+	return defaultModule.service.GroupTree(c, param)
+}
+func GroupDetail(c *gin.Context, id string) *GroupVO { return defaultModule.service.GroupDetail(c, id) }
+func GroupCreate(c *gin.Context, vo *GroupVO)        { defaultModule.service.GroupCreate(c, vo) }
+func GroupModify(c *gin.Context, vo *GroupVO)        { defaultModule.service.GroupModify(c, vo) }
+func GroupRemove(c *gin.Context, param *utils.IdsParam) {
+	defaultModule.service.GroupRemove(c, param)
+}
+func GroupOptions(c *gin.Context) []*GroupVO { return defaultModule.service.GroupOptions(c) }
+func GroupGetAll(c *gin.Context) []*GroupVO  { return defaultModule.service.GroupGetAll(c) }

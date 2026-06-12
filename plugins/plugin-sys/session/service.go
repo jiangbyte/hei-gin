@@ -6,14 +6,18 @@ import (
 	"strings"
 	"time"
 
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Analysis(c *gin.Context) *SessionAnalysisResult {
+type service struct {
+	repo *repository
+}
+
+func (s *service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	ctx := c.Request.Context()
 	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
 	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
@@ -31,18 +35,18 @@ func Analysis(c *gin.Context) *SessionAnalysisResult {
 	}
 }
 
-func Page(c *gin.Context, param *SessionPageParam) {
+func (s *service) Page(c *gin.Context, param *SessionPageParam) {
 	ctx := c.Request.Context()
 	current, size := normalizePage(param.Current, param.Size)
 
 	keyword := strings.TrimSpace(param.Keyword)
-	infos, total, err := listBusinessSessionInfos(ctx, keyword, current, size)
+	infos, total, err := s.listBusinessSessionInfos(ctx, keyword, current, size)
 	if err != nil {
 		infos = []auth.SessionInfo{}
 		total = 0
 	}
 
-	users := LoadUsers(ctx, sessionUserIDs(infos))
+	users := s.repo.LoadUsers(ctx, sessionUserIDs(infos))
 	rows := make([]*SessionPageResult, 0, len(infos))
 	for _, info := range infos {
 		row := &SessionPageResult{
@@ -70,21 +74,21 @@ func Page(c *gin.Context, param *SessionPageParam) {
 	result.PageDataResult(c, rows, total, current, size)
 }
 
-func listBusinessSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
+func (s *service) listBusinessSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
 	if keyword == "" {
 		return auth.ListSessionInfos(ctx, string(enums.LoginTypeBusiness), current, size, "")
 	}
-	userIDs := FindUserIDs(ctx, keyword, maxKeywordCandidates)
+	userIDs := s.repo.FindUserIDs(ctx, keyword, maxKeywordCandidates)
 	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeBusiness), userIDs, current, size)
 }
 
 const maxKeywordCandidates = 1000
 
-func Exit(c *gin.Context, param *SessionExitParam) {
+func (s *service) Exit(c *gin.Context, param *SessionExitParam) {
 	auth.KickoutWithContext(c.Request.Context(), param.UserID)
 }
 
-func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
+func (s *service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeBusiness), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
@@ -104,11 +108,11 @@ func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	return results
 }
 
-func ExitToken(c *gin.Context, param *SessionExitTokenParam) {
+func (s *service) ExitToken(c *gin.Context, param *SessionExitTokenParam) {
 	auth.KickoutTokenWithContext(c.Request.Context(), param.UserID, param.Token)
 }
 
-func ChartData(c *gin.Context) *SessionChartData {
+func (s *service) ChartData(c *gin.Context) *SessionChartData {
 	ctx := c.Request.Context()
 	days := lastNDays(7)
 
@@ -196,4 +200,28 @@ func lastNDays(n int) []string {
 		days[i] = now.AddDate(0, 0, -(n - 1 - i)).Format("2006-01-02")
 	}
 	return days
+}
+
+func Analysis(c *gin.Context) *SessionAnalysisResult {
+	return defaultModule.service.Analysis(c)
+}
+
+func Page(c *gin.Context, param *SessionPageParam) {
+	defaultModule.service.Page(c, param)
+}
+
+func Exit(c *gin.Context, param *SessionExitParam) {
+	defaultModule.service.Exit(c, param)
+}
+
+func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
+	return defaultModule.service.TokenList(c, userID)
+}
+
+func ExitToken(c *gin.Context, param *SessionExitTokenParam) {
+	defaultModule.service.ExitToken(c, param)
+}
+
+func ChartData(c *gin.Context) *SessionChartData {
+	return defaultModule.service.ChartData(c)
 }
