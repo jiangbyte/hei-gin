@@ -1,5 +1,7 @@
 package role
 
+import "hei-gin/sdk/utils"
+
 // RoleVO is the view object for a role, used for create/modify requests and API responses.
 type RoleVO struct {
 	ID          string  `json:"id"`
@@ -43,4 +45,46 @@ type GrantResourceParam struct {
 	RoleID      string           `json:"role_id"`
 	ResourceIDs []string         `json:"resource_ids"`
 	Permissions []PermissionItem `json:"permissions"`
+}
+
+func SysRoleToRoleVO(src *SysRole) *RoleVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &RoleVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func RoleVOToSysRole(src *RoleVO) *SysRole {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysRole{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

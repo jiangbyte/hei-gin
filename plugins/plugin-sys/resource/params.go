@@ -1,5 +1,7 @@
 package resource
 
+import "hei-gin/sdk/utils"
+
 // ModuleVO represents a system module view object.
 type ModuleVO struct {
 	ID          string  `json:"id"`
@@ -57,4 +59,116 @@ type ResourceVO struct {
 type ResourcePageParam struct {
 	Current int `json:"current" form:"current"`
 	Size    int `json:"size" form:"size"`
+}
+
+func SysModuleToModuleVO(src *SysModule) *ModuleVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &ModuleVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Icon = src.Icon
+	dst.Color = src.Color
+	dst.Description = src.Description
+	dst.IsVisible = src.IsVisible
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func ModuleVOToSysModule(src *ModuleVO) *SysModule {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysModule{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Icon = src.Icon
+	dst.Color = src.Color
+	dst.Description = src.Description
+	dst.IsVisible = src.IsVisible
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
+}
+
+func SysResourceToResourceVO(src *SysResource) *ResourceVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &ResourceVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Type = src.Type
+	dst.Description = src.Description
+	dst.ParentID = src.ParentID
+	dst.RoutePath = src.RoutePath
+	dst.ComponentPath = src.ComponentPath
+	dst.RedirectPath = src.RedirectPath
+	dst.Icon = src.Icon
+	dst.Color = src.Color
+	dst.IsVisible = src.IsVisible
+	dst.IsCache = src.IsCache
+	dst.IsAffix = src.IsAffix
+	dst.IsBreadcrumb = src.IsBreadcrumb
+	dst.ExternalURL = src.ExternalURL
+	dst.Extra = src.Extra
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func ResourceVOToSysResource(src *ResourceVO) *SysResource {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysResource{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.Type = src.Type
+	dst.Description = src.Description
+	dst.ParentID = src.ParentID
+	dst.RoutePath = src.RoutePath
+	dst.ComponentPath = src.ComponentPath
+	dst.RedirectPath = src.RedirectPath
+	dst.Icon = src.Icon
+	dst.Color = src.Color
+	dst.IsVisible = src.IsVisible
+	dst.IsCache = src.IsCache
+	dst.IsAffix = src.IsAffix
+	dst.IsBreadcrumb = src.IsBreadcrumb
+	dst.ExternalURL = src.ExternalURL
+	dst.Extra = src.Extra
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

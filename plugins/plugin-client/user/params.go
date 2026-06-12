@@ -1,5 +1,7 @@
 package user
 
+import "hei-gin/sdk/utils"
+
 // ClientUserVO 客户端用户视图对象
 type ClientUserVO struct {
 	ID          string  `json:"id"`
@@ -18,6 +20,51 @@ type ClientUserVO struct {
 	LoginCount  int     `json:"login_count"`
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
+}
+
+func ClientUserToClientUserVO(src *ClientUser) *ClientUserVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &ClientUserVO{}
+	dst.ID = src.ID
+	dst.Username = src.Username
+	dst.Nickname = src.Nickname
+	dst.Avatar = src.Avatar
+	dst.Motto = src.Motto
+	dst.Gender = src.Gender
+	dst.Email = src.Email
+	dst.Github = src.Github
+	dst.Phone = src.Phone
+	dst.Status = src.Status
+	dst.LastLoginIP = src.LastLoginIP
+	dst.LoginCount = src.LoginCount
+	dst.LastLoginAt = utils.FormatDateTimePtr(src.LastLoginAt)
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func ClientUserVOToClientUser(src *ClientUserVO) *ClientUser {
+	if src == nil {
+		return nil
+	}
+
+	dst := &ClientUser{}
+	dst.ID = src.ID
+	dst.Username = src.Username
+	dst.Nickname = src.Nickname
+	dst.Avatar = src.Avatar
+	dst.Motto = src.Motto
+	dst.Gender = src.Gender
+	dst.Email = src.Email
+	dst.Github = src.Github
+	dst.Phone = src.Phone
+	dst.Status = src.Status
+	dst.LastLoginIP = src.LastLoginIP
+	dst.LoginCount = src.LoginCount
+	return dst
 }
 
 // ClientUserPageParam 客户端用户分页参数

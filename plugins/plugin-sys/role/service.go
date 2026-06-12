@@ -6,7 +6,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/enums"
@@ -28,20 +27,7 @@ func RolePage(c *gin.Context, p *RolePageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysRole{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ? OR code LIKE ?", like, like)
-	}
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysRole
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*RoleVO, len(rows))
 	for i, r := range rows {
@@ -55,7 +41,7 @@ func RoleCreate(c *gin.Context, vo *RoleVO) {
 
 	e := RoleVOToSysRole(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加角色失败: "+err.Error(), 500))
 		return
 	}
@@ -68,8 +54,7 @@ func RoleModify(c *gin.Context, vo *RoleVO) {
 		return
 	}
 
-	var e SysRole
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	if _, err := FindByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -91,7 +76,7 @@ func RoleModify(c *gin.Context, vo *RoleVO) {
 	if vo.Extra != nil {
 		up["extra"] = *vo.Extra
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysRole{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑角色失败: "+err.Error(), 500))
 		return
 	}
@@ -104,36 +89,14 @@ func RoleRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 	ctx := c.Request.Context()
 
-	var cnt int64
-	db.DB.WithContext(ctx).Model(&userModel.RelUserRole{}).Where("role_id IN ?", ids).Count(&cnt)
+	cnt := CountUserRoleRefs(ctx, ids)
 	if cnt > 0 {
 		result.WriteError(c, exception.NewBusinessError("角色存在关联用户，无法删除", 400))
 		return
 	}
 
-	tx := db.DB.WithContext(ctx).Begin()
-	if err := tx.Where("role_id IN ?", ids).Delete(&userModel.RelRolePermission{}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除角色权限关联失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Where("role_id IN ?", ids).Delete(&userModel.RelRoleResource{}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除角色资源关联失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Where("role_id IN ?", ids).Delete(&userModel.RelUserRole{}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除角色用户关联失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Where("id IN ?", ids).Delete(&SysRole{}).Error; err != nil {
-		tx.Rollback()
+	if err := DeleteCascade(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除角色失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Commit().Error; err != nil {
-		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 		return
 	}
 }
@@ -144,8 +107,8 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysRole
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -153,13 +116,12 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 		result.WriteError(c, exception.NewBusinessError("查询角色详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysRoleToRoleVO(&e)
+	return SysRoleToRoleVO(e)
 }
 
 func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
-	var perms []userModel.RelRolePermission
-	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("permission_code").Find(&perms)
+	perms := FindRolePermissionCodes(ctx, roleID)
 	codes := make([]string, len(perms))
 	for i, p := range perms {
 		codes[i] = p.PermissionCode
@@ -169,8 +131,7 @@ func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 
 func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
 	ctx := c.Request.Context()
-	var perms []userModel.RelRolePermission
-	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Find(&perms)
+	perms := FindRolePermissions(ctx, roleID)
 	r := make([]map[string]interface{}, len(perms))
 	for i, p := range perms {
 		r[i] = map[string]interface{}{
@@ -185,8 +146,7 @@ func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interf
 
 func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
-	var resources []userModel.RelRoleResource
-	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("resource_id").Find(&resources)
+	resources := FindRoleResources(ctx, roleID)
 	ids := make([]string, len(resources))
 	for i, r := range resources {
 		ids[i] = r.ResourceID
@@ -201,13 +161,6 @@ func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 		return
 	}
 	ctx := c.Request.Context()
-
-	tx := db.DB.WithContext(ctx).Begin()
-	if err := tx.Where("role_id = ?", roleID).Delete(&userModel.RelRolePermission{}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除已有权限失败: "+err.Error(), 500))
-		return
-	}
 
 	permBatch := make([]userModel.RelRolePermission, len(param.Permissions))
 	for i, p := range param.Permissions {
@@ -224,13 +177,8 @@ func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 		}
 		permBatch[i] = r
 	}
-	if err := tx.Create(&permBatch).Error; err != nil {
-		tx.Rollback()
+	if err := ReplaceRolePermissions(ctx, roleID, permBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Commit().Error; err != nil {
-		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 		return
 	}
 }
@@ -252,31 +200,14 @@ func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
 		}
 	}
 
-	tx := db.DB.WithContext(ctx).Begin()
-	if err := tx.Where("role_id = ?", roleID).Delete(&userModel.RelRoleResource{}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除已有资源权限失败: "+err.Error(), 500))
-		return
-	}
-
 	rrBatch := make([]userModel.RelRoleResource, len(uIDs))
 	for i, id := range uIDs {
 		rrBatch[i] = userModel.RelRoleResource{
 			RoleID: roleID, ResourceID: id,
 		}
 	}
-	if err := tx.Create(&rrBatch).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("分配资源权限失败: "+err.Error(), 500))
-		return
-	}
-
-	type row struct{ ID string; Extra *string }
-	var res []row
-	tx.Table("sys_resource").Where("id IN ? AND extra IS NOT NULL AND extra != ''", uIDs).Find(&res)
-
-	var existingPerms []userModel.RelRolePermission
-	tx.Where("role_id = ?", roleID).Select("permission_code").Find(&existingPerms)
+	res := FindResourceExtras(ctx, uIDs)
+	existingPerms := FindRolePermissionCodes(ctx, roleID)
 	epm := make(map[string]bool)
 	for _, p := range existingPerms {
 		epm[p.PermissionCode] = true
@@ -299,15 +230,8 @@ func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
 			ID: utils.GenerateID(), RoleID: roleID, PermissionCode: pc, Scope: "ALL",
 		})
 	}
-	if len(permBatch) > 0 {
-		if err := tx.Create(&permBatch).Error; err != nil {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
-			return
-		}
-	}
-	if err := tx.Commit().Error; err != nil {
-		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+	if err := ReplaceRoleResourcesAndAppendPerms(ctx, roleID, rrBatch, uIDs, permBatch); err != nil {
+		result.WriteError(c, exception.NewBusinessError("分配资源权限失败: "+err.Error(), 500))
 		return
 	}
 }

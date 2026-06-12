@@ -1,5 +1,10 @@
 package friend
 
+import (
+	imModel "hei-gin/plugins/plugin-im/model"
+	"hei-gin/sdk/utils"
+)
+
 // SendRequestParam 发送好友请求
 type SendRequestParam struct {
 	ReceiverID   string `json:"receiver_id" binding:"required"`
@@ -66,4 +71,43 @@ type SearchResult struct {
 	UserType string `json:"user_type"`
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
+}
+
+func ImFriendRequestToFriendRequestVO(src *imModel.FriendRequest) *FriendRequestVO {
+	if src == nil {
+		return nil
+	}
+	dst := &FriendRequestVO{}
+	dst.ID = src.ID
+	dst.SenderID = src.SenderID
+	dst.SenderType = src.SenderType
+	dst.ReceiverID = src.ReceiverID
+	dst.ReceiverType = src.ReceiverType
+	dst.Remark = src.Remark
+	dst.Status = src.Status
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	return dst
+}
+
+func ImFriendshipToFriendVO(src *imModel.Friendship) *FriendVO {
+	if src == nil {
+		return nil
+	}
+	dst := &FriendVO{}
+	dst.UserID = src.FriendID
+	dst.UserType = src.FriendType
+	dst.Remark = src.Remark
+	dst.AddedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	return dst
+}
+
+func ImFriendBlockToBlockVO(src *imModel.FriendBlock) *BlockVO {
+	if src == nil {
+		return nil
+	}
+	dst := &BlockVO{}
+	dst.BlockedID = src.BlockedID
+	dst.BlockedType = src.BlockedType
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	return dst
 }

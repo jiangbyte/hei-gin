@@ -6,9 +6,7 @@ import (
 	"strings"
 	"time"
 
-	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
@@ -48,7 +46,7 @@ func SessionPage(c *gin.Context, p *SessionPageParam) {
 		total = 0
 	}
 
-	users := loadConsumerUsers(ctx, sessionUserIDs(infos))
+	users := LoadUsers(ctx, sessionUserIDs(infos))
 	rows := make([]*SessionPageResult, 0, len(infos))
 	for _, info := range infos {
 		row := &SessionPageResult{
@@ -74,9 +72,11 @@ func listConsumerSessionInfos(ctx context.Context, keyword string, current, size
 	if keyword == "" {
 		return auth.ListSessionInfos(ctx, string(enums.LoginTypeConsumer), current, size, "")
 	}
-	userIDs := findConsumerUserIDs(ctx, keyword)
+	userIDs := FindUserIDs(ctx, keyword, maxKeywordCandidates)
 	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeConsumer), userIDs, current, size)
 }
+
+const maxKeywordCandidates = 1000
 
 // ===== Exit =====
 
@@ -139,35 +139,6 @@ func SessionChart(c *gin.Context) *SessionChartData {
 			},
 		},
 	}
-}
-
-func loadConsumerUsers(ctx context.Context, userIDs []string) map[string]*cliUser.ClientUser {
-	if len(userIDs) == 0 {
-		return map[string]*cliUser.ClientUser{}
-	}
-	var users []cliUser.ClientUser
-	db.DB.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
-	result := make(map[string]*cliUser.ClientUser, len(users))
-	for i := range users {
-		user := users[i]
-		result[user.ID] = &user
-	}
-	return result
-}
-
-func findConsumerUserIDs(ctx context.Context, keyword string) []string {
-	const maxKeywordCandidates = 1000
-
-	like := keyword + "%"
-	var ids []string
-	db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).
-		Select("id").
-		Where("id = ? OR id LIKE ? OR username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?",
-			keyword, like, like, like, like, like).
-		Order("last_login_at DESC, id ASC").
-		Limit(maxKeywordCandidates).
-		Pluck("id", &ids)
-	return ids
 }
 
 func sessionUserIDs(infos []auth.SessionInfo) []string {

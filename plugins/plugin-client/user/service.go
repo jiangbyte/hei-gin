@@ -4,7 +4,6 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -28,20 +27,7 @@ func ClientUserPage(c *gin.Context, p *ClientUserPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&ClientUser{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
-	}
-	if p.Status != "" {
-		q = q.Where("status = ?", p.Status)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []ClientUser
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*ClientUserVO, len(rows))
 	for i, r := range rows {
@@ -58,8 +44,8 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e ClientUser
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -67,7 +53,7 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 		result.WriteError(c, exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return ClientUserToClientUserVO(&e)
+	return ClientUserToClientUserVO(e)
 }
 
 // ===== Create =====
@@ -76,8 +62,7 @@ func ClientUserCreate(c *gin.Context, v *ClientUserVO) {
 	ctx := c.Request.Context()
 
 	if v.Username != nil {
-		var cnt int64
-		db.DB.WithContext(ctx).Model(&ClientUser{}).Where("username = ?", *v.Username).Count(&cnt)
+		cnt := CountByUsername(ctx, *v.Username, "")
 		if cnt > 0 {
 			result.WriteError(c, exception.NewBusinessError("帐号已存在", 400))
 			return
@@ -97,7 +82,7 @@ func ClientUserCreate(c *gin.Context, v *ClientUserVO) {
 		e.Password = &s
 	}
 
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
 		return
 	}
@@ -112,8 +97,8 @@ func ClientUserModify(c *gin.Context, v *ClientUserVO) {
 		return
 	}
 
-	var e ClientUser
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", v.ID).Error; err != nil {
+	_, err := FindByID(ctx, v.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -141,7 +126,7 @@ func ClientUserModify(c *gin.Context, v *ClientUserVO) {
 	if len(up) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", v.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, v.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑用户失败: "+err.Error(), 500))
 		return
 	}
@@ -154,7 +139,7 @@ func ClientUserRemove(c *gin.Context, param *utils.IdsParam) {
 	if len(ids) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&ClientUser{}).Error; err != nil {
+	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
 		return
 	}
@@ -169,8 +154,8 @@ func ClientUserCurrent(c *gin.Context) *ClientUserVO {
 		return nil
 	}
 
-	var e ClientUser
-	if err := db.DB.WithContext(c.Request.Context()).First(&e, "id = ?", userID).Error; err != nil {
+	e, err := FindByID(c.Request.Context(), userID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
 			return nil
@@ -178,7 +163,7 @@ func ClientUserCurrent(c *gin.Context) *ClientUserVO {
 		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 		return nil
 	}
-	return ClientUserToClientUserVO(&e)
+	return ClientUserToClientUserVO(e)
 }
 
 // ===== UpdateProfile =====
@@ -192,8 +177,7 @@ func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	ctx := c.Request.Context()
 
 	if param.Username != nil && *param.Username != "" {
-		var count int64
-		db.DB.WithContext(ctx).Model(&ClientUser{}).Where("username = ? AND id != ?", *param.Username, userID).Count(&count)
+		count := CountByUsername(ctx, *param.Username, userID)
 		if count > 0 {
 			result.WriteError(c, exception.NewBusinessError("用户名已存在", 400))
 			return
@@ -219,7 +203,7 @@ func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	if len(up) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, userID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("更新个人信息失败: "+err.Error(), 500))
 		return
 	}
@@ -241,8 +225,8 @@ func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 	avatar := utils.CompressBase64Image(param.Avatar, 512, 512, 80)
 
 	ctx := c.Request.Context()
-	var e ClientUser
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", userID).Error; err != nil {
+	e, err := FindByID(ctx, userID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
 			return
@@ -250,7 +234,7 @@ func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 		return
 	}
-	if err := db.DB.WithContext(ctx).Model(&e).Update("avatar", avatar).Error; err != nil {
+	if err := UpdateAvatar(ctx, e, avatar); err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
 		return
 	}
@@ -265,8 +249,8 @@ func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	var e ClientUser
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", userID).Error; err != nil {
+	e, err := FindByID(ctx, userID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
 			return
@@ -292,7 +276,7 @@ func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
 		return
 	}
-	if err := db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Update("password", string(h)).Error; err != nil {
+	if err := UpdatePassword(ctx, userID, string(h)); err != nil {
 		result.WriteError(c, exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
 		return
 	}

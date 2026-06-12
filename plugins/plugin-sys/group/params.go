@@ -1,5 +1,7 @@
 package group
 
+import "hei-gin/sdk/utils"
+
 // GroupVO 用户组视图对象
 type GroupVO struct {
 	ID          string   `json:"id"`
@@ -32,4 +34,50 @@ type GroupPageParam struct {
 type GroupTreeParam struct {
 	Category string `json:"category" form:"category"`
 	OrgID    string `json:"org_id" form:"org_id"`
+}
+
+func SysGroupToGroupVO(src *SysGroup) *GroupVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &GroupVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.OrgID = src.OrgID
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func GroupVOToSysGroup(src *GroupVO) *SysGroup {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysGroup{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.OrgID = src.OrgID
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

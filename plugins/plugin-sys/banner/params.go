@@ -1,5 +1,7 @@
 package banner
 
+import "hei-gin/sdk/utils"
+
 // BannerVO 横幅视图对象
 type BannerVO struct {
 	ID          string  `json:"id"`
@@ -25,4 +27,54 @@ type BannerVO struct {
 type BannerPageParam struct {
 	Current int `json:"current" form:"current"`
 	Size    int `json:"size" form:"size"`
+}
+
+func SysBannerToBannerVO(src *SysBanner) *BannerVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &BannerVO{}
+	dst.ID = src.ID
+	dst.Title = src.Title
+	dst.Image = src.Image
+	dst.URL = src.URL
+	dst.LinkType = src.LinkType
+	dst.Summary = src.Summary
+	dst.Description = src.Description
+	dst.Category = src.Category
+	dst.Type = src.Type
+	dst.Position = src.Position
+	dst.SortCode = src.SortCode
+	dst.ViewCount = src.ViewCount
+	dst.ClickCount = src.ClickCount
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func BannerVOToSysBanner(src *BannerVO) *SysBanner {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysBanner{}
+	dst.ID = src.ID
+	dst.Title = src.Title
+	dst.Image = src.Image
+	dst.URL = src.URL
+	dst.LinkType = src.LinkType
+	dst.Summary = src.Summary
+	dst.Description = src.Description
+	dst.Category = src.Category
+	dst.Type = src.Type
+	dst.Position = src.Position
+	dst.SortCode = src.SortCode
+	dst.ViewCount = src.ViewCount
+	dst.ClickCount = src.ClickCount
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	return dst
 }

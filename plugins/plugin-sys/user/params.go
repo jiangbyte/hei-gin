@@ -1,5 +1,7 @@
 package user
 
+import "hei-gin/sdk/utils"
+
 type (
 	PermissionItem struct {
 		PermissionCode      string  `json:"permission_code"`
@@ -74,13 +76,75 @@ type UserPageParam struct {
 	Status  string `json:"status" form:"status"`
 }
 
+func SysUserToUserVO(src *SysUser) *UserVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &UserVO{}
+	dst.ID = src.ID
+	dst.Username = src.Username
+	dst.Password = src.Password
+	dst.Nickname = src.Nickname
+	dst.Avatar = src.Avatar
+	dst.Motto = src.Motto
+	dst.Gender = src.Gender
+	dst.Email = src.Email
+	dst.Github = src.Github
+	dst.Phone = src.Phone
+	dst.OrgID = src.OrgID
+	dst.PositionID = src.PositionID
+	dst.GroupID = src.GroupID
+	dst.Status = src.Status
+	dst.LastLoginIP = src.LastLoginIP
+	dst.LoginCount = src.LoginCount
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.Birthday = utils.FormatDateTimePtr(src.Birthday)
+	dst.LastLoginAt = utils.FormatDateTimePtr(src.LastLoginAt)
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func UserVOToSysUser(src *UserVO) *SysUser {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysUser{}
+	dst.ID = src.ID
+	dst.Username = src.Username
+	dst.Nickname = src.Nickname
+	dst.Avatar = src.Avatar
+	dst.Motto = src.Motto
+	dst.Gender = src.Gender
+	dst.Email = src.Email
+	dst.Github = src.Github
+	dst.Phone = src.Phone
+	dst.OrgID = src.OrgID
+	dst.PositionID = src.PositionID
+	dst.GroupID = src.GroupID
+	dst.Status = src.Status
+	dst.LastLoginIP = src.LastLoginIP
+	dst.LoginCount = src.LoginCount
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.Password = src.Password
+	dst.Birthday = utils.ParseDateTimePtr(&src.Birthday)
+	dst.LastLoginAt = utils.ParseDateTimePtr(&src.LastLoginAt)
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
+}
+
 type GrantRoleParam struct {
 	UserID  string   `json:"user_id"`
 	RoleIDs []string `json:"role_ids"`
 }
 
 type GrantUserPermissionParam struct {
-	UserID      string         `json:"user_id"`
+	UserID      string           `json:"user_id"`
 	Permissions []PermissionItem `json:"permissions"`
 }
 

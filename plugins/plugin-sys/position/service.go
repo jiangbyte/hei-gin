@@ -3,7 +3,6 @@ package position
 import (
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -24,19 +23,7 @@ func PositionPage(c *gin.Context, p *PositionPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysPosition{})
-	if p.Keyword != "" {
-		q = q.Where("name LIKE ?", "%"+p.Keyword+"%")
-	}
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysPosition
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*PositionVO, len(rows))
 	for i, r := range rows {
@@ -51,8 +38,8 @@ func PositionDetail(c *gin.Context, id string) *PositionVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysPosition
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -60,7 +47,7 @@ func PositionDetail(c *gin.Context, id string) *PositionVO {
 		result.WriteError(c, exception.NewBusinessError("查询职位失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysPositionToPositionVO(&e)
+	return SysPositionToPositionVO(e)
 }
 
 func PositionCreate(c *gin.Context, vo *PositionVO) {
@@ -68,7 +55,7 @@ func PositionCreate(c *gin.Context, vo *PositionVO) {
 
 	e := PositionVOToSysPosition(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加职位失败: "+err.Error(), 500))
 		return
 	}
@@ -81,8 +68,8 @@ func PositionModify(c *gin.Context, vo *PositionVO) {
 		return
 	}
 
-	var e SysPosition
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	_, err := FindByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -110,7 +97,7 @@ func PositionModify(c *gin.Context, vo *PositionVO) {
 	if vo.Status != "" {
 		up["status"] = vo.Status
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysPosition{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑职位失败: "+err.Error(), 500))
 		return
 	}
@@ -122,8 +109,7 @@ func PositionRemove(c *gin.Context, param *utils.IdsParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	db.DB.WithContext(ctx).Table("sys_user").Where("position_id IN ?", ids).Update("position_id", nil)
-	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysPosition{}).Error; err != nil {
+	if err := DeleteByIDs(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除职位失败: "+err.Error(), 500))
 		return
 	}
@@ -131,8 +117,7 @@ func PositionRemove(c *gin.Context, param *utils.IdsParam) {
 
 func PositionOptions(c *gin.Context) []any {
 	ctx := c.Request.Context()
-	var rows []SysPosition
-	db.DB.WithContext(ctx).Model(&SysPosition{}).Order("sort_code ASC").Find(&rows)
+	rows := ListAll(ctx)
 	vos := make([]any, len(rows))
 	for i, r := range rows {
 		vos[i] = SysPositionToPositionVO(&r)

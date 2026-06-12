@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
@@ -25,23 +24,7 @@ func LogPage(c *gin.Context, p *LogPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysLog{})
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-	if p.ExeStatus != "" {
-		q = q.Where("exe_status = ?", p.ExeStatus)
-	}
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ? OR op_user LIKE ? OR op_ip LIKE ?", like, like, like)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysLog
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*LogVO, len(rows))
 	for i, r := range rows {
@@ -54,7 +37,7 @@ func LogCreate(c *gin.Context, vo *LogVO) {
 	ctx := c.Request.Context()
 
 	e := LogVOToSysLog(vo)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加日志失败: "+err.Error(), 500))
 		return
 	}
@@ -67,8 +50,8 @@ func LogModify(c *gin.Context, vo *LogVO) {
 		return
 	}
 
-	var e SysLog
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	_, err := FindByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -90,7 +73,7 @@ func LogModify(c *gin.Context, vo *LogVO) {
 	if vo.ExeMessage != "" {
 		up["exe_message"] = vo.ExeMessage
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysLog{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑日志失败: "+err.Error(), 500))
 		return
 	}
@@ -102,7 +85,7 @@ func LogRemove(c *gin.Context, param *utils.IdsParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysLog{}).Error; err != nil {
+	if err := DeleteByIDs(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除日志失败: "+err.Error(), 500))
 		return
 	}
@@ -114,8 +97,8 @@ func LogDetail(c *gin.Context, id string) *LogVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysLog
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -123,12 +106,12 @@ func LogDetail(c *gin.Context, id string) *LogVO {
 		result.WriteError(c, exception.NewBusinessError("查询日志详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysLogToLogVO(&e)
+	return SysLogToLogVO(e)
 }
 
 func LogDeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
 	ctx := c.Request.Context()
-	if err := db.DB.WithContext(ctx).Where("category = ?", param.Category).Delete(&SysLog{}).Error; err != nil {
+	if err := DeleteByCategory(ctx, param.Category); err != nil {
 		result.WriteError(c, exception.NewBusinessError("按分类删除日志失败: "+err.Error(), 500))
 		return
 	}
@@ -139,8 +122,7 @@ func LogLoginBarChart(c *gin.Context) *BarChartData {
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
-	var records []SysLog
-	db.DB.WithContext(ctx).Where("category IN ?", []string{"LOGIN", "LOGOUT"}).Where("op_time >= ?", since).Find(&records)
+	records := ListByCategoriesSince(ctx, []string{"LOGIN", "LOGOUT"}, since)
 
 	days := make([]string, 7)
 	for i := 0; i < 7; i++ {
@@ -180,11 +162,8 @@ func LogLoginBarChart(c *gin.Context) *BarChartData {
 func LogLoginPieChart(c *gin.Context) *PieChartData {
 	ctx := c.Request.Context()
 
-	var loginTotal int64
-	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
-
-	var logoutTotal int64
-	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "LOGOUT").Count(&logoutTotal)
+	loginTotal := CountByCategory(ctx, "LOGIN")
+	logoutTotal := CountByCategory(ctx, "LOGOUT")
 
 	return &PieChartData{
 		Data: []CategoryTotal{
@@ -199,8 +178,7 @@ func LogOpBarChart(c *gin.Context) *BarChartData {
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
-	var records []SysLog
-	db.DB.WithContext(ctx).Where("category IN ?", []string{"OPERATE", "EXCEPTION"}).Where("op_time >= ?", since).Find(&records)
+	records := ListByCategoriesSince(ctx, []string{"OPERATE", "EXCEPTION"}, since)
 
 	days := make([]string, 7)
 	for i := 0; i < 7; i++ {
@@ -240,11 +218,8 @@ func LogOpBarChart(c *gin.Context) *BarChartData {
 func LogOpPieChart(c *gin.Context) *PieChartData {
 	ctx := c.Request.Context()
 
-	var operateTotal int64
-	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "OPERATE").Count(&operateTotal)
-
-	var exceptionTotal int64
-	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "EXCEPTION").Count(&exceptionTotal)
+	operateTotal := CountByCategory(ctx, "OPERATE")
+	exceptionTotal := CountByCategory(ctx, "EXCEPTION")
 
 	return &PieChartData{
 		Data: []CategoryTotal{

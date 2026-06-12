@@ -1,5 +1,10 @@
 package broadcast
 
+import (
+	imModel "hei-gin/plugins/plugin-im/model"
+	"hei-gin/sdk/utils"
+)
+
 // SendBroadcastParam 发送全站通知
 type SendBroadcastParam struct {
 	Title   string `json:"title" binding:"required"`
@@ -22,4 +27,18 @@ type BroadcastVO struct {
 // ReadParam 标记已读参数
 type ReadParam struct {
 	BroadcastID string `json:"broadcast_id" binding:"required"`
+}
+
+func ImBroadcastToBroadcastVO(src *imModel.Broadcast) *BroadcastVO {
+	if src == nil {
+		return nil
+	}
+	dst := &BroadcastVO{}
+	dst.ID = src.ID
+	dst.Title = src.Title
+	dst.Content = src.Content
+	dst.Scope = src.Scope
+	dst.SenderID = src.SenderID
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	return dst
 }

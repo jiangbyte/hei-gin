@@ -1,5 +1,7 @@
 package org
 
+import "hei-gin/sdk/utils"
+
 type OrgVO struct {
 	ID          string  `json:"id"`
 	Code        string  `json:"code"`
@@ -25,4 +27,48 @@ type OrgPageParam struct {
 
 type OrgTreeParam struct {
 	Category string `json:"category" form:"category"`
+}
+
+func SysOrgToOrgVO(src *SysOrg) *OrgVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &OrgVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func OrgVOToSysOrg(src *OrgVO) *SysOrg {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysOrg{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Name = src.Name
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.Description = src.Description
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

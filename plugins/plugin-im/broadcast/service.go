@@ -6,7 +6,6 @@ import (
 
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
@@ -32,7 +31,7 @@ func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
 		Scope:    p.Scope,
 		SenderID: senderID,
 	}
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, &e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送通知失败: "+err.Error(), 500))
 		return
 	}
@@ -66,14 +65,7 @@ func BroadcastPage(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool
 		size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&imModel.Broadcast{})
-	if cursor != "" {
-		if t, err := utils.ParseDateTime(cursor); err == nil {
-			q = q.Where("created_at < ?", t)
-		}
-	}
-	var records []imModel.Broadcast
-	q.Order("created_at DESC").Limit(size + 1).Find(&records)
+	records := Page(ctx, cursor, size)
 
 	hasMore := len(records) > size
 	if hasMore {
@@ -98,13 +90,8 @@ func BroadcastUnreadList(c *gin.Context, userType string) []BroadcastVO {
 		userID = auth.GetLoginID(c)
 	}
 
-	var records []imModel.Broadcast
-	db.DB.WithContext(ctx).Model(&imModel.Broadcast{}).Order("created_at DESC").Limit(50).Find(&records)
-
-	var readRecords []imModel.BroadcastRead
-	db.DB.WithContext(ctx).Model(&imModel.BroadcastRead{}).
-		Where("user_id = ? AND user_type = ?", userID, userType).
-		Find(&readRecords)
+	records := ListLatest(ctx, 50)
+	readRecords := ListReads(ctx, userID, userType)
 	readMap := make(map[string]bool)
 	for _, r := range readRecords {
 		readMap[r.BroadcastID] = true
@@ -127,13 +114,7 @@ func BroadcastMarkRead(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.GetLoginID(c)
 
-	_ = db.DB.WithContext(ctx).Where("broadcast_id = ? AND user_id = ? AND user_type = ?", p.BroadcastID, userID, string(enums.LoginTypeBusiness)).
-		FirstOrCreate(&imModel.BroadcastRead{
-			BroadcastID: p.BroadcastID,
-			ID:          utils.GenerateID(),
-			UserID:      userID,
-			UserType:    string(enums.LoginTypeBusiness),
-		})
+	MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeBusiness))
 }
 
 // ==================== BroadcastMarkReadConsumer ====================
@@ -142,13 +123,7 @@ func BroadcastMarkReadConsumer(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.Consumer.GetLoginID(c)
 
-	_ = db.DB.WithContext(ctx).Where("broadcast_id = ? AND user_id = ? AND user_type = ?", p.BroadcastID, userID, string(enums.LoginTypeConsumer)).
-		FirstOrCreate(&imModel.BroadcastRead{
-			BroadcastID: p.BroadcastID,
-			ID:          utils.GenerateID(),
-			UserID:      userID,
-			UserType:    string(enums.LoginTypeConsumer),
-		})
+	MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeConsumer))
 }
 
 // ==================== BroadcastDetail ====================
@@ -159,8 +134,8 @@ func BroadcastDetail(c *gin.Context, id string) *BroadcastVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var b imModel.Broadcast
-	if err := db.DB.WithContext(ctx).First(&b, "id = ?", id).Error; err != nil {
+	b, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("通知不存在", 400))
 			return nil
@@ -168,5 +143,5 @@ func BroadcastDetail(c *gin.Context, id string) *BroadcastVO {
 		result.WriteError(c, exception.NewBusinessError("查询通知失败: "+err.Error(), 500))
 		return nil
 	}
-	return ImBroadcastToBroadcastVO(&b)
+	return ImBroadcastToBroadcastVO(b)
 }

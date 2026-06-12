@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -59,57 +58,25 @@ func GroupCreate(c *gin.Context) {
 		Status:     GroupNormal,
 	}
 
-	tx := db.DB.WithContext(ctx).Begin()
-
-	if err := tx.Create(&group).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("创建群失败: "+err.Error(), 500))
-		return
-	}
-
 	ownerMember := imModel.GroupMember{
 		ID: utils.GenerateID(), GroupID: group.ID,
 		UserID: userID, UserType: userType,
 		Role: RoleOwner, Status: MemberActive,
 	}
-	if err := tx.Create(&ownerMember).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("添加群主失败: "+err.Error(), 500))
-		return
-	}
 
+	memberIDs := make([]string, 0, len(p.MemberIDs))
+	batch := make([]imModel.GroupMember, 0, len(p.MemberIDs))
+	sysBatch := make([]imModel.GroupMessage, 0, len(p.MemberIDs))
 	if len(p.MemberIDs) > 0 {
 		if err := validateMemberType(groupType, p.MemberType); err != nil {
-			tx.Rollback()
 			result.WriteError(c, err)
 			return
 		}
-
-		var existingCount int64
-		tx.Model(&imModel.GroupMember{}).
-			Where("group_id = ? AND user_id IN ? AND user_type = ? AND status = ?",
-				group.ID, p.MemberIDs, p.MemberType, MemberActive).
-			Count(&existingCount)
-		if existingCount > 0 {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError("部分成员已在群中", 400))
-			return
-		}
-
-		var currentCount int64
-		tx.Model(&imModel.GroupMember{}).Where("group_id = ? AND status = ?", group.ID, MemberActive).Count(&currentCount)
-		if int(currentCount)+len(p.MemberIDs) > group.MaxMembers {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
-			return
-		}
-
-		batch := make([]imModel.GroupMember, 0, len(p.MemberIDs))
-		sysBatch := make([]imModel.GroupMessage, 0, len(p.MemberIDs))
 		for _, uid := range p.MemberIDs {
 			if uid == userID {
 				continue
 			}
+			memberIDs = append(memberIDs, uid)
 			batch = append(batch, imModel.GroupMember{
 				ID: utils.GenerateID(), GroupID: group.ID,
 				UserID: uid, UserType: p.MemberType,
@@ -124,24 +91,17 @@ func GroupCreate(c *gin.Context) {
 				MsgType: imModel.MsgTypeSystem,
 			})
 		}
-		if len(batch) > 0 {
-			if err := tx.Create(&batch).Error; err != nil {
-				tx.Rollback()
-				result.WriteError(c, exception.NewBusinessError("邀请成员失败: "+err.Error(), 500))
-				return
-			}
-		}
-		if len(sysBatch) > 0 {
-			if err := tx.Create(&sysBatch).Error; err != nil {
-				tx.Rollback()
-				result.WriteError(c, exception.NewBusinessError("发送系统消息失败: "+err.Error(), 500))
-				return
-			}
-		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		result.WriteError(c, exception.NewBusinessError("创建群失败: "+err.Error(), 500))
+	if err := CreateGroupWithMembers(ctx, &group, &ownerMember, batch, sysBatch, memberIDs, p.MemberType); err != nil {
+		switch err.Error() {
+		case "EXISTS_MEMBERS":
+			result.WriteError(c, exception.NewBusinessError("部分成员已在群中", 400))
+		case "EXCEED_MAX":
+			result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
+		default:
+			result.WriteError(c, exception.NewBusinessError("创建群失败: "+err.Error(), 500))
+		}
 		return
 	}
 }
@@ -182,7 +142,7 @@ func GroupUpdate(c *gin.Context, p *UpdateParam) {
 		return
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&imModel.Group{}).Where("id = ?", p.GroupID).Updates(updates).Error; err != nil {
+	if err := UpdateGroup(ctx, p.GroupID, updates); err != nil {
 		result.WriteError(c, exception.NewBusinessError("修改群信息失败: "+err.Error(), 500))
 		return
 	}
@@ -199,8 +159,8 @@ func GroupDissolve(c *gin.Context, p *DissolveParam) {
 		return
 	}
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
 	}
@@ -208,24 +168,7 @@ func GroupDissolve(c *gin.Context, p *DissolveParam) {
 		result.WriteError(c, exception.NewBusinessError("仅群主可解散群", 403))
 		return
 	}
-
-	tx := db.DB.WithContext(ctx).Begin()
-
-	if err := tx.Model(&imModel.Group{}).Where("id = ?", p.GroupID).
-		Update("status", GroupDissolved).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("解散群失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Model(&imModel.GroupMember{}).Where("group_id = ? AND status = ?", p.GroupID, MemberActive).
-		Update("status", MemberLeft).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("解散群失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := DissolveGroup(ctx, p.GroupID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("解散群失败: "+err.Error(), 500))
 		return
 	}

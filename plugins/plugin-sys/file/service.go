@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
@@ -92,11 +91,7 @@ func saveChunkState(c *gin.Context, uploadID string, state chunkUploadState) err
 	if db.Redis == nil {
 		return fmt.Errorf("Redis 不可用，无法初始化分片上传")
 	}
-	data, err := json.Marshal(state)
-	if err != nil {
-		return fmt.Errorf("保存分片上传状态失败: %w", err)
-	}
-	if err := db.Redis.SetEx(c.Request.Context(), chunkStateKey(uploadID), data, 24*time.Hour).Err(); err != nil {
+	if err := SaveChunkState(c.Request.Context(), uploadID, state); err != nil {
 		return fmt.Errorf("保存分片上传状态失败: %w", err)
 	}
 	return nil
@@ -109,13 +104,9 @@ func loadChunkState(c *gin.Context, uploadID string) (*chunkUploadState, error) 
 	if db.Redis == nil {
 		return nil, fmt.Errorf("Redis 不可用，无法读取分片上传状态")
 	}
-	data, err := db.Redis.Get(c.Request.Context(), chunkStateKey(uploadID)).Bytes()
+	state, err := LoadChunkState(c.Request.Context(), uploadID)
 	if err != nil {
 		return nil, fmt.Errorf("分片上传会话不存在或已过期")
-	}
-	var state chunkUploadState
-	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, fmt.Errorf("分片上传状态无效")
 	}
 	if state.FileKey == "" || state.TotalChunks <= 0 {
 		return nil, fmt.Errorf("分片上传状态无效")
@@ -124,12 +115,12 @@ func loadChunkState(c *gin.Context, uploadID string) (*chunkUploadState, error) 
 	if state.OwnerID != "" && ownerID != "" && state.OwnerID != ownerID {
 		return nil, fmt.Errorf("无权访问该分片上传会话")
 	}
-	return &state, nil
+	return state, nil
 }
 
 func deleteChunkState(c *gin.Context, uploadID string) {
 	if db.Redis != nil && uploadID != "" {
-		_ = db.Redis.Del(c.Request.Context(), chunkStateKey(uploadID)).Err()
+		_ = DeleteChunkState(c.Request.Context(), uploadID)
 	}
 }
 
@@ -248,23 +239,7 @@ func FilePage(c *gin.Context, p *FilePageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysFile{})
-	if p.Engine != "" {
-		q = q.Where("engine = ?", p.Engine)
-	}
-	if p.Bucket != "" {
-		q = q.Where("bucket = ?", p.Bucket)
-	}
-	if p.Keyword != "" {
-		kw := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ? OR name LIKE ?", kw, kw)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysFile
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*FileVO, len(rows))
 	for i, r := range rows {
@@ -281,12 +256,12 @@ func FileDetail(c *gin.Context, id string) *FileVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysFile
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("文件不存在", 400))
 		return nil
 	}
-	return SysFileToFileVO(&e)
+	return SysFileToFileVO(e)
 }
 
 // ===== Remove =====
@@ -296,7 +271,7 @@ func FileRemove(c *gin.Context, param *utils.IdsParam) {
 	if len(ids) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysFile{}).Error; err != nil {
+	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除文件失败: "+err.Error(), 500))
 		return
 	}
@@ -308,8 +283,7 @@ func FileRemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	var files []SysFile
-	db.DB.WithContext(ctx).Where("id IN ?", ids).Find(&files)
+	files := ListByIDs(ctx, ids)
 	for _, f := range files {
 		if f.Engine != "" {
 			if eng := storage.GetStorage(f.Engine); eng != nil {
@@ -321,7 +295,7 @@ func FileRemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
 			}
 		}
 	}
-	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error; err != nil {
+	if err := DeleteByIDs(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除文件失败: "+err.Error(), 500))
 		return
 	}
@@ -392,7 +366,7 @@ func FileUpload(c *gin.Context) (*FileUploadResult, error) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Create(&entity).Error; err != nil {
+	if err := Create(c.Request.Context(), &entity); err != nil {
 		return nil, fmt.Errorf("保存文件记录失败: %w", err)
 	}
 
@@ -622,7 +596,7 @@ func FileCompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUp
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Create(&entity).Error; err != nil {
+	if err := Create(c.Request.Context(), &entity); err != nil {
 		return nil, fmt.Errorf("保存文件记录失败: %w", err)
 	}
 
@@ -701,12 +675,12 @@ func mergeAndStore(ctx context.Context, eng storage.Engine, bucket, fileKey, tmp
 // ===== Download =====
 
 func FileDownload(c *gin.Context, id string) error {
-	var entity SysFile
-	if err := db.DB.WithContext(c.Request.Context()).First(&entity, "id = ?", id).Error; err != nil {
+	entity, err := FindByID(c.Request.Context(), id)
+	if err != nil {
 		return fmt.Errorf("文件不存在")
 	}
 
-	return serveFile(c, &entity)
+	return serveFile(c, entity)
 }
 
 func FileDownloadByKey(c *gin.Context, bucket, fileKey string) error {
@@ -716,9 +690,8 @@ func FileDownloadByKey(c *gin.Context, bucket, fileKey string) error {
 		return fmt.Errorf("文件不存在")
 	}
 
-	var entity SysFile
-	if err := db.DB.WithContext(c.Request.Context()).
-		First(&entity, "bucket = ? AND file_key = ?", bucket, fileKey).Error; err != nil {
+	entity, err := FindByKey(c.Request.Context(), bucket, fileKey)
+	if err != nil {
 		return fmt.Errorf("文件不存在")
 	}
 	if entity.IsDownloadAuth {
@@ -726,7 +699,7 @@ func FileDownloadByKey(c *gin.Context, bucket, fileKey string) error {
 			return fmt.Errorf("未授权/未登录")
 		}
 	}
-	return serveFile(c, &entity)
+	return serveFile(c, entity)
 }
 
 func serveFile(c *gin.Context, entity *SysFile) error {

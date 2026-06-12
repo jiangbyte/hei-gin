@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -34,8 +33,8 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 		return
 	}
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
 	}
@@ -53,25 +52,17 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 		return
 	}
 
-	var existingIDs []string
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id IN ? AND user_type = ? AND status = ?",
-			p.GroupID, p.UserIDs, p.UserType, MemberActive).
-		Pluck("user_id", &existingIDs)
+	existingIDs := FindExistingMemberIDs(ctx, p.GroupID, p.UserIDs, p.UserType)
 	if len(existingIDs) > 0 {
 		result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("用户 %v 已在群中", existingIDs), 400))
 		return
 	}
 
-	var currentCount int64
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND status = ?", p.GroupID, MemberActive).Count(&currentCount)
+	currentCount := CountActiveMembersByGroup(ctx, p.GroupID)
 	if int(currentCount)+len(p.UserIDs) > group.MaxMembers {
 		result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
 		return
 	}
-
-	tx := db.DB.WithContext(ctx).Begin()
 
 	batch := make([]imModel.GroupMember, 0, len(p.UserIDs))
 	sysBatch := make([]imModel.GroupMessage, 0, len(p.UserIDs))
@@ -90,18 +81,7 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 			MsgType: imModel.MsgTypeSystem,
 		})
 	}
-	if err := tx.Create(&batch).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("邀请成员失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Create(&sysBatch).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("发送系统消息失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := InviteMembers(ctx, batch, sysBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("邀请成员失败: "+err.Error(), 500))
 		return
 	}
@@ -119,8 +99,8 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
 	}
@@ -133,40 +113,30 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	var existing int64
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			p.GroupID, userID, userType, MemberActive).Count(&existing)
+	existing := CountMemberExists(ctx, p.GroupID, userID, userType)
 	if existing > 0 {
 		result.WriteError(c, exception.NewBusinessError("已在群中", 400))
 		return
 	}
 
-	var pending int64
-	db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			p.GroupID, userID, userType, "pending").Count(&pending)
+	pending := CountPendingJoin(ctx, p.GroupID, userID, userType)
 	if pending > 0 {
 		result.WriteError(c, exception.NewBusinessError("已发送过入群申请，请等待审核", 400))
 		return
 	}
 
-	if err := db.DB.WithContext(ctx).Create(&imModel.GroupJoinRequest{
+	if err := CreateJoinRequest(ctx, &imModel.GroupJoinRequest{
 		ID:       utils.GenerateID(),
 		GroupID:  p.GroupID,
 		UserID:   userID,
 		UserType: userType,
 		Status:   "pending",
-	}).Error; err != nil {
+	}); err != nil {
 		result.WriteError(c, exception.NewBusinessError("申请加入失败: "+err.Error(), 500))
 		return
 	}
 
-	var members []imModel.GroupMember
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND (role = ? OR role = ?) AND status = ?",
-			p.GroupID, RoleOwner, RoleAdmin, MemberActive).
-		Find(&members)
+	members := ListManagers(ctx, p.GroupID)
 	for _, m := range members {
 		payload := map[string]interface{}{
 			"group_id":  p.GroupID,
@@ -194,10 +164,8 @@ func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	var member imModel.GroupMember
-	if err := db.DB.WithContext(ctx).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			p.GroupID, userID, userType, MemberActive).First(&member).Error; err != nil {
+	member, err := FindActiveMember(ctx, p.GroupID, userID, userType)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
 	}
@@ -206,28 +174,15 @@ func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	tx := db.DB.WithContext(ctx).Begin()
-
-	if err := tx.Model(&member).Update("status", MemberLeft).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("退群失败: "+err.Error(), 500))
-		return
-	}
-
 	extra := imModel.MsgExtraSystem{Action: "leave", UserID: userID, UserType: userType}
 	extraBytes, _ := json.Marshal(extra)
-	if err := tx.Create(&imModel.GroupMessage{
+	msg := &imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
 		SenderID: userID, SenderType: userType,
 		Content: "退出了群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
-	}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("发送系统消息失败: "+err.Error(), 500))
-		return
 	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := LeaveGroup(ctx, member, msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("退群失败: "+err.Error(), 500))
 		return
 	}
@@ -255,10 +210,8 @@ func GroupKick(c *gin.Context, p *KickParam) {
 		return
 	}
 	if operatorMember.Role == RoleAdmin {
-		var target imModel.GroupMember
-		if err := db.DB.WithContext(ctx).
-			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-				p.GroupID, p.UserID, p.UserType, MemberActive).First(&target).Error; err != nil {
+		target, err := FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
+		if err != nil {
 			result.WriteError(c, exception.NewBusinessError("成员不存在或已离开", 400))
 			return
 		}
@@ -268,30 +221,15 @@ func GroupKick(c *gin.Context, p *KickParam) {
 		}
 	}
 
-	tx := db.DB.WithContext(ctx).Begin()
-
-	if err := tx.Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
-		Update("status", MemberKicked).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("踢出失败: "+err.Error(), 500))
-		return
-	}
-
 	extra := imModel.MsgExtraSystem{Action: "kick", UserID: p.UserID, UserType: p.UserType, OperatorID: operatorID}
 	extraBytes, _ := json.Marshal(extra)
-	if err := tx.Create(&imModel.GroupMessage{
+	msg := &imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
 		SenderID: operatorID, SenderType: operatorType,
 		Content: "被移出群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
-	}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("发送系统消息失败: "+err.Error(), 500))
-		return
 	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := KickMember(ctx, p.GroupID, p.UserID, p.UserType, msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("踢出失败: "+err.Error(), 500))
 		return
 	}
@@ -308,8 +246,8 @@ func GroupSetRole(c *gin.Context, p *SetRoleParam) {
 		return
 	}
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
 	}
@@ -320,37 +258,12 @@ func GroupSetRole(c *gin.Context, p *SetRoleParam) {
 
 	switch p.Role {
 	case RoleAdmin:
-		if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-				p.GroupID, p.UserID, p.UserType, MemberActive).
-			Update("role", RoleAdmin).Error; err != nil {
+		if err := UpdateMemberRole(ctx, p.GroupID, p.UserID, p.UserType, RoleAdmin); err != nil {
 			result.WriteError(c, exception.NewBusinessError("设置管理员失败: "+err.Error(), 500))
 			return
 		}
 	case RoleOwner:
-		tx := db.DB.WithContext(ctx).Begin()
-
-		if err := tx.Model(&imModel.GroupMember{}).
-			Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, group.OwnerID, group.OwnerType).
-			Update("role", RoleAdmin).Error; err != nil {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError("转让群失败: "+err.Error(), 500))
-			return
-		}
-		if err := tx.Model(&imModel.GroupMember{}).
-			Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
-			Update("role", RoleOwner).Error; err != nil {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError("转让群失败: "+err.Error(), 500))
-			return
-		}
-		if err := tx.Model(&imModel.Group{}).Where("id = ?", p.GroupID).
-			Updates(map[string]interface{}{"owner_id": p.UserID, "owner_type": p.UserType}).Error; err != nil {
-			tx.Rollback()
-			result.WriteError(c, exception.NewBusinessError("转让群失败: "+err.Error(), 500))
-			return
-		}
-		if err := tx.Commit().Error; err != nil {
+		if err := TransferOwnerAndRole(ctx, p.GroupID, group.OwnerID, group.OwnerType, p.UserID, p.UserType); err != nil {
 			result.WriteError(c, exception.NewBusinessError("转让群失败: "+err.Error(), 500))
 			return
 		}
@@ -366,8 +279,8 @@ func GroupTransferOwner(c *gin.Context, p *TransferOwnerParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
 	}
@@ -376,40 +289,11 @@ func GroupTransferOwner(c *gin.Context, p *TransferOwnerParam) {
 		return
 	}
 
-	var newOwner imModel.GroupMember
-	if err := db.DB.WithContext(ctx).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			p.GroupID, p.NewOwnerID, p.NewOwnerType, MemberActive).First(&newOwner).Error; err != nil {
+	if _, err := FindActiveMember(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("新群主不在群中", 400))
 		return
 	}
-
-	tx := db.DB.WithContext(ctx).Begin()
-
-	if err := tx.Model(&imModel.Group{}).Where("id = ?", p.GroupID).
-		Updates(map[string]interface{}{"owner_id": p.NewOwnerID, "owner_type": p.NewOwnerType}).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("转让失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, operatorID, group.OwnerType).
-		Update("role", RoleAdmin).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("转让失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.NewOwnerID, p.NewOwnerType).
-		Update("role", RoleOwner).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("转让失败: "+err.Error(), 500))
-		return
-	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := TransferOwner(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType, operatorID, group.OwnerType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("转让失败: "+err.Error(), 500))
 		return
 	}
@@ -427,9 +311,7 @@ func GroupSetMemberNickname(c *gin.Context, p *SetNicknameParam) {
 		return
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
-		Update("nickname", p.Nickname).Error; err != nil {
+	if err := UpdateMemberNickname(ctx, p.GroupID, p.UserID, p.UserType, p.Nickname); err != nil {
 		result.WriteError(c, exception.NewBusinessError("设置昵称失败: "+err.Error(), 500))
 		return
 	}
@@ -457,10 +339,8 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 		return
 	}
 	if operator.Role == RoleAdmin {
-		var target imModel.GroupMember
-		if err := db.DB.WithContext(ctx).
-			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-				p.GroupID, p.UserID, p.UserType, MemberActive).First(&target).Error; err != nil {
+		target, err := FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
+		if err != nil {
 			result.WriteError(c, exception.NewBusinessError("成员不存在", 400))
 			return
 		}
@@ -475,9 +355,7 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 		duration = p.Duration
 	}
 	until := time.Now().Add(time.Duration(duration) * time.Minute)
-	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
-		Update("muted_until", &until).Error; err != nil {
+	if err := UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, &until); err != nil {
 		result.WriteError(c, exception.NewBusinessError("禁言失败: "+err.Error(), 500))
 		return
 	}
@@ -499,9 +377,7 @@ func GroupUnmuteMember(c *gin.Context, p *UnmuteParam) {
 		result.WriteError(c, err)
 		return
 	}
-	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
-		Update("muted_until", nil).Error; err != nil {
+	if err := UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, nil); err != nil {
 		result.WriteError(c, exception.NewBusinessError("解除禁言失败: "+err.Error(), 500))
 		return
 	}

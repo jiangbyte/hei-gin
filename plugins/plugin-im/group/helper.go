@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/storage"
@@ -68,21 +67,18 @@ func checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*
 		return nil, nil, exception.NewBusinessError("参数错误", 400)
 	}
 
-	var group imModel.Group
-	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
+	group, err := FindGroupByID(ctx, groupID)
+	if err != nil {
 		return nil, nil, exception.NewBusinessError("群不存在", 400)
 	}
-	var member imModel.GroupMember
-	if err := db.DB.WithContext(ctx).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			groupID, userID, userType, MemberActive).
-		First(&member).Error; err != nil {
+	member, err := FindActiveMember(ctx, groupID, userID, userType)
+	if err != nil {
 		return nil, nil, exception.NewBusinessError("不在群中", 400)
 	}
 	if member.Role != RoleOwner && member.Role != RoleAdmin {
 		return nil, nil, exception.NewBusinessError("无权限", 403)
 	}
-	return &group, &member, nil
+	return group, member, nil
 }
 func resolveFileURL(content, extra string) string {
 	if strings.HasPrefix(content, "http") {

@@ -4,16 +4,13 @@ import (
 	"encoding/json"
 	"sort"
 
-	"hei-gin/sdk/constants"
-	"hei-gin/sdk/db"
-
 	"github.com/gin-gonic/gin"
 )
 
 // PermissionListModules returns sorted permission module names from Redis.
 func PermissionListModules(c *gin.Context) []string {
 	ctx := c.Request.Context()
-	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	data, err := Cache(ctx)
 	if err != nil {
 		return []string{}
 	}
@@ -32,7 +29,7 @@ func PermissionListModules(c *gin.Context) []string {
 // PermissionListByModule returns permission list for a specific module from Redis.
 func PermissionListByModule(c *gin.Context, module string) []interface{} {
 	ctx := c.Request.Context()
-	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	data, err := Cache(ctx)
 	if err != nil {
 		return []interface{}{}
 	}

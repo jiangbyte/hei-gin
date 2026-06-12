@@ -4,9 +4,6 @@ import (
 	"context"
 	"time"
 
-	"gorm.io/gorm/clause"
-
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -41,11 +38,8 @@ func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
 		return
 	}
 
-	var member imModel.GroupMember
-	if err := db.DB.WithContext(ctx).
-		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
-			p.GroupID, senderID, senderType, MemberActive).
-		First(&member).Error; err != nil {
+	member, err := FindActiveMember(ctx, p.GroupID, senderID, senderType)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
 	}
@@ -65,20 +59,12 @@ func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
 		Content: p.Content, Extra: p.Extra, MsgType: msgType,
 		ReplyTo: p.ReplyTo,
 	}
-	if err := db.DB.WithContext(ctx).Create(&msg).Error; err != nil {
+	if err := CreateMessage(ctx, &msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		return
 	}
 
-	var memberIDs []struct {
-		UserID   string
-		UserType string
-	}
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Select("user_id, user_type").
-		Where("group_id = ? AND status = ? AND NOT (user_id = ? AND user_type = ?)",
-			p.GroupID, MemberActive, senderID, senderType).
-		Find(&memberIDs)
+	memberIDs := ListRecipientMembers(ctx, p.GroupID, senderID, senderType)
 
 	msgPayload := buildPushPayload(&msg)
 	for _, m := range memberIDs {
@@ -102,8 +88,8 @@ func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
 		return
 	}
 
-	var msg imModel.GroupMessage
-	if err := db.DB.WithContext(ctx).Where("id = ? AND group_id = ?", p.MessageID, p.GroupID).First(&msg).Error; err != nil {
+	msg, err := FindMessageByID(ctx, p.MessageID, p.GroupID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
@@ -120,25 +106,16 @@ func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
 		return
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("id = ?", p.MessageID).
-		Updates(map[string]interface{}{"content": "消息已被撤回", "msg_type": imModel.MsgTypeSystem}).Error; err != nil {
+	if err := RecallMessage(ctx, p.MessageID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("撤回消息失败: "+err.Error(), 500))
 		return
 	}
 
-	var memberIDs []struct {
-		UserID   string
-		UserType string
-	}
-	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
-		Select("user_id, user_type").
-		Where("group_id = ? AND status = ? AND NOT (user_id = ? AND user_type = ?)",
-			p.GroupID, MemberActive, operatorID, operatorType).
-		Find(&memberIDs)
+	memberIDs := ListRecipientMembers(ctx, p.GroupID, operatorID, operatorType)
 
 	msg.Content = "消息已被撤回"
 	msg.MsgType = imModel.MsgTypeSystem
-	recallPayload := buildRecallPayload(&msg, operatorID, operatorType)
+	recallPayload := buildRecallPayload(msg, operatorID, operatorType)
 	for _, m := range memberIDs {
 		if m.UserType == string(enums.LoginTypeConsumer) {
 			ws.GlobalCrossHub.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
@@ -159,14 +136,11 @@ func GroupMarkRead(c *gin.Context, p *MarkReadParam) {
 		return
 	}
 
-	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
-		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
-	}).Create(&imModel.GroupMessageRead{
+	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: p.MessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,
-	}).Error
+	})
 }
 
 // ==================== GroupMuteMember ====================
@@ -185,25 +159,16 @@ func GroupMarkConversationRead(c *gin.Context) {
 		return
 	}
 
-	var lm struct{ ID string }
-	err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
-		Select("id").
-		Where("group_id = ?", p.GroupID).
-		Order("created_at DESC").
-		Limit(1).
-		Scan(&lm).Error
-	if err != nil || lm.ID == "" {
+	lastMessageID := FindLastMessageID(ctx, p.GroupID)
+	if lastMessageID == "" {
 		return
 	}
 
-	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
-		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
-	}).Create(&imModel.GroupMessageRead{
-		MessageID: lm.ID, GroupID: p.GroupID,
+	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
+		MessageID: lastMessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,
-	}).Error
+	})
 }
 
 // ==================== Backward-compatible wrappers ====================
@@ -219,18 +184,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 		size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("group_id = ?", groupID)
-	if cursor != "" {
-		if t, err := utils.ParseDateTime(cursor); err == nil {
-			q = q.Where("created_at < ?", t)
-		}
-	}
-	var msgs []imModel.GroupMessage
-	order := "created_at DESC"
-	if cursor != "" {
-		order = "created_at ASC"
-	}
-	q.Order(order).Limit(size + 1).Find(&msgs)
+	msgs := ListGroupMessages(ctx, groupID, cursor, size)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
@@ -256,73 +210,22 @@ func MyGroupConversationsWithContext(ctx context.Context, userID, userType strin
 		return nil
 	}
 
-	var members []imModel.GroupMember
-	queryDB := db.DB.WithContext(ctx)
-	queryDB.
-		Select("group_id").
-		Where("user_id = ? AND user_type = ? AND status = ?", userID, userType, MemberActive).
-		Find(&members)
-	if len(members) == 0 {
+	groupIDs := ListMyGroupIDs(ctx, userID, userType)
+	if len(groupIDs) == 0 {
 		return nil
 	}
-
-	groupIDs := make([]string, len(members))
-	for i, m := range members {
-		groupIDs[i] = m.GroupID
-	}
-
-	var groups []imModel.Group
-	queryDB.Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
-
-	type cnt struct {
-		GroupID string
-		Count   int
-	}
-	var counts []cnt
-	queryDB.Model(&imModel.GroupMember{}).
-		Select("group_id, COUNT(*) as count").
-		Where("group_id IN ? AND status = ?", groupIDs, MemberActive).
-		Group("group_id").Scan(&counts)
+	groups := ListGroupsByIDs(ctx, groupIDs)
+	counts := CountActiveMembersByGroupIDs(ctx, groupIDs)
 	countMap := make(map[string]int, len(counts))
 	for _, c := range counts {
 		countMap[c.GroupID] = c.Count
 	}
-
-	type lm struct {
-		GroupID   string
-		Content   string
-		CreatedAt time.Time
-	}
-	var lastMsgs []lm
-	lastSubQ := queryDB.Table("im_group_message").
-		Select("group_id, MAX(created_at) as max_ct").
-		Where("group_id IN ?", groupIDs).
-		Group("group_id")
-	queryDB.Table("im_group_message g2").
-		Select("g2.group_id, g2.content, g2.created_at").
-		Joins("INNER JOIN (?) g1 ON g1.group_id = g2.group_id AND g1.max_ct = g2.created_at", lastSubQ).
-		Scan(&lastMsgs)
-	lastMap := make(map[string]lm, len(lastMsgs))
+	lastMsgs := ListLastMessagesByGroupIDs(ctx, groupIDs)
+	lastMap := make(map[string]groupLastMessageRow, len(lastMsgs))
 	for _, l := range lastMsgs {
 		lastMap[l.GroupID] = l
 	}
-
-	type uc struct {
-		GroupID string
-		Count   int64
-	}
-	var unreads []uc
-	readSubQ := queryDB.Table("im_group_message_read").
-		Select("group_id, MAX(read_at) as max_read").
-		Where("user_id = ? AND user_type = ?", userID, userType).
-		Group("group_id")
-	queryDB.Table("im_group_message gm").
-		Select("gm.group_id, COUNT(*) as count").
-		Joins("LEFT JOIN (?) gr ON gr.group_id = gm.group_id", readSubQ).
-		Where("gm.group_id IN ?", groupIDs).
-		Where("gm.created_at > COALESCE(gr.max_read, ?)", "1970-01-01 00:00:00").
-		Group("gm.group_id").
-		Scan(&unreads)
+	unreads := CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
@@ -352,25 +255,16 @@ func MarkConversationRead(ctx context.Context, groupID, userID, userType string)
 		return
 	}
 
-	var lm struct{ ID string }
-	err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
-		Select("id").
-		Where("group_id = ?", groupID).
-		Order("created_at DESC").
-		Limit(1).
-		Scan(&lm).Error
-	if err != nil || lm.ID == "" {
+	lastMessageID := FindLastMessageID(ctx, groupID)
+	if lastMessageID == "" {
 		return
 	}
 
-	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
-		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
-	}).Create(&imModel.GroupMessageRead{
-		MessageID: lm.ID, GroupID: groupID,
+	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
+		MessageID: lastMessageID, GroupID: groupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,
-	}).Error
+	})
 }
 
 // ==================== Helpers ====================

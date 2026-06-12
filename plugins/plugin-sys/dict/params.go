@@ -1,5 +1,7 @@
 package dict
 
+import "hei-gin/sdk/utils"
+
 // DictVO 字典视图对象
 type DictVO struct {
 	ID        string  `json:"id"`
@@ -43,4 +45,48 @@ type DictOptionsParam struct {
 type DictListParam struct {
 	Category string `json:"category" form:"category"`
 	Keyword  string `json:"keyword" form:"keyword"`
+}
+
+func SysDictToDictVO(src *SysDict) *DictVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &DictVO{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Label = src.Label
+	dst.Value = src.Value
+	dst.Color = src.Color
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func DictVOToSysDict(src *DictVO) *SysDict {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysDict{}
+	dst.ID = src.ID
+	dst.Code = src.Code
+	dst.Label = src.Label
+	dst.Value = src.Value
+	dst.Color = src.Color
+	dst.Category = src.Category
+	dst.ParentID = src.ParentID
+	dst.Status = src.Status
+	dst.SortCode = src.SortCode
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

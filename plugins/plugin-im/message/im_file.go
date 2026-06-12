@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	imModel "hei-gin/plugins/plugin-im/model"
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/storage"
@@ -180,7 +179,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 		SenderType:     senderType,
 		MsgType:        msgType,
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Create(&record).Error; err != nil {
+	if err := CreateFile(c.Request.Context(), &record); err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
 		return
 	}
@@ -233,9 +232,8 @@ func ServeUploadedFile(c *gin.Context, bucket, fileKey string) error {
 		return fmt.Errorf("文件不存在")
 	}
 
-	var entity imModel.ImFile
-	if err := db.DB.WithContext(c.Request.Context()).
-		First(&entity, "bucket = ? AND file_key = ?", bucket, fileKey).Error; err != nil {
+	entity, err := FindFileByKey(c.Request.Context(), bucket, fileKey)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("文件不存在")
 		}

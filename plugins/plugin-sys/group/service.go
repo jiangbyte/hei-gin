@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/enums"
@@ -41,23 +40,7 @@ func GroupPage(c *gin.Context, p *GroupPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysGroup{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ? OR code LIKE ?", like, like)
-	}
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-	if p.OrgID != "" {
-		q = q.Where("org_id = ?", p.OrgID)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysGroup
-	q.Order("sort_code ASC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*GroupVO, len(rows))
 	for i, r := range rows {
@@ -68,15 +51,7 @@ func GroupPage(c *gin.Context, p *GroupPageParam) {
 
 func GroupTree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
-	var all []SysGroup
-	q := db.DB.WithContext(ctx).Order("sort_code ASC")
-	if param.Category != "" {
-		q = q.Where("category = ?", param.Category)
-	}
-	if param.OrgID != "" {
-		q = q.Where("org_id = ?", param.OrgID)
-	}
-	q.Find(&all)
+	all := List(ctx, param.Category, param.OrgID)
 
 	if len(all) == 0 {
 		return make([]map[string]interface{}, 0)
@@ -120,8 +95,8 @@ func GroupDetail(c *gin.Context, id string) *GroupVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysGroup
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -129,7 +104,7 @@ func GroupDetail(c *gin.Context, id string) *GroupVO {
 		result.WriteError(c, exception.NewBusinessError("查询群组详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysGroupToGroupVO(&e)
+	return SysGroupToGroupVO(e)
 }
 
 func GroupCreate(c *gin.Context, vo *GroupVO) {
@@ -139,7 +114,7 @@ func GroupCreate(c *gin.Context, vo *GroupVO) {
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加群组失败: "+err.Error(), 500))
 		return
 	}
@@ -152,8 +127,8 @@ func GroupModify(c *gin.Context, vo *GroupVO) {
 		return
 	}
 
-	var e SysGroup
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	_, err := FindByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -170,7 +145,7 @@ func GroupModify(c *gin.Context, vo *GroupVO) {
 	if vo.Description != nil {
 		up["description"] = *vo.Description
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysGroup{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑群组失败: "+err.Error(), 500))
 		return
 	}
@@ -183,16 +158,13 @@ func GroupRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 	ctx := c.Request.Context()
 	allIDs := getAllDescendantIDs(ctx, ids)
-	for _, id := range allIDs {
-		db.DB.WithContext(ctx).Table("sys_user").Where("group_id = ?", id).Update("group_id", nil)
-	}
-	db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysGroup{})
+	ClearUserGroupIDs(ctx, allIDs)
+	_ = DeleteByIDs(ctx, allIDs)
 }
 
 func GroupOptions(c *gin.Context) []*GroupVO {
 	ctx := c.Request.Context()
-	var records []SysGroup
-	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
+	records := ListAll(ctx)
 	vos := make([]*GroupVO, len(records))
 	for i, r := range records {
 		vos[i] = SysGroupToGroupVO(&r)
@@ -202,8 +174,7 @@ func GroupOptions(c *gin.Context) []*GroupVO {
 
 func GroupGetAll(c *gin.Context) []*GroupVO {
 	ctx := c.Request.Context()
-	var records []SysGroup
-	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
+	records := ListAll(ctx)
 	vos := make([]*GroupVO, len(records))
 	for i, r := range records {
 		vos[i] = SysGroupToGroupVO(&r)
@@ -217,8 +188,7 @@ func getAllDescendantIDs(ctx context.Context, ids []string) []string {
 		allIDs[id] = true
 	}
 
-	var all []SysGroup
-	db.DB.WithContext(ctx).Find(&all)
+	all := ListAll(ctx)
 	cm := make(map[string][]string)
 	for _, g := range all {
 		if g.ParentID != nil && *g.ParentID != "" {

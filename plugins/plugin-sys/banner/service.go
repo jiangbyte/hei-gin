@@ -3,7 +3,6 @@ package banner
 import (
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
@@ -25,13 +24,7 @@ func BannerPage(c *gin.Context, p *BannerPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysBanner{})
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysBanner
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*BannerVO, len(rows))
 	for i, r := range rows {
@@ -48,8 +41,8 @@ func BannerDetail(c *gin.Context, id string) *BannerVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysBanner
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -57,7 +50,7 @@ func BannerDetail(c *gin.Context, id string) *BannerVO {
 		result.WriteError(c, exception.NewBusinessError("查询横幅详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysBannerToBannerVO(&e)
+	return SysBannerToBannerVO(e)
 }
 
 // ===== Create =====
@@ -66,7 +59,7 @@ func BannerCreate(c *gin.Context, vo *BannerVO) {
 	ctx := c.Request.Context()
 
 	e := BannerVOToSysBanner(vo)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加横幅失败: "+err.Error(), 500))
 		return
 	}
@@ -81,8 +74,8 @@ func BannerModify(c *gin.Context, vo *BannerVO) {
 		return
 	}
 
-	var e SysBanner
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	_, err := FindByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -107,7 +100,7 @@ func BannerModify(c *gin.Context, vo *BannerVO) {
 	if vo.Description != nil {
 		up["description"] = *vo.Description
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysBanner{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑横幅失败: "+err.Error(), 500))
 		return
 	}
@@ -120,7 +113,7 @@ func BannerRemove(c *gin.Context, param *utils.IdsParam) {
 	if len(ids) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysBanner{}).Error; err != nil {
+	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除横幅失败: "+err.Error(), 500))
 		return
 	}
@@ -130,8 +123,7 @@ func BannerRemove(c *gin.Context, param *utils.IdsParam) {
 
 func BannerOptions(c *gin.Context) []*BannerVO {
 	ctx := c.Request.Context()
-	var rows []SysBanner
-	db.DB.WithContext(ctx).Model(&SysBanner{}).Order("sort_code ASC").Find(&rows)
+	rows := ListAll(ctx)
 	vos := make([]*BannerVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysBannerToBannerVO(&r)

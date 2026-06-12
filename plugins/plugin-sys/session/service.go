@@ -7,10 +7,7 @@ import (
 	"time"
 
 	"hei-gin/sdk/enums"
-
-	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -45,7 +42,7 @@ func Page(c *gin.Context, param *SessionPageParam) {
 		total = 0
 	}
 
-	users := loadBusinessUsers(ctx, sessionUserIDs(infos))
+	users := LoadUsers(ctx, sessionUserIDs(infos))
 	rows := make([]*SessionPageResult, 0, len(infos))
 	for _, info := range infos {
 		row := &SessionPageResult{
@@ -77,9 +74,11 @@ func listBusinessSessionInfos(ctx context.Context, keyword string, current, size
 	if keyword == "" {
 		return auth.ListSessionInfos(ctx, string(enums.LoginTypeBusiness), current, size, "")
 	}
-	userIDs := findBusinessUserIDs(ctx, keyword)
+	userIDs := FindUserIDs(ctx, keyword, maxKeywordCandidates)
 	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeBusiness), userIDs, current, size)
 }
+
+const maxKeywordCandidates = 1000
 
 func Exit(c *gin.Context, param *SessionExitParam) {
 	auth.KickoutWithContext(c.Request.Context(), param.UserID)
@@ -140,35 +139,6 @@ func ChartData(c *gin.Context) *SessionChartData {
 			},
 		},
 	}
-}
-
-func loadBusinessUsers(ctx context.Context, userIDs []string) map[string]*userModel.SysUser {
-	if len(userIDs) == 0 {
-		return map[string]*userModel.SysUser{}
-	}
-	var users []userModel.SysUser
-	db.DB.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
-	result := make(map[string]*userModel.SysUser, len(users))
-	for i := range users {
-		user := users[i]
-		result[user.ID] = &user
-	}
-	return result
-}
-
-func findBusinessUserIDs(ctx context.Context, keyword string) []string {
-	const maxKeywordCandidates = 1000
-
-	like := keyword + "%"
-	var ids []string
-	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).
-		Select("id").
-		Where("id = ? OR id LIKE ? OR username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?",
-			keyword, like, like, like, like, like).
-		Order("last_login_at DESC, id ASC").
-		Limit(maxKeywordCandidates).
-		Pluck("id", &ids)
-	return ids
 }
 
 func sessionUserIDs(infos []auth.SessionInfo) []string {

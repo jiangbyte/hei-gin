@@ -4,18 +4,14 @@ import (
 	"context"
 	"sort"
 	"strings"
-	"time"
 
 	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 
-	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/plugins/plugin-im/group"
-	sysUser "hei-gin/plugins/plugin-sys/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -81,30 +77,7 @@ func MessageConversations(c *gin.Context, cursor string, size int) ([]Conversati
 }
 
 func buildFromMessages(ctx context.Context, currentUserID, userType string) map[string]*ConversationVO {
-	type msgRow struct {
-		ConversationID string
-		SenderID       string
-		SenderType     string
-		ReceiverID     string
-		ReceiverType   string
-		Content        string
-		CreatedAt      time.Time
-		Status         string
-	}
-
-	var rows []msgRow
-	queryDB := db.DB.WithContext(ctx)
-	subQuery := queryDB.Table("im_message").
-		Select("conversation_id, MAX(created_at) as max_ct").
-		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by IS NULL OR deleted_by != ?)",
-			currentUserID, userType, currentUserID, userType, currentUserID).
-		Group("conversation_id")
-
-	queryDB.Table("im_message m").
-		Select("m.conversation_id, m.sender_id, m.sender_type, m.receiver_id, m.receiver_type, m.content, m.created_at, m.status").
-		Joins("INNER JOIN (?) latest ON latest.conversation_id = m.conversation_id AND latest.max_ct = m.created_at", subQuery).
-		Order("m.created_at DESC").
-		Scan(&rows)
+	rows := ListConversationLatest(ctx, currentUserID, userType)
 
 	resultMap := make(map[string]*ConversationVO, len(rows))
 	userKeys := make(map[string]bool)
@@ -114,19 +87,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 		convIDs = append(convIDs, r.ConversationID)
 	}
 
-	type unreadRow struct {
-		ConversationID string
-		Count          int64
-	}
-	var unreads []unreadRow
-	if len(convIDs) > 0 {
-		queryDB.Model(&imModel.Message{}).
-			Select("conversation_id, COUNT(*) as count").
-			Where("conversation_id IN ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
-				convIDs, currentUserID, userType, "unread").
-			Group("conversation_id").
-			Scan(&unreads)
-	}
+	unreads := CountConversationUnread(ctx, convIDs, currentUserID, userType)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.ConversationID] = u.Count
@@ -171,8 +132,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 		avatarMap := make(map[string]string)
 
 		if len(businessIDs) > 0 {
-			var busUsers []sysUser.SysUser
-			queryDB.Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&busUsers)
+			busUsers := FindBusinessUsers(ctx, businessIDs)
 			for _, u := range busUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Nickname
@@ -183,8 +143,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 			}
 		}
 		if len(consumerIDs) > 0 {
-			var conUsers []cliUser.ClientUser
-			queryDB.Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&conUsers)
+			conUsers := FindConsumerUsers(ctx, consumerIDs)
 			for _, u := range conUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Nickname
@@ -218,20 +177,7 @@ func MessageConversationMessages(c *gin.Context, conversationID, cursor string, 
 		size = 100
 	}
 
-	q := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("conversation_id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
-			conversationID, currentUserID, userType, currentUserID, userType, currentUserID)
-	if cursor != "" {
-		if t, err := utils.ParseDateTime(cursor); err == nil {
-			q = q.Where("created_at < ?", t)
-		}
-	}
-	var records []imModel.Message
-	order := "created_at DESC"
-	if cursor != "" {
-		order = "created_at ASC"
-	}
-	q.Order(order).Limit(size + 1).Find(&records)
+	records := ListConversationMessages(c.Request.Context(), conversationID, currentUserID, userType, cursor, size)
 
 	hasMore := len(records) > size
 	if hasMore {
@@ -263,13 +209,11 @@ func MessageGetOrCreateConversation(c *gin.Context, param *GetOrCreateConversati
 
 	displayName := param.UserID
 	if param.UserType == string(enums.LoginTypeBusiness) {
-		var u sysUser.SysUser
-		if err := db.DB.WithContext(c.Request.Context()).First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+		if u, err := FindBusinessUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	} else {
-		var u cliUser.ClientUser
-		if err := db.DB.WithContext(c.Request.Context()).First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+		if u, err := FindConsumerUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	}

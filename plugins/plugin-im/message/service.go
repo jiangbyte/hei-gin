@@ -5,12 +5,10 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	imModel "hei-gin/plugins/plugin-im/model"
 	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -107,7 +105,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 			Status:         "unread",
 		}
 	}
-	if err := db.DB.WithContext(ctx).Create(&records).Error; err != nil {
+	if err := CreateMessages(ctx, records); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		return
 	}
@@ -129,14 +127,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 			LastTime: lastTime,
 		})
 	}
-	if len(conversations) > 0 {
-		_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"last_msg", "last_time", "updated_at",
-			}),
-		}).Create(&conversations).Error
-	}
+	_ = UpsertConversations(ctx, conversations)
 
 	pushMessages := make(map[string]ws.Message, len(receiverIDs))
 	messageIDs := make(map[string]string, len(receiverIDs))
@@ -197,18 +188,7 @@ func MessagePage(c *gin.Context, param *MessagePageParam) {
 		param.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
-		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
-			userID, userType, userID, userType, userID)
-	if param.Status != "" {
-		query = query.Where("status = ?", param.Status)
-	}
-
-	var total int64
-	query.Count(&total)
-
-	var records []imModel.Message
-	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+	records, total := Page(ctx, userID, userType, param.Status, param.Current, param.Size)
 
 	vos := make([]MessageVO, len(records))
 	for i, e := range records {
@@ -223,10 +203,7 @@ func MessageUnreadCount(c *gin.Context) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	var count int64
-	db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "unread").
-		Count(&count)
+	count := CountUnread(c.Request.Context(), userID, userType)
 	result.Success(c, UnreadCountVO{Count: count})
 }
 
@@ -237,11 +214,8 @@ func MessageDetail(c *gin.Context) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	var entity imModel.Message
-	if err := db.DB.WithContext(c.Request.Context()).
-		Where("id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
-			id, userID, userType, userID, userType).
-		First(&entity).Error; err != nil {
+	entity, err := FindOwnedByID(c.Request.Context(), id, userID, userType)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.Success(c, nil)
 			return
@@ -249,7 +223,7 @@ func MessageDetail(c *gin.Context) {
 		result.WriteError(c, exception.NewBusinessError("查询消息失败: "+err.Error(), 500))
 		return
 	}
-	result.Success(c, ImMessageToMessageVO(&entity))
+	result.Success(c, ImMessageToMessageVO(entity))
 }
 
 // ==================== MessageMarkRead ====================
@@ -257,9 +231,7 @@ func MessageDetail(c *gin.Context) {
 func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
-	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("id = ? AND receiver_id = ? AND receiver_type = ?", param.ID, userID, userType).
-		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+	if err := MarkRead(c.Request.Context(), param.ID, userID, userType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
 	}
@@ -275,10 +247,7 @@ func MessageMarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 		return
 	}
 
-	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("conversation_id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
-			param.ConversationID, receiverID, receiverType, "unread").
-		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+	if err := MarkConversationRead(c.Request.Context(), param.ConversationID, receiverID, receiverType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
 	}
@@ -290,9 +259,7 @@ func MessageMarkAllRead(c *gin.Context) {
 	receiverID := getLoginID(c)
 	receiverType := getUserType(c)
 
-	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("receiver_id = ? AND receiver_type = ? AND status = ?", receiverID, receiverType, "unread").
-		Updates(map[string]interface{}{"status": "read"}).Error; err != nil {
+	if err := MarkAllRead(c.Request.Context(), receiverID, receiverType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
 		return
 	}
@@ -307,10 +274,7 @@ func MessageRemove(c *gin.Context, param *DeleteParam) {
 	if len(param.IDs) == 0 {
 		return
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).
-		Where("id IN ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
-			param.IDs, userID, userType, userID, userType).
-		Update("deleted_by", userID).Error; err != nil {
+	if err := SoftDelete(c.Request.Context(), param.IDs, userID, userType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
 		return
 	}
@@ -322,8 +286,8 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	var msg imModel.Message
-	if err := db.DB.WithContext(c.Request.Context()).First(&msg, "id = ?", param.MessageID).Error; err != nil {
+	msg, err := FindByID(c.Request.Context(), param.MessageID)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
@@ -335,11 +299,7 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 		result.WriteError(c, exception.NewBusinessError("超过5分钟，无法撤回", 400))
 		return
 	}
-	if err := db.DB.WithContext(c.Request.Context()).Model(&imModel.Message{}).Where("id = ?", param.MessageID).
-		Updates(map[string]interface{}{
-			"content":  "消息已被撤回",
-			"msg_type": imModel.MsgTypeSystem,
-		}).Error; err != nil {
+	if err := Recall(c.Request.Context(), param.MessageID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("撤回失败: "+err.Error(), 500))
 		return
 	}
@@ -350,11 +310,8 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 func MessageForward(c *gin.Context, param *ForwardParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
-	var original imModel.Message
-	if err := db.DB.WithContext(c.Request.Context()).
-		Where("id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
-			param.MessageID, userID, userType, userID, userType).
-		First(&original).Error; err != nil {
+	original, err := FindOwnedByID(c.Request.Context(), param.MessageID, userID, userType)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
@@ -383,16 +340,7 @@ func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 		param.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
-		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND content LIKE ?",
-			userID, userType, userID, userType, "%"+param.Keyword+"%")
-	if param.Cursor != "" {
-		if t, err := utils.ParseDateTime(param.Cursor); err == nil {
-			query = query.Where("created_at < ?", t)
-		}
-	}
-	var records []imModel.Message
-	query.Order("created_at DESC").Limit(param.Size + 1).Find(&records)
+	records := Search(ctx, userID, userType, param.Keyword, param.Cursor, param.Size)
 
 	hasMore := len(records) > param.Size
 	if hasMore {

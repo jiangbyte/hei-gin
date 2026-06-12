@@ -1,5 +1,7 @@
 package config
 
+import "hei-gin/sdk/utils"
+
 // ConfigVO 配置视图对象
 type ConfigVO struct {
 	ID          string  `json:"id"`
@@ -48,4 +50,44 @@ type ConfigCategoryEditParam struct {
 	ConfigKey   *string `json:"config_key"`
 	ConfigValue *string `json:"config_value"`
 	Remark      *string `json:"remark"`
+}
+
+func SysConfigToConfigVO(src *SysConfig) *ConfigVO {
+	if src == nil {
+		return nil
+	}
+
+	dst := &ConfigVO{}
+	dst.ID = src.ID
+	dst.ConfigKey = src.ConfigKey
+	dst.ConfigValue = src.ConfigValue
+	dst.Category = src.Category
+	dst.Remark = src.Remark
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.FormatDateTimePtr(src.CreatedAt)
+	dst.UpdatedAt = utils.FormatDateTimePtr(src.UpdatedAt)
+	return dst
+}
+
+func ConfigVOToSysConfig(src *ConfigVO) *SysConfig {
+	if src == nil {
+		return nil
+	}
+
+	dst := &SysConfig{}
+	dst.ID = src.ID
+	dst.ConfigKey = src.ConfigKey
+	dst.ConfigValue = src.ConfigValue
+	dst.Category = src.Category
+	dst.Remark = src.Remark
+	dst.SortCode = src.SortCode
+	dst.Extra = src.Extra
+	dst.CreatedBy = src.CreatedBy
+	dst.UpdatedBy = src.UpdatedBy
+	dst.CreatedAt = utils.ParseDateTimePtr(&src.CreatedAt)
+	dst.UpdatedAt = utils.ParseDateTimePtr(&src.UpdatedAt)
+	return dst
 }

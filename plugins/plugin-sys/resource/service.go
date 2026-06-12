@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -60,11 +59,7 @@ func ModulePage(c *gin.Context, param *ModulePageParam) {
 		param.Size = 100
 	}
 
-	var total int64
-	db.DB.WithContext(ctx).Model(&SysModule{}).Count(&total)
-
-	var records []SysModule
-	db.DB.WithContext(ctx).Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+	records, total := ModulePageQuery(ctx, param.Current, param.Size)
 
 	vos := make([]*ModuleVO, len(records))
 	for i, r := range records {
@@ -79,8 +74,8 @@ func ModuleDetail(c *gin.Context, id string) *ModuleVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysModule
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindModuleByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -88,7 +83,7 @@ func ModuleDetail(c *gin.Context, id string) *ModuleVO {
 		result.WriteError(c, exception.NewBusinessError("查询模块详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysModuleToModuleVO(&e)
+	return SysModuleToModuleVO(e)
 }
 
 func ModuleCreate(c *gin.Context, vo *ModuleVO) {
@@ -98,7 +93,7 @@ func ModuleCreate(c *gin.Context, vo *ModuleVO) {
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := CreateModule(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加模块失败: "+err.Error(), 500))
 		return
 	}
@@ -112,8 +107,7 @@ func ModuleModify(c *gin.Context, vo *ModuleVO) {
 		return
 	}
 
-	var entity SysModule
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
+	if _, err := FindModuleByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -149,7 +143,7 @@ func ModuleModify(c *gin.Context, vo *ModuleVO) {
 	if vo.Status != "" {
 		up["status"] = vo.Status
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysModule{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateModuleByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑模块失败: "+err.Error(), 500))
 		return
 	}
@@ -162,7 +156,7 @@ func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysModule{}).Error; err != nil {
+	if err := DeleteModules(ctx, ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除模块失败: "+err.Error(), 500))
 		return
 	}
@@ -181,11 +175,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) {
 		param.Size = 100
 	}
 
-	var total int64
-	db.DB.WithContext(ctx).Model(&SysResource{}).Count(&total)
-
-	var records []SysResource
-	db.DB.WithContext(ctx).Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+	records, total := ResourcePageQuery(ctx, param.Current, param.Size)
 
 	vos := make([]*ResourceVO, len(records))
 	for i, r := range records {
@@ -204,12 +194,8 @@ func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 	resourceTreeMu.RUnlock()
 
 	ctx := c.Request.Context()
-	q := db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC")
-	if category != "" {
-		q = q.Where("category = ?", category)
-	}
-	var all []SysResource
-	if err := q.Find(&all).Error; err != nil {
+	all, err := ListResources(ctx, category)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询资源树失败: "+err.Error(), 500))
 		return nil
 	}
@@ -275,8 +261,8 @@ func ResourceMenu(c *gin.Context) []map[string]interface{} {
 	resourceTreeMu.RUnlock()
 
 	ctx := c.Request.Context()
-	var all []SysResource
-	if err := db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC").Find(&all).Error; err != nil {
+	all, err := ListAllResources(ctx)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询资源菜单失败: "+err.Error(), 500))
 		return nil
 	}
@@ -344,8 +330,8 @@ func ResourceDetail(c *gin.Context, id string) *ResourceVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysResource
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindResourceByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -353,7 +339,7 @@ func ResourceDetail(c *gin.Context, id string) *ResourceVO {
 		result.WriteError(c, exception.NewBusinessError("查询资源详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysResourceToResourceVO(&e)
+	return SysResourceToResourceVO(e)
 }
 
 func ResourceCreate(c *gin.Context, vo *ResourceVO) {
@@ -363,7 +349,7 @@ func ResourceCreate(c *gin.Context, vo *ResourceVO) {
 	if e.Status == "" {
 		e.Status = string(enums.StatusEnabled)
 	}
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := CreateResource(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加资源失败: "+err.Error(), 500))
 		return
 	}
@@ -377,8 +363,8 @@ func ResourceModify(c *gin.Context, vo *ResourceVO) {
 		return
 	}
 
-	var old SysResource
-	if err := db.DB.WithContext(ctx).First(&old, "id = ?", vo.ID).Error; err != nil {
+	old, err := FindResourceByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -453,13 +439,15 @@ func ResourceModify(c *gin.Context, vo *ResourceVO) {
 		up["status"] = vo.Status
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&SysResource{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateResourceByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑资源失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 
-	syncPerm(ctx, vo.ID, oldExtra, vo.Extra)
+	if err := SyncPermissions(ctx, vo.ID, extractPermCode(oldExtra), extractPermCode(vo.Extra)); err != nil {
+		log.Printf("[RESOURCE] Failed to sync permissions: %v", err)
+	}
 }
 
 func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
@@ -468,139 +456,16 @@ func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
 		return
 	}
 	ctx := c.Request.Context()
-	all := collectDescendant(ctx, ids)
-
-	tx := db.DB.WithContext(ctx).Begin()
-	if err := tx.Table("rel_role_resource").Where("resource_id IN ?", all).Delete(nil).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除资源角色关联失败: "+err.Error(), 500))
-		return
-	}
-	subQuery := tx.Table("rel_role_resource").Select("role_id").Where("resource_id IN ?", all)
-	if err := tx.Table("rel_role_permission").Where("role_id IN (?)", subQuery).Delete(nil).Error; err != nil {
-		tx.Rollback()
-		result.WriteError(c, exception.NewBusinessError("删除资源权限关联失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Where("id IN ?", all).Delete(&SysResource{}).Error; err != nil {
-		tx.Rollback()
+	all := CollectResourceDescendants(ctx, ids)
+	if err := DeleteResourcesCascade(ctx, all); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除资源失败: "+err.Error(), 500))
-		return
-	}
-	if err := tx.Commit().Error; err != nil {
-		result.WriteError(c, exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 		return
 	}
 	invalidateResourceTreeCache()
 }
 
 func collectDescendant(ctx context.Context, ids []string) []string {
-	m := make(map[string]bool)
-	for _, id := range ids {
-		m[id] = true
-	}
-
-	var all []SysResource
-	if err := db.DB.WithContext(ctx).Find(&all).Error; err != nil {
-		return ids
-	}
-	cm := make(map[string][]string)
-	for _, r := range all {
-		if r.ParentID != nil && *r.ParentID != "" {
-			cm[*r.ParentID] = append(cm[*r.ParentID], r.ID)
-		}
-	}
-
-	q := make([]string, len(ids))
-	copy(q, ids)
-	for len(q) > 0 {
-		pid := q[len(q)-1]
-		q = q[:len(q)-1]
-		for _, cid := range cm[pid] {
-			if !m[cid] {
-				m[cid] = true
-				q = append(q, cid)
-			}
-		}
-	}
-	r := make([]string, 0, len(m))
-	for id := range m {
-		r = append(r, id)
-	}
-	return r
-}
-
-func syncPerm(ctx context.Context, resourceID string, oldExtra, newExtra *string) {
-	oldCode := extractPermCode(oldExtra)
-	newCode := extractPermCode(newExtra)
-	if oldCode == newCode {
-		return
-	}
-
-	tx := db.DB.WithContext(ctx).Begin()
-
-	var roleResources []relRoleResource
-	if err := tx.Table("rel_role_resource").Where("resource_id = ?", resourceID).Find(&roleResources).Error; err != nil {
-		tx.Rollback()
-		log.Printf("[RESOURCE] Failed to query role resources: %v", err)
-		return
-	}
-	if len(roleResources) == 0 {
-		tx.Rollback()
-		return
-	}
-
-	roleIDs := make([]string, len(roleResources))
-	for i, rr := range roleResources {
-		roleIDs[i] = rr.RoleID
-	}
-
-	if oldCode != "" {
-		if err := tx.Table("rel_role_permission").Where("role_id IN ? AND permission_code = ?", roleIDs, oldCode).Delete(nil).Error; err != nil {
-			tx.Rollback()
-			log.Printf("[RESOURCE] Failed to delete old permissions: %v", err)
-			return
-		}
-	}
-
-	if newCode != "" {
-		var existing []struct{ RoleID string }
-		if err := tx.Table("rel_role_permission").Where("role_id IN ? AND permission_code = ?", roleIDs, newCode).Select("role_id").Find(&existing).Error; err != nil {
-			tx.Rollback()
-			log.Printf("[RESOURCE] Failed to query existing permissions: %v", err)
-			return
-		}
-		existingMap := make(map[string]bool)
-		for _, e := range existing {
-			existingMap[e.RoleID] = true
-		}
-		permBatch := make([]struct {
-			ID             string
-			RoleID         string
-			PermissionCode string
-		}, 0)
-		for _, rid := range roleIDs {
-			if existingMap[rid] {
-				continue
-			}
-			permBatch = append(permBatch, struct {
-				ID             string
-				RoleID         string
-				PermissionCode string
-			}{utils.GenerateID(), rid, newCode})
-		}
-		if len(permBatch) > 0 {
-			if err := tx.Table("rel_role_permission").CreateInBatches(permBatch, 100).Error; err != nil {
-				tx.Rollback()
-				log.Printf("[RESOURCE] Failed to batch insert permissions: %v", err)
-				return
-			}
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		log.Printf("[RESOURCE] Failed to commit transaction: %v", err)
-	}
+	return CollectResourceDescendants(ctx, ids)
 }
 
 func extractPermCode(extra *string) string {

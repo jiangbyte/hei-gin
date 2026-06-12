@@ -8,10 +8,6 @@ import (
 
 	"gorm.io/gorm"
 
-	groupModel "hei-gin/plugins/plugin-sys/group"
-	posModel "hei-gin/plugins/plugin-sys/position"
-	userModel "hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
@@ -63,23 +59,7 @@ func OrgPage(c *gin.Context, p *OrgPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&SysOrg{})
-	if p.ParentID != "" {
-		if p.ParentID == "0" {
-			q = q.Where("(parent_id IS NULL OR parent_id = '' OR id = ?)", p.ParentID)
-		} else {
-			q = q.Where("(id = ? OR parent_id = ?)", p.ParentID, p.ParentID)
-		}
-	}
-	if p.Keyword != "" {
-		q = q.Where("name LIKE ?", "%"+p.Keyword+"%")
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysOrg
-	q.Order("sort_code ASC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 
 	vos := make([]*OrgVO, len(rows))
 	for i, r := range rows {
@@ -98,13 +78,8 @@ func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
 	orgTreeMu.RUnlock()
 
 	ctx := c.Request.Context()
-	q := db.DB.WithContext(ctx).Model(&SysOrg{}).Order("sort_code ASC")
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-
-	var all []SysOrg
-	if err := q.Find(&all).Error; err != nil {
+	all, err := List(ctx, p.Category)
+	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("查询组织树失败: "+err.Error(), 500))
 		return nil
 	}
@@ -182,7 +157,7 @@ func OrgCreate(c *gin.Context, vo *OrgVO) {
 
 	e := OrgVOToSysOrg(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加组织失败: "+err.Error(), 500))
 		return
 	}
@@ -196,8 +171,7 @@ func OrgModify(c *gin.Context, vo *OrgVO) {
 		return
 	}
 
-	var e SysOrg
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	if _, err := FindByID(ctx, vo.ID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -219,7 +193,7 @@ func OrgModify(c *gin.Context, vo *OrgVO) {
 	if vo.Extra != nil {
 		up["extra"] = *vo.Extra
 	}
-	if err := db.DB.WithContext(ctx).Model(&SysOrg{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑组织失败: "+err.Error(), 500))
 		return
 	}
@@ -235,28 +209,25 @@ func OrgRemove(c *gin.Context, param *utils.IdsParam) {
 
 	allIDs := collectDescendantOrgIDs(ctx, ids)
 
-	var userCount int64
-	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).Where("org_id IN ?", allIDs).Count(&userCount)
+	userCount := CountUsersByOrgIDs(ctx, allIDs)
 	if userCount > 0 {
 		result.WriteError(c, exception.NewBusinessError("组织存在关联用户，无法删除", 400))
 		return
 	}
 
-	var groupCount int64
-	db.DB.WithContext(ctx).Model(&groupModel.SysGroup{}).Where("org_id IN ?", allIDs).Count(&groupCount)
+	groupCount := CountGroupsByOrgIDs(ctx, allIDs)
 	if groupCount > 0 {
 		result.WriteError(c, exception.NewBusinessError("组织存在关联用户组，无法删除", 400))
 		return
 	}
 
-	var posCount int64
-	db.DB.WithContext(ctx).Model(&posModel.SysPosition{}).Where("org_id IN ?", allIDs).Count(&posCount)
+	posCount := CountPositionsByOrgIDs(ctx, allIDs)
 	if posCount > 0 {
 		result.WriteError(c, exception.NewBusinessError("组织存在关联职位，无法删除", 400))
 		return
 	}
 
-	if err := db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysOrg{}).Error; err != nil {
+	if err := DeleteByIDs(ctx, allIDs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除组织失败: "+err.Error(), 500))
 		return
 	}
@@ -269,8 +240,8 @@ func OrgDetail(c *gin.Context, id string) *OrgVO {
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e SysOrg
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -278,13 +249,15 @@ func OrgDetail(c *gin.Context, id string) *OrgVO {
 		result.WriteError(c, exception.NewBusinessError("查询组织详情失败: "+err.Error(), 500))
 		return nil
 	}
-	return SysOrgToOrgVO(&e)
+	return SysOrgToOrgVO(e)
 }
 
 func OrgOptions(c *gin.Context) []*OrgVO {
 	ctx := c.Request.Context()
-	var rows []SysOrg
-	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&rows)
+	rows, err := ListAll(ctx)
+	if err != nil {
+		return make([]*OrgVO, 0)
+	}
 	vos := make([]*OrgVO, len(rows))
 	for i, r := range rows {
 		vos[i] = SysOrgToOrgVO(&r)
@@ -298,8 +271,8 @@ func collectDescendantOrgIDs(ctx context.Context, ids []string) []string {
 		allIDs[id] = true
 	}
 
-	var all []SysOrg
-	if err := db.DB.WithContext(ctx).Find(&all).Error; err != nil {
+	all, err := ListAll(ctx)
+	if err != nil {
 		return ids
 	}
 	cm := make(map[string][]string)

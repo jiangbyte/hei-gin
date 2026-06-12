@@ -33,3 +33,24 @@ type AddQuickActionParam struct {
 	ResourceID string `json:"resource_id"`
 }
 
+func SysQuickActionToQuickActionVO(src *SysQuickAction) *QuickActionVO {
+	if src == nil {
+		return nil
+	}
+	dst := &QuickActionVO{}
+	dst.ID = src.ID
+	dst.ResourceID = src.ResourceID
+	dst.SortCode = src.SortCode
+	return dst
+}
+
+func QuickActionVOToSysQuickAction(src *QuickActionVO) *SysQuickAction {
+	if src == nil {
+		return nil
+	}
+	dst := &SysQuickAction{}
+	dst.ID = src.ID
+	dst.ResourceID = src.ResourceID
+	dst.SortCode = src.SortCode
+	return dst
+}

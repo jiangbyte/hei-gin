@@ -9,8 +9,6 @@ import (
 	"time"
 
 	logModel "hei-gin/plugins/plugin-sys/log"
-	"hei-gin/sdk/db"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/result"
 
 	"github.com/gin-gonic/gin"
@@ -60,20 +58,7 @@ func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&logModel.SysLog{})
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-	if p.Keyword != "" {
-		kw := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ? OR op_user LIKE ? OR op_ip LIKE ?", kw, kw, kw)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []logModel.SysLog
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := Page(ctx, p)
 	result.PageDataResult(c, rows, total, p.Current, p.Size)
 }
 
@@ -84,17 +69,9 @@ func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
 
-	var loginTotal int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
-
-	var failedTotal int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Where("exe_status = ?", "FAIL").Count(&failedTotal)
-
-	var loginToday int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
-		Where("category = ?", "LOGIN").
-		Where("op_time >= ? AND op_time < ?", todayStart, tomorrowStart).
-		Count(&loginToday)
+	loginTotal := CountLogsByCategory(ctx, "LOGIN")
+	failedTotal := CountLogsByCategoryAndStatus(ctx, "LOGIN", "FAIL")
+	loginToday := CountLogsByCategoryBetween(ctx, "LOGIN", todayStart, tomorrowStart)
 
 	log.Printf("[Analyze] Login stats: total=%d, failed=%d, today=%d", loginTotal, failedTotal, loginToday)
 
@@ -112,17 +89,9 @@ func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
 
-	var logTotal int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Count(&logTotal)
-
-	var exceptionTotal int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "EXCEPTION").Count(&exceptionTotal)
-
-	var exceptionToday int64
-	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
-		Where("category = ?", "EXCEPTION").
-		Where("op_time >= ? AND op_time < ?", todayStart, tomorrowStart).
-		Count(&exceptionToday)
+	logTotal := CountTable(ctx, "sys_log")
+	exceptionTotal := CountLogsByCategory(ctx, "EXCEPTION")
+	exceptionToday := CountLogsByCategoryBetween(ctx, "EXCEPTION", todayStart, tomorrowStart)
 
 	return &LogAnalysisData{
 		LogTotal:       int(logTotal),
@@ -137,16 +106,16 @@ func AnalyzeDashboard(c *gin.Context) *DashboardVO {
 	ctx := c.Request.Context()
 	stats := DashboardStats{}
 
-	db.DB.WithContext(ctx).Table("sys_user").Count(&stats.TotalUsers)
-	db.DB.WithContext(ctx).Table("sys_user").Where("status = ?", string(enums.UserStatusActive)).Count(&stats.ActiveUsers)
-	db.DB.WithContext(ctx).Table("sys_role").Count(&stats.TotalRoles)
-	db.DB.WithContext(ctx).Table("sys_org").Count(&stats.TotalOrgs)
-	db.DB.WithContext(ctx).Table("sys_config").Count(&stats.TotalConfigs)
-	db.DB.WithContext(ctx).Table("sys_notice").Count(&stats.TotalNotices)
+	stats.TotalUsers = CountTable(ctx, "sys_user")
+	stats.ActiveUsers = CountTableByStatus(ctx, "sys_user", ActiveStatus())
+	stats.TotalRoles = CountTable(ctx, "sys_role")
+	stats.TotalOrgs = CountTable(ctx, "sys_org")
+	stats.TotalConfigs = CountTable(ctx, "sys_config")
+	stats.TotalNotices = CountTable(ctx, "sys_notice")
 
 	clientStats := ClientStats{}
-	db.DB.WithContext(ctx).Table("client_user").Count(&clientStats.TotalUsers)
-	db.DB.WithContext(ctx).Table("client_user").Where("status = ?", string(enums.UserStatusActive)).Count(&clientStats.ActiveUsers)
+	clientStats.TotalUsers = CountTable(ctx, "client_user")
+	clientStats.ActiveUsers = CountTableByStatus(ctx, "client_user", ActiveStatus())
 
 	// User growth trend: monthly registration counts over the last 12 months
 	userTrend := getMonthlyTrend(ctx, "sys_user")
@@ -176,18 +145,7 @@ func AnalyzeDashboard(c *gin.Context) *DashboardVO {
 }
 
 func getMonthlyTrend(ctx context.Context, table string) []TrendItem {
-	type MonthlyCount struct {
-		Month string
-		Count int
-	}
-	var rows []MonthlyCount
-	db.DB.WithContext(ctx).Table(table).
-		Select("DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count").
-		Where("created_at IS NOT NULL").
-		Group("month").
-		Order("month ASC").
-		Limit(12).
-		Find(&rows)
+	rows := MonthlyTrend(ctx, table)
 	result := make([]TrendItem, len(rows))
 	for i, r := range rows {
 		result[i] = TrendItem{Month: r.Month, Count: r.Count}
@@ -199,25 +157,14 @@ func getMonthlyTrend(ctx context.Context, table string) []TrendItem {
 }
 
 func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
-	type OrgCount struct {
-		OrgID string
-		Count int
-	}
-	var rows []OrgCount
-	db.DB.WithContext(ctx).Table("sys_user").
-		Select("org_id, COUNT(*) AS count").
-		Where("org_id IS NOT NULL AND org_id != ''").
-		Group("org_id").
-		Find(&rows)
+	rows := OrgUserCounts(ctx)
 	orgIDs := make([]string, len(rows))
 	for i, r := range rows {
 		orgIDs[i] = r.OrgID
 	}
 	orgNames := make(map[string]string)
 	if len(orgIDs) > 0 {
-		type orgNameRow struct{ ID, Name string }
-		var orgRows []orgNameRow
-		db.DB.WithContext(ctx).Table("sys_org").Select("id, name").Where("id IN ?", orgIDs).Find(&orgRows)
+		orgRows := OrgNames(ctx, orgIDs)
 		for _, o := range orgRows {
 			orgNames[o.ID] = o.Name
 		}
@@ -237,15 +184,7 @@ func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
 }
 
 func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
-	type CatCount struct {
-		Category string
-		Count    int
-	}
-	var rows []CatCount
-	db.DB.WithContext(ctx).Table("sys_role").
-		Select("category, COUNT(*) AS count").
-		Group("category").
-		Find(&rows)
+	rows := RoleCategoryCounts(ctx)
 	result := make([]CategoryDistribution, len(rows))
 	for i, r := range rows {
 		result[i] = CategoryDistribution{Category: r.Category, Count: r.Count}
