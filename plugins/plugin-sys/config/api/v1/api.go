@@ -11,53 +11,63 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *config.Service
+}
+
+var defaultHandler = newHandler(config.DefaultModule)
+
+func newHandler(module *config.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/config/page",
 		registry.Perm("sys:config:page", "配置分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	r.GET("/api/v1/sys/config/list-by-category",
 		registry.Perm("sys:config:list", "配置列表"),
-		listByCategoryHandler,
+		defaultHandler.listByCategory,
 	)
 
 	r.POST("/api/v1/sys/config/create",
 		registry.Perm("sys:config:create", "添加配置"),
 		log.SysLog("添加配置"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	r.POST("/api/v1/sys/config/modify",
 		registry.Perm("sys:config:modify", "编辑配置"),
 		log.SysLog("编辑配置"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	r.POST("/api/v1/sys/config/remove",
 		registry.Perm("sys:config:remove", "删除配置"),
 		log.SysLog("删除配置"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	r.GET("/api/v1/sys/config/detail",
 		registry.Perm("sys:config:detail", "配置详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	r.POST("/api/v1/sys/config/edit-batch",
 		registry.Perm("sys:config:edit", "配置编辑"),
 		log.SysLog("批量编辑配置"),
 		middleware.NoRepeat(3000),
-		editBatchHandler,
+		defaultHandler.editBatch,
 	)
 
 	r.POST("/api/v1/sys/config/edit-by-category",
 		registry.Perm("sys:config:edit", "配置编辑"),
 		log.SysLog("按分类批量编辑配置"),
 		middleware.NoRepeat(3000),
-		editByCategoryHandler,
+		defaultHandler.editByCategory,
 	)
 }
 
@@ -74,14 +84,14 @@ func init() {
 // @Param        query  query  config.ConfigPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param config.ConfigPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // listByCategoryHandler handles GET /api/v1/sys/config/list-by-category
@@ -93,8 +103,8 @@ func pageHandler(c *gin.Context) {
 // @Param        category  query  string  false  "category"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/list-by-category [get]
-func listByCategoryHandler(c *gin.Context) {
-	vos := config.ConfigListByCategory(c, c.Query("category"))
+func (h *handler) listByCategory(c *gin.Context) {
+	vos := h.service.ListByCategory(c, c.Query("category"))
 	result.Success(c, vos)
 }
 
@@ -107,14 +117,14 @@ func listByCategoryHandler(c *gin.Context) {
 // @Param        body  body  config.ConfigVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -127,14 +137,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  config.ConfigVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo config.ConfigVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -147,14 +157,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -167,8 +177,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := config.ConfigDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -181,14 +191,14 @@ func detailHandler(c *gin.Context) {
 // @Param        body  body  config.ConfigBatchEditParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/edit-batch [post]
-func editBatchHandler(c *gin.Context) {
+func (h *handler) editBatch(c *gin.Context) {
 	var param config.ConfigBatchEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigEditBatch(c, &param)
+	h.service.EditBatch(c, &param)
 	result.Success(c, nil)
 }
 
@@ -201,13 +211,13 @@ func editBatchHandler(c *gin.Context) {
 // @Param        body  body  config.ConfigCategoryEditParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/config/edit-by-category [post]
-func editByCategoryHandler(c *gin.Context) {
+func (h *handler) editByCategory(c *gin.Context) {
 	var param config.ConfigCategoryEditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	config.ConfigEditByCategory(c, &param)
+	h.service.EditByCategory(c, &param)
 	result.Success(c, nil)
 }

@@ -11,55 +11,65 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *clientuser.Service
+}
+
+var defaultHandler = newHandler(clientuser.DefaultModule)
+
+func newHandler(module *clientuser.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/client-user/page",
 		registry.Perm("client:user:page", "C端用户分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	r.POST("/api/v1/client-user/create",
 		registry.Perm("client:user:create", "添加C端用户"),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	r.POST("/api/v1/client-user/modify",
 		registry.Perm("client:user:modify", "编辑C端用户"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	r.POST("/api/v1/client-user/remove",
 		registry.Perm("client:user:remove", "删除C端用户"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	r.GET("/api/v1/client-user/detail",
 		registry.Perm("client:user:detail", "C端用户详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	r.GET("/api/v1/c/client-user/current",
 		middleware.HeiClientCheckLogin(),
-		currentHandler,
+		defaultHandler.current,
 	)
 
 	r.POST("/api/v1/c/client-user/update-profile",
 		middleware.HeiClientCheckLogin(),
 		log.SysLog("C端用户更新个人信息"),
 		middleware.NoRepeat(3000),
-		updateProfileHandler,
+		defaultHandler.updateProfile,
 	)
 
 	r.POST("/api/v1/c/client-user/update-avatar",
 		middleware.HeiClientCheckLogin(),
 		log.SysLog("C端用户更新头像"),
-		updateAvatarHandler,
+		defaultHandler.updateAvatar,
 	)
 
 	r.POST("/api/v1/c/client-user/update-password",
 		middleware.HeiClientCheckLogin(),
 		log.SysLog("C端用户修改密码"),
 		middleware.NoRepeat(3000),
-		updatePasswordHandler,
+		defaultHandler.updatePassword,
 	)
 }
 
@@ -76,14 +86,14 @@ func init() {
 // @Param        query  query  clientuser.ClientUserPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/client-user/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param clientuser.ClientUserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/client-user/create
@@ -95,14 +105,14 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  clientuser.ClientUserVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/client-user/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -115,14 +125,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  clientuser.ClientUserVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/client-user/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo clientuser.ClientUserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -135,14 +145,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/client-user/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -155,8 +165,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/client-user/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := clientuser.ClientUserDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -168,8 +178,8 @@ func detailHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/client-user/current [get]
-func currentHandler(c *gin.Context) {
-	vo := clientuser.ClientUserCurrent(c)
+func (h *handler) current(c *gin.Context) {
+	vo := h.service.Current(c)
 	result.Success(c, vo)
 }
 
@@ -182,14 +192,14 @@ func currentHandler(c *gin.Context) {
 // @Param        body  body  clientuser.UpdateProfileParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/client-user/update-profile [post]
-func updateProfileHandler(c *gin.Context) {
+func (h *handler) updateProfile(c *gin.Context) {
 	var param clientuser.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserUpdateProfile(c, &param)
+	h.service.UpdateProfile(c, &param)
 	result.Success(c, nil)
 }
 
@@ -202,14 +212,14 @@ func updateProfileHandler(c *gin.Context) {
 // @Param        body  body  clientuser.UpdateAvatarParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/client-user/update-avatar [post]
-func updateAvatarHandler(c *gin.Context) {
+func (h *handler) updateAvatar(c *gin.Context) {
 	var param clientuser.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserUpdateAvatar(c, &param)
+	h.service.UpdateAvatar(c, &param)
 	result.Success(c, nil)
 }
 
@@ -222,13 +232,13 @@ func updateAvatarHandler(c *gin.Context) {
 // @Param        body  body  clientuser.UpdatePasswordParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/client-user/update-password [post]
-func updatePasswordHandler(c *gin.Context) {
+func (h *handler) updatePassword(c *gin.Context) {
 	var param clientuser.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	clientuser.ClientUserUpdatePassword(c, &param)
+	h.service.UpdatePassword(c, &param)
 	result.Success(c, nil)
 }

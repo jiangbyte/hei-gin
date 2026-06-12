@@ -105,7 +105,7 @@ func storeStreamWithContext(ctx context.Context, eng storage.Engine, bucket, fil
 	return eng.StoreStream(bucket, fileKey, reader)
 }
 
-func UploadFile(c *gin.Context, senderID, senderType string) {
+func (s *Service) UploadFile(c *gin.Context, senderID, senderType string) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("上传文件失败: "+err.Error(), 400))
@@ -179,7 +179,7 @@ func UploadFile(c *gin.Context, senderID, senderType string) {
 		SenderType:     senderType,
 		MsgType:        msgType,
 	}
-	if err := CreateFile(c.Request.Context(), &record); err != nil {
+	if err := s.repo.CreateFile(c.Request.Context(), &record); err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
 		return
 	}
@@ -225,14 +225,14 @@ func ResolveFileURL(content, extra string) string {
 	return storage.GetURL(engine, bucket, content)
 }
 
-func ServeUploadedFile(c *gin.Context, bucket, fileKey string) error {
+func (s *Service) ServeUploadedFile(c *gin.Context, bucket, fileKey string) error {
 	if bucket == "" || fileKey == "" || strings.Contains(bucket, "..") || strings.Contains(fileKey, "..") ||
 		strings.Contains(bucket, "/") || strings.Contains(bucket, "\\") ||
 		strings.Contains(fileKey, "/") || strings.Contains(fileKey, "\\") {
 		return fmt.Errorf("文件不存在")
 	}
 
-	entity, err := FindFileByKey(c.Request.Context(), bucket, fileKey)
+	entity, err := s.repo.FindFileByKey(c.Request.Context(), bucket, fileKey)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("文件不存在")

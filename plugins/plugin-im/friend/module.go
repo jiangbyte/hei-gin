@@ -1,6 +1,4 @@
-package role
-
-import "hei-gin/sdk/infra/db"
+package friend
 
 type Module struct {
 	service *Service
@@ -9,7 +7,7 @@ type Module struct {
 var DefaultModule = NewModule()
 
 func NewModule() *Module {
-	repo := &repository{db: db.DB}
+	repo := &repository{}
 	svc := &Service{repo: repo}
 	return &Module{service: svc}
 }

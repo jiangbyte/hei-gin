@@ -68,13 +68,13 @@ func init() {
 func uploadHandler(c *gin.Context) {
 	bucket := c.Param("bucket")
 	fileKey := c.Param("file_key")
-	if err := file.FileDownloadByKey(c, bucket, fileKey); err == nil {
+	if err := file.DefaultModule.Service().DownloadByKey(c, bucket, fileKey); err == nil {
 		return
 	} else if err.Error() == "未授权/未登录" {
 		result.Failure(c, err.Error(), 401)
 		return
 	}
-	if err := message.ServeUploadedFile(c, bucket, fileKey); err != nil {
+	if err := message.DefaultModule.Service().ServeUploadedFile(c, bucket, fileKey); err != nil {
 		result.Failure(c, err.Error(), 404)
 	}
 }

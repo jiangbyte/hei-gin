@@ -27,7 +27,7 @@ type conversationUnreadRow struct {
 	Count          int64
 }
 
-func ListConversationLatest(ctx context.Context, currentUserID, userType string) []conversationMessageRow {
+func (r *repository) ListConversationLatest(ctx context.Context, currentUserID, userType string) []conversationMessageRow {
 	queryDB := db.DB.WithContext(ctx)
 	subQuery := queryDB.Table("im_message").
 		Select("conversation_id, MAX(created_at) as max_ct").
@@ -44,7 +44,7 @@ func ListConversationLatest(ctx context.Context, currentUserID, userType string)
 	return rows
 }
 
-func CountConversationUnread(ctx context.Context, convIDs []string, currentUserID, userType string) []conversationUnreadRow {
+func (r *repository) CountConversationUnread(ctx context.Context, convIDs []string, currentUserID, userType string) []conversationUnreadRow {
 	var rows []conversationUnreadRow
 	if len(convIDs) == 0 {
 		return rows
@@ -58,7 +58,7 @@ func CountConversationUnread(ctx context.Context, convIDs []string, currentUserI
 	return rows
 }
 
-func ListConversationMessages(ctx context.Context, conversationID, currentUserID, userType, cursor string, size int) []imModel.Message {
+func (r *repository) ListConversationMessages(ctx context.Context, conversationID, currentUserID, userType, cursor string, size int) []imModel.Message {
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("conversation_id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
 			conversationID, currentUserID, userType, currentUserID, userType, currentUserID)
@@ -76,7 +76,7 @@ func ListConversationMessages(ctx context.Context, conversationID, currentUserID
 	return rows
 }
 
-func FindBusinessUsers(ctx context.Context, ids []string) []sysUser.SysUser {
+func (r *repository) FindBusinessUsers(ctx context.Context, ids []string) []sysUser.SysUser {
 	var users []sysUser.SysUser
 	if len(ids) == 0 {
 		return users
@@ -85,7 +85,7 @@ func FindBusinessUsers(ctx context.Context, ids []string) []sysUser.SysUser {
 	return users
 }
 
-func FindConsumerUsers(ctx context.Context, ids []string) []cliUser.ClientUser {
+func (r *repository) FindConsumerUsers(ctx context.Context, ids []string) []cliUser.ClientUser {
 	var users []cliUser.ClientUser
 	if len(ids) == 0 {
 		return users
@@ -94,7 +94,7 @@ func FindConsumerUsers(ctx context.Context, ids []string) []cliUser.ClientUser {
 	return users
 }
 
-func FindBusinessUser(ctx context.Context, id string) (*sysUser.SysUser, error) {
+func (r *repository) FindBusinessUser(ctx context.Context, id string) (*sysUser.SysUser, error) {
 	var user sysUser.SysUser
 	if err := db.DB.WithContext(ctx).First(&user, "id = ?", id).Error; err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func FindBusinessUser(ctx context.Context, id string) (*sysUser.SysUser, error) 
 	return &user, nil
 }
 
-func FindConsumerUser(ctx context.Context, id string) (*cliUser.ClientUser, error) {
+func (r *repository) FindConsumerUser(ctx context.Context, id string) (*cliUser.ClientUser, error) {
 	var user cliUser.ClientUser
 	if err := db.DB.WithContext(ctx).First(&user, "id = ?", id).Error; err != nil {
 		return nil, err

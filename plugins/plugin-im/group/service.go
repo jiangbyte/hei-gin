@@ -14,11 +14,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Service struct {
+	repo *repository
+}
+
 // ── Group management ─────────────────────────────────────────────
 
 // ── Group lifecycle ─────────────────────────────────────────────
 
-func GroupCreate(c *gin.Context) {
+func (s *Service) Create(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -93,7 +97,7 @@ func GroupCreate(c *gin.Context) {
 		}
 	}
 
-	if err := CreateGroupWithMembers(ctx, &group, &ownerMember, batch, sysBatch, memberIDs, p.MemberType); err != nil {
+	if err := s.repo.CreateGroupWithMembers(ctx, &group, &ownerMember, batch, sysBatch, memberIDs, p.MemberType); err != nil {
 		switch err.Error() {
 		case "EXISTS_MEMBERS":
 			result.WriteError(c, exception.NewBusinessError("部分成员已在群中", 400))
@@ -108,7 +112,7 @@ func GroupCreate(c *gin.Context) {
 
 // ==================== GroupUpdate ====================
 
-func GroupUpdate(c *gin.Context, p *UpdateParam) {
+func (s *Service) Update(c *gin.Context, p *UpdateParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -117,7 +121,7 @@ func GroupUpdate(c *gin.Context, p *UpdateParam) {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
-	_, member, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	_, member, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
 	if err != nil {
 		result.WriteError(c, err)
 		return
@@ -142,7 +146,7 @@ func GroupUpdate(c *gin.Context, p *UpdateParam) {
 		return
 	}
 
-	if err := UpdateGroup(ctx, p.GroupID, updates); err != nil {
+	if err := s.repo.UpdateGroup(ctx, p.GroupID, updates); err != nil {
 		result.WriteError(c, exception.NewBusinessError("修改群信息失败: "+err.Error(), 500))
 		return
 	}
@@ -150,7 +154,7 @@ func GroupUpdate(c *gin.Context, p *UpdateParam) {
 
 // ==================== GroupDissolve ====================
 
-func GroupDissolve(c *gin.Context, p *DissolveParam) {
+func (s *Service) Dissolve(c *gin.Context, p *DissolveParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 
@@ -159,7 +163,7 @@ func GroupDissolve(c *gin.Context, p *DissolveParam) {
 		return
 	}
 
-	group, err := FindGroupByID(ctx, p.GroupID)
+	group, err := s.repo.FindGroupByID(ctx, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
@@ -168,7 +172,7 @@ func GroupDissolve(c *gin.Context, p *DissolveParam) {
 		result.WriteError(c, exception.NewBusinessError("仅群主可解散群", 403))
 		return
 	}
-	if err := DissolveGroup(ctx, p.GroupID); err != nil {
+	if err := s.repo.DissolveGroup(ctx, p.GroupID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("解散群失败: "+err.Error(), 500))
 		return
 	}

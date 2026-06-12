@@ -15,11 +15,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) RolePage(c *gin.Context, p *RolePageParam) {
+func (s *Service) Page(c *gin.Context, p *RolePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -40,7 +40,7 @@ func (s *service) RolePage(c *gin.Context, p *RolePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) RoleCreate(c *gin.Context, vo *RoleVO) {
+func (s *Service) Create(c *gin.Context, vo *RoleVO) {
 	ctx := c.Request.Context()
 
 	e := RoleVOToSysRole(vo)
@@ -51,7 +51,7 @@ func (s *service) RoleCreate(c *gin.Context, vo *RoleVO) {
 	}
 }
 
-func (s *service) RoleModify(c *gin.Context, vo *RoleVO) {
+func (s *Service) Modify(c *gin.Context, vo *RoleVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -86,7 +86,7 @@ func (s *service) RoleModify(c *gin.Context, vo *RoleVO) {
 	}
 }
 
-func (s *service) RoleRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -105,7 +105,7 @@ func (s *service) RoleRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) RoleDetail(c *gin.Context, id string) *RoleVO {
+func (s *Service) Detail(c *gin.Context, id string) *RoleVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -123,7 +123,7 @@ func (s *service) RoleDetail(c *gin.Context, id string) *RoleVO {
 	return SysRoleToRoleVO(e)
 }
 
-func (s *service) RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
+func (s *Service) OwnPermissionCodes(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
 	perms := s.repo.FindRolePermissionCodes(ctx, roleID)
 	codes := make([]string, len(perms))
@@ -133,7 +133,7 @@ func (s *service) RoleOwnPermissionCodes(c *gin.Context, roleID string) []string
 	return codes
 }
 
-func (s *service) RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
+func (s *Service) OwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
 	ctx := c.Request.Context()
 	perms := s.repo.FindRolePermissions(ctx, roleID)
 	r := make([]map[string]interface{}, len(perms))
@@ -148,7 +148,7 @@ func (s *service) RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[
 	return r
 }
 
-func (s *service) RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
+func (s *Service) OwnResourceIDs(c *gin.Context, roleID string) []string {
 	ctx := c.Request.Context()
 	resources := s.repo.FindRoleResources(ctx, roleID)
 	ids := make([]string, len(resources))
@@ -158,7 +158,7 @@ func (s *service) RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
 	return ids
 }
 
-func (s *service) RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
+func (s *Service) GrantPermissions(c *gin.Context, param *GrantPermissionParam) {
 	roleID := param.RoleID
 	if roleID == "" {
 		result.WriteError(c, exception.NewBusinessError("角色ID不能为空", 400))
@@ -187,7 +187,7 @@ func (s *service) RoleGrantPermissions(c *gin.Context, param *GrantPermissionPar
 	}
 }
 
-func (s *service) RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
+func (s *Service) GrantResources(c *gin.Context, param *GrantResourceParam) {
 	roleID := param.RoleID
 	if roleID == "" {
 		result.WriteError(c, exception.NewBusinessError("角色ID不能为空", 400))
@@ -238,27 +238,4 @@ func (s *service) RoleGrantResources(c *gin.Context, param *GrantResourceParam) 
 		result.WriteError(c, exception.NewBusinessError("分配资源权限失败: "+err.Error(), 500))
 		return
 	}
-}
-
-func RolePage(c *gin.Context, p *RolePageParam) { defaultModule.service.RolePage(c, p) }
-func RoleCreate(c *gin.Context, vo *RoleVO)     { defaultModule.service.RoleCreate(c, vo) }
-func RoleModify(c *gin.Context, vo *RoleVO)     { defaultModule.service.RoleModify(c, vo) }
-func RoleRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.RoleRemove(c, param)
-}
-func RoleDetail(c *gin.Context, id string) *RoleVO { return defaultModule.service.RoleDetail(c, id) }
-func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
-	return defaultModule.service.RoleOwnPermissionCodes(c, roleID)
-}
-func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
-	return defaultModule.service.RoleOwnPermissionDetails(c, roleID)
-}
-func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
-	return defaultModule.service.RoleOwnResourceIDs(c, roleID)
-}
-func RoleGrantPermissions(c *gin.Context, param *GrantPermissionParam) {
-	defaultModule.service.RoleGrantPermissions(c, param)
-}
-func RoleGrantResources(c *gin.Context, param *GrantResourceParam) {
-	defaultModule.service.RoleGrantResources(c, param)
 }

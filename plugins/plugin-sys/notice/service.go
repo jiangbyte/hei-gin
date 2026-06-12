@@ -10,11 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) NoticePage(c *gin.Context, p *NoticePageParam) {
+func (s *Service) Page(c *gin.Context, p *NoticePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -35,7 +35,7 @@ func (s *service) NoticePage(c *gin.Context, p *NoticePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) NoticeDetail(c *gin.Context, id string) *NoticeVO {
+func (s *Service) Detail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -53,7 +53,7 @@ func (s *service) NoticeDetail(c *gin.Context, id string) *NoticeVO {
 	return SysNoticeToNoticeVO(e)
 }
 
-func (s *service) NoticeCreate(c *gin.Context, vo *NoticeVO) {
+func (s *Service) Create(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
 
 	e := NoticeVOToSysNotice(vo)
@@ -63,7 +63,7 @@ func (s *service) NoticeCreate(c *gin.Context, vo *NoticeVO) {
 	}
 }
 
-func (s *service) NoticeModify(c *gin.Context, vo *NoticeVO) {
+func (s *Service) Modify(c *gin.Context, vo *NoticeVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -117,7 +117,7 @@ func (s *service) NoticeModify(c *gin.Context, vo *NoticeVO) {
 	}
 }
 
-func (s *service) NoticeRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -129,7 +129,7 @@ func (s *service) NoticeRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) NoticeOptions(c *gin.Context) []any {
+func (s *Service) Options(c *gin.Context) []any {
 	ctx := c.Request.Context()
 	rows := s.repo.ListAll(ctx)
 	vos := make([]any, len(rows))
@@ -139,7 +139,7 @@ func (s *service) NoticeOptions(c *gin.Context) []any {
 	return vos
 }
 
-func (s *service) NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
+func (s *Service) DetailByID(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -153,7 +153,7 @@ func (s *service) NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
 	return SysNoticeToNoticeVO(e)
 }
 
-func (s *service) NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
+func (s *Service) Latest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
 	if param.Size < 1 {
 		param.Size = 5
 	}
@@ -170,7 +170,7 @@ func (s *service) NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*Noti
 	return vos
 }
 
-func (s *service) NoticePublicPage(c *gin.Context, p *NoticePageParam) {
+func (s *Service) PublicPage(c *gin.Context, p *NoticePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -191,7 +191,7 @@ func (s *service) NoticePublicPage(c *gin.Context, p *NoticePageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
+func (s *Service) PublicDetail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -207,44 +207,4 @@ func (s *service) NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
 		return nil
 	}
 	return SysNoticeToNoticeVO(e)
-}
-
-func NoticePage(c *gin.Context, p *NoticePageParam) {
-	defaultModule.service.NoticePage(c, p)
-}
-
-func NoticeDetail(c *gin.Context, id string) *NoticeVO {
-	return defaultModule.service.NoticeDetail(c, id)
-}
-
-func NoticeCreate(c *gin.Context, vo *NoticeVO) {
-	defaultModule.service.NoticeCreate(c, vo)
-}
-
-func NoticeModify(c *gin.Context, vo *NoticeVO) {
-	defaultModule.service.NoticeModify(c, vo)
-}
-
-func NoticeRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.NoticeRemove(c, param)
-}
-
-func NoticeOptions(c *gin.Context) []any {
-	return defaultModule.service.NoticeOptions(c)
-}
-
-func NoticeDetailByID(c *gin.Context, id string) *NoticeVO {
-	return defaultModule.service.NoticeDetailByID(c, id)
-}
-
-func NoticeLatest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
-	return defaultModule.service.NoticeLatest(c, param)
-}
-
-func NoticePublicPage(c *gin.Context, p *NoticePageParam) {
-	defaultModule.service.NoticePublicPage(c, p)
-}
-
-func NoticePublicDetail(c *gin.Context, id string) *NoticeVO {
-	return defaultModule.service.NoticePublicDetail(c, id)
 }

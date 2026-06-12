@@ -2,6 +2,7 @@ package v1
 
 import (
 	"strconv"
+	"strings"
 
 	"hei-gin/plugins/plugin-im/group"
 	"hei-gin/plugins/plugin-im/message"
@@ -16,184 +17,138 @@ import (
 	"hei-gin/sdk/web/middleware"
 )
 
+type handler struct {
+	service *message.Service
+}
+
+var defaultHandler = newHandler(message.DefaultModule)
+
+func newHandler(module *message.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
-	// GET /api/v1/sys/im/message/page
 	r.GET("/api/v1/sys/im/message/page",
 		authMW.HeiCheckLogin(),
-		pageHandler,
+		defaultHandler.page,
 	)
-
-	// GET /api/v1/sys/im/message/detail
 	r.GET("/api/v1/sys/im/message/detail",
 		authMW.HeiCheckLogin(),
-		detailHandler,
+		defaultHandler.detail,
 	)
-
-	// GET /api/v1/sys/im/message/unread-count
 	r.GET("/api/v1/sys/im/message/unread-count",
 		authMW.HeiCheckLogin(),
-		unreadCountHandler,
+		defaultHandler.unreadCount,
 	)
-
-	// POST /api/v1/sys/im/message/send
 	r.POST("/api/v1/sys/im/message/send",
 		authMW.HeiCheckLogin(),
 		middleware.RateLimiter("sys_send", 5, 20),
 		authMW.NoRepeat(3000),
-		sendHandler,
+		defaultHandler.send,
 	)
-
-	// POST /api/v1/sys/im/message/recall
 	r.POST("/api/v1/sys/im/message/recall",
 		authMW.HeiCheckLogin(),
-		recallHandler,
+		defaultHandler.recall,
 	)
-
-	// POST /api/v1/sys/im/message/forward
 	r.POST("/api/v1/sys/im/message/forward",
 		authMW.HeiCheckLogin(),
-		forwardHandler,
+		defaultHandler.forward,
 	)
-
-	// POST /api/v1/sys/im/message/delete
 	r.POST("/api/v1/sys/im/message/delete",
 		authMW.HeiCheckLogin(),
-		deleteHandler,
+		defaultHandler.delete,
 	)
-
-	// GET /api/v1/sys/im/message/search
 	r.GET("/api/v1/sys/im/message/search",
 		authMW.HeiCheckLogin(),
-		searchHandler,
+		defaultHandler.search,
 	)
-
-	// POST /api/v1/sys/im/message/mark-read
 	r.POST("/api/v1/sys/im/message/mark-read",
 		authMW.HeiCheckLogin(),
-		markReadHandler,
+		defaultHandler.markRead,
 	)
-
-	// POST /api/v1/sys/im/message/mark-all-read
 	r.POST("/api/v1/sys/im/message/mark-all-read",
 		authMW.HeiCheckLogin(),
-		markAllReadHandler,
+		defaultHandler.markAllRead,
 	)
-
-	// POST /api/v1/sys/im/message/remove
 	r.POST("/api/v1/sys/im/message/remove",
 		authMW.HeiCheckLogin(),
-		removeHandler,
+		defaultHandler.remove,
 	)
-
-	// GET /api/v1/sys/im/conversation/list
 	r.GET("/api/v1/sys/im/conversation/list",
 		authMW.HeiCheckLogin(),
-		conversationsHandler,
+		defaultHandler.conversations,
 	)
-
-	// GET /api/v1/sys/im/conversation/messages
 	r.GET("/api/v1/sys/im/conversation/messages",
 		authMW.HeiCheckLogin(),
-		conversationMessagesHandler,
+		defaultHandler.conversationMessages,
 	)
-
-	// POST /api/v1/sys/im/conversation/read
 	r.POST("/api/v1/sys/im/conversation/read",
 		authMW.HeiCheckLogin(),
-		conversationReadHandler,
+		defaultHandler.conversationRead,
 	)
-
-	// POST /api/v1/sys/im/conversation/get-or-create
 	r.POST("/api/v1/sys/im/conversation/get-or-create",
 		authMW.HeiCheckLogin(),
-		getOrCreateConversationHandler,
+		defaultHandler.getOrCreateConversation,
 	)
-
-	// POST /api/v1/sys/im/file/upload
 	r.POST("/api/v1/sys/im/file/upload",
 		authMW.HeiCheckLogin(),
-		uploadFileHandler,
+		defaultHandler.uploadFile,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	// POST /api/v1/c/im/message/send
 	r.POST("/api/v1/c/im/message/send",
 		authMW.HeiClientCheckLogin(),
 		middleware.RateLimiter("c_send", 5, 20),
-		clientSendHandler,
+		defaultHandler.send,
 	)
-
-	// POST /api/v1/c/im/message/recall
 	r.POST("/api/v1/c/im/message/recall",
 		authMW.HeiClientCheckLogin(),
-		clientRecallHandler,
+		defaultHandler.recall,
 	)
-
-	// POST /api/v1/c/im/message/forward
 	r.POST("/api/v1/c/im/message/forward",
 		authMW.HeiClientCheckLogin(),
-		clientForwardHandler,
+		defaultHandler.forward,
 	)
-
-	// POST /api/v1/c/im/message/delete
 	r.POST("/api/v1/c/im/message/delete",
 		authMW.HeiClientCheckLogin(),
-		clientDeleteHandler,
+		defaultHandler.delete,
 	)
-
-	// GET /api/v1/c/im/message/search
 	r.GET("/api/v1/c/im/message/search",
 		authMW.HeiClientCheckLogin(),
-		clientSearchHandler,
+		defaultHandler.search,
 	)
-
-	// POST /api/v1/c/im/message/mark-read
 	r.POST("/api/v1/c/im/message/mark-read",
 		authMW.HeiClientCheckLogin(),
-		clientMarkReadHandler,
+		defaultHandler.markRead,
 	)
-
-	// POST /api/v1/c/im/message/mark-all-read
 	r.POST("/api/v1/c/im/message/mark-all-read",
 		authMW.HeiClientCheckLogin(),
-		clientMarkAllReadHandler,
+		defaultHandler.markAllRead,
 	)
-
-	// POST /api/v1/c/im/message/remove
 	r.POST("/api/v1/c/im/message/remove",
 		authMW.HeiClientCheckLogin(),
-		clientRemoveHandler,
+		defaultHandler.remove,
 	)
-
-	// GET /api/v1/c/im/conversation/list
 	r.GET("/api/v1/c/im/conversation/list",
 		authMW.HeiClientCheckLogin(),
-		clientConversationsHandler,
+		defaultHandler.conversations,
 	)
-
-	// GET /api/v1/c/im/conversation/messages
 	r.GET("/api/v1/c/im/conversation/messages",
 		authMW.HeiClientCheckLogin(),
-		clientConversationMessagesHandler,
+		defaultHandler.conversationMessages,
 	)
-
-	// POST /api/v1/c/im/conversation/read
 	r.POST("/api/v1/c/im/conversation/read",
 		authMW.HeiClientCheckLogin(),
-		clientConversationReadHandler,
+		defaultHandler.conversationRead,
 	)
-
-	// POST /api/v1/c/im/conversation/get-or-create
 	r.POST("/api/v1/c/im/conversation/get-or-create",
 		authMW.HeiClientCheckLogin(),
-		clientGetOrCreateConversationHandler,
+		defaultHandler.getOrCreateConversation,
 	)
-
-	// POST /api/v1/c/im/file/upload
 	r.POST("/api/v1/c/im/file/upload",
 		authMW.HeiClientCheckLogin(),
-		clientUploadFileHandler,
+		defaultHandler.clientUploadFile,
 	)
 }
 
@@ -202,7 +157,6 @@ func init() {
 	registry.RegisterRoute(RegisterClientRoutes)
 }
 
-// pageHandler handles GET /api/v1/sys/im/message/page
 // @Summary      即时通讯消息分页查询
 // @Description  访问 /api/v1/sys/im/message/page，即时通讯消息分页查询
 // @Tags         即时通讯消息
@@ -211,16 +165,15 @@ func init() {
 // @Param        query  query  message.MessagePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param message.MessagePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessagePage(c, &param)
+	h.service.Page(c, &param)
 }
 
-// detailHandler handles GET /api/v1/sys/im/message/detail
 // @Summary      即时通讯消息详情查询
 // @Description  访问 /api/v1/sys/im/message/detail，即时通讯消息详情查询
 // @Tags         即时通讯消息
@@ -228,11 +181,10 @@ func pageHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/detail [get]
-func detailHandler(c *gin.Context) {
-	message.MessageDetail(c)
+func (h *handler) detail(c *gin.Context) {
+	h.service.Detail(c)
 }
 
-// unreadCountHandler handles GET /api/v1/sys/im/message/unread-count
 // @Summary      即时通讯消息未读数
 // @Description  访问 /api/v1/sys/im/message/unread-count，即时通讯消息未读数
 // @Tags         即时通讯消息
@@ -240,11 +192,10 @@ func detailHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/unread-count [get]
-func unreadCountHandler(c *gin.Context) {
-	message.MessageUnreadCount(c)
+func (h *handler) unreadCount(c *gin.Context) {
+	h.service.UnreadCount(c)
 }
 
-// sendHandler handles POST /api/v1/sys/im/message/send
 // @Summary      即时通讯消息发送消息
 // @Description  访问 /api/v1/sys/im/message/send，即时通讯消息发送消息
 // @Tags         即时通讯消息
@@ -253,36 +204,17 @@ func unreadCountHandler(c *gin.Context) {
 // @Param        body  body  message.MessageSendParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/send [post]
-func sendHandler(c *gin.Context) {
-	var param message.MessageSendParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageSend(c, &param)
-	result.Success(c, nil)
-}
-
-// clientSendHandler handles POST /api/v1/c/im/message/send
-// @Summary      即时通讯消息发送消息
-// @Description  访问 /api/v1/c/im/message/send，即时通讯消息发送消息
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.MessageSendParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/send [post]
-func clientSendHandler(c *gin.Context) {
+func (h *handler) send(c *gin.Context) {
 	var param message.MessageSendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageSend(c, &param)
+	h.service.Send(c, &param)
 	result.Success(c, nil)
 }
 
-// recallHandler handles POST /api/v1/sys/im/message/recall
 // @Summary      即时通讯消息撤回消息
 // @Description  访问 /api/v1/sys/im/message/recall，即时通讯消息撤回消息
 // @Tags         即时通讯消息
@@ -291,36 +223,17 @@ func clientSendHandler(c *gin.Context) {
 // @Param        body  body  message.RecallParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/recall [post]
-func recallHandler(c *gin.Context) {
-	var param message.RecallParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageRecall(c, &param)
-	result.Success(c, nil)
-}
-
-// clientRecallHandler handles POST /api/v1/c/im/message/recall
-// @Summary      即时通讯消息撤回消息
-// @Description  访问 /api/v1/c/im/message/recall，即时通讯消息撤回消息
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.RecallParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/recall [post]
-func clientRecallHandler(c *gin.Context) {
+func (h *handler) recall(c *gin.Context) {
 	var param message.RecallParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageRecall(c, &param)
+	h.service.Recall(c, &param)
 	result.Success(c, nil)
 }
 
-// forwardHandler handles POST /api/v1/sys/im/message/forward
 // @Summary      即时通讯消息转发消息
 // @Description  访问 /api/v1/sys/im/message/forward，即时通讯消息转发消息
 // @Tags         即时通讯消息
@@ -329,36 +242,17 @@ func clientRecallHandler(c *gin.Context) {
 // @Param        body  body  message.ForwardParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/forward [post]
-func forwardHandler(c *gin.Context) {
-	var param message.ForwardParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageForward(c, &param)
-	result.Success(c, nil)
-}
-
-// clientForwardHandler handles POST /api/v1/c/im/message/forward
-// @Summary      即时通讯消息转发消息
-// @Description  访问 /api/v1/c/im/message/forward，即时通讯消息转发消息
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.ForwardParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/forward [post]
-func clientForwardHandler(c *gin.Context) {
+func (h *handler) forward(c *gin.Context) {
 	var param message.ForwardParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageForward(c, &param)
+	h.service.Forward(c, &param)
 	result.Success(c, nil)
 }
 
-// deleteHandler handles POST /api/v1/sys/im/message/delete
 // @Summary      即时通讯消息删除消息
 // @Description  访问 /api/v1/sys/im/message/delete，即时通讯消息删除消息
 // @Tags         即时通讯消息
@@ -367,36 +261,17 @@ func clientForwardHandler(c *gin.Context) {
 // @Param        body  body  message.DeleteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/delete [post]
-func deleteHandler(c *gin.Context) {
-	var param message.DeleteParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageRemove(c, &param)
-	result.Success(c, nil)
-}
-
-// clientDeleteHandler handles POST /api/v1/c/im/message/delete
-// @Summary      即时通讯消息删除消息
-// @Description  访问 /api/v1/c/im/message/delete，即时通讯消息删除消息
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.DeleteParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/delete [post]
-func clientDeleteHandler(c *gin.Context) {
+func (h *handler) delete(c *gin.Context) {
 	var param message.DeleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
-// searchHandler handles GET /api/v1/sys/im/message/search
 // @Summary      即时通讯消息搜索
 // @Description  访问 /api/v1/sys/im/message/search，即时通讯消息搜索
 // @Tags         即时通讯消息
@@ -405,36 +280,17 @@ func clientDeleteHandler(c *gin.Context) {
 // @Param        query  query  message.SearchParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/search [get]
-func searchHandler(c *gin.Context) {
-	var param message.SearchParam
-	if err := c.ShouldBindQuery(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	list, hasMore := message.MessageSearch(c, &param)
-	result.Success(c, gin.H{"records": list, "has_more": hasMore})
-}
-
-// clientSearchHandler handles GET /api/v1/c/im/message/search
-// @Summary      即时通讯消息搜索
-// @Description  访问 /api/v1/c/im/message/search，即时通讯消息搜索
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        query  query  message.SearchParam  false  "查询参数"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/search [get]
-func clientSearchHandler(c *gin.Context) {
+func (h *handler) search(c *gin.Context) {
 	var param message.SearchParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	list, hasMore := message.MessageSearch(c, &param)
+	list, hasMore := h.service.Search(c, &param)
 	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
-// markReadHandler handles POST /api/v1/sys/im/message/mark-read
 // @Summary      即时通讯消息标记已读
 // @Description  访问 /api/v1/sys/im/message/mark-read，即时通讯消息标记已读
 // @Tags         即时通讯消息
@@ -443,36 +299,17 @@ func clientSearchHandler(c *gin.Context) {
 // @Param        body  body  utils.IdParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/mark-read [post]
-func markReadHandler(c *gin.Context) {
-	var param utils.IdParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageMarkRead(c, &param)
-	result.Success(c, nil)
-}
-
-// clientMarkReadHandler handles POST /api/v1/c/im/message/mark-read
-// @Summary      即时通讯消息标记已读
-// @Description  访问 /api/v1/c/im/message/mark-read，即时通讯消息标记已读
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  utils.IdParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/mark-read [post]
-func clientMarkReadHandler(c *gin.Context) {
+func (h *handler) markRead(c *gin.Context) {
 	var param utils.IdParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageMarkRead(c, &param)
+	h.service.MarkRead(c, &param)
 	result.Success(c, nil)
 }
 
-// markAllReadHandler handles POST /api/v1/sys/im/message/mark-all-read
 // @Summary      即时通讯消息全部标记已读
 // @Description  访问 /api/v1/sys/im/message/mark-all-read，即时通讯消息全部标记已读
 // @Tags         即时通讯消息
@@ -480,25 +317,12 @@ func clientMarkReadHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/mark-all-read [post]
-func markAllReadHandler(c *gin.Context) {
-	message.MessageMarkAllRead(c)
-	result.Success(c, nil)
-}
-
-// clientMarkAllReadHandler handles POST /api/v1/c/im/message/mark-all-read
-// @Summary      即时通讯消息全部标记已读
-// @Description  访问 /api/v1/c/im/message/mark-all-read，即时通讯消息全部标记已读
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/mark-all-read [post]
-func clientMarkAllReadHandler(c *gin.Context) {
-	message.MessageMarkAllRead(c)
+func (h *handler) markAllRead(c *gin.Context) {
+	h.service.MarkAllRead(c)
 	result.Success(c, nil)
 }
 
-// removeHandler handles POST /api/v1/sys/im/message/remove
 // @Summary      即时通讯消息删除
 // @Description  访问 /api/v1/sys/im/message/remove，即时通讯消息删除
 // @Tags         即时通讯消息
@@ -507,36 +331,17 @@ func clientMarkAllReadHandler(c *gin.Context) {
 // @Param        body  body  message.DeleteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/message/remove [post]
-func removeHandler(c *gin.Context) {
-	var param message.DeleteParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageRemove(c, &param)
-	result.Success(c, nil)
-}
-
-// clientRemoveHandler handles POST /api/v1/c/im/message/remove
-// @Summary      即时通讯消息删除
-// @Description  访问 /api/v1/c/im/message/remove，即时通讯消息删除
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.DeleteParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/message/remove [post]
-func clientRemoveHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param message.DeleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
-// conversationsHandler handles GET /api/v1/sys/im/conversation/list
 // @Summary      即时通讯消息会话列表
 // @Description  访问 /api/v1/sys/im/conversation/list，即时通讯消息会话列表
 // @Tags         即时通讯消息
@@ -546,29 +351,8 @@ func clientRemoveHandler(c *gin.Context) {
 // @Param        size  query  string  false  "size"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/conversation/list [get]
-func conversationsHandler(c *gin.Context) {
-	cursor := c.Query("cursor")
-	size := 20
-	if s := c.Query("size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n > 0 {
-			size = n
-		}
-	}
-	list, hasMore := message.MessageConversations(c, cursor, size)
-	result.Success(c, gin.H{"records": list, "has_more": hasMore})
-}
-
-// clientConversationsHandler handles GET /api/v1/c/im/conversation/list
-// @Summary      即时通讯消息会话列表
-// @Description  访问 /api/v1/c/im/conversation/list，即时通讯消息会话列表
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        cursor  query  string  false  "cursor"
-// @Param        size  query  string  false  "size"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/conversation/list [get]
-func clientConversationsHandler(c *gin.Context) {
+func (h *handler) conversations(c *gin.Context) {
 	cursor := c.Query("cursor")
 	size := 20
 	if s := c.Query("size"); s != "" {
@@ -576,11 +360,10 @@ func clientConversationsHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list, hasMore := message.MessageConversations(c, cursor, size)
+	list, hasMore := h.service.Conversations(c, cursor, size)
 	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
-// conversationMessagesHandler handles GET /api/v1/sys/im/conversation/messages
 // @Summary      即时通讯消息会话消息列表
 // @Description  访问 /api/v1/sys/im/conversation/messages，即时通讯消息会话消息列表
 // @Tags         即时通讯消息
@@ -591,51 +374,8 @@ func clientConversationsHandler(c *gin.Context) {
 // @Param        size  query  string  false  "size"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/conversation/messages [get]
-func conversationMessagesHandler(c *gin.Context) {
-	cid := c.Query("conversation_id")
-	cursor := c.Query("cursor")
-	size := 20
-	if s := c.Query("size"); s != "" {
-		if n, err := strconv.Atoi(s); err == nil && n > 0 {
-			size = n
-		}
-	}
-
-	var messages []message.ConversationMessageVO
-	var hasMore bool
-	if len(cid) > 6 && cid[:6] == "group:" {
-		gid := cid[6:]
-		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
-		messages = make([]message.ConversationMessageVO, len(msgs))
-		for i, m := range msgs {
-			messages[i] = message.ConversationMessageVO{
-				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
-				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
-				CreatedAt: m.CreatedAt,
-			}
-		}
-		hasMore = more
-	} else {
-		messages, hasMore = message.MessageConversationMessages(c, cid, cursor, size)
-	}
-	result.Success(c, gin.H{
-		"records":  messages,
-		"has_more": hasMore,
-	})
-}
-
-// clientConversationMessagesHandler handles GET /api/v1/c/im/conversation/messages
-// @Summary      即时通讯消息会话消息列表
-// @Description  访问 /api/v1/c/im/conversation/messages，即时通讯消息会话消息列表
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        conversation_id  query  string  false  "conversation_id"
-// @Param        cursor  query  string  false  "cursor"
-// @Param        size  query  string  false  "size"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/conversation/messages [get]
-func clientConversationMessagesHandler(c *gin.Context) {
+func (h *handler) conversationMessages(c *gin.Context) {
 	cid := c.Query("conversation_id")
 	cursor := c.Query("cursor")
 	size := 20
@@ -645,30 +385,30 @@ func clientConversationMessagesHandler(c *gin.Context) {
 		}
 	}
 
-	var messages []message.ConversationMessageVO
+	var messagesVO []message.ConversationMessageVO
 	var hasMore bool
-	if len(cid) > 6 && cid[:6] == "group:" {
-		gid := cid[6:]
-		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
-		messages = make([]message.ConversationMessageVO, len(msgs))
+	if strings.HasPrefix(cid, "group:") {
+		gid := strings.TrimPrefix(cid, "group:")
+		msgs, more := group.DefaultModule.Service().Messages(c, gid, cursor, size)
+		messagesVO = make([]message.ConversationMessageVO, len(msgs))
 		for i, m := range msgs {
-			messages[i] = message.ConversationMessageVO{
-				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
-				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
-				CreatedAt: m.CreatedAt,
+			messagesVO[i] = message.ConversationMessageVO{
+				ID:         m.ID,
+				SenderID:   m.SenderID,
+				SenderType: m.SenderType,
+				Content:    m.Content,
+				MsgType:    m.MsgType,
+				Extra:      m.Extra,
+				CreatedAt:  m.CreatedAt,
 			}
 		}
 		hasMore = more
 	} else {
-		messages, hasMore = message.MessageConversationMessages(c, cid, cursor, size)
+		messagesVO, hasMore = h.service.ConversationMessages(c, cid, cursor, size)
 	}
-	result.Success(c, gin.H{
-		"records":  messages,
-		"has_more": hasMore,
-	})
+	result.Success(c, gin.H{"records": messagesVO, "has_more": hasMore})
 }
 
-// conversationReadHandler handles POST /api/v1/sys/im/conversation/read
 // @Summary      即时通讯消息会话已读
 // @Description  访问 /api/v1/sys/im/conversation/read，即时通讯消息会话已读
 // @Tags         即时通讯消息
@@ -677,44 +417,32 @@ func clientConversationMessagesHandler(c *gin.Context) {
 // @Param        body  body  message.ConversationReadParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/conversation/read [post]
-func conversationReadHandler(c *gin.Context) {
-	var param message.ConversationReadParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
-		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.GetLoginID(c), string(enums.LoginTypeBusiness))
-	} else {
-		message.MessageMarkConversationRead(c, &param)
-	}
-	result.Success(c, nil)
-}
-
-// clientConversationReadHandler handles POST /api/v1/c/im/conversation/read
-// @Summary      即时通讯消息会话已读
-// @Description  访问 /api/v1/c/im/conversation/read，即时通讯消息会话已读
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.ConversationReadParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/conversation/read [post]
-func clientConversationReadHandler(c *gin.Context) {
+func (h *handler) conversationRead(c *gin.Context) {
 	var param message.ConversationReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
-		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
+	if strings.HasPrefix(param.ConversationID, "group:") {
+		userID := auth.GetLoginID(c)
+		userType := string(enums.LoginTypeBusiness)
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v") && strings.Contains(c.Request.URL.Path, "/c/") {
+			userID = auth.Consumer.GetLoginID(c)
+			userType = string(enums.LoginTypeConsumer)
+		}
+		group.DefaultModule.Service().MarkConversationReadWithContext(
+			c.Request.Context(),
+			strings.TrimPrefix(param.ConversationID, "group:"),
+			userID,
+			userType,
+		)
 	} else {
-		message.MessageMarkConversationRead(c, &param)
+		h.service.MarkConversationRead(c, &param)
 	}
 	result.Success(c, nil)
 }
 
-// getOrCreateConversationHandler handles POST /api/v1/sys/im/conversation/get-or-create
 // @Summary      即时通讯消息获取或创建会话
 // @Description  访问 /api/v1/sys/im/conversation/get-or-create，即时通讯消息获取或创建会话
 // @Tags         即时通讯消息
@@ -723,34 +451,16 @@ func clientConversationReadHandler(c *gin.Context) {
 // @Param        body  body  message.GetOrCreateConversationParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/conversation/get-or-create [post]
-func getOrCreateConversationHandler(c *gin.Context) {
-	var param message.GetOrCreateConversationParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	message.MessageGetOrCreateConversation(c, &param)
-}
-
-// clientGetOrCreateConversationHandler handles POST /api/v1/c/im/conversation/get-or-create
-// @Summary      即时通讯消息获取或创建会话
-// @Description  访问 /api/v1/c/im/conversation/get-or-create，即时通讯消息获取或创建会话
-// @Tags         即时通讯消息
-// @Accept       json
-// @Produce      json
-// @Param        body  body  message.GetOrCreateConversationParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/conversation/get-or-create [post]
-func clientGetOrCreateConversationHandler(c *gin.Context) {
+func (h *handler) getOrCreateConversation(c *gin.Context) {
 	var param message.GetOrCreateConversationParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	message.MessageGetOrCreateConversation(c, &param)
+	h.service.GetOrCreateConversation(c, &param)
 }
 
-// uploadFileHandler handles POST /api/v1/sys/im/file/upload
 // @Summary      即时通讯消息上传文件
 // @Description  访问 /api/v1/sys/im/file/upload，即时通讯消息上传文件
 // @Tags         即时通讯消息
@@ -763,11 +473,10 @@ func clientGetOrCreateConversationHandler(c *gin.Context) {
 // @Param        conversation_id  formData  string  false  "会话 ID"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/file/upload [post]
-func uploadFileHandler(c *gin.Context) {
-	message.UploadFile(c, auth.GetLoginID(c), string(enums.LoginTypeBusiness))
+func (h *handler) uploadFile(c *gin.Context) {
+	h.service.UploadFile(c, auth.GetLoginID(c), string(enums.LoginTypeBusiness))
 }
 
-// clientUploadFileHandler handles POST /api/v1/c/im/file/upload
 // @Summary      即时通讯消息上传文件
 // @Description  访问 /api/v1/c/im/file/upload，即时通讯消息上传文件
 // @Tags         即时通讯消息
@@ -780,6 +489,6 @@ func uploadFileHandler(c *gin.Context) {
 // @Param        conversation_id  formData  string  false  "会话 ID"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/file/upload [post]
-func clientUploadFileHandler(c *gin.Context) {
-	message.UploadFile(c, auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
+func (h *handler) clientUploadFile(c *gin.Context) {
+	h.service.UploadFile(c, auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
 }

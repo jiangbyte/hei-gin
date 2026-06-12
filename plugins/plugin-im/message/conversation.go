@@ -18,7 +18,7 @@ import (
 
 // ==================== MessageConversations ====================
 
-func MessageConversations(c *gin.Context, cursor string, size int) ([]ConversationVO, bool) {
+func (s *Service) Conversations(c *gin.Context, cursor string, size int) ([]ConversationVO, bool) {
 	if size < 1 {
 		size = 20
 	}
@@ -30,9 +30,9 @@ func MessageConversations(c *gin.Context, cursor string, size int) ([]Conversati
 	userType := getUserType(c)
 
 	ctx := c.Request.Context()
-	singleResult := buildFromMessages(ctx, currentUserID, userType)
+	singleResult := s.buildFromMessages(ctx, currentUserID, userType)
 
-	groupConvs := group.MyGroupConversationsWithContext(ctx, currentUserID, userType)
+	groupConvs := group.DefaultModule.Service().MyGroupConversationsWithContext(ctx, currentUserID, userType)
 	for _, gv := range groupConvs {
 		singleResult["group:"+gv.GroupID] = &ConversationVO{
 			ConversationID:   "group:" + gv.GroupID,
@@ -76,8 +76,8 @@ func MessageConversations(c *gin.Context, cursor string, size int) ([]Conversati
 	return result, hasMore
 }
 
-func buildFromMessages(ctx context.Context, currentUserID, userType string) map[string]*ConversationVO {
-	rows := ListConversationLatest(ctx, currentUserID, userType)
+func (s *Service) buildFromMessages(ctx context.Context, currentUserID, userType string) map[string]*ConversationVO {
+	rows := s.repo.ListConversationLatest(ctx, currentUserID, userType)
 
 	resultMap := make(map[string]*ConversationVO, len(rows))
 	userKeys := make(map[string]bool)
@@ -87,7 +87,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 		convIDs = append(convIDs, r.ConversationID)
 	}
 
-	unreads := CountConversationUnread(ctx, convIDs, currentUserID, userType)
+	unreads := s.repo.CountConversationUnread(ctx, convIDs, currentUserID, userType)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.ConversationID] = u.Count
@@ -132,7 +132,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 		avatarMap := make(map[string]string)
 
 		if len(businessIDs) > 0 {
-			busUsers := FindBusinessUsers(ctx, businessIDs)
+			busUsers := s.repo.FindBusinessUsers(ctx, businessIDs)
 			for _, u := range busUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Nickname
@@ -143,7 +143,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 			}
 		}
 		if len(consumerIDs) > 0 {
-			conUsers := FindConsumerUsers(ctx, consumerIDs)
+			conUsers := s.repo.FindConsumerUsers(ctx, consumerIDs)
 			for _, u := range conUsers {
 				if u.Nickname != nil {
 					nicknameMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Nickname
@@ -166,7 +166,7 @@ func buildFromMessages(ctx context.Context, currentUserID, userType string) map[
 
 // ==================== MessageConversationMessages ====================
 
-func MessageConversationMessages(c *gin.Context, conversationID, cursor string, size int) ([]ConversationMessageVO, bool) {
+func (s *Service) ConversationMessages(c *gin.Context, conversationID, cursor string, size int) ([]ConversationMessageVO, bool) {
 	currentUserID := getLoginID(c)
 	userType := getUserType(c)
 
@@ -177,7 +177,7 @@ func MessageConversationMessages(c *gin.Context, conversationID, cursor string, 
 		size = 100
 	}
 
-	records := ListConversationMessages(c.Request.Context(), conversationID, currentUserID, userType, cursor, size)
+	records := s.repo.ListConversationMessages(c.Request.Context(), conversationID, currentUserID, userType, cursor, size)
 
 	hasMore := len(records) > size
 	if hasMore {
@@ -197,7 +197,7 @@ func MessageConversationMessages(c *gin.Context, conversationID, cursor string, 
 
 // ==================== MessageGetOrCreateConversation ====================
 
-func MessageGetOrCreateConversation(c *gin.Context, param *GetOrCreateConversationParam) {
+func (s *Service) GetOrCreateConversation(c *gin.Context, param *GetOrCreateConversationParam) {
 	currentUserID := getLoginID(c)
 	userType := getUserType(c)
 
@@ -209,11 +209,11 @@ func MessageGetOrCreateConversation(c *gin.Context, param *GetOrCreateConversati
 
 	displayName := param.UserID
 	if param.UserType == string(enums.LoginTypeBusiness) {
-		if u, err := FindBusinessUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
+		if u, err := s.repo.FindBusinessUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	} else {
-		if u, err := FindConsumerUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
+		if u, err := s.repo.FindConsumerUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}
 	}

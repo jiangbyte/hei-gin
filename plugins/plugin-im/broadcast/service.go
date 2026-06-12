@@ -14,9 +14,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Service struct {
+	repo *repository
+}
+
 // ==================== BroadcastSend ====================
 
-func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
+func (s *Service) Send(c *gin.Context, p *SendBroadcastParam) {
 	ctx := c.Request.Context()
 	senderID := auth.GetLoginID(c)
 
@@ -31,7 +35,7 @@ func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
 		Scope:    p.Scope,
 		SenderID: senderID,
 	}
-	if err := Create(ctx, &e); err != nil {
+	if err := s.repo.Create(ctx, &e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送通知失败: "+err.Error(), 500))
 		return
 	}
@@ -56,7 +60,7 @@ func BroadcastSend(c *gin.Context, p *SendBroadcastParam) {
 
 // ==================== BroadcastPage (admin) ====================
 
-func BroadcastPage(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool) {
+func (s *Service) Page(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool) {
 	ctx := c.Request.Context()
 	if size < 1 {
 		size = 20
@@ -65,7 +69,7 @@ func BroadcastPage(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool
 		size = 100
 	}
 
-	records := Page(ctx, cursor, size)
+	records := s.repo.Page(ctx, cursor, size)
 
 	hasMore := len(records) > size
 	if hasMore {
@@ -81,7 +85,7 @@ func BroadcastPage(c *gin.Context, cursor string, size int) ([]BroadcastVO, bool
 
 // ==================== BroadcastUnreadList ====================
 
-func BroadcastUnreadList(c *gin.Context, userType string) []BroadcastVO {
+func (s *Service) UnreadList(c *gin.Context, userType string) []BroadcastVO {
 	ctx := c.Request.Context()
 	var userID string
 	if userType == string(enums.LoginTypeConsumer) {
@@ -90,8 +94,8 @@ func BroadcastUnreadList(c *gin.Context, userType string) []BroadcastVO {
 		userID = auth.GetLoginID(c)
 	}
 
-	records := ListLatest(ctx, 50)
-	readRecords := ListReads(ctx, userID, userType)
+	records := s.repo.ListLatest(ctx, 50)
+	readRecords := s.repo.ListReads(ctx, userID, userType)
 	readMap := make(map[string]bool)
 	for _, r := range readRecords {
 		readMap[r.BroadcastID] = true
@@ -110,31 +114,31 @@ func BroadcastUnreadList(c *gin.Context, userType string) []BroadcastVO {
 
 // ==================== BroadcastMarkRead ====================
 
-func BroadcastMarkRead(c *gin.Context, p *ReadParam) {
+func (s *Service) MarkRead(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.GetLoginID(c)
 
-	MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeBusiness))
+	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeBusiness))
 }
 
 // ==================== BroadcastMarkReadConsumer ====================
 
-func BroadcastMarkReadConsumer(c *gin.Context, p *ReadParam) {
+func (s *Service) MarkReadConsumer(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.Consumer.GetLoginID(c)
 
-	MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeConsumer))
+	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeConsumer))
 }
 
 // ==================== BroadcastDetail ====================
 
-func BroadcastDetail(c *gin.Context, id string) *BroadcastVO {
+func (s *Service) Detail(c *gin.Context, id string) *BroadcastVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	b, err := FindByID(ctx, id)
+	b, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("通知不存在", 400))

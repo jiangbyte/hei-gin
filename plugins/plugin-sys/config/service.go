@@ -10,13 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
 // ===== Page =====
 
-func (s *service) ConfigPage(c *gin.Context, p *ConfigPageParam) {
+func (s *Service) Page(c *gin.Context, p *ConfigPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -39,7 +39,7 @@ func (s *service) ConfigPage(c *gin.Context, p *ConfigPageParam) {
 
 // ===== Detail =====
 
-func (s *service) ConfigDetail(c *gin.Context, id string) *ConfigVO {
+func (s *Service) Detail(c *gin.Context, id string) *ConfigVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -59,7 +59,7 @@ func (s *service) ConfigDetail(c *gin.Context, id string) *ConfigVO {
 
 // ===== Create =====
 
-func (s *service) ConfigCreate(c *gin.Context, vo *ConfigVO) {
+func (s *Service) Create(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
 
 	e := ConfigVOToSysConfig(vo)
@@ -71,7 +71,7 @@ func (s *service) ConfigCreate(c *gin.Context, vo *ConfigVO) {
 
 // ===== Modify =====
 
-func (s *service) ConfigModify(c *gin.Context, vo *ConfigVO) {
+func (s *Service) Modify(c *gin.Context, vo *ConfigVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -113,7 +113,7 @@ func (s *service) ConfigModify(c *gin.Context, vo *ConfigVO) {
 
 // ===== Remove =====
 
-func (s *service) ConfigRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -126,7 +126,7 @@ func (s *service) ConfigRemove(c *gin.Context, param *utils.IdsParam) {
 
 // ===== Options =====
 
-func (s *service) ConfigOptions(c *gin.Context) []*ConfigVO {
+func (s *Service) Options(c *gin.Context) []*ConfigVO {
 	ctx := c.Request.Context()
 	rows := s.repo.ListAll(ctx)
 	vos := make([]*ConfigVO, len(rows))
@@ -138,7 +138,7 @@ func (s *service) ConfigOptions(c *gin.Context) []*ConfigVO {
 
 // ===== ListByCategory =====
 
-func (s *service) ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
+func (s *Service) ListByCategory(c *gin.Context, category string) []*ConfigVO {
 	ctx := c.Request.Context()
 	rows := s.repo.ListByCategory(ctx, category)
 	vos := make([]*ConfigVO, len(rows))
@@ -150,7 +150,7 @@ func (s *service) ConfigListByCategory(c *gin.Context, category string) []*Confi
 
 // ===== EditBatch =====
 
-func (s *service) ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
+func (s *Service) EditBatch(c *gin.Context, param *ConfigBatchEditParam) {
 	ctx := c.Request.Context()
 	if err := s.repo.EditBatch(ctx, param.Configs); err != nil {
 		result.WriteError(c, exception.NewBusinessError("批量编辑配置失败: "+err.Error(), 500))
@@ -160,7 +160,7 @@ func (s *service) ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
 
 // ===== EditByCategory =====
 
-func (s *service) ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
+func (s *Service) EditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
 	ctx := c.Request.Context()
 
 	up := map[string]interface{}{}
@@ -180,40 +180,4 @@ func (s *service) ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEdit
 		result.WriteError(c, exception.NewBusinessError("按分类编辑配置失败: "+err.Error(), 500))
 		return
 	}
-}
-
-func ConfigPage(c *gin.Context, p *ConfigPageParam) {
-	defaultModule.service.ConfigPage(c, p)
-}
-
-func ConfigDetail(c *gin.Context, id string) *ConfigVO {
-	return defaultModule.service.ConfigDetail(c, id)
-}
-
-func ConfigCreate(c *gin.Context, vo *ConfigVO) {
-	defaultModule.service.ConfigCreate(c, vo)
-}
-
-func ConfigModify(c *gin.Context, vo *ConfigVO) {
-	defaultModule.service.ConfigModify(c, vo)
-}
-
-func ConfigRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.ConfigRemove(c, param)
-}
-
-func ConfigOptions(c *gin.Context) []*ConfigVO {
-	return defaultModule.service.ConfigOptions(c)
-}
-
-func ConfigListByCategory(c *gin.Context, category string) []*ConfigVO {
-	return defaultModule.service.ConfigListByCategory(c, category)
-}
-
-func ConfigEditBatch(c *gin.Context, param *ConfigBatchEditParam) {
-	defaultModule.service.ConfigEditBatch(c, param)
-}
-
-func ConfigEditByCategory(c *gin.Context, param *ConfigCategoryEditParam) {
-	defaultModule.service.ConfigEditByCategory(c, param)
 }

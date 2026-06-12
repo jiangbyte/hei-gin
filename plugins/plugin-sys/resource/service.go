@@ -17,7 +17,7 @@ import (
 	"hei-gin/sdk/web/result"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
@@ -51,7 +51,7 @@ type relRolePermission struct {
 	PermissionCode string
 }
 
-func (s *service) ModulePage(c *gin.Context, param *ModulePageParam) {
+func (s *Service) ModulePage(c *gin.Context, param *ModulePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -72,7 +72,7 @@ func (s *service) ModulePage(c *gin.Context, param *ModulePageParam) {
 	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-func (s *service) ModuleDetail(c *gin.Context, id string) *ModuleVO {
+func (s *Service) ModuleDetail(c *gin.Context, id string) *ModuleVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -90,7 +90,7 @@ func (s *service) ModuleDetail(c *gin.Context, id string) *ModuleVO {
 	return SysModuleToModuleVO(e)
 }
 
-func (s *service) ModuleCreate(c *gin.Context, vo *ModuleVO) {
+func (s *Service) ModuleCreate(c *gin.Context, vo *ModuleVO) {
 	ctx := c.Request.Context()
 
 	e := ModuleVOToSysModule(vo)
@@ -104,7 +104,7 @@ func (s *service) ModuleCreate(c *gin.Context, vo *ModuleVO) {
 	invalidateResourceTreeCache()
 }
 
-func (s *service) ModuleModify(c *gin.Context, vo *ModuleVO) {
+func (s *Service) ModuleModify(c *gin.Context, vo *ModuleVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -154,7 +154,7 @@ func (s *service) ModuleModify(c *gin.Context, vo *ModuleVO) {
 	invalidateResourceTreeCache()
 }
 
-func (s *service) ModuleRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) ModuleRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -167,7 +167,7 @@ func (s *service) ModuleRemove(c *gin.Context, param *utils.IdsParam) {
 	invalidateResourceTreeCache()
 }
 
-func (s *service) ResourcePage(c *gin.Context, param *ResourcePageParam) {
+func (s *Service) ResourcePage(c *gin.Context, param *ResourcePageParam) {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
@@ -188,7 +188,7 @@ func (s *service) ResourcePage(c *gin.Context, param *ResourcePageParam) {
 	result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-func (s *service) ResourceTree(c *gin.Context, category string) []map[string]interface{} {
+func (s *Service) ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 	cacheKey := "tree:" + category
 	resourceTreeMu.RLock()
 	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -255,7 +255,7 @@ func resToNode(r *SysResource) map[string]interface{} {
 	return n
 }
 
-func (s *service) ResourceMenu(c *gin.Context) []map[string]interface{} {
+func (s *Service) ResourceMenu(c *gin.Context) []map[string]interface{} {
 	cacheKey := "menu"
 	resourceTreeMu.RLock()
 	if cached, ok := resourceTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -328,7 +328,7 @@ func menuNode(r *SysResource) map[string]interface{} {
 	return n
 }
 
-func (s *service) ResourceDetail(c *gin.Context, id string) *ResourceVO {
+func (s *Service) ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -346,7 +346,7 @@ func (s *service) ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	return SysResourceToResourceVO(e)
 }
 
-func (s *service) ResourceCreate(c *gin.Context, vo *ResourceVO) {
+func (s *Service) ResourceCreate(c *gin.Context, vo *ResourceVO) {
 	ctx := c.Request.Context()
 
 	e := ResourceVOToSysResource(vo)
@@ -360,7 +360,7 @@ func (s *service) ResourceCreate(c *gin.Context, vo *ResourceVO) {
 	invalidateResourceTreeCache()
 }
 
-func (s *service) ResourceModify(c *gin.Context, vo *ResourceVO) {
+func (s *Service) ResourceModify(c *gin.Context, vo *ResourceVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -454,7 +454,7 @@ func (s *service) ResourceModify(c *gin.Context, vo *ResourceVO) {
 	}
 }
 
-func (s *service) ResourceRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) ResourceRemove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -468,7 +468,7 @@ func (s *service) ResourceRemove(c *gin.Context, param *utils.IdsParam) {
 	invalidateResourceTreeCache()
 }
 
-func (s *service) collectDescendant(ctx context.Context, ids []string) []string {
+func (s *Service) collectDescendant(ctx context.Context, ids []string) []string {
 	return s.repo.CollectResourceDescendants(ctx, ids)
 }
 
@@ -482,31 +482,4 @@ func extractPermCode(extra *string) string {
 	}
 	code, _ := m["permission_code"].(string)
 	return code
-}
-
-func ModulePage(c *gin.Context, param *ModulePageParam) { defaultModule.service.ModulePage(c, param) }
-func ModuleDetail(c *gin.Context, id string) *ModuleVO {
-	return defaultModule.service.ModuleDetail(c, id)
-}
-func ModuleCreate(c *gin.Context, vo *ModuleVO) { defaultModule.service.ModuleCreate(c, vo) }
-func ModuleModify(c *gin.Context, vo *ModuleVO) { defaultModule.service.ModuleModify(c, vo) }
-func ModuleRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.ModuleRemove(c, param)
-}
-func ResourcePage(c *gin.Context, param *ResourcePageParam) {
-	defaultModule.service.ResourcePage(c, param)
-}
-func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
-	return defaultModule.service.ResourceTree(c, category)
-}
-func ResourceMenu(c *gin.Context) []map[string]interface{} {
-	return defaultModule.service.ResourceMenu(c)
-}
-func ResourceDetail(c *gin.Context, id string) *ResourceVO {
-	return defaultModule.service.ResourceDetail(c, id)
-}
-func ResourceCreate(c *gin.Context, vo *ResourceVO) { defaultModule.service.ResourceCreate(c, vo) }
-func ResourceModify(c *gin.Context, vo *ResourceVO) { defaultModule.service.ResourceModify(c, vo) }
-func ResourceRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.ResourceRemove(c, param)
 }

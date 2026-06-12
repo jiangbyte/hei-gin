@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
@@ -50,7 +50,7 @@ func formatDuration(d time.Duration) string {
 
 // ===== Page =====
 
-func (s *service) AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
+func (s *Service) Page(c *gin.Context, p *logModel.LogPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -68,7 +68,7 @@ func (s *service) AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
 
 // ===== LoginAnalysis =====
 
-func (s *service) AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
+func (s *Service) LoginAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
@@ -88,7 +88,7 @@ func (s *service) AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
 
 // ===== LogAnalysis =====
 
-func (s *service) AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
+func (s *Service) LogAnalysis(c *gin.Context) *LogAnalysisData {
 	ctx := c.Request.Context()
 	todayStart := time.Now().Truncate(24 * time.Hour)
 	tomorrowStart := todayStart.Add(24 * time.Hour)
@@ -106,7 +106,7 @@ func (s *service) AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
 
 // ===== Dashboard =====
 
-func (s *service) AnalyzeDashboard(c *gin.Context) *DashboardVO {
+func (s *Service) Dashboard(c *gin.Context) *DashboardVO {
 	ctx := c.Request.Context()
 	stats := DashboardStats{}
 
@@ -148,7 +148,7 @@ func (s *service) AnalyzeDashboard(c *gin.Context) *DashboardVO {
 	}
 }
 
-func (s *service) getMonthlyTrend(ctx context.Context, table string) []TrendItem {
+func (s *Service) getMonthlyTrend(ctx context.Context, table string) []TrendItem {
 	rows := s.repo.MonthlyTrend(ctx, table)
 	result := make([]TrendItem, len(rows))
 	for i, r := range rows {
@@ -160,7 +160,7 @@ func (s *service) getMonthlyTrend(ctx context.Context, table string) []TrendItem
 	return result
 }
 
-func (s *service) getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
+func (s *Service) getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
 	rows := s.repo.OrgUserCounts(ctx)
 	orgIDs := make([]string, len(rows))
 	for i, r := range rows {
@@ -187,7 +187,7 @@ func (s *service) getOrgUserDistribution(ctx context.Context) []OrgUserDistribut
 	return result
 }
 
-func (s *service) getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
+func (s *Service) getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
 	rows := s.repo.RoleCategoryCounts(ctx)
 	result := make([]CategoryDistribution, len(rows))
 	for i, r := range rows {
@@ -197,20 +197,4 @@ func (s *service) getRoleCategoryDistribution(ctx context.Context) []CategoryDis
 		result = []CategoryDistribution{}
 	}
 	return result
-}
-
-func AnalyzePage(c *gin.Context, p *logModel.LogPageParam) {
-	defaultModule.service.AnalyzePage(c, p)
-}
-
-func AnalyzeLoginAnalysis(c *gin.Context) *LogAnalysisData {
-	return defaultModule.service.AnalyzeLoginAnalysis(c)
-}
-
-func AnalyzeLogAnalysis(c *gin.Context) *LogAnalysisData {
-	return defaultModule.service.AnalyzeLogAnalysis(c)
-}
-
-func AnalyzeDashboard(c *gin.Context) *DashboardVO {
-	return defaultModule.service.AnalyzeDashboard(c)
 }

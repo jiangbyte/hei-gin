@@ -11,12 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *dict.Service
+}
+
+var defaultHandler = newHandler(dict.DefaultModule)
+
+func newHandler(module *dict.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all dict routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/dict/page
 	r.GET("/api/v1/sys/dict/page",
 		registry.Perm("sys:dict:page", "字典分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/dict/create
@@ -24,50 +34,50 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:dict:create", "添加字典"),
 		log.SysLog("添加字典"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/dict/modify
 	r.POST("/api/v1/sys/dict/modify",
 		registry.Perm("sys:dict:modify", "编辑字典"),
 		log.SysLog("编辑字典"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/dict/remove
 	r.POST("/api/v1/sys/dict/remove",
 		registry.Perm("sys:dict:remove", "删除字典"),
 		log.SysLog("删除字典"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/dict/detail
 	r.GET("/api/v1/sys/dict/detail",
 		registry.Perm("sys:dict:detail", "字典详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	// GET /api/v1/sys/dict/list
 	r.GET("/api/v1/sys/dict/list",
 		registry.Perm("sys:dict:list", "字典列表"),
-		listHandler,
+		defaultHandler.list,
 	)
 
 	// GET /api/v1/sys/dict/tree
 	r.GET("/api/v1/sys/dict/tree",
-		treeHandler,
+		defaultHandler.tree,
 	)
 
 	// GET /api/v1/sys/dict/get-label
 	r.GET("/api/v1/sys/dict/get-label",
 		registry.Perm("sys:dict:get-label", "字典标签"),
-		getLabelHandler,
+		defaultHandler.getLabel,
 	)
 
 	// GET /api/v1/sys/dict/get-children
 	r.GET("/api/v1/sys/dict/get-children",
 		registry.Perm("sys:dict:get-children", "字典子项"),
-		getChildrenHandler,
+		defaultHandler.getChildren,
 	)
 }
 
@@ -84,14 +94,14 @@ func init() {
 // @Param        query  query  dict.DictPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param dict.DictPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	dict.DictPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // listHandler handles GET /api/v1/sys/dict/list
@@ -103,14 +113,14 @@ func pageHandler(c *gin.Context) {
 // @Param        query  query  dict.DictListParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/list [get]
-func listHandler(c *gin.Context) {
+func (h *handler) list(c *gin.Context) {
 	var param dict.DictListParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := dict.DictList(c, &param)
+	data := h.service.List(c, &param)
 	result.Success(c, data)
 }
 
@@ -123,14 +133,14 @@ func listHandler(c *gin.Context) {
 // @Param        query  query  dict.DictTreeParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/tree [get]
-func treeHandler(c *gin.Context) {
+func (h *handler) tree(c *gin.Context) {
 	var param dict.DictTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := dict.DictTree(c, &param)
+	data := h.service.Tree(c, &param)
 	result.Success(c, data)
 }
 
@@ -143,14 +153,14 @@ func treeHandler(c *gin.Context) {
 // @Param        body  body  dict.DictVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	dict.DictCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -163,14 +173,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  dict.DictVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	dict.DictModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -183,14 +193,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	dict.DictRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -203,8 +213,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := dict.DictDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -218,8 +228,8 @@ func detailHandler(c *gin.Context) {
 // @Param        value  query  string  false  "value"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/get-label [get]
-func getLabelHandler(c *gin.Context) {
-	data := dict.DictGetLabel(c, c.Query("type_code"), c.Query("value"))
+func (h *handler) getLabel(c *gin.Context) {
+	data := h.service.GetLabel(c, c.Query("type_code"), c.Query("value"))
 	result.Success(c, data)
 }
 
@@ -232,7 +242,7 @@ func getLabelHandler(c *gin.Context) {
 // @Param        type_code  query  string  false  "type_code"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/dict/get-children [get]
-func getChildrenHandler(c *gin.Context) {
-	data := dict.DictGetChildren(c, c.Query("type_code"))
+func (h *handler) getChildren(c *gin.Context) {
+	data := h.service.GetChildren(c, c.Query("type_code"))
 	result.Success(c, data)
 }

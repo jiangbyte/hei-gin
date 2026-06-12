@@ -4,14 +4,18 @@ import (
 	"hei-gin/sdk/infra/db"
 )
 
-type module struct {
-	service *service
+var DefaultModule = NewModule()
+
+type Module struct {
+	service *Service
 }
 
-var defaultModule = newModule()
-
-func newModule() *module {
+func NewModule() *Module {
 	repo := &repository{rdb: db.Redis}
-	svc := &service{repo: repo}
-	return &module{service: svc}
+	svc := &Service{repo: repo}
+	return &Module{service: svc}
+}
+
+func (m *Module) Service() *Service {
+	return m.service
 }

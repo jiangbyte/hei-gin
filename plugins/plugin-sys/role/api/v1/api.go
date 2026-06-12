@@ -11,12 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *role.Service
+}
+
+var defaultHandler = newHandler(role.DefaultModule)
+
+func newHandler(module *role.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all role routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/role/page
 	r.GET("/api/v1/sys/role/page",
 		registry.Perm("sys:role:page", "角色分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/role/create
@@ -24,27 +34,27 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:role:create", "添加角色"),
 		log.SysLog("添加角色"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/role/modify
 	r.POST("/api/v1/sys/role/modify",
 		registry.Perm("sys:role:modify", "编辑角色"),
 		log.SysLog("编辑角色"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/role/remove
 	r.POST("/api/v1/sys/role/remove",
 		registry.Perm("sys:role:remove", "删除角色"),
 		log.SysLog("删除角色"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/role/detail
 	r.GET("/api/v1/sys/role/detail",
 		registry.Perm("sys:role:detail", "角色详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	// POST /api/v1/sys/role/grant-permission
@@ -52,7 +62,7 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:role:grant-permission", "分配角色权限"),
 		log.SysLog("分配角色权限"),
 		middleware.NoRepeat(3000),
-		grantPermissionHandler,
+		defaultHandler.grantPermission,
 	)
 
 	// POST /api/v1/sys/role/grant-resource
@@ -60,25 +70,25 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:role:grant-resource", "分配角色资源"),
 		log.SysLog("分配角色资源"),
 		middleware.NoRepeat(3000),
-		grantResourceHandler,
+		defaultHandler.grantResource,
 	)
 
 	// GET /api/v1/sys/role/own-permission
 	r.GET("/api/v1/sys/role/own-permission",
 		registry.Perm("sys:role:own-permission", "角色权限列表"),
-		ownPermissionHandler,
+		defaultHandler.ownPermission,
 	)
 
 	// GET /api/v1/sys/role/own-permission-detail
 	r.GET("/api/v1/sys/role/own-permission-detail",
 		registry.Perm("sys:role:own-permission-detail", "角色权限详情"),
-		ownPermissionDetailHandler,
+		defaultHandler.ownPermissionDetail,
 	)
 
 	// GET /api/v1/sys/role/own-resource
 	r.GET("/api/v1/sys/role/own-resource",
 		registry.Perm("sys:role:own-resource", "角色资源列表"),
-		ownResourceHandler,
+		defaultHandler.ownResource,
 	)
 }
 
@@ -95,14 +105,14 @@ func init() {
 // @Param        query  query  role.RolePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param role.RolePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	role.RolePage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/role/create
@@ -114,13 +124,13 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  role.RoleVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	role.RoleCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -133,14 +143,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  role.RoleVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo role.RoleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	role.RoleModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -153,14 +163,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	role.RoleRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -173,9 +183,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/detail [get]
-func detailHandler(c *gin.Context) {
-	id := c.Query("id")
-	vo := role.RoleDetail(c, id)
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -188,14 +197,14 @@ func detailHandler(c *gin.Context) {
 // @Param        body  body  role.GrantPermissionParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/grant-permission [post]
-func grantPermissionHandler(c *gin.Context) {
+func (h *handler) grantPermission(c *gin.Context) {
 	var param role.GrantPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	role.RoleGrantPermissions(c, &param)
+	h.service.GrantPermissions(c, &param)
 	result.Success(c, nil)
 }
 
@@ -208,14 +217,14 @@ func grantPermissionHandler(c *gin.Context) {
 // @Param        body  body  role.GrantResourceParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/grant-resource [post]
-func grantResourceHandler(c *gin.Context) {
+func (h *handler) grantResource(c *gin.Context) {
 	var param role.GrantResourceParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	role.RoleGrantResources(c, &param)
+	h.service.GrantResources(c, &param)
 	result.Success(c, nil)
 }
 
@@ -228,8 +237,8 @@ func grantResourceHandler(c *gin.Context) {
 // @Param        role_id  query  string  false  "role_id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/own-permission [get]
-func ownPermissionHandler(c *gin.Context) {
-	codes := role.RoleOwnPermissionCodes(c, c.Query("role_id"))
+func (h *handler) ownPermission(c *gin.Context) {
+	codes := h.service.OwnPermissionCodes(c, c.Query("role_id"))
 	result.Success(c, codes)
 }
 
@@ -242,8 +251,8 @@ func ownPermissionHandler(c *gin.Context) {
 // @Param        role_id  query  string  false  "role_id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/own-permission-detail [get]
-func ownPermissionDetailHandler(c *gin.Context) {
-	details := role.RoleOwnPermissionDetails(c, c.Query("role_id"))
+func (h *handler) ownPermissionDetail(c *gin.Context) {
+	details := h.service.OwnPermissionDetails(c, c.Query("role_id"))
 	result.Success(c, details)
 }
 
@@ -256,7 +265,7 @@ func ownPermissionDetailHandler(c *gin.Context) {
 // @Param        role_id  query  string  false  "role_id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/role/own-resource [get]
-func ownResourceHandler(c *gin.Context) {
-	ids := role.RoleOwnResourceIDs(c, c.Query("role_id"))
+func (h *handler) ownResource(c *gin.Context) {
+	ids := h.service.OwnResourceIDs(c, c.Query("role_id"))
 	result.Success(c, ids)
 }

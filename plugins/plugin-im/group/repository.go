@@ -11,6 +11,8 @@ import (
 	"hei-gin/sdk/web/exception"
 )
 
+type repository struct{}
+
 type groupCountRow struct {
 	GroupID string
 	Count   int
@@ -32,7 +34,7 @@ type groupRecipientRow struct {
 	UserType string
 }
 
-func FindGroupByID(ctx context.Context, groupID string) (*imModel.Group, error) {
+func (r *repository) FindGroupByID(ctx context.Context, groupID string) (*imModel.Group, error) {
 	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
 		return nil, err
@@ -40,7 +42,7 @@ func FindGroupByID(ctx context.Context, groupID string) (*imModel.Group, error) 
 	return &group, nil
 }
 
-func FindActiveMember(ctx context.Context, groupID, userID, userType string) (*imModel.GroupMember, error) {
+func (r *repository) FindActiveMember(ctx context.Context, groupID, userID, userType string) (*imModel.GroupMember, error) {
 	var member imModel.GroupMember
 	if err := db.DB.WithContext(ctx).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
@@ -51,7 +53,7 @@ func FindActiveMember(ctx context.Context, groupID, userID, userType string) (*i
 	return &member, nil
 }
 
-func CreateGroupWithMembers(ctx context.Context, group *imModel.Group, owner *imModel.GroupMember, members []imModel.GroupMember, sysMsgs []imModel.GroupMessage, memberIDs []string, memberType string) error {
+func (r *repository) CreateGroupWithMembers(ctx context.Context, group *imModel.Group, owner *imModel.GroupMember, members []imModel.GroupMember, sysMsgs []imModel.GroupMessage, memberIDs []string, memberType string) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Create(group).Error; err != nil {
 		tx.Rollback()
@@ -93,11 +95,11 @@ func CreateGroupWithMembers(ctx context.Context, group *imModel.Group, owner *im
 	return tx.Commit().Error
 }
 
-func UpdateGroup(ctx context.Context, groupID string, updates map[string]interface{}) error {
+func (r *repository) UpdateGroup(ctx context.Context, groupID string, updates map[string]interface{}) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Group{}).Where("id = ?", groupID).Updates(updates).Error
 }
 
-func DissolveGroup(ctx context.Context, groupID string) error {
+func (r *repository) DissolveGroup(ctx context.Context, groupID string) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(&imModel.Group{}).Where("id = ?", groupID).Update("status", GroupDissolved).Error; err != nil {
 		tx.Rollback()
@@ -110,7 +112,7 @@ func DissolveGroup(ctx context.Context, groupID string) error {
 	return tx.Commit().Error
 }
 
-func ListMyGroupMemberships(ctx context.Context, userID, userType string) []imModel.GroupMember {
+func (r *repository) ListMyGroupMemberships(ctx context.Context, userID, userType string) []imModel.GroupMember {
 	var rows []imModel.GroupMember
 	db.DB.WithContext(ctx).
 		Select("group_id, joined_at").
@@ -119,7 +121,7 @@ func ListMyGroupMemberships(ctx context.Context, userID, userType string) []imMo
 	return rows
 }
 
-func ListMyGroupIDs(ctx context.Context, userID, userType string) []string {
+func (r *repository) ListMyGroupIDs(ctx context.Context, userID, userType string) []string {
 	var ids []string
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("user_id = ? AND user_type = ? AND status = ?", userID, userType, MemberActive).
@@ -127,13 +129,13 @@ func ListMyGroupIDs(ctx context.Context, userID, userType string) []string {
 	return ids
 }
 
-func ListGroupsByIDs(ctx context.Context, groupIDs []string) []imModel.Group {
+func (r *repository) ListGroupsByIDs(ctx context.Context, groupIDs []string) []imModel.Group {
 	var groups []imModel.Group
 	db.DB.WithContext(ctx).Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
 	return groups
 }
 
-func CountActiveMembersByGroupIDs(ctx context.Context, groupIDs []string) []groupCountRow {
+func (r *repository) CountActiveMembersByGroupIDs(ctx context.Context, groupIDs []string) []groupCountRow {
 	var rows []groupCountRow
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("group_id, COUNT(*) as count").
@@ -142,7 +144,7 @@ func CountActiveMembersByGroupIDs(ctx context.Context, groupIDs []string) []grou
 	return rows
 }
 
-func ListLastMessagesByGroupIDs(ctx context.Context, groupIDs []string) []groupLastMessageRow {
+func (r *repository) ListLastMessagesByGroupIDs(ctx context.Context, groupIDs []string) []groupLastMessageRow {
 	var rows []groupLastMessageRow
 	lastSubQ := db.DB.WithContext(ctx).Table("im_group_message").
 		Select("group_id, MAX(created_at) as max_ct").
@@ -155,7 +157,7 @@ func ListLastMessagesByGroupIDs(ctx context.Context, groupIDs []string) []groupL
 	return rows
 }
 
-func CountUnreadByGroupIDs(ctx context.Context, groupIDs []string, userID, userType string) []groupUnreadRow {
+func (r *repository) CountUnreadByGroupIDs(ctx context.Context, groupIDs []string, userID, userType string) []groupUnreadRow {
 	var rows []groupUnreadRow
 	readSubQ := db.DB.WithContext(ctx).Table("im_group_message_read").
 		Select("group_id, MAX(read_at) as max_read").
@@ -171,13 +173,13 @@ func CountUnreadByGroupIDs(ctx context.Context, groupIDs []string, userID, userT
 	return rows
 }
 
-func CountActiveMembers(ctx context.Context, groupID string) int64 {
+func (r *repository) CountActiveMembers(ctx context.Context, groupID string) int64 {
 	var count int64
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).Where("group_id = ? AND status = ?", groupID, MemberActive).Count(&count)
 	return count
 }
 
-func SearchGroups(ctx context.Context, like string, limit int) []imModel.Group {
+func (r *repository) SearchGroups(ctx context.Context, like string, limit int) []imModel.Group {
 	var groups []imModel.Group
 	db.DB.WithContext(ctx).
 		Where("name LIKE ? AND status = ?", like, GroupNormal).
@@ -186,7 +188,7 @@ func SearchGroups(ctx context.Context, like string, limit int) []imModel.Group {
 	return groups
 }
 
-func ListActiveMembers(ctx context.Context, groupID string) []imModel.GroupMember {
+func (r *repository) ListActiveMembers(ctx context.Context, groupID string) []imModel.GroupMember {
 	var rows []imModel.GroupMember
 	db.DB.WithContext(ctx).
 		Where("group_id = ? AND status = ?", groupID, MemberActive).
@@ -195,11 +197,11 @@ func ListActiveMembers(ctx context.Context, groupID string) []imModel.GroupMembe
 	return rows
 }
 
-func CreateMessage(ctx context.Context, msg *imModel.GroupMessage) error {
+func (r *repository) CreateMessage(ctx context.Context, msg *imModel.GroupMessage) error {
 	return db.DB.WithContext(ctx).Create(msg).Error
 }
 
-func FindMessageByID(ctx context.Context, messageID, groupID string) (*imModel.GroupMessage, error) {
+func (r *repository) FindMessageByID(ctx context.Context, messageID, groupID string) (*imModel.GroupMessage, error) {
 	var msg imModel.GroupMessage
 	if err := db.DB.WithContext(ctx).Where("id = ? AND group_id = ?", messageID, groupID).First(&msg).Error; err != nil {
 		return nil, err
@@ -207,12 +209,12 @@ func FindMessageByID(ctx context.Context, messageID, groupID string) (*imModel.G
 	return &msg, nil
 }
 
-func RecallMessage(ctx context.Context, messageID string) error {
+func (r *repository) RecallMessage(ctx context.Context, messageID string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("id = ?", messageID).
 		Updates(map[string]interface{}{"content": "消息已被撤回", "msg_type": imModel.MsgTypeSystem}).Error
 }
 
-func ListRecipientMembers(ctx context.Context, groupID, excludeUserID, excludeUserType string) []groupRecipientRow {
+func (r *repository) ListRecipientMembers(ctx context.Context, groupID, excludeUserID, excludeUserType string) []groupRecipientRow {
 	var rows []groupRecipientRow
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("user_id, user_type").
@@ -222,14 +224,14 @@ func ListRecipientMembers(ctx context.Context, groupID, excludeUserID, excludeUs
 	return rows
 }
 
-func UpsertMessageRead(ctx context.Context, record *imModel.GroupMessageRead) error {
+func (r *repository) UpsertMessageRead(ctx context.Context, record *imModel.GroupMessageRead) error {
 	return db.DB.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
 	}).Create(record).Error
 }
 
-func FindLastMessageID(ctx context.Context, groupID string) string {
+func (r *repository) FindLastMessageID(ctx context.Context, groupID string) string {
 	var row struct{ ID string }
 	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Select("id").
@@ -242,7 +244,7 @@ func FindLastMessageID(ctx context.Context, groupID string) string {
 	return row.ID
 }
 
-func ListGroupMessages(ctx context.Context, groupID, cursor string, size int) []imModel.GroupMessage {
+func (r *repository) ListGroupMessages(ctx context.Context, groupID, cursor string, size int) []imModel.GroupMessage {
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("group_id = ?", groupID)
 	if cursor != "" {
 		if t, err := utils.ParseDateTime(cursor); err == nil {
@@ -258,7 +260,7 @@ func ListGroupMessages(ctx context.Context, groupID, cursor string, size int) []
 	return rows
 }
 
-func SearchGroupMessages(ctx context.Context, groupID, keyword, cursor string, size int) []imModel.GroupMessage {
+func (r *repository) SearchGroupMessages(ctx context.Context, groupID, keyword, cursor string, size int) []imModel.GroupMessage {
 	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Where("group_id = ? AND content LIKE ? AND msg_type != ?", groupID, "%"+keyword+"%", imModel.MsgTypeSystem)
 	if cursor != "" {
@@ -275,7 +277,7 @@ func SearchGroupMessages(ctx context.Context, groupID, keyword, cursor string, s
 	return rows
 }
 
-func ListPendingJoinRequests(ctx context.Context, groupID string) []imModel.GroupJoinRequest {
+func (r *repository) ListPendingJoinRequests(ctx context.Context, groupID string) []imModel.GroupJoinRequest {
 	var rows []imModel.GroupJoinRequest
 	db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).
 		Where("group_id = ? AND status = ?", groupID, "pending").
@@ -283,7 +285,7 @@ func ListPendingJoinRequests(ctx context.Context, groupID string) []imModel.Grou
 	return rows
 }
 
-func FindPendingJoinRequest(ctx context.Context, requestID string) (*imModel.GroupJoinRequest, error) {
+func (r *repository) FindPendingJoinRequest(ctx context.Context, requestID string) (*imModel.GroupJoinRequest, error) {
 	var req imModel.GroupJoinRequest
 	if err := db.DB.WithContext(ctx).First(&req, "id = ? AND status = ?", requestID, "pending").Error; err != nil {
 		return nil, err
@@ -291,7 +293,7 @@ func FindPendingJoinRequest(ctx context.Context, requestID string) (*imModel.Gro
 	return &req, nil
 }
 
-func HandleJoinRequest(ctx context.Context, requestID, operatorID, action string, member *imModel.GroupMember, msg *imModel.GroupMessage) error {
+func (r *repository) HandleJoinRequest(ctx context.Context, requestID, operatorID, action string, member *imModel.GroupMember, msg *imModel.GroupMessage) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(&imModel.GroupJoinRequest{}).Where("id = ?", requestID).
 		Updates(map[string]interface{}{"status": action, "handled_by": operatorID}).Error; err != nil {
@@ -311,7 +313,7 @@ func HandleJoinRequest(ctx context.Context, requestID, operatorID, action string
 	return tx.Commit().Error
 }
 
-func FindExistingMemberIDs(ctx context.Context, groupID string, userIDs []string, userType string) []string {
+func (r *repository) FindExistingMemberIDs(ctx context.Context, groupID string, userIDs []string, userType string) []string {
 	var ids []string
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id IN ? AND user_type = ? AND status = ?", groupID, userIDs, userType, MemberActive).
@@ -319,14 +321,14 @@ func FindExistingMemberIDs(ctx context.Context, groupID string, userIDs []string
 	return ids
 }
 
-func CountActiveMembersByGroup(ctx context.Context, groupID string) int64 {
+func (r *repository) CountActiveMembersByGroup(ctx context.Context, groupID string) int64 {
 	var count int64
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND status = ?", groupID, MemberActive).Count(&count)
 	return count
 }
 
-func InviteMembers(ctx context.Context, members []imModel.GroupMember, sysMsgs []imModel.GroupMessage) error {
+func (r *repository) InviteMembers(ctx context.Context, members []imModel.GroupMember, sysMsgs []imModel.GroupMessage) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if len(members) > 0 {
 		if err := tx.Create(&members).Error; err != nil {
@@ -343,7 +345,7 @@ func InviteMembers(ctx context.Context, members []imModel.GroupMember, sysMsgs [
 	return tx.Commit().Error
 }
 
-func CountMemberExists(ctx context.Context, groupID, userID, userType string) int64 {
+func (r *repository) CountMemberExists(ctx context.Context, groupID, userID, userType string) int64 {
 	var count int64
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
@@ -351,7 +353,7 @@ func CountMemberExists(ctx context.Context, groupID, userID, userType string) in
 	return count
 }
 
-func CountPendingJoin(ctx context.Context, groupID, userID, userType string) int64 {
+func (r *repository) CountPendingJoin(ctx context.Context, groupID, userID, userType string) int64 {
 	var count int64
 	db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
@@ -359,11 +361,11 @@ func CountPendingJoin(ctx context.Context, groupID, userID, userType string) int
 	return count
 }
 
-func CreateJoinRequest(ctx context.Context, req *imModel.GroupJoinRequest) error {
+func (r *repository) CreateJoinRequest(ctx context.Context, req *imModel.GroupJoinRequest) error {
 	return db.DB.WithContext(ctx).Create(req).Error
 }
 
-func ListManagers(ctx context.Context, groupID string) []imModel.GroupMember {
+func (r *repository) ListManagers(ctx context.Context, groupID string) []imModel.GroupMember {
 	var rows []imModel.GroupMember
 	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND (role = ? OR role = ?) AND status = ?",
@@ -372,7 +374,7 @@ func ListManagers(ctx context.Context, groupID string) []imModel.GroupMember {
 	return rows
 }
 
-func LeaveGroup(ctx context.Context, member *imModel.GroupMember, msg *imModel.GroupMessage) error {
+func (r *repository) LeaveGroup(ctx context.Context, member *imModel.GroupMember, msg *imModel.GroupMessage) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(member).Update("status", MemberLeft).Error; err != nil {
 		tx.Rollback()
@@ -385,7 +387,7 @@ func LeaveGroup(ctx context.Context, member *imModel.GroupMember, msg *imModel.G
 	return tx.Commit().Error
 }
 
-func KickMember(ctx context.Context, groupID, userID, userType string, msg *imModel.GroupMessage) error {
+func (r *repository) KickMember(ctx context.Context, groupID, userID, userType string, msg *imModel.GroupMessage) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", groupID, userID, userType).
@@ -400,7 +402,7 @@ func KickMember(ctx context.Context, groupID, userID, userType string, msg *imMo
 	return tx.Commit().Error
 }
 
-func TransferOwnerAndRole(ctx context.Context, groupID, oldOwnerID, oldOwnerType, newOwnerID, newOwnerType string) error {
+func (r *repository) TransferOwnerAndRole(ctx context.Context, groupID, oldOwnerID, oldOwnerType, newOwnerID, newOwnerType string) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", groupID, oldOwnerID, oldOwnerType).
@@ -422,7 +424,7 @@ func TransferOwnerAndRole(ctx context.Context, groupID, oldOwnerID, oldOwnerType
 	return tx.Commit().Error
 }
 
-func TransferOwner(ctx context.Context, groupID, newOwnerID, newOwnerType, operatorID, operatorType string) error {
+func (r *repository) TransferOwner(ctx context.Context, groupID, newOwnerID, newOwnerType, operatorID, operatorType string) error {
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Model(&imModel.Group{}).Where("id = ?", groupID).
 		Updates(map[string]interface{}{"owner_id": newOwnerID, "owner_type": newOwnerType}).Error; err != nil {
@@ -444,20 +446,20 @@ func TransferOwner(ctx context.Context, groupID, newOwnerID, newOwnerType, opera
 	return tx.Commit().Error
 }
 
-func UpdateMemberRole(ctx context.Context, groupID, userID, userType, role string) error {
+func (r *repository) UpdateMemberRole(ctx context.Context, groupID, userID, userType, role string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			groupID, userID, userType, MemberActive).
 		Update("role", role).Error
 }
 
-func UpdateMemberNickname(ctx context.Context, groupID, userID, userType, nickname string) error {
+func (r *repository) UpdateMemberNickname(ctx context.Context, groupID, userID, userType, nickname string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", groupID, userID, userType).
 		Update("nickname", nickname).Error
 }
 
-func UpdateMutedUntil(ctx context.Context, groupID, userID, userType string, until *time.Time) error {
+func (r *repository) UpdateMutedUntil(ctx context.Context, groupID, userID, userType string, until *time.Time) error {
 	return db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", groupID, userID, userType).
 		Update("muted_until", until).Error

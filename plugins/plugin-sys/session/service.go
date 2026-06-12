@@ -13,11 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) Analysis(c *gin.Context) *SessionAnalysisResult {
+func (s *Service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	ctx := c.Request.Context()
 	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
 	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
@@ -35,7 +35,7 @@ func (s *service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	}
 }
 
-func (s *service) Page(c *gin.Context, param *SessionPageParam) {
+func (s *Service) Page(c *gin.Context, param *SessionPageParam) {
 	ctx := c.Request.Context()
 	current, size := normalizePage(param.Current, param.Size)
 
@@ -74,7 +74,7 @@ func (s *service) Page(c *gin.Context, param *SessionPageParam) {
 	result.PageDataResult(c, rows, total, current, size)
 }
 
-func (s *service) listBusinessSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
+func (s *Service) listBusinessSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
 	if keyword == "" {
 		return auth.ListSessionInfos(ctx, string(enums.LoginTypeBusiness), current, size, "")
 	}
@@ -84,11 +84,11 @@ func (s *service) listBusinessSessionInfos(ctx context.Context, keyword string, 
 
 const maxKeywordCandidates = 1000
 
-func (s *service) Exit(c *gin.Context, param *SessionExitParam) {
+func (s *Service) Exit(c *gin.Context, param *SessionExitParam) {
 	auth.KickoutWithContext(c.Request.Context(), param.UserID)
 }
 
-func (s *service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
+func (s *Service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeBusiness), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
@@ -108,11 +108,11 @@ func (s *service) TokenList(c *gin.Context, userID string) []*SessionTokenResult
 	return results
 }
 
-func (s *service) ExitToken(c *gin.Context, param *SessionExitTokenParam) {
+func (s *Service) ExitToken(c *gin.Context, param *SessionExitTokenParam) {
 	auth.KickoutTokenWithContext(c.Request.Context(), param.UserID, param.Token)
 }
 
-func (s *service) ChartData(c *gin.Context) *SessionChartData {
+func (s *Service) Chart(c *gin.Context) *SessionChartData {
 	ctx := c.Request.Context()
 	days := lastNDays(7)
 
@@ -200,28 +200,4 @@ func lastNDays(n int) []string {
 		days[i] = now.AddDate(0, 0, -(n - 1 - i)).Format("2006-01-02")
 	}
 	return days
-}
-
-func Analysis(c *gin.Context) *SessionAnalysisResult {
-	return defaultModule.service.Analysis(c)
-}
-
-func Page(c *gin.Context, param *SessionPageParam) {
-	defaultModule.service.Page(c, param)
-}
-
-func Exit(c *gin.Context, param *SessionExitParam) {
-	defaultModule.service.Exit(c, param)
-}
-
-func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
-	return defaultModule.service.TokenList(c, userID)
-}
-
-func ExitToken(c *gin.Context, param *SessionExitTokenParam) {
-	defaultModule.service.ExitToken(c, param)
-}
-
-func ChartData(c *gin.Context) *SessionChartData {
-	return defaultModule.service.ChartData(c)
 }

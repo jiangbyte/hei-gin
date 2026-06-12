@@ -13,9 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ===== Page =====
+type Service struct {
+	repo *repository
+}
 
-func ClientUserPage(c *gin.Context, p *ClientUserPageParam) {
+func (s *Service) Page(c *gin.Context, p *ClientUserPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -27,7 +29,7 @@ func ClientUserPage(c *gin.Context, p *ClientUserPageParam) {
 		p.Size = 100
 	}
 
-	rows, total := Page(ctx, p)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*ClientUserVO, len(rows))
 	for i, r := range rows {
@@ -36,15 +38,13 @@ func ClientUserPage(c *gin.Context, p *ClientUserPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-// ===== Detail =====
-
-func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
+func (s *Service) Detail(c *gin.Context, id string) *ClientUserVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, id)
+	e, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -56,13 +56,11 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 	return ClientUserToClientUserVO(e)
 }
 
-// ===== Create =====
-
-func ClientUserCreate(c *gin.Context, v *ClientUserVO) {
+func (s *Service) Create(c *gin.Context, v *ClientUserVO) {
 	ctx := c.Request.Context()
 
 	if v.Username != nil {
-		cnt := CountByUsername(ctx, *v.Username, "")
+		cnt := s.repo.CountByUsername(ctx, *v.Username, "")
 		if cnt > 0 {
 			result.WriteError(c, exception.NewBusinessError("帐号已存在", 400))
 			return
@@ -78,26 +76,24 @@ func ClientUserCreate(c *gin.Context, v *ClientUserVO) {
 			result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
 			return
 		}
-		s := string(hashed)
-		e.Password = &s
+		sv := string(hashed)
+		e.Password = &sv
 	}
 
-	if err := Create(ctx, e); err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Modify =====
-
-func ClientUserModify(c *gin.Context, v *ClientUserVO) {
+func (s *Service) Modify(c *gin.Context, v *ClientUserVO) {
 	ctx := c.Request.Context()
 	if v.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	_, err := FindByID(ctx, v.ID)
+	_, err := s.repo.FindByID(ctx, v.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
@@ -126,35 +122,31 @@ func ClientUserModify(c *gin.Context, v *ClientUserVO) {
 	if len(up) == 0 {
 		return
 	}
-	if err := UpdateByID(ctx, v.ID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, v.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑用户失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Remove =====
-
-func ClientUserRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
-	if err := DeleteByIDs(c.Request.Context(), ids); err != nil {
+	if err := s.repo.DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== Current =====
-
-func ClientUserCurrent(c *gin.Context) *ClientUserVO {
+func (s *Service) Current(c *gin.Context) *ClientUserVO {
 	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return nil
 	}
 
-	e, err := FindByID(c.Request.Context(), userID)
+	e, err := s.repo.FindByID(c.Request.Context(), userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
@@ -166,9 +158,7 @@ func ClientUserCurrent(c *gin.Context) *ClientUserVO {
 	return ClientUserToClientUserVO(e)
 }
 
-// ===== UpdateProfile =====
-
-func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
+func (s *Service) UpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
@@ -177,7 +167,7 @@ func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	ctx := c.Request.Context()
 
 	if param.Username != nil && *param.Username != "" {
-		count := CountByUsername(ctx, *param.Username, userID)
+		count := s.repo.CountByUsername(ctx, *param.Username, userID)
 		if count > 0 {
 			result.WriteError(c, exception.NewBusinessError("用户名已存在", 400))
 			return
@@ -203,15 +193,13 @@ func ClientUserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	if len(up) == 0 {
 		return
 	}
-	if err := UpdateByID(ctx, userID, up); err != nil {
+	if err := s.repo.UpdateByID(ctx, userID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("更新个人信息失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== UpdateAvatar =====
-
-func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
+func (s *Service) UpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
@@ -225,7 +213,7 @@ func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 	avatar := utils.CompressBase64Image(param.Avatar, 512, 512, 80)
 
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, userID)
+	e, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
@@ -234,22 +222,20 @@ func ClientUserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
 		result.WriteError(c, exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 		return
 	}
-	if err := UpdateAvatar(ctx, e, avatar); err != nil {
+	if err := s.repo.UpdateAvatar(ctx, e, avatar); err != nil {
 		result.WriteError(c, exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// ===== UpdatePassword =====
-
-func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
+func (s *Service) UpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 	userID := auth.Consumer.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
 	}
 	ctx := c.Request.Context()
-	e, err := FindByID(ctx, userID)
+	e, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("用户不存在", 404))
@@ -276,7 +262,7 @@ func ClientUserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 		result.WriteError(c, exception.NewBusinessError("密码加密失败", 500))
 		return
 	}
-	if err := UpdatePassword(ctx, userID, string(h)); err != nil {
+	if err := s.repo.UpdatePassword(ctx, userID, string(h)); err != nil {
 		result.WriteError(c, exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
 		return
 	}

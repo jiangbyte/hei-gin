@@ -17,6 +17,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Service struct {
+	repo *repository
+}
+
 func getLoginID(c *gin.Context) string {
 	if v, ok := c.Get("login_id"); ok {
 		if uid, ok := v.(string); ok && uid != "" {
@@ -56,7 +60,7 @@ func isConsumerAPIPath(path string) bool {
 
 // ==================== MessageSend ====================
 
-func MessageSend(c *gin.Context, param *MessageSendParam) {
+func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 	ctx := c.Request.Context()
 
 	senderID := getLoginID(c)
@@ -105,7 +109,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 			Status:         "unread",
 		}
 	}
-	if err := CreateMessages(ctx, records); err != nil {
+	if err := s.repo.CreateMessages(ctx, records); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		return
 	}
@@ -127,7 +131,7 @@ func MessageSend(c *gin.Context, param *MessageSendParam) {
 			LastTime: lastTime,
 		})
 	}
-	_ = UpsertConversations(ctx, conversations)
+	_ = s.repo.UpsertConversations(ctx, conversations)
 
 	pushMessages := make(map[string]ws.Message, len(receiverIDs))
 	messageIDs := make(map[string]string, len(receiverIDs))
@@ -173,7 +177,7 @@ func normalizeReceiverIDs(ids []string) []string {
 
 // ==================== MessagePage ====================
 
-func MessagePage(c *gin.Context, param *MessagePageParam) {
+func (s *Service) Page(c *gin.Context, param *MessagePageParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -188,7 +192,7 @@ func MessagePage(c *gin.Context, param *MessagePageParam) {
 		param.Size = 100
 	}
 
-	records, total := Page(ctx, userID, userType, param.Status, param.Current, param.Size)
+	records, total := s.repo.Page(ctx, userID, userType, param.Status, param.Current, param.Size)
 
 	vos := make([]MessageVO, len(records))
 	for i, e := range records {
@@ -199,22 +203,22 @@ func MessagePage(c *gin.Context, param *MessagePageParam) {
 
 // ==================== MessageUnreadCount ====================
 
-func MessageUnreadCount(c *gin.Context) {
+func (s *Service) UnreadCount(c *gin.Context) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	count := CountUnread(c.Request.Context(), userID, userType)
+	count := s.repo.CountUnread(c.Request.Context(), userID, userType)
 	result.Success(c, UnreadCountVO{Count: count})
 }
 
 // ==================== MessageDetail ====================
 
-func MessageDetail(c *gin.Context) {
+func (s *Service) Detail(c *gin.Context) {
 	id := c.Query("id")
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	entity, err := FindOwnedByID(c.Request.Context(), id, userID, userType)
+	entity, err := s.repo.FindOwnedByID(c.Request.Context(), id, userID, userType)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.Success(c, nil)
@@ -228,10 +232,10 @@ func MessageDetail(c *gin.Context) {
 
 // ==================== MessageMarkRead ====================
 
-func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
+func (s *Service) MarkRead(c *gin.Context, param *utils.IdParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
-	if err := MarkRead(c.Request.Context(), param.ID, userID, userType); err != nil {
+	if err := s.repo.MarkRead(c.Request.Context(), param.ID, userID, userType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
 	}
@@ -239,7 +243,7 @@ func MessageMarkRead(c *gin.Context, param *utils.IdParam) {
 
 // ==================== MessageMarkConversationRead ====================
 
-func MessageMarkConversationRead(c *gin.Context, param *ConversationReadParam) {
+func (s *Service) MarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 	receiverID := getLoginID(c)
 	receiverType := getUserType(c)
 
@@ -247,7 +251,7 @@ func MessageMarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 		return
 	}
 
-	if err := MarkConversationRead(c.Request.Context(), param.ConversationID, receiverID, receiverType); err != nil {
+	if err := s.repo.MarkConversationRead(c.Request.Context(), param.ConversationID, receiverID, receiverType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
 	}
@@ -255,11 +259,11 @@ func MessageMarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 
 // ==================== MessageMarkAllRead ====================
 
-func MessageMarkAllRead(c *gin.Context) {
+func (s *Service) MarkAllRead(c *gin.Context) {
 	receiverID := getLoginID(c)
 	receiverType := getUserType(c)
 
-	if err := MarkAllRead(c.Request.Context(), receiverID, receiverType); err != nil {
+	if err := s.repo.MarkAllRead(c.Request.Context(), receiverID, receiverType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
 		return
 	}
@@ -267,14 +271,14 @@ func MessageMarkAllRead(c *gin.Context) {
 
 // ==================== MessageRemove (soft-delete) ====================
 
-func MessageRemove(c *gin.Context, param *DeleteParam) {
+func (s *Service) Remove(c *gin.Context, param *DeleteParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
 	if len(param.IDs) == 0 {
 		return
 	}
-	if err := SoftDelete(c.Request.Context(), param.IDs, userID, userType); err != nil {
+	if err := s.repo.SoftDelete(c.Request.Context(), param.IDs, userID, userType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
 		return
 	}
@@ -282,11 +286,11 @@ func MessageRemove(c *gin.Context, param *DeleteParam) {
 
 // ==================== MessageRecall (within 5 min) ====================
 
-func MessageRecall(c *gin.Context, param *RecallParam) {
+func (s *Service) Recall(c *gin.Context, param *RecallParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
 
-	msg, err := FindByID(c.Request.Context(), param.MessageID)
+	msg, err := s.repo.FindByID(c.Request.Context(), param.MessageID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
@@ -299,7 +303,7 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 		result.WriteError(c, exception.NewBusinessError("超过5分钟，无法撤回", 400))
 		return
 	}
-	if err := Recall(c.Request.Context(), param.MessageID); err != nil {
+	if err := s.repo.Recall(c.Request.Context(), param.MessageID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("撤回失败: "+err.Error(), 500))
 		return
 	}
@@ -307,10 +311,10 @@ func MessageRecall(c *gin.Context, param *RecallParam) {
 
 // ==================== MessageForward ====================
 
-func MessageForward(c *gin.Context, param *ForwardParam) {
+func (s *Service) Forward(c *gin.Context, param *ForwardParam) {
 	userID := getLoginID(c)
 	userType := getUserType(c)
-	original, err := FindOwnedByID(c.Request.Context(), param.MessageID, userID, userType)
+	original, err := s.repo.FindOwnedByID(c.Request.Context(), param.MessageID, userID, userType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
@@ -323,12 +327,12 @@ func MessageForward(c *gin.Context, param *ForwardParam) {
 		ReceiverIDs:  param.TargetIDs,
 		ReceiverType: param.TargetType,
 	}
-	MessageSend(c, sendParam)
+	s.Send(c, sendParam)
 }
 
 // ==================== MessageSearch ====================
 
-func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
+func (s *Service) Search(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -340,7 +344,7 @@ func MessageSearch(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 		param.Size = 100
 	}
 
-	records := Search(ctx, userID, userType, param.Keyword, param.Cursor, param.Size)
+	records := s.repo.Search(ctx, userID, userType, param.Keyword, param.Cursor, param.Size)
 
 	hasMore := len(records) > param.Size
 	if hasMore {

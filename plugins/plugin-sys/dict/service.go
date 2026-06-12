@@ -14,13 +14,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
 // ===== Page =====
 
-func (s *service) DictPage(c *gin.Context, p *DictPageParam) {
+func (s *Service) Page(c *gin.Context, p *DictPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -43,7 +43,7 @@ func (s *service) DictPage(c *gin.Context, p *DictPageParam) {
 
 // ===== Tree =====
 
-func (s *service) DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
+func (s *Service) Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
 	all := s.repo.ListForTree(ctx, param.Category, param.DictGroup)
 	if len(all) == 0 {
@@ -86,7 +86,7 @@ func buildTreeChildren(childrenMap map[string][]SysDict, parentID string, depth 
 
 // ===== Create =====
 
-func (s *service) DictCreate(c *gin.Context, vo *DictVO) {
+func (s *Service) Create(c *gin.Context, vo *DictVO) {
 	ctx := c.Request.Context()
 	if err := s.dictCheckDuplicate(ctx, vo, ""); err != nil {
 		result.WriteError(c, err)
@@ -107,7 +107,7 @@ func (s *service) DictCreate(c *gin.Context, vo *DictVO) {
 
 // ===== Modify =====
 
-func (s *service) DictModify(c *gin.Context, vo *DictVO) {
+func (s *Service) Modify(c *gin.Context, vo *DictVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -163,7 +163,7 @@ func (s *service) DictModify(c *gin.Context, vo *DictVO) {
 
 // ===== Remove =====
 
-func (s *service) DictRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -178,7 +178,7 @@ func (s *service) DictRemove(c *gin.Context, param *utils.IdsParam) {
 
 // ===== Detail =====
 
-func (s *service) DictDetail(c *gin.Context, id string) *DictVO {
+func (s *Service) Detail(c *gin.Context, id string) *DictVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -198,7 +198,7 @@ func (s *service) DictDetail(c *gin.Context, id string) *DictVO {
 
 // ===== Options =====
 
-func (s *service) DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
+func (s *Service) Options(c *gin.Context, param *DictOptionsParam) []*DictVO {
 	ctx := c.Request.Context()
 	records := s.repo.ListOptions(ctx, param.Category, param.ParentID)
 	vos := make([]*DictVO, len(records))
@@ -210,7 +210,7 @@ func (s *service) DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO
 
 // ===== List =====
 
-func (s *service) DictList(c *gin.Context, param *DictListParam) []*DictVO {
+func (s *Service) List(c *gin.Context, param *DictListParam) []*DictVO {
 	ctx := c.Request.Context()
 	records := s.repo.ListByCategoryAndKeyword(ctx, param.Category, param.Keyword)
 	vos := make([]*DictVO, len(records))
@@ -222,7 +222,7 @@ func (s *service) DictList(c *gin.Context, param *DictListParam) []*DictVO {
 
 // ===== GetLabel =====
 
-func (s *service) DictGetLabel(c *gin.Context, typeCode, value string) *string {
+func (s *Service) GetLabel(c *gin.Context, typeCode, value string) *string {
 	ctx := c.Request.Context()
 	entity, err := s.repo.FindByTypeCodeAndValue(ctx, typeCode, value)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *service) DictGetLabel(c *gin.Context, typeCode, value string) *string {
 
 // ===== GetChildren =====
 
-func (s *service) DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
+func (s *Service) GetChildren(c *gin.Context, typeCode string) []*DictVO {
 	ctx := c.Request.Context()
 	parent, err := s.repo.FindByCode(ctx, typeCode)
 	if err != nil {
@@ -249,7 +249,7 @@ func (s *service) DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
 
 // ===== Internal helpers =====
 
-func (s *service) dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) error {
+func (s *Service) dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) error {
 	if vo.Value != nil && *vo.Value != "" {
 		cnt := s.repo.CountDuplicateValue(ctx, vo.ParentID, *vo.Value, excludeID)
 		if cnt > 0 {
@@ -259,7 +259,7 @@ func (s *service) dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID 
 	return nil
 }
 
-func (s *service) dictCheckCircularParent(ctx context.Context, entityID, newParentID string) error {
+func (s *Service) dictCheckCircularParent(ctx context.Context, entityID, newParentID string) error {
 	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return nil
 	}
@@ -281,7 +281,7 @@ func (s *service) dictCheckCircularParent(ctx context.Context, entityID, newPare
 	return nil
 }
 
-func (s *service) dictCollectDescendantIDs(ctx context.Context, ids []string) []string {
+func (s *Service) dictCollectDescendantIDs(ctx context.Context, ids []string) []string {
 	all := s.repo.ListAll(ctx)
 	childrenMap := make(map[string][]string)
 	for _, r := range all {
@@ -351,44 +351,4 @@ func getParentIDKey(parentID *string) string {
 		return ""
 	}
 	return *parentID
-}
-
-func DictPage(c *gin.Context, p *DictPageParam) {
-	defaultModule.service.DictPage(c, p)
-}
-
-func DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
-	return defaultModule.service.DictTree(c, param)
-}
-
-func DictCreate(c *gin.Context, vo *DictVO) {
-	defaultModule.service.DictCreate(c, vo)
-}
-
-func DictModify(c *gin.Context, vo *DictVO) {
-	defaultModule.service.DictModify(c, vo)
-}
-
-func DictRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.DictRemove(c, param)
-}
-
-func DictDetail(c *gin.Context, id string) *DictVO {
-	return defaultModule.service.DictDetail(c, id)
-}
-
-func DictOptions(c *gin.Context, param *DictOptionsParam) []*DictVO {
-	return defaultModule.service.DictOptions(c, param)
-}
-
-func DictList(c *gin.Context, param *DictListParam) []*DictVO {
-	return defaultModule.service.DictList(c, param)
-}
-
-func DictGetLabel(c *gin.Context, typeCode, value string) *string {
-	return defaultModule.service.DictGetLabel(c, typeCode, value)
-}
-
-func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
-	return defaultModule.service.DictGetChildren(c, typeCode)
 }

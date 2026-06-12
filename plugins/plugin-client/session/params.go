@@ -45,7 +45,6 @@ type SessionExitTokenParam struct {
 	Token  string `json:"token"`
 }
 
-type ()
 type BarChartData struct {
 	Days   []string         `json:"days"`
 	Series []CategorySeries `json:"series"`

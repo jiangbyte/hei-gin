@@ -11,62 +11,72 @@ import (
 	"hei-gin/sdk/web/result"
 )
 
+type handler struct {
+	service *resource.Service
+}
+
+var defaultHandler = newHandler(resource.DefaultModule)
+
+func newHandler(module *resource.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all module and resource routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// ---- Module routes ----
 	r.GET("/api/v1/sys/module/page",
 		registry.Perm("sys:module:page", "模块分页"),
-		modulePageHandler,
+		defaultHandler.modulePage,
 	)
 	r.POST("/api/v1/sys/module/create",
 		registry.Perm("sys:module:create", "添加模块"),
 		log.SysLog("添加模块"),
 		authmw.NoRepeat(3000),
-		moduleCreateHandler,
+		defaultHandler.moduleCreate,
 	)
 	r.POST("/api/v1/sys/module/modify",
 		registry.Perm("sys:module:modify", "编辑模块"),
 		log.SysLog("编辑模块"),
-		moduleModifyHandler,
+		defaultHandler.moduleModify,
 	)
 	r.POST("/api/v1/sys/module/remove",
 		registry.Perm("sys:module:remove", "删除模块"),
 		log.SysLog("删除模块"),
-		moduleRemoveHandler,
+		defaultHandler.moduleRemove,
 	)
 	r.GET("/api/v1/sys/module/detail",
 		registry.Perm("sys:module:detail", "模块详情"),
-		moduleDetailHandler,
+		defaultHandler.moduleDetail,
 	)
 
 	// ---- Resource routes ----
 	r.GET("/api/v1/sys/resource/tree",
 		registry.Perm("sys:resource:tree", "资源树"),
-		resourceTreeHandler,
+		defaultHandler.resourceTree,
 	)
 	r.GET("/api/v1/sys/resource/page",
 		registry.Perm("sys:resource:page", "资源分页"),
-		resourcePageHandler,
+		defaultHandler.resourcePage,
 	)
 	r.POST("/api/v1/sys/resource/create",
 		registry.Perm("sys:resource:create", "添加资源"),
 		log.SysLog("添加资源"),
 		authmw.NoRepeat(3000),
-		resourceCreateHandler,
+		defaultHandler.resourceCreate,
 	)
 	r.POST("/api/v1/sys/resource/modify",
 		registry.Perm("sys:resource:modify", "编辑资源"),
 		log.SysLog("编辑资源"),
-		resourceModifyHandler,
+		defaultHandler.resourceModify,
 	)
 	r.POST("/api/v1/sys/resource/remove",
 		registry.Perm("sys:resource:remove", "删除资源"),
 		log.SysLog("删除资源"),
-		resourceRemoveHandler,
+		defaultHandler.resourceRemove,
 	)
 	r.GET("/api/v1/sys/resource/detail",
 		registry.Perm("sys:resource:detail", "资源详情"),
-		resourceDetailHandler,
+		defaultHandler.resourceDetail,
 	)
 }
 
@@ -87,13 +97,13 @@ func init() {
 // @Param        query  query  resource.ModulePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/module/page [get]
-func modulePageHandler(c *gin.Context) {
+func (h *handler) modulePage(c *gin.Context) {
 	var param resource.ModulePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
-	resource.ModulePage(c, &param)
+	h.service.ModulePage(c, &param)
 }
 
 // moduleDetailHandler handles GET /api/v1/sys/module/detail
@@ -105,8 +115,8 @@ func modulePageHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/module/detail [get]
-func moduleDetailHandler(c *gin.Context) {
-	vo := resource.ModuleDetail(c, c.Query("id"))
+func (h *handler) moduleDetail(c *gin.Context) {
+	vo := h.service.ModuleDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -119,14 +129,14 @@ func moduleDetailHandler(c *gin.Context) {
 // @Param        body  body  resource.ModuleVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/module/create [post]
-func moduleCreateHandler(c *gin.Context) {
+func (h *handler) moduleCreate(c *gin.Context) {
 	var vo resource.ModuleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ModuleCreate(c, &vo)
+	h.service.ModuleCreate(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -139,14 +149,14 @@ func moduleCreateHandler(c *gin.Context) {
 // @Param        body  body  resource.ModuleVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/module/modify [post]
-func moduleModifyHandler(c *gin.Context) {
+func (h *handler) moduleModify(c *gin.Context) {
 	var vo resource.ModuleVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ModuleModify(c, &vo)
+	h.service.ModuleModify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -159,14 +169,14 @@ func moduleModifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/module/remove [post]
-func moduleRemoveHandler(c *gin.Context) {
+func (h *handler) moduleRemove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ModuleRemove(c, &param)
+	h.service.ModuleRemove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -182,8 +192,8 @@ func moduleRemoveHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/tree [get]
-func resourceTreeHandler(c *gin.Context) {
-	data := resource.ResourceTree(c, "")
+func (h *handler) resourceTree(c *gin.Context) {
+	data := h.service.ResourceTree(c, "")
 	result.Success(c, data)
 }
 
@@ -196,13 +206,13 @@ func resourceTreeHandler(c *gin.Context) {
 // @Param        query  query  resource.ResourcePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/page [get]
-func resourcePageHandler(c *gin.Context) {
+func (h *handler) resourcePage(c *gin.Context) {
 	var param resource.ResourcePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
-	resource.ResourcePage(c, &param)
+	h.service.ResourcePage(c, &param)
 }
 
 // resourceDetailHandler handles GET /api/v1/sys/resource/detail
@@ -214,8 +224,8 @@ func resourcePageHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/detail [get]
-func resourceDetailHandler(c *gin.Context) {
-	vo := resource.ResourceDetail(c, c.Query("id"))
+func (h *handler) resourceDetail(c *gin.Context) {
+	vo := h.service.ResourceDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -228,14 +238,14 @@ func resourceDetailHandler(c *gin.Context) {
 // @Param        body  body  resource.ResourceVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/create [post]
-func resourceCreateHandler(c *gin.Context) {
+func (h *handler) resourceCreate(c *gin.Context) {
 	var vo resource.ResourceVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ResourceCreate(c, &vo)
+	h.service.ResourceCreate(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -248,14 +258,14 @@ func resourceCreateHandler(c *gin.Context) {
 // @Param        body  body  resource.ResourceVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/modify [post]
-func resourceModifyHandler(c *gin.Context) {
+func (h *handler) resourceModify(c *gin.Context) {
 	var vo resource.ResourceVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ResourceModify(c, &vo)
+	h.service.ResourceModify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -268,13 +278,13 @@ func resourceModifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/resource/remove [post]
-func resourceRemoveHandler(c *gin.Context) {
+func (h *handler) resourceRemove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "请求参数错误: "+err.Error(), 400)
 		return
 	}
 
-	resource.ResourceRemove(c, &param)
+	h.service.ResourceRemove(c, &param)
 	result.Success(c, nil)
 }

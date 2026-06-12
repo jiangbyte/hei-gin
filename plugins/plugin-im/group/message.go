@@ -17,7 +17,7 @@ import (
 
 // ── Group messaging ─────────────────────────────────────────────
 
-func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
+func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 	ctx := c.Request.Context()
 	senderID := getLoginID(c)
 	senderType := getUserType(c)
@@ -38,7 +38,7 @@ func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
 		return
 	}
 
-	member, err := FindActiveMember(ctx, p.GroupID, senderID, senderType)
+	member, err := s.repo.FindActiveMember(ctx, p.GroupID, senderID, senderType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
@@ -59,12 +59,12 @@ func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
 		Content: p.Content, Extra: p.Extra, MsgType: msgType,
 		ReplyTo: p.ReplyTo,
 	}
-	if err := CreateMessage(ctx, &msg); err != nil {
+	if err := s.repo.CreateMessage(ctx, &msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		return
 	}
 
-	memberIDs := ListRecipientMembers(ctx, p.GroupID, senderID, senderType)
+	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, senderID, senderType)
 
 	msgPayload := buildPushPayload(&msg)
 	for _, m := range memberIDs {
@@ -78,7 +78,7 @@ func GroupSendMessage(c *gin.Context, p *SendMessageParam) {
 
 // ==================== GroupRecallMessage ====================
 
-func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
+func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -88,7 +88,7 @@ func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
 		return
 	}
 
-	msg, err := FindMessageByID(ctx, p.MessageID, p.GroupID)
+	msg, err := s.repo.FindMessageByID(ctx, p.MessageID, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
@@ -106,12 +106,12 @@ func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
 		return
 	}
 
-	if err := RecallMessage(ctx, p.MessageID); err != nil {
+	if err := s.repo.RecallMessage(ctx, p.MessageID); err != nil {
 		result.WriteError(c, exception.NewBusinessError("撤回消息失败: "+err.Error(), 500))
 		return
 	}
 
-	memberIDs := ListRecipientMembers(ctx, p.GroupID, operatorID, operatorType)
+	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, operatorID, operatorType)
 
 	msg.Content = "消息已被撤回"
 	msg.MsgType = imModel.MsgTypeSystem
@@ -127,7 +127,7 @@ func GroupRecallMessage(c *gin.Context, p *RecallMessageParam) {
 
 // ==================== GroupMarkRead ====================
 
-func GroupMarkRead(c *gin.Context, p *MarkReadParam) {
+func (s *Service) MarkRead(c *gin.Context, p *MarkReadParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -136,7 +136,7 @@ func GroupMarkRead(c *gin.Context, p *MarkReadParam) {
 		return
 	}
 
-	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
+	_ = s.repo.UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: p.MessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,
@@ -145,7 +145,7 @@ func GroupMarkRead(c *gin.Context, p *MarkReadParam) {
 
 // ==================== GroupMuteMember ====================
 
-func GroupMarkConversationRead(c *gin.Context) {
+func (s *Service) MarkConversationRead(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -159,12 +159,12 @@ func GroupMarkConversationRead(c *gin.Context) {
 		return
 	}
 
-	lastMessageID := FindLastMessageID(ctx, p.GroupID)
+	lastMessageID := s.repo.FindLastMessageID(ctx, p.GroupID)
 	if lastMessageID == "" {
 		return
 	}
 
-	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
+	_ = s.repo.UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: lastMessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,
@@ -174,6 +174,10 @@ func GroupMarkConversationRead(c *gin.Context) {
 // ==================== Backward-compatible wrappers ====================
 
 func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageVO, bool) {
+	return DefaultModule.service.listMessages(ctx, groupID, cursor, size)
+}
+
+func (s *Service) listMessages(ctx context.Context, groupID, cursor string, size int) ([]MessageVO, bool) {
 	if groupID == "" {
 		return nil, false
 	}
@@ -184,7 +188,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 		size = 100
 	}
 
-	msgs := ListGroupMessages(ctx, groupID, cursor, size)
+	msgs := s.repo.ListGroupMessages(ctx, groupID, cursor, size)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
@@ -201,31 +205,31 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 	return result, hasMore
 }
 
-func MyGroupConversations(userID, userType string) []*ConversationVO {
-	return MyGroupConversationsWithContext(context.Background(), userID, userType)
+func (s *Service) MyGroupConversations(userID, userType string) []*ConversationVO {
+	return s.MyGroupConversationsWithContext(context.Background(), userID, userType)
 }
 
-func MyGroupConversationsWithContext(ctx context.Context, userID, userType string) []*ConversationVO {
+func (s *Service) MyGroupConversationsWithContext(ctx context.Context, userID, userType string) []*ConversationVO {
 	if userID == "" {
 		return nil
 	}
 
-	groupIDs := ListMyGroupIDs(ctx, userID, userType)
+	groupIDs := s.repo.ListMyGroupIDs(ctx, userID, userType)
 	if len(groupIDs) == 0 {
 		return nil
 	}
-	groups := ListGroupsByIDs(ctx, groupIDs)
-	counts := CountActiveMembersByGroupIDs(ctx, groupIDs)
+	groups := s.repo.ListGroupsByIDs(ctx, groupIDs)
+	counts := s.repo.CountActiveMembersByGroupIDs(ctx, groupIDs)
 	countMap := make(map[string]int, len(counts))
 	for _, c := range counts {
 		countMap[c.GroupID] = c.Count
 	}
-	lastMsgs := ListLastMessagesByGroupIDs(ctx, groupIDs)
+	lastMsgs := s.repo.ListLastMessagesByGroupIDs(ctx, groupIDs)
 	lastMap := make(map[string]groupLastMessageRow, len(lastMsgs))
 	for _, l := range lastMsgs {
 		lastMap[l.GroupID] = l
 	}
-	unreads := CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
+	unreads := s.repo.CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
@@ -250,17 +254,17 @@ func MyGroupConversationsWithContext(ctx context.Context, userID, userType strin
 }
 
 // MarkConversationRead is a backward-compatible wrapper used by the message package.
-func MarkConversationRead(ctx context.Context, groupID, userID, userType string) {
+func (s *Service) MarkConversationReadWithContext(ctx context.Context, groupID, userID, userType string) {
 	if groupID == "" || userID == "" {
 		return
 	}
 
-	lastMessageID := FindLastMessageID(ctx, groupID)
+	lastMessageID := s.repo.FindLastMessageID(ctx, groupID)
 	if lastMessageID == "" {
 		return
 	}
 
-	_ = UpsertMessageRead(ctx, &imModel.GroupMessageRead{
+	_ = s.repo.UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: lastMessageID, GroupID: groupID,
 		ID:     utils.GenerateID(),
 		UserID: userID, UserType: userType,

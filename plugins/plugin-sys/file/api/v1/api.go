@@ -13,56 +13,66 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *file.Service
+}
+
+var defaultHandler = newHandler(file.DefaultModule)
+
+func newHandler(module *file.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all admin file routes.
 func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/file/upload",
 		registry.Perm("sys:file:upload", "上传文件"),
 		log.SysLog("上传文件"),
-		uploadHandler,
+		defaultHandler.upload,
 	)
 
 	r.POST("/api/v1/sys/file/upload/init",
 		registry.Perm("sys:file:upload", "分片上传-初始化"),
 		log.SysLog("分片上传-初始化"),
-		uploadInitHandler,
+		defaultHandler.uploadInit,
 	)
 	r.POST("/api/v1/sys/file/upload/chunk",
 		registry.Perm("sys:file:upload", "分片上传-上传分片"),
 		log.SysLog("分片上传-上传分片"),
-		uploadChunkHandler,
+		defaultHandler.uploadChunk,
 	)
 	r.POST("/api/v1/sys/file/upload/complete",
 		registry.Perm("sys:file:upload", "分片上传-完成"),
 		log.SysLog("分片上传-完成"),
-		uploadCompleteHandler,
+		defaultHandler.uploadComplete,
 	)
 	r.POST("/api/v1/sys/file/upload/abort",
 		registry.Perm("sys:file:upload", "分片上传-取消"),
 		log.SysLog("分片上传-取消"),
-		uploadAbortHandler,
+		defaultHandler.uploadAbort,
 	)
 
 	r.GET("/api/v1/sys/file/download",
 		registry.Perm("sys:file:download", "下载文件"),
-		downloadHandler,
+		defaultHandler.download,
 	)
 	r.GET("/api/v1/sys/file/page",
 		registry.Perm("sys:file:page", "文件分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 	r.GET("/api/v1/sys/file/detail",
 		registry.Perm("sys:file:detail", "文件详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 	r.POST("/api/v1/sys/file/remove",
 		registry.Perm("sys:file:remove", "删除文件"),
 		log.SysLog("删除文件"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 	r.POST("/api/v1/sys/file/remove-absolute",
 		registry.Perm("sys:file:remove", "物理删除文件"),
 		log.SysLog("物理删除文件"),
-		removeAbsoluteHandler,
+		defaultHandler.removeAbsolute,
 	)
 }
 
@@ -71,7 +81,7 @@ func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/file/upload",
 		middleware.HeiClientCheckLogin(),
 		log.SysLog("C端上传文件"),
-		clientUploadHandler,
+		defaultHandler.clientUpload,
 	)
 }
 
@@ -91,8 +101,8 @@ func init() {
 // @Param        bucket  formData  string  false  "存储桶"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/upload [post]
-func uploadHandler(c *gin.Context) {
-	data, err := file.FileUpload(c)
+func (h *handler) upload(c *gin.Context) {
+	data, err := h.service.Upload(c)
 	if err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
@@ -111,8 +121,8 @@ func uploadHandler(c *gin.Context) {
 // @Param        bucket  formData  string  false  "存储桶"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/file/upload [post]
-func clientUploadHandler(c *gin.Context) {
-	data, err := file.FileUpload(c)
+func (h *handler) clientUpload(c *gin.Context) {
+	data, err := h.service.Upload(c)
 	if err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
@@ -129,8 +139,8 @@ func clientUploadHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/download [get]
-func downloadHandler(c *gin.Context) {
-	if err := file.FileDownload(c, c.Query("id")); err != nil {
+func (h *handler) download(c *gin.Context) {
+	if err := h.service.Download(c, c.Query("id")); err != nil {
 		result.Failure(c, err.Error(), 400)
 	}
 }
@@ -144,14 +154,14 @@ func downloadHandler(c *gin.Context) {
 // @Param        query  query  file.FilePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param file.FilePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	file.FilePage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // detailHandler handles GET /api/v1/sys/file/detail
@@ -163,8 +173,8 @@ func pageHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := file.FileDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -177,14 +187,14 @@ func detailHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	file.FileRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -197,14 +207,14 @@ func removeHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/remove-absolute [post]
-func removeAbsoluteHandler(c *gin.Context) {
+func (h *handler) removeAbsolute(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	file.FileRemoveAbsolute(c, &param)
+	h.service.RemoveAbsolute(c, &param)
 	result.Success(c, nil)
 }
 
@@ -217,14 +227,14 @@ func removeAbsoluteHandler(c *gin.Context) {
 // @Param        body  body  file.ChunkUploadInitParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/upload/init [post]
-func uploadInitHandler(c *gin.Context) {
+func (h *handler) uploadInit(c *gin.Context) {
 	var param file.ChunkUploadInitParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data, err := file.FileInitChunkUpload(c, &param)
+	data, err := h.service.InitChunkUpload(c, &param)
 	if err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
@@ -244,7 +254,7 @@ func uploadInitHandler(c *gin.Context) {
 // @Param        checksum  formData  string  false  "checksum"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/upload/chunk [post]
-func uploadChunkHandler(c *gin.Context) {
+func (h *handler) uploadChunk(c *gin.Context) {
 	chunkIndex, err := strconv.Atoi(c.PostForm("chunk_index"))
 	if err != nil {
 		result.Failure(c, "chunk_index 参数错误", 400)
@@ -269,7 +279,7 @@ func uploadChunkHandler(c *gin.Context) {
 		return
 	}
 
-	if err := file.FileUploadChunk(c, &param); err != nil {
+	if err := h.service.UploadChunk(c, &param); err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
 	}
@@ -285,14 +295,14 @@ func uploadChunkHandler(c *gin.Context) {
 // @Param        body  body  file.ChunkCompleteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/upload/complete [post]
-func uploadCompleteHandler(c *gin.Context) {
+func (h *handler) uploadComplete(c *gin.Context) {
 	var param file.ChunkCompleteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data, err := file.FileCompleteChunkUpload(c, &param)
+	data, err := h.service.CompleteChunkUpload(c, &param)
 	if err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
@@ -309,14 +319,14 @@ func uploadCompleteHandler(c *gin.Context) {
 // @Param        body  body  file.ChunkAbortParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/file/upload/abort [post]
-func uploadAbortHandler(c *gin.Context) {
+func (h *handler) uploadAbort(c *gin.Context) {
 	var param file.ChunkAbortParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	if err := file.FileAbortChunkUpload(c, &param); err != nil {
+	if err := h.service.AbortChunkUpload(c, &param); err != nil {
 		result.Failure(c, err.Error(), 400)
 		return
 	}

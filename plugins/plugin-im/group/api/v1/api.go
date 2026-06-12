@@ -13,228 +13,170 @@ import (
 	"hei-gin/sdk/web/middleware"
 )
 
+type handler struct {
+	service *group.Service
+}
+
+var defaultHandler = newHandler(group.DefaultModule)
+
+func newHandler(module *group.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
-	// POST /api/v1/sys/im/group/create
 	r.POST("/api/v1/sys/im/group/create",
 		authMW.HeiCheckLogin(),
 		authMW.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
-
-	// GET /api/v1/sys/im/group/my-groups
 	r.GET("/api/v1/sys/im/group/my-groups",
 		authMW.HeiCheckLogin(),
-		myGroupsHandler,
+		defaultHandler.myGroups,
 	)
-
-	// GET /api/v1/sys/im/group/detail
 	r.GET("/api/v1/sys/im/group/detail",
 		authMW.HeiCheckLogin(),
-		detailHandler,
+		defaultHandler.detail,
 	)
-
-	// POST /api/v1/sys/im/group/update
 	r.POST("/api/v1/sys/im/group/update",
 		authMW.HeiCheckLogin(),
-		updateHandler,
+		defaultHandler.update,
 	)
-
-	// POST /api/v1/sys/im/group/dissolve
 	r.POST("/api/v1/sys/im/group/dissolve",
 		authMW.HeiCheckLogin(),
 		log.SysLog("解散群"),
-		dissolveHandler,
+		defaultHandler.dissolve,
 	)
-
-	// POST /api/v1/sys/im/group/invite
 	r.POST("/api/v1/sys/im/group/invite",
 		authMW.HeiCheckLogin(),
 		authMW.NoRepeat(3000),
-		inviteHandler,
+		defaultHandler.invite,
 	)
-
-	// POST /api/v1/sys/im/group/join
 	r.POST("/api/v1/sys/im/group/join",
 		authMW.HeiCheckLogin(),
-		joinHandler,
+		defaultHandler.join,
 	)
-
-	// GET /api/v1/sys/im/group/pending-join-requests
 	r.GET("/api/v1/sys/im/group/pending-join-requests",
 		authMW.HeiCheckLogin(),
-		pendingJoinRequestsHandler,
+		defaultHandler.pendingJoinRequests,
 	)
-
-	// POST /api/v1/sys/im/group/handle-join-request
 	r.POST("/api/v1/sys/im/group/handle-join-request",
 		authMW.HeiCheckLogin(),
-		handleJoinRequestHandler,
+		defaultHandler.handleJoinRequest,
 	)
-
-	// POST /api/v1/sys/im/group/leave
 	r.POST("/api/v1/sys/im/group/leave",
 		authMW.HeiCheckLogin(),
-		leaveHandler,
+		defaultHandler.leave,
 	)
-
-	// POST /api/v1/sys/im/group/kick
 	r.POST("/api/v1/sys/im/group/kick",
 		authMW.HeiCheckLogin(),
 		log.SysLog("踢出成员"),
-		kickHandler,
+		defaultHandler.kick,
 	)
-
-	// POST /api/v1/sys/im/group/set-role
 	r.POST("/api/v1/sys/im/group/set-role",
 		authMW.HeiCheckLogin(),
 		log.SysLog("设置角色"),
-		setRoleHandler,
+		defaultHandler.setRole,
 	)
-
-	// POST /api/v1/sys/im/group/transfer-owner
 	r.POST("/api/v1/sys/im/group/transfer-owner",
 		authMW.HeiCheckLogin(),
 		log.SysLog("转让群"),
-		transferOwnerHandler,
+		defaultHandler.transferOwner,
 	)
-
-	// POST /api/v1/sys/im/group/set-nickname
 	r.POST("/api/v1/sys/im/group/set-nickname",
 		authMW.HeiCheckLogin(),
-		setNicknameHandler,
+		defaultHandler.setNickname,
 	)
-
-	// GET /api/v1/sys/im/group/messages
 	r.GET("/api/v1/sys/im/group/messages",
 		authMW.HeiCheckLogin(),
-		messagesHandler,
+		defaultHandler.messages,
 	)
-
-	// GET /api/v1/sys/im/group/search
 	r.GET("/api/v1/sys/im/group/search",
 		authMW.HeiCheckLogin(),
-		searchHandler,
+		defaultHandler.search,
 	)
-
-	// GET /api/v1/sys/im/group/search-groups
 	r.GET("/api/v1/sys/im/group/search-groups",
 		authMW.HeiCheckLogin(),
-		searchGroupsHandler,
+		defaultHandler.searchGroups,
 	)
-
-	// POST /api/v1/sys/im/group/send
 	r.POST("/api/v1/sys/im/group/send",
 		authMW.HeiCheckLogin(),
 		middleware.RateLimiter("sys_group_send", 3, 20),
 		authMW.NoRepeat(3000),
-		sendHandler,
+		defaultHandler.send,
 	)
-
-	// POST /api/v1/sys/im/group/recall
 	r.POST("/api/v1/sys/im/group/recall",
 		authMW.HeiCheckLogin(),
-		recallHandler,
+		defaultHandler.recall,
 	)
-
-	// POST /api/v1/sys/im/group/mark-read
 	r.POST("/api/v1/sys/im/group/mark-read",
 		authMW.HeiCheckLogin(),
-		markReadHandler,
+		defaultHandler.markRead,
 	)
-
-	// POST /api/v1/sys/im/group/mute
 	r.POST("/api/v1/sys/im/group/mute",
 		authMW.HeiCheckLogin(),
 		log.SysLog("禁言"),
-		muteHandler,
+		defaultHandler.mute,
 	)
-
-	// POST /api/v1/sys/im/group/unmute
 	r.POST("/api/v1/sys/im/group/unmute",
 		authMW.HeiCheckLogin(),
 		log.SysLog("解禁"),
-		unmuteHandler,
+		defaultHandler.unmute,
 	)
-
-	// GET /api/v1/sys/im/group/members
 	r.GET("/api/v1/sys/im/group/members",
 		authMW.HeiCheckLogin(),
-		membersHandler,
+		defaultHandler.members,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	// POST /api/v1/c/im/group/create
 	r.POST("/api/v1/c/im/group/create",
 		authMW.HeiClientCheckLogin(),
-		clientCreateHandler,
+		defaultHandler.create,
 	)
-
-	// GET /api/v1/c/im/group/my-groups
 	r.GET("/api/v1/c/im/group/my-groups",
 		authMW.HeiClientCheckLogin(),
-		clientMyGroupsHandler,
+		defaultHandler.myGroups,
 	)
-
-	// GET /api/v1/c/im/group/detail
 	r.GET("/api/v1/c/im/group/detail",
 		authMW.HeiClientCheckLogin(),
-		detailHandler,
+		defaultHandler.detail,
 	)
-
-	// POST /api/v1/c/im/group/join
 	r.POST("/api/v1/c/im/group/join",
 		authMW.HeiClientCheckLogin(),
-		clientJoinHandler,
+		defaultHandler.join,
 	)
-
-	// POST /api/v1/c/im/group/leave
 	r.POST("/api/v1/c/im/group/leave",
 		authMW.HeiClientCheckLogin(),
-		clientLeaveHandler,
+		defaultHandler.leave,
 	)
-
-	// GET /api/v1/c/im/group/messages
 	r.GET("/api/v1/c/im/group/messages",
 		authMW.HeiClientCheckLogin(),
-		messagesHandler,
+		defaultHandler.messages,
 	)
-
-	// GET /api/v1/c/im/group/search
 	r.GET("/api/v1/c/im/group/search",
 		authMW.HeiClientCheckLogin(),
-		searchHandler,
+		defaultHandler.search,
 	)
-
-	// GET /api/v1/c/im/group/search-groups
 	r.GET("/api/v1/c/im/group/search-groups",
 		authMW.HeiClientCheckLogin(),
-		searchGroupsHandler,
+		defaultHandler.searchGroups,
 	)
-
-	// POST /api/v1/c/im/group/send
 	r.POST("/api/v1/c/im/group/send",
 		authMW.HeiClientCheckLogin(),
 		middleware.RateLimiter("c_group_send", 3, 20),
-		sendHandler,
+		defaultHandler.send,
 	)
-
-	// POST /api/v1/c/im/group/recall
 	r.POST("/api/v1/c/im/group/recall",
 		authMW.HeiClientCheckLogin(),
-		recallHandler,
+		defaultHandler.recall,
 	)
-
-	// POST /api/v1/c/im/group/mark-read
 	r.POST("/api/v1/c/im/group/mark-read",
 		authMW.HeiClientCheckLogin(),
-		markReadHandler,
+		defaultHandler.markRead,
 	)
-
-	// GET /api/v1/c/im/group/members
 	r.GET("/api/v1/c/im/group/members",
 		authMW.HeiClientCheckLogin(),
-		membersHandler,
+		defaultHandler.members,
 	)
 }
 
@@ -243,7 +185,6 @@ func init() {
 	registry.RegisterRoute(RegisterClientRoutes)
 }
 
-// createHandler handles POST /api/v1/sys/im/group/create
 // @Summary      即时通讯群组创建
 // @Description  访问 /api/v1/sys/im/group/create，即时通讯群组创建
 // @Tags         即时通讯群组
@@ -251,23 +192,11 @@ func init() {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/create [post]
-func createHandler(c *gin.Context) {
-	group.GroupCreate(c)
-}
-
-// clientCreateHandler handles POST /api/v1/c/im/group/create
-// @Summary      即时通讯群组创建
-// @Description  访问 /api/v1/c/im/group/create，即时通讯群组创建
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/group/create [post]
-func clientCreateHandler(c *gin.Context) {
-	group.GroupCreate(c)
+func (h *handler) create(c *gin.Context) {
+	h.service.Create(c)
 }
 
-// updateHandler handles POST /api/v1/sys/im/group/update
 // @Summary      即时通讯群组更新
 // @Description  访问 /api/v1/sys/im/group/update，即时通讯群组更新
 // @Tags         即时通讯群组
@@ -276,17 +205,16 @@ func clientCreateHandler(c *gin.Context) {
 // @Param        body  body  group.UpdateParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/update [post]
-func updateHandler(c *gin.Context) {
+func (h *handler) update(c *gin.Context) {
 	var param group.UpdateParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupUpdate(c, &param)
+	h.service.Update(c, &param)
 	result.Success(c, nil)
 }
 
-// dissolveHandler handles POST /api/v1/sys/im/group/dissolve
 // @Summary      即时通讯群组解散群组
 // @Description  访问 /api/v1/sys/im/group/dissolve，即时通讯群组解散群组
 // @Tags         即时通讯群组
@@ -295,17 +223,16 @@ func updateHandler(c *gin.Context) {
 // @Param        body  body  group.DissolveParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/dissolve [post]
-func dissolveHandler(c *gin.Context) {
+func (h *handler) dissolve(c *gin.Context) {
 	var param group.DissolveParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupDissolve(c, &param)
+	h.service.Dissolve(c, &param)
 	result.Success(c, nil)
 }
 
-// detailHandler handles GET /api/v1/sys/im/group/detail and GET /api/v1/c/im/group/detail
 // @Summary      即时通讯群组详情查询
 // @Description  访问 /api/v1/sys/im/group/detail，即时通讯群组详情查询
 // @Tags         即时通讯群组
@@ -314,12 +241,10 @@ func dissolveHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/detail [get]
 // @Router       /api/v1/c/im/group/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := group.GroupDetail(c)
-	result.Success(c, vo)
+func (h *handler) detail(c *gin.Context) {
+	result.Success(c, h.service.Detail(c))
 }
 
-// myGroupsHandler handles GET /api/v1/sys/im/group/my-groups
 // @Summary      即时通讯群组我的群组列表
 // @Description  访问 /api/v1/sys/im/group/my-groups，即时通讯群组我的群组列表
 // @Tags         即时通讯群组
@@ -327,25 +252,11 @@ func detailHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/my-groups [get]
-func myGroupsHandler(c *gin.Context) {
-	list := group.GroupMyGroups(c)
-	result.Success(c, list)
-}
-
-// clientMyGroupsHandler handles GET /api/v1/c/im/group/my-groups
-// @Summary      即时通讯群组我的群组列表
-// @Description  访问 /api/v1/c/im/group/my-groups，即时通讯群组我的群组列表
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/group/my-groups [get]
-func clientMyGroupsHandler(c *gin.Context) {
-	list := group.GroupMyGroups(c)
-	result.Success(c, list)
+func (h *handler) myGroups(c *gin.Context) {
+	result.Success(c, h.service.MyGroups(c))
 }
 
-// inviteHandler handles POST /api/v1/sys/im/group/invite
 // @Summary      即时通讯群组邀请成员
 // @Description  访问 /api/v1/sys/im/group/invite，即时通讯群组邀请成员
 // @Tags         即时通讯群组
@@ -354,17 +265,16 @@ func clientMyGroupsHandler(c *gin.Context) {
 // @Param        body  body  group.InviteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/invite [post]
-func inviteHandler(c *gin.Context) {
+func (h *handler) invite(c *gin.Context) {
 	var param group.InviteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupInvite(c, &param)
+	h.service.Invite(c, &param)
 	result.Success(c, nil)
 }
 
-// joinHandler handles POST /api/v1/sys/im/group/join
 // @Summary      即时通讯群组加入群组
 // @Description  访问 /api/v1/sys/im/group/join，即时通讯群组加入群组
 // @Tags         即时通讯群组
@@ -373,150 +283,17 @@ func inviteHandler(c *gin.Context) {
 // @Param        body  body  group.JoinOrLeaveParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/join [post]
-func joinHandler(c *gin.Context) {
-	var param group.JoinOrLeaveParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupJoin(c, &param)
-	result.Success(c, nil)
-}
-
-// clientJoinHandler handles POST /api/v1/c/im/group/join
-// @Summary      即时通讯群组加入群组
-// @Description  访问 /api/v1/c/im/group/join，即时通讯群组加入群组
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.JoinOrLeaveParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/group/join [post]
-func clientJoinHandler(c *gin.Context) {
+func (h *handler) join(c *gin.Context) {
 	var param group.JoinOrLeaveParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupJoin(c, &param)
+	h.service.Join(c, &param)
 	result.Success(c, nil)
 }
 
-// leaveHandler handles POST /api/v1/sys/im/group/leave
-// @Summary      即时通讯群组退出群组
-// @Description  访问 /api/v1/sys/im/group/leave，即时通讯群组退出群组
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.JoinOrLeaveParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/sys/im/group/leave [post]
-func leaveHandler(c *gin.Context) {
-	var param group.JoinOrLeaveParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupLeave(c, &param)
-	result.Success(c, nil)
-}
-
-// clientLeaveHandler handles POST /api/v1/c/im/group/leave
-// @Summary      即时通讯群组退出群组
-// @Description  访问 /api/v1/c/im/group/leave，即时通讯群组退出群组
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.JoinOrLeaveParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/c/im/group/leave [post]
-func clientLeaveHandler(c *gin.Context) {
-	var param group.JoinOrLeaveParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupLeave(c, &param)
-	result.Success(c, nil)
-}
-
-// kickHandler handles POST /api/v1/sys/im/group/kick
-// @Summary      即时通讯群组移除成员
-// @Description  访问 /api/v1/sys/im/group/kick，即时通讯群组移除成员
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.KickParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/sys/im/group/kick [post]
-func kickHandler(c *gin.Context) {
-	var param group.KickParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupKick(c, &param)
-	result.Success(c, nil)
-}
-
-// setRoleHandler handles POST /api/v1/sys/im/group/set-role
-// @Summary      即时通讯群组设置成员角色
-// @Description  访问 /api/v1/sys/im/group/set-role，即时通讯群组设置成员角色
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.SetRoleParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/sys/im/group/set-role [post]
-func setRoleHandler(c *gin.Context) {
-	var param group.SetRoleParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupSetRole(c, &param)
-	result.Success(c, nil)
-}
-
-// transferOwnerHandler handles POST /api/v1/sys/im/group/transfer-owner
-// @Summary      即时通讯群组转让群主
-// @Description  访问 /api/v1/sys/im/group/transfer-owner，即时通讯群组转让群主
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.TransferOwnerParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/sys/im/group/transfer-owner [post]
-func transferOwnerHandler(c *gin.Context) {
-	var param group.TransferOwnerParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupTransferOwner(c, &param)
-	result.Success(c, nil)
-}
-
-// setNicknameHandler handles POST /api/v1/sys/im/group/set-nickname
-// @Summary      即时通讯群组设置群昵称
-// @Description  访问 /api/v1/sys/im/group/set-nickname，即时通讯群组设置群昵称
-// @Tags         即时通讯群组
-// @Accept       json
-// @Produce      json
-// @Param        body  body  group.SetNicknameParam  true  "请求体"
-// @Success      200  {object}  map[string]any  "成功响应"
-// @Router       /api/v1/sys/im/group/set-nickname [post]
-func setNicknameHandler(c *gin.Context) {
-	var param group.SetNicknameParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	group.GroupSetMemberNickname(c, &param)
-	result.Success(c, nil)
-}
-
-// pendingJoinRequestsHandler handles GET /api/v1/sys/im/group/pending-join-requests
 // @Summary      即时通讯群组待处理入群申请列表
 // @Description  访问 /api/v1/sys/im/group/pending-join-requests，即时通讯群组待处理入群申请列表
 // @Tags         即时通讯群组
@@ -524,12 +301,10 @@ func setNicknameHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/pending-join-requests [get]
-func pendingJoinRequestsHandler(c *gin.Context) {
-	requests := group.GroupPendingJoinRequests(c)
-	result.Success(c, requests)
+func (h *handler) pendingJoinRequests(c *gin.Context) {
+	result.Success(c, h.service.PendingJoinRequests(c))
 }
 
-// handleJoinRequestHandler handles POST /api/v1/sys/im/group/handle-join-request
 // @Summary      即时通讯群组处理入群申请
 // @Description  访问 /api/v1/sys/im/group/handle-join-request，即时通讯群组处理入群申请
 // @Tags         即时通讯群组
@@ -538,17 +313,107 @@ func pendingJoinRequestsHandler(c *gin.Context) {
 // @Param        body  body  group.HandleJoinRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/handle-join-request [post]
-func handleJoinRequestHandler(c *gin.Context) {
+func (h *handler) handleJoinRequest(c *gin.Context) {
 	var param group.HandleJoinRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupHandleJoinRequest(c, &param)
+	h.service.HandleJoinRequest(c, &param)
 	result.Success(c, nil)
 }
 
-// membersHandler handles GET /api/v1/sys/im/group/members and GET /api/v1/c/im/group/members
+// @Summary      即时通讯群组退出群组
+// @Description  访问 /api/v1/sys/im/group/leave，即时通讯群组退出群组
+// @Tags         即时通讯群组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.JoinOrLeaveParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/group/leave [post]
+// @Router       /api/v1/c/im/group/leave [post]
+func (h *handler) leave(c *gin.Context) {
+	var param group.JoinOrLeaveParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.Leave(c, &param)
+	result.Success(c, nil)
+}
+
+// @Summary      即时通讯群组移除成员
+// @Description  访问 /api/v1/sys/im/group/kick，即时通讯群组移除成员
+// @Tags         即时通讯群组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.KickParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/group/kick [post]
+func (h *handler) kick(c *gin.Context) {
+	var param group.KickParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.Kick(c, &param)
+	result.Success(c, nil)
+}
+
+// @Summary      即时通讯群组设置成员角色
+// @Description  访问 /api/v1/sys/im/group/set-role，即时通讯群组设置成员角色
+// @Tags         即时通讯群组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.SetRoleParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/group/set-role [post]
+func (h *handler) setRole(c *gin.Context) {
+	var param group.SetRoleParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.SetRole(c, &param)
+	result.Success(c, nil)
+}
+
+// @Summary      即时通讯群组转让群主
+// @Description  访问 /api/v1/sys/im/group/transfer-owner，即时通讯群组转让群主
+// @Tags         即时通讯群组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.TransferOwnerParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/group/transfer-owner [post]
+func (h *handler) transferOwner(c *gin.Context) {
+	var param group.TransferOwnerParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.TransferOwner(c, &param)
+	result.Success(c, nil)
+}
+
+// @Summary      即时通讯群组设置群昵称
+// @Description  访问 /api/v1/sys/im/group/set-nickname，即时通讯群组设置群昵称
+// @Tags         即时通讯群组
+// @Accept       json
+// @Produce      json
+// @Param        body  body  group.SetNicknameParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/im/group/set-nickname [post]
+func (h *handler) setNickname(c *gin.Context) {
+	var param group.SetNicknameParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.SetMemberNickname(c, &param)
+	result.Success(c, nil)
+}
+
 // @Summary      即时通讯群组成员列表
 // @Description  访问 /api/v1/sys/im/group/members，即时通讯群组成员列表
 // @Tags         即时通讯群组
@@ -557,12 +422,10 @@ func handleJoinRequestHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/members [get]
 // @Router       /api/v1/c/im/group/members [get]
-func membersHandler(c *gin.Context) {
-	list := group.GroupMembers(c)
-	result.Success(c, list)
+func (h *handler) members(c *gin.Context) {
+	result.Success(c, h.service.Members(c))
 }
 
-// messagesHandler handles GET /api/v1/sys/im/group/messages and GET /api/v1/c/im/group/messages
 // @Summary      即时通讯群组消息列表
 // @Description  访问 /api/v1/sys/im/group/messages，即时通讯群组消息列表
 // @Tags         即时通讯群组
@@ -574,7 +437,7 @@ func membersHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/messages [get]
 // @Router       /api/v1/c/im/group/messages [get]
-func messagesHandler(c *gin.Context) {
+func (h *handler) messages(c *gin.Context) {
 	groupID := c.Query("group_id")
 	cursor := c.Query("cursor")
 	size := 20
@@ -583,11 +446,10 @@ func messagesHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	msgs, hasMore := group.GroupMessages(c, groupID, cursor, size)
+	msgs, hasMore := h.service.Messages(c, groupID, cursor, size)
 	result.Success(c, gin.H{"records": msgs, "has_more": hasMore})
 }
 
-// searchHandler handles GET /api/v1/sys/im/group/search and GET /api/v1/c/im/group/search
 // @Summary      即时通讯群组搜索
 // @Description  访问 /api/v1/sys/im/group/search，即时通讯群组搜索
 // @Tags         即时通讯群组
@@ -600,7 +462,7 @@ func messagesHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/search [get]
 // @Router       /api/v1/c/im/group/search [get]
-func searchHandler(c *gin.Context) {
+func (h *handler) search(c *gin.Context) {
 	groupID := c.Query("group_id")
 	keyword := c.Query("keyword")
 	cursor := c.Query("cursor")
@@ -610,11 +472,10 @@ func searchHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	msgs, hasMore := group.GroupSearchMessages(c, groupID, keyword, cursor, size)
+	msgs, hasMore := h.service.SearchMessages(c, groupID, keyword, cursor, size)
 	result.Success(c, gin.H{"records": msgs, "has_more": hasMore})
 }
 
-// searchGroupsHandler handles GET /api/v1/sys/im/group/search-groups and GET /api/v1/c/im/group/search-groups
 // @Summary      即时通讯群组群组搜索
 // @Description  访问 /api/v1/sys/im/group/search-groups，即时通讯群组群组搜索
 // @Tags         即时通讯群组
@@ -625,7 +486,7 @@ func searchHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/search-groups [get]
 // @Router       /api/v1/c/im/group/search-groups [get]
-func searchGroupsHandler(c *gin.Context) {
+func (h *handler) searchGroups(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20
 	if s := c.Query("size"); s != "" {
@@ -633,11 +494,9 @@ func searchGroupsHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list := group.GroupSearchGroups(c, keyword, size)
-	result.Success(c, list)
+	result.Success(c, h.service.SearchGroups(c, keyword, size))
 }
 
-// sendHandler handles POST /api/v1/sys/im/group/send and POST /api/v1/c/im/group/send
 // @Summary      即时通讯群组发送消息
 // @Description  访问 /api/v1/sys/im/group/send，即时通讯群组发送消息
 // @Tags         即时通讯群组
@@ -647,17 +506,16 @@ func searchGroupsHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/send [post]
 // @Router       /api/v1/c/im/group/send [post]
-func sendHandler(c *gin.Context) {
+func (h *handler) send(c *gin.Context) {
 	var param group.SendMessageParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupSendMessage(c, &param)
+	h.service.SendMessage(c, &param)
 	result.Success(c, nil)
 }
 
-// recallHandler handles POST /api/v1/sys/im/group/recall and POST /api/v1/c/im/group/recall
 // @Summary      即时通讯群组撤回消息
 // @Description  访问 /api/v1/sys/im/group/recall，即时通讯群组撤回消息
 // @Tags         即时通讯群组
@@ -667,17 +525,16 @@ func sendHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/recall [post]
 // @Router       /api/v1/c/im/group/recall [post]
-func recallHandler(c *gin.Context) {
+func (h *handler) recall(c *gin.Context) {
 	var param group.RecallMessageParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupRecallMessage(c, &param)
+	h.service.RecallMessage(c, &param)
 	result.Success(c, nil)
 }
 
-// markReadHandler handles POST /api/v1/sys/im/group/mark-read and POST /api/v1/c/im/group/mark-read
 // @Summary      即时通讯群组标记已读
 // @Description  访问 /api/v1/sys/im/group/mark-read，即时通讯群组标记已读
 // @Tags         即时通讯群组
@@ -687,17 +544,16 @@ func recallHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/mark-read [post]
 // @Router       /api/v1/c/im/group/mark-read [post]
-func markReadHandler(c *gin.Context) {
+func (h *handler) markRead(c *gin.Context) {
 	var param group.MarkReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupMarkRead(c, &param)
+	h.service.MarkRead(c, &param)
 	result.Success(c, nil)
 }
 
-// muteHandler handles POST /api/v1/sys/im/group/mute
 // @Summary      即时通讯群组禁言
 // @Description  访问 /api/v1/sys/im/group/mute，即时通讯群组禁言
 // @Tags         即时通讯群组
@@ -706,17 +562,16 @@ func markReadHandler(c *gin.Context) {
 // @Param        body  body  group.MuteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/mute [post]
-func muteHandler(c *gin.Context) {
+func (h *handler) mute(c *gin.Context) {
 	var param group.MuteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupMuteMember(c, &param)
+	h.service.MuteMember(c, &param)
 	result.Success(c, nil)
 }
 
-// unmuteHandler handles POST /api/v1/sys/im/group/unmute
 // @Summary      即时通讯群组解除禁言
 // @Description  访问 /api/v1/sys/im/group/unmute，即时通讯群组解除禁言
 // @Tags         即时通讯群组
@@ -725,12 +580,12 @@ func muteHandler(c *gin.Context) {
 // @Param        body  body  group.UnmuteParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/group/unmute [post]
-func unmuteHandler(c *gin.Context) {
+func (h *handler) unmute(c *gin.Context) {
 	var param group.UnmuteParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	group.GroupUnmuteMember(c, &param)
+	h.service.UnmuteMember(c, &param)
 	result.Success(c, nil)
 }

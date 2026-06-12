@@ -11,12 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *notice.Service
+}
+
+var defaultHandler = newHandler(notice.DefaultModule)
+
+func newHandler(module *notice.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all notice routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/notice/page
 	r.GET("/api/v1/sys/notice/page",
 		registry.Perm("sys:notice:page", "通知分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/notice/create
@@ -24,40 +34,40 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:notice:create", "添加通知"),
 		log.SysLog("添加通知"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/notice/modify
 	r.POST("/api/v1/sys/notice/modify",
 		registry.Perm("sys:notice:modify", "编辑通知"),
 		log.SysLog("编辑通知"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/notice/remove
 	r.POST("/api/v1/sys/notice/remove",
 		registry.Perm("sys:notice:remove", "删除通知"),
 		log.SysLog("删除通知"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/notice/detail
 	r.GET("/api/v1/sys/notice/detail",
 		registry.Perm("sys:notice:detail", "通知详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
 // RegisterPublicRoutes registers public notice routes (no auth required).
 func RegisterPublicRoutes(r *gin.Engine) {
 	// GET /api/v1/public/c/notice/latest — latest published notices
-	r.GET("/api/v1/public/c/notice/latest", latestHandler)
+	r.GET("/api/v1/public/c/notice/latest", defaultHandler.latest)
 
 	// GET /api/v1/public/c/notice/page — paginated published notices
-	r.GET("/api/v1/public/c/notice/page", pagePublicHandler)
+	r.GET("/api/v1/public/c/notice/page", defaultHandler.pagePublic)
 
 	// GET /api/v1/public/c/notice/detail — published notice detail
-	r.GET("/api/v1/public/c/notice/detail", detailPublicHandler)
+	r.GET("/api/v1/public/c/notice/detail", defaultHandler.detailPublic)
 }
 
 func init() {
@@ -74,14 +84,14 @@ func init() {
 // @Param        query  query  notice.NoticePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/notice/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param notice.NoticePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	notice.NoticePage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/notice/create
@@ -93,14 +103,14 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  notice.NoticeVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/notice/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo notice.NoticeVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	notice.NoticeCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -113,14 +123,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  notice.NoticeVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/notice/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo notice.NoticeVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	notice.NoticeModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -133,14 +143,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/notice/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	notice.NoticeRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -153,8 +163,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/notice/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := notice.NoticeDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -167,13 +177,13 @@ func detailHandler(c *gin.Context) {
 // @Param        query  query  notice.NoticePageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/public/c/notice/page [get]
-func pagePublicHandler(c *gin.Context) {
+func (h *handler) pagePublic(c *gin.Context) {
 	var param notice.NoticePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	notice.NoticePublicPage(c, &param)
+	h.service.PublicPage(c, &param)
 }
 
 // detailPublicHandler handles GET /api/v1/public/c/notice/detail
@@ -185,8 +195,8 @@ func pagePublicHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/public/c/notice/detail [get]
-func detailPublicHandler(c *gin.Context) {
-	vo := notice.NoticePublicDetail(c, c.Query("id"))
+func (h *handler) detailPublic(c *gin.Context) {
+	vo := h.service.PublicDetail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -199,12 +209,12 @@ func detailPublicHandler(c *gin.Context) {
 // @Param        query  query  notice.NoticeLatestParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/public/c/notice/latest [get]
-func latestHandler(c *gin.Context) {
+func (h *handler) latest(c *gin.Context) {
 	var param notice.NoticeLatestParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	result.Success(c, notice.NoticeLatest(c, &param))
+	result.Success(c, h.service.Latest(c, &param))
 }

@@ -12,11 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) LogPage(c *gin.Context, p *LogPageParam) {
+func (s *Service) Page(c *gin.Context, p *LogPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -37,7 +37,7 @@ func (s *service) LogPage(c *gin.Context, p *LogPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) LogCreate(c *gin.Context, vo *LogVO) {
+func (s *Service) Create(c *gin.Context, vo *LogVO) {
 	ctx := c.Request.Context()
 
 	e := LogVOToSysLog(vo)
@@ -47,7 +47,7 @@ func (s *service) LogCreate(c *gin.Context, vo *LogVO) {
 	}
 }
 
-func (s *service) LogModify(c *gin.Context, vo *LogVO) {
+func (s *Service) Modify(c *gin.Context, vo *LogVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -83,7 +83,7 @@ func (s *service) LogModify(c *gin.Context, vo *LogVO) {
 	}
 }
 
-func (s *service) LogRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -95,7 +95,7 @@ func (s *service) LogRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) LogDetail(c *gin.Context, id string) *LogVO {
+func (s *Service) Detail(c *gin.Context, id string) *LogVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -113,7 +113,7 @@ func (s *service) LogDetail(c *gin.Context, id string) *LogVO {
 	return SysLogToLogVO(e)
 }
 
-func (s *service) LogDeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
+func (s *Service) DeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
 	ctx := c.Request.Context()
 	if err := s.repo.DeleteByCategory(ctx, param.Category); err != nil {
 		result.WriteError(c, exception.NewBusinessError("按分类删除日志失败: "+err.Error(), 500))
@@ -121,7 +121,7 @@ func (s *service) LogDeleteByCategory(c *gin.Context, param *LogDeleteByCategory
 	}
 }
 
-func (s *service) LogLoginBarChart(c *gin.Context) *BarChartData {
+func (s *Service) LoginBarChart(c *gin.Context) *BarChartData {
 	ctx := c.Request.Context()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
@@ -163,7 +163,7 @@ func (s *service) LogLoginBarChart(c *gin.Context) *BarChartData {
 	}
 }
 
-func (s *service) LogLoginPieChart(c *gin.Context) *PieChartData {
+func (s *Service) LoginPieChart(c *gin.Context) *PieChartData {
 	ctx := c.Request.Context()
 
 	loginTotal := s.repo.CountByCategory(ctx, "LOGIN")
@@ -177,7 +177,7 @@ func (s *service) LogLoginPieChart(c *gin.Context) *PieChartData {
 	}
 }
 
-func (s *service) LogOpBarChart(c *gin.Context) *BarChartData {
+func (s *Service) OpBarChart(c *gin.Context) *BarChartData {
 	ctx := c.Request.Context()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
@@ -219,7 +219,7 @@ func (s *service) LogOpBarChart(c *gin.Context) *BarChartData {
 	}
 }
 
-func (s *service) LogOpPieChart(c *gin.Context) *PieChartData {
+func (s *Service) OpPieChart(c *gin.Context) *PieChartData {
 	ctx := c.Request.Context()
 
 	operateTotal := s.repo.CountByCategory(ctx, "OPERATE")
@@ -231,44 +231,4 @@ func (s *service) LogOpPieChart(c *gin.Context) *PieChartData {
 			{Category: "异常", Total: int(exceptionTotal)},
 		},
 	}
-}
-
-func LogPage(c *gin.Context, p *LogPageParam) {
-	defaultModule.service.LogPage(c, p)
-}
-
-func LogCreate(c *gin.Context, vo *LogVO) {
-	defaultModule.service.LogCreate(c, vo)
-}
-
-func LogModify(c *gin.Context, vo *LogVO) {
-	defaultModule.service.LogModify(c, vo)
-}
-
-func LogRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.LogRemove(c, param)
-}
-
-func LogDetail(c *gin.Context, id string) *LogVO {
-	return defaultModule.service.LogDetail(c, id)
-}
-
-func LogDeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
-	defaultModule.service.LogDeleteByCategory(c, param)
-}
-
-func LogLoginBarChart(c *gin.Context) *BarChartData {
-	return defaultModule.service.LogLoginBarChart(c)
-}
-
-func LogLoginPieChart(c *gin.Context) *PieChartData {
-	return defaultModule.service.LogLoginPieChart(c)
-}
-
-func LogOpBarChart(c *gin.Context) *BarChartData {
-	return defaultModule.service.LogOpBarChart(c)
-}
-
-func LogOpPieChart(c *gin.Context) *PieChartData {
-	return defaultModule.service.LogOpPieChart(c)
 }

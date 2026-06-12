@@ -62,16 +62,16 @@ func validateMemberType(groupType, userType string) error {
 	}
 	return nil
 }
-func checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*imModel.Group, *imModel.GroupMember, error) {
+func (s *Service) checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*imModel.Group, *imModel.GroupMember, error) {
 	if groupID == "" || userID == "" {
 		return nil, nil, exception.NewBusinessError("参数错误", 400)
 	}
 
-	group, err := FindGroupByID(ctx, groupID)
+	group, err := s.repo.FindGroupByID(ctx, groupID)
 	if err != nil {
 		return nil, nil, exception.NewBusinessError("群不存在", 400)
 	}
-	member, err := FindActiveMember(ctx, groupID, userID, userType)
+	member, err := s.repo.FindActiveMember(ctx, groupID, userID, userType)
 	if err != nil {
 		return nil, nil, exception.NewBusinessError("不在群中", 400)
 	}

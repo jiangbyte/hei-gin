@@ -12,140 +12,108 @@ import (
 	"hei-gin/sdk/kernel/registry"
 )
 
+type handler struct {
+	service *friend.Service
+}
+
+var defaultHandler = newHandler(friend.DefaultModule)
+
+func newHandler(module *friend.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
-	// POST /api/v1/sys/im/friend/send-request
 	r.POST("/api/v1/sys/im/friend/send-request",
 		authMW.HeiCheckLogin(),
 		authMW.NoRepeat(3000),
-		sendRequestHandler,
+		defaultHandler.sendRequest,
 	)
-
-	// POST /api/v1/sys/im/friend/accept
 	r.POST("/api/v1/sys/im/friend/accept",
 		authMW.HeiCheckLogin(),
-		acceptHandler,
+		defaultHandler.accept,
 	)
-
-	// POST /api/v1/sys/im/friend/reject
 	r.POST("/api/v1/sys/im/friend/reject",
 		authMW.HeiCheckLogin(),
-		rejectHandler,
+		defaultHandler.reject,
 	)
-
-	// GET /api/v1/sys/im/friend/list
 	r.GET("/api/v1/sys/im/friend/list",
 		authMW.HeiCheckLogin(),
-		listHandler,
+		defaultHandler.list,
 	)
-
-	// GET /api/v1/sys/im/friend/pending-requests
 	r.GET("/api/v1/sys/im/friend/pending-requests",
 		authMW.HeiCheckLogin(),
-		pendingRequestsHandler,
+		defaultHandler.pendingRequests,
 	)
-
-	// POST /api/v1/sys/im/friend/remove
 	r.POST("/api/v1/sys/im/friend/remove",
 		authMW.HeiCheckLogin(),
-		removeHandler,
+		defaultHandler.remove,
 	)
-
-	// POST /api/v1/sys/im/friend/block
 	r.POST("/api/v1/sys/im/friend/block",
 		authMW.HeiCheckLogin(),
-		blockHandler,
+		defaultHandler.block,
 	)
-
-	// POST /api/v1/sys/im/friend/unblock
 	r.POST("/api/v1/sys/im/friend/unblock",
 		authMW.HeiCheckLogin(),
-		unblockHandler,
+		defaultHandler.unblock,
 	)
-
-	// GET /api/v1/sys/im/friend/block-list
 	r.GET("/api/v1/sys/im/friend/block-list",
 		authMW.HeiCheckLogin(),
-		blockListHandler,
+		defaultHandler.blockList,
 	)
-
-	// POST /api/v1/sys/im/friend/remark
 	r.POST("/api/v1/sys/im/friend/remark",
 		authMW.HeiCheckLogin(),
-		remarkHandler,
+		defaultHandler.remark,
 	)
-
-	// GET /api/v1/sys/im/friend/search
 	r.GET("/api/v1/sys/im/friend/search",
 		authMW.HeiCheckLogin(),
-		searchHandler,
+		defaultHandler.search,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	// POST /api/v1/c/im/friend/send-request
 	r.POST("/api/v1/c/im/friend/send-request",
 		authMW.HeiClientCheckLogin(),
-		clientSendRequestHandler,
+		defaultHandler.clientSendRequest,
 	)
-
-	// POST /api/v1/c/im/friend/accept
 	r.POST("/api/v1/c/im/friend/accept",
 		authMW.HeiClientCheckLogin(),
-		clientAcceptHandler,
+		defaultHandler.clientAccept,
 	)
-
-	// POST /api/v1/c/im/friend/reject
 	r.POST("/api/v1/c/im/friend/reject",
 		authMW.HeiClientCheckLogin(),
-		clientRejectHandler,
+		defaultHandler.clientReject,
 	)
-
-	// GET /api/v1/c/im/friend/list
 	r.GET("/api/v1/c/im/friend/list",
 		authMW.HeiClientCheckLogin(),
-		clientListHandler,
+		defaultHandler.clientList,
 	)
-
-	// GET /api/v1/c/im/friend/pending-requests
 	r.GET("/api/v1/c/im/friend/pending-requests",
 		authMW.HeiClientCheckLogin(),
-		clientPendingRequestsHandler,
+		defaultHandler.clientPendingRequests,
 	)
-
-	// POST /api/v1/c/im/friend/remove
 	r.POST("/api/v1/c/im/friend/remove",
 		authMW.HeiClientCheckLogin(),
-		clientRemoveHandler,
+		defaultHandler.clientRemove,
 	)
-
-	// POST /api/v1/c/im/friend/block
 	r.POST("/api/v1/c/im/friend/block",
 		authMW.HeiClientCheckLogin(),
-		clientBlockHandler,
+		defaultHandler.clientBlock,
 	)
-
-	// POST /api/v1/c/im/friend/unblock
 	r.POST("/api/v1/c/im/friend/unblock",
 		authMW.HeiClientCheckLogin(),
-		clientUnblockHandler,
+		defaultHandler.clientUnblock,
 	)
-
-	// GET /api/v1/c/im/friend/block-list
 	r.GET("/api/v1/c/im/friend/block-list",
 		authMW.HeiClientCheckLogin(),
-		clientBlockListHandler,
+		defaultHandler.clientBlockList,
 	)
-
-	// POST /api/v1/c/im/friend/remark
 	r.POST("/api/v1/c/im/friend/remark",
 		authMW.HeiClientCheckLogin(),
-		clientRemarkHandler,
+		defaultHandler.clientRemark,
 	)
-
-	// GET /api/v1/c/im/friend/search
 	r.GET("/api/v1/c/im/friend/search",
 		authMW.HeiClientCheckLogin(),
-		searchHandler,
+		defaultHandler.search,
 	)
 }
 
@@ -154,7 +122,6 @@ func init() {
 	registry.RegisterRoute(RegisterClientRoutes)
 }
 
-// sendRequestHandler handles POST /api/v1/sys/im/friend/send-request
 // @Summary      即时通讯好友发送申请
 // @Description  访问 /api/v1/sys/im/friend/send-request，即时通讯好友发送申请
 // @Tags         即时通讯好友
@@ -163,17 +130,10 @@ func init() {
 // @Param        body  body  friend.SendRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/send-request [post]
-func sendRequestHandler(c *gin.Context) {
-	var param friend.SendRequestParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendSendRequest(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) sendRequest(c *gin.Context) {
+	h.sendRequestByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientSendRequestHandler handles POST /api/v1/c/im/friend/send-request
 // @Summary      即时通讯好友发送申请
 // @Description  访问 /api/v1/c/im/friend/send-request，即时通讯好友发送申请
 // @Tags         即时通讯好友
@@ -182,17 +142,20 @@ func sendRequestHandler(c *gin.Context) {
 // @Param        body  body  friend.SendRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/send-request [post]
-func clientSendRequestHandler(c *gin.Context) {
+func (h *handler) clientSendRequest(c *gin.Context) {
+	h.sendRequestByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) sendRequestByType(c *gin.Context, userType string) {
 	var param friend.SendRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendSendRequest(c, string(enums.LoginTypeConsumer), &param)
+	h.service.SendRequest(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// acceptHandler handles POST /api/v1/sys/im/friend/accept
 // @Summary      即时通讯好友接受申请
 // @Description  访问 /api/v1/sys/im/friend/accept，即时通讯好友接受申请
 // @Tags         即时通讯好友
@@ -201,17 +164,10 @@ func clientSendRequestHandler(c *gin.Context) {
 // @Param        body  body  friend.HandleRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/accept [post]
-func acceptHandler(c *gin.Context) {
-	var param friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendAcceptRequest(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) accept(c *gin.Context) {
+	h.acceptByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientAcceptHandler handles POST /api/v1/c/im/friend/accept
 // @Summary      即时通讯好友接受申请
 // @Description  访问 /api/v1/c/im/friend/accept，即时通讯好友接受申请
 // @Tags         即时通讯好友
@@ -220,17 +176,20 @@ func acceptHandler(c *gin.Context) {
 // @Param        body  body  friend.HandleRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/accept [post]
-func clientAcceptHandler(c *gin.Context) {
+func (h *handler) clientAccept(c *gin.Context) {
+	h.acceptByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) acceptByType(c *gin.Context, userType string) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendAcceptRequest(c, string(enums.LoginTypeConsumer), &param)
+	h.service.AcceptRequest(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// rejectHandler handles POST /api/v1/sys/im/friend/reject
 // @Summary      即时通讯好友拒绝申请
 // @Description  访问 /api/v1/sys/im/friend/reject，即时通讯好友拒绝申请
 // @Tags         即时通讯好友
@@ -239,17 +198,10 @@ func clientAcceptHandler(c *gin.Context) {
 // @Param        body  body  friend.HandleRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/reject [post]
-func rejectHandler(c *gin.Context) {
-	var param friend.HandleRequestParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendRejectRequest(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) reject(c *gin.Context) {
+	h.rejectByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientRejectHandler handles POST /api/v1/c/im/friend/reject
 // @Summary      即时通讯好友拒绝申请
 // @Description  访问 /api/v1/c/im/friend/reject，即时通讯好友拒绝申请
 // @Tags         即时通讯好友
@@ -258,17 +210,20 @@ func rejectHandler(c *gin.Context) {
 // @Param        body  body  friend.HandleRequestParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/reject [post]
-func clientRejectHandler(c *gin.Context) {
+func (h *handler) clientReject(c *gin.Context) {
+	h.rejectByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) rejectByType(c *gin.Context, userType string) {
 	var param friend.HandleRequestParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendRejectRequest(c, string(enums.LoginTypeConsumer), &param)
+	h.service.RejectRequest(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// listHandler handles GET /api/v1/sys/im/friend/list
 // @Summary      即时通讯好友列表查询
 // @Description  访问 /api/v1/sys/im/friend/list，即时通讯好友列表查询
 // @Tags         即时通讯好友
@@ -276,12 +231,10 @@ func clientRejectHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/list [get]
-func listHandler(c *gin.Context) {
-	list := friend.FriendList(c, string(enums.LoginTypeBusiness))
-	result.Success(c, list)
+func (h *handler) list(c *gin.Context) {
+	result.Success(c, h.service.List(c, string(enums.LoginTypeBusiness)))
 }
 
-// clientListHandler handles GET /api/v1/c/im/friend/list
 // @Summary      即时通讯好友列表查询
 // @Description  访问 /api/v1/c/im/friend/list，即时通讯好友列表查询
 // @Tags         即时通讯好友
@@ -289,12 +242,10 @@ func listHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/list [get]
-func clientListHandler(c *gin.Context) {
-	list := friend.FriendList(c, string(enums.LoginTypeConsumer))
-	result.Success(c, list)
+func (h *handler) clientList(c *gin.Context) {
+	result.Success(c, h.service.List(c, string(enums.LoginTypeConsumer)))
 }
 
-// pendingRequestsHandler handles GET /api/v1/sys/im/friend/pending-requests
 // @Summary      即时通讯好友待处理申请列表
 // @Description  访问 /api/v1/sys/im/friend/pending-requests，即时通讯好友待处理申请列表
 // @Tags         即时通讯好友
@@ -302,12 +253,10 @@ func clientListHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/pending-requests [get]
-func pendingRequestsHandler(c *gin.Context) {
-	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeBusiness))
-	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
+func (h *handler) pendingRequests(c *gin.Context) {
+	h.pendingRequestsByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientPendingRequestsHandler handles GET /api/v1/c/im/friend/pending-requests
 // @Summary      即时通讯好友待处理申请列表
 // @Description  访问 /api/v1/c/im/friend/pending-requests，即时通讯好友待处理申请列表
 // @Tags         即时通讯好友
@@ -315,12 +264,15 @@ func pendingRequestsHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/pending-requests [get]
-func clientPendingRequestsHandler(c *gin.Context) {
-	incoming, outgoing := friend.FriendPendingRequests(c, string(enums.LoginTypeConsumer))
+func (h *handler) clientPendingRequests(c *gin.Context) {
+	h.pendingRequestsByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) pendingRequestsByType(c *gin.Context, userType string) {
+	incoming, outgoing := h.service.PendingRequests(c, userType)
 	result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing})
 }
 
-// removeHandler handles POST /api/v1/sys/im/friend/remove
 // @Summary      即时通讯好友删除
 // @Description  访问 /api/v1/sys/im/friend/remove，即时通讯好友删除
 // @Tags         即时通讯好友
@@ -329,17 +281,10 @@ func clientPendingRequestsHandler(c *gin.Context) {
 // @Param        body  body  friend.RemoveFriendParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/remove [post]
-func removeHandler(c *gin.Context) {
-	var param friend.RemoveFriendParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendRemove(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) remove(c *gin.Context) {
+	h.removeByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientRemoveHandler handles POST /api/v1/c/im/friend/remove
 // @Summary      即时通讯好友删除
 // @Description  访问 /api/v1/c/im/friend/remove，即时通讯好友删除
 // @Tags         即时通讯好友
@@ -348,17 +293,20 @@ func removeHandler(c *gin.Context) {
 // @Param        body  body  friend.RemoveFriendParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/remove [post]
-func clientRemoveHandler(c *gin.Context) {
+func (h *handler) clientRemove(c *gin.Context) {
+	h.removeByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) removeByType(c *gin.Context, userType string) {
 	var param friend.RemoveFriendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendRemove(c, string(enums.LoginTypeConsumer), &param)
+	h.service.Remove(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// blockHandler handles POST /api/v1/sys/im/friend/block
 // @Summary      即时通讯好友拉黑
 // @Description  访问 /api/v1/sys/im/friend/block，即时通讯好友拉黑
 // @Tags         即时通讯好友
@@ -367,17 +315,10 @@ func clientRemoveHandler(c *gin.Context) {
 // @Param        body  body  friend.BlockParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/block [post]
-func blockHandler(c *gin.Context) {
-	var param friend.BlockParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendBlock(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) block(c *gin.Context) {
+	h.blockByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientBlockHandler handles POST /api/v1/c/im/friend/block
 // @Summary      即时通讯好友拉黑
 // @Description  访问 /api/v1/c/im/friend/block，即时通讯好友拉黑
 // @Tags         即时通讯好友
@@ -386,17 +327,20 @@ func blockHandler(c *gin.Context) {
 // @Param        body  body  friend.BlockParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/block [post]
-func clientBlockHandler(c *gin.Context) {
+func (h *handler) clientBlock(c *gin.Context) {
+	h.blockByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) blockByType(c *gin.Context, userType string) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendBlock(c, string(enums.LoginTypeConsumer), &param)
+	h.service.Block(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// unblockHandler handles POST /api/v1/sys/im/friend/unblock
 // @Summary      即时通讯好友取消拉黑
 // @Description  访问 /api/v1/sys/im/friend/unblock，即时通讯好友取消拉黑
 // @Tags         即时通讯好友
@@ -405,17 +349,10 @@ func clientBlockHandler(c *gin.Context) {
 // @Param        body  body  friend.BlockParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/unblock [post]
-func unblockHandler(c *gin.Context) {
-	var param friend.BlockParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendUnblock(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) unblock(c *gin.Context) {
+	h.unblockByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientUnblockHandler handles POST /api/v1/c/im/friend/unblock
 // @Summary      即时通讯好友取消拉黑
 // @Description  访问 /api/v1/c/im/friend/unblock，即时通讯好友取消拉黑
 // @Tags         即时通讯好友
@@ -424,17 +361,20 @@ func unblockHandler(c *gin.Context) {
 // @Param        body  body  friend.BlockParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/unblock [post]
-func clientUnblockHandler(c *gin.Context) {
+func (h *handler) clientUnblock(c *gin.Context) {
+	h.unblockByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) unblockByType(c *gin.Context, userType string) {
 	var param friend.BlockParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendUnblock(c, string(enums.LoginTypeConsumer), &param)
+	h.service.Unblock(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// blockListHandler handles GET /api/v1/sys/im/friend/block-list
 // @Summary      即时通讯好友拉黑列表
 // @Description  访问 /api/v1/sys/im/friend/block-list，即时通讯好友拉黑列表
 // @Tags         即时通讯好友
@@ -442,12 +382,10 @@ func clientUnblockHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/block-list [get]
-func blockListHandler(c *gin.Context) {
-	list := friend.FriendBlockList(c, string(enums.LoginTypeBusiness))
-	result.Success(c, list)
+func (h *handler) blockList(c *gin.Context) {
+	result.Success(c, h.service.BlockList(c, string(enums.LoginTypeBusiness)))
 }
 
-// clientBlockListHandler handles GET /api/v1/c/im/friend/block-list
 // @Summary      即时通讯好友拉黑列表
 // @Description  访问 /api/v1/c/im/friend/block-list，即时通讯好友拉黑列表
 // @Tags         即时通讯好友
@@ -455,12 +393,10 @@ func blockListHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/block-list [get]
-func clientBlockListHandler(c *gin.Context) {
-	list := friend.FriendBlockList(c, string(enums.LoginTypeConsumer))
-	result.Success(c, list)
+func (h *handler) clientBlockList(c *gin.Context) {
+	result.Success(c, h.service.BlockList(c, string(enums.LoginTypeConsumer)))
 }
 
-// remarkHandler handles POST /api/v1/sys/im/friend/remark
 // @Summary      即时通讯好友设置备注
 // @Description  访问 /api/v1/sys/im/friend/remark，即时通讯好友设置备注
 // @Tags         即时通讯好友
@@ -469,17 +405,10 @@ func clientBlockListHandler(c *gin.Context) {
 // @Param        body  body  friend.RemarkParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/remark [post]
-func remarkHandler(c *gin.Context) {
-	var param friend.RemarkParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		result.Failure(c, "参数错误: "+err.Error(), 400)
-		return
-	}
-	friend.FriendUpdateRemark(c, string(enums.LoginTypeBusiness), &param)
-	result.Success(c, nil)
+func (h *handler) remark(c *gin.Context) {
+	h.remarkByType(c, string(enums.LoginTypeBusiness))
 }
 
-// clientRemarkHandler handles POST /api/v1/c/im/friend/remark
 // @Summary      即时通讯好友设置备注
 // @Description  访问 /api/v1/c/im/friend/remark，即时通讯好友设置备注
 // @Tags         即时通讯好友
@@ -488,17 +417,20 @@ func remarkHandler(c *gin.Context) {
 // @Param        body  body  friend.RemarkParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/remark [post]
-func clientRemarkHandler(c *gin.Context) {
+func (h *handler) clientRemark(c *gin.Context) {
+	h.remarkByType(c, string(enums.LoginTypeConsumer))
+}
+
+func (h *handler) remarkByType(c *gin.Context, userType string) {
 	var param friend.RemarkParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	friend.FriendUpdateRemark(c, string(enums.LoginTypeConsumer), &param)
+	h.service.UpdateRemark(c, userType, &param)
 	result.Success(c, nil)
 }
 
-// searchHandler handles GET /api/v1/sys/im/friend/search and GET /api/v1/c/im/friend/search
 // @Summary      即时通讯好友搜索
 // @Description  访问 /api/v1/sys/im/friend/search，即时通讯好友搜索
 // @Tags         即时通讯好友
@@ -509,7 +441,7 @@ func clientRemarkHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/search [get]
 // @Router       /api/v1/c/im/friend/search [get]
-func searchHandler(c *gin.Context) {
+func (h *handler) search(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20
 	if s := c.Query("size"); s != "" {
@@ -517,6 +449,5 @@ func searchHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	results := friend.FriendSearch(c, keyword, size)
-	result.Success(c, results)
+	result.Success(c, h.service.Search(c, keyword, size))
 }

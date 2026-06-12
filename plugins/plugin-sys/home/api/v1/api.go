@@ -11,33 +11,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *home.Service
+}
+
+var defaultHandler = newHandler(home.DefaultModule)
+
+func newHandler(module *home.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all home routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/home
 	r.GET("/api/v1/sys/home",
 		middleware.HeiCheckLogin(),
-		getHandler,
+		defaultHandler.get,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/add
 	r.POST("/api/v1/sys/home/quick-actions/add",
 		middleware.HeiCheckLogin(),
 		log.SysLog("添加快捷方式"),
-		addQuickActionHandler,
+		defaultHandler.addQuickAction,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/remove
 	r.POST("/api/v1/sys/home/quick-actions/remove",
 		middleware.HeiCheckLogin(),
 		log.SysLog("移除快捷方式"),
-		removeQuickActionHandler,
+		defaultHandler.removeQuickAction,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/sort
 	r.POST("/api/v1/sys/home/quick-actions/sort",
 		middleware.HeiCheckLogin(),
 		log.SysLog("排序快捷方式"),
-		sortQuickActionsHandler,
+		defaultHandler.sortQuickActions,
 	)
 }
 
@@ -53,8 +63,8 @@ func init() {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/home [get]
-func getHandler(c *gin.Context) {
-	data := home.HomeGet(c)
+func (h *handler) get(c *gin.Context) {
+	data := h.service.Get(c)
 	result.Success(c, data)
 }
 
@@ -67,13 +77,13 @@ func getHandler(c *gin.Context) {
 // @Param        body  body  home.AddQuickActionParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/home/quick-actions/add [post]
-func addQuickActionHandler(c *gin.Context) {
+func (h *handler) addQuickAction(c *gin.Context) {
 	var param home.AddQuickActionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	home.HomeAddQuickAction(c, &param)
+	h.service.AddQuickAction(c, &param)
 	result.Success(c, nil)
 }
 
@@ -86,13 +96,13 @@ func addQuickActionHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/home/quick-actions/remove [post]
-func removeQuickActionHandler(c *gin.Context) {
+func (h *handler) removeQuickAction(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	home.HomeRemoveQuickAction(c, &param)
+	h.service.RemoveQuickAction(c, &param)
 	result.Success(c, nil)
 }
 
@@ -105,12 +115,12 @@ func removeQuickActionHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/home/quick-actions/sort [post]
-func sortQuickActionsHandler(c *gin.Context) {
+func (h *handler) sortQuickActions(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	home.HomeSortQuickActions(c, &param)
+	h.service.SortQuickActions(c, &param)
 	result.Success(c, nil)
 }

@@ -18,7 +18,7 @@ import (
 
 // ── Group queries ─────────────────────────────────────────────
 
-func GroupMyGroups(c *gin.Context) []GroupVO {
+func (s *Service) MyGroups(c *gin.Context) []GroupVO {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -27,7 +27,7 @@ func GroupMyGroups(c *gin.Context) []GroupVO {
 		return nil
 	}
 
-	members := ListMyGroupMemberships(ctx, userID, userType)
+	members := s.repo.ListMyGroupMemberships(ctx, userID, userType)
 	if len(members) == 0 {
 		return nil
 	}
@@ -37,21 +37,21 @@ func GroupMyGroups(c *gin.Context) []GroupVO {
 		groupIDs[i] = m.GroupID
 	}
 
-	groups := ListGroupsByIDs(ctx, groupIDs)
+	groups := s.repo.ListGroupsByIDs(ctx, groupIDs)
 
-	counts := CountActiveMembersByGroupIDs(ctx, groupIDs)
+	counts := s.repo.CountActiveMembersByGroupIDs(ctx, groupIDs)
 	countMap := make(map[string]int, len(counts))
 	for _, c := range counts {
 		countMap[c.GroupID] = c.Count
 	}
 
-	lastMsgs := ListLastMessagesByGroupIDs(ctx, groupIDs)
+	lastMsgs := s.repo.ListLastMessagesByGroupIDs(ctx, groupIDs)
 	lastMap := make(map[string]groupLastMessageRow, len(lastMsgs))
 	for _, l := range lastMsgs {
 		lastMap[l.GroupID] = l
 	}
 
-	unreads := CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
+	unreads := s.repo.CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
@@ -73,7 +73,7 @@ func GroupMyGroups(c *gin.Context) []GroupVO {
 
 // ==================== GroupDetail ====================
 
-func GroupDetail(c *gin.Context) *GroupVO {
+func (s *Service) Detail(c *gin.Context) *GroupVO {
 	ctx := c.Request.Context()
 	groupID := c.Query("group_id")
 
@@ -81,11 +81,11 @@ func GroupDetail(c *gin.Context) *GroupVO {
 		return nil
 	}
 
-	group, err := FindGroupByID(ctx, groupID)
+	group, err := s.repo.FindGroupByID(ctx, groupID)
 	if err != nil {
 		return nil
 	}
-	count := CountActiveMembers(ctx, groupID)
+	count := s.repo.CountActiveMembers(ctx, groupID)
 	vo := ImGroupToGroupVO(group)
 	vo.MemberCount = int(count)
 	return vo
@@ -93,7 +93,7 @@ func GroupDetail(c *gin.Context) *GroupVO {
 
 // ==================== GroupSearchGroups ====================
 
-func GroupSearchGroups(c *gin.Context, keyword string, limit int) []GroupVO {
+func (s *Service) SearchGroups(c *gin.Context, keyword string, limit int) []GroupVO {
 	ctx := c.Request.Context()
 	if keyword == "" || limit < 1 {
 		return nil
@@ -103,7 +103,7 @@ func GroupSearchGroups(c *gin.Context, keyword string, limit int) []GroupVO {
 	}
 	like := "%" + keyword + "%"
 
-	groups := SearchGroups(ctx, like, limit)
+	groups := s.repo.SearchGroups(ctx, like, limit)
 	if len(groups) == 0 {
 		return nil
 	}
@@ -113,7 +113,7 @@ func GroupSearchGroups(c *gin.Context, keyword string, limit int) []GroupVO {
 		groupIDs[i] = g.ID
 	}
 
-	counts := CountActiveMembersByGroupIDs(ctx, groupIDs)
+	counts := s.repo.CountActiveMembersByGroupIDs(ctx, groupIDs)
 	countMap := make(map[string]int, len(counts))
 	for _, c := range counts {
 		countMap[c.GroupID] = c.Count
@@ -130,7 +130,7 @@ func GroupSearchGroups(c *gin.Context, keyword string, limit int) []GroupVO {
 
 // ==================== GroupMembers ====================
 
-func GroupMembers(c *gin.Context) []MemberVO {
+func (s *Service) Members(c *gin.Context) []MemberVO {
 	ctx := c.Request.Context()
 	groupID := c.Query("group_id")
 
@@ -138,7 +138,7 @@ func GroupMembers(c *gin.Context) []MemberVO {
 		return nil
 	}
 
-	members := ListActiveMembers(ctx, groupID)
+	members := s.repo.ListActiveMembers(ctx, groupID)
 	if len(members) == 0 {
 		return nil
 	}
@@ -151,7 +151,7 @@ func GroupMembers(c *gin.Context) []MemberVO {
 
 // ==================== GroupMessages ====================
 
-func GroupMessages(c *gin.Context, groupID, cursor string, size int) ([]MessageVO, bool) {
+func (s *Service) Messages(c *gin.Context, groupID, cursor string, size int) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
 	if groupID == "" {
 		return nil, false
@@ -163,7 +163,7 @@ func GroupMessages(c *gin.Context, groupID, cursor string, size int) ([]MessageV
 		size = 100
 	}
 
-	msgs := ListGroupMessages(ctx, groupID, cursor, size)
+	msgs := s.repo.ListGroupMessages(ctx, groupID, cursor, size)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
@@ -182,7 +182,7 @@ func GroupMessages(c *gin.Context, groupID, cursor string, size int) ([]MessageV
 
 // ==================== GroupSearchMessages ====================
 
-func GroupSearchMessages(c *gin.Context, groupID, keyword, cursor string, size int) ([]MessageVO, bool) {
+func (s *Service) SearchMessages(c *gin.Context, groupID, keyword, cursor string, size int) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
 	if groupID == "" || keyword == "" {
 		return nil, false
@@ -194,7 +194,7 @@ func GroupSearchMessages(c *gin.Context, groupID, keyword, cursor string, size i
 		size = 100
 	}
 
-	msgs := SearchGroupMessages(ctx, groupID, keyword, cursor, size)
+	msgs := s.repo.SearchGroupMessages(ctx, groupID, keyword, cursor, size)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
@@ -213,27 +213,27 @@ func GroupSearchMessages(c *gin.Context, groupID, keyword, cursor string, size i
 
 // ==================== GroupPendingJoinRequests ====================
 
-func GroupPendingJoinRequests(c *gin.Context) []imModel.GroupJoinRequest {
+func (s *Service) PendingJoinRequests(c *gin.Context) []imModel.GroupJoinRequest {
 	ctx := c.Request.Context()
 	groupID := c.Query("group_id")
 
-	return ListPendingJoinRequests(ctx, groupID)
+	return s.repo.ListPendingJoinRequests(ctx, groupID)
 }
 
 // ==================== GroupHandleJoinRequest ====================
 
-func GroupHandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
+func (s *Service) HandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
 
-	req, err := FindPendingJoinRequest(ctx, p.RequestID)
+	req, err := s.repo.FindPendingJoinRequest(ctx, p.RequestID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("申请不存在或已处理", 400))
 		return
 	}
 
-	if _, _, err := checkOwnerOrAdmin(ctx, req.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, req.GroupID, operatorID, operatorType); err != nil {
 		result.WriteError(c, err)
 		return
 	}
@@ -260,7 +260,7 @@ func GroupHandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 		}
 	}
 
-	if err := HandleJoinRequest(ctx, p.RequestID, operatorID, p.Action, member, joinMsg); err != nil {
+	if err := s.repo.HandleJoinRequest(ctx, p.RequestID, operatorID, p.Action, member, joinMsg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("处理失败: "+err.Error(), 500))
 		return
 	}

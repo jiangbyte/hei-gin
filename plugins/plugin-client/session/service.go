@@ -13,9 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ===== Analysis =====
+type Service struct {
+	repo *repository
+}
 
-func SessionAnalysis(c *gin.Context) *SessionAnalysisResult {
+func (s *Service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	ctx := c.Request.Context()
 	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
 	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
@@ -33,20 +35,18 @@ func SessionAnalysis(c *gin.Context) *SessionAnalysisResult {
 	}
 }
 
-// ===== Page =====
-
-func SessionPage(c *gin.Context, p *SessionPageParam) {
+func (s *Service) Page(c *gin.Context, p *SessionPageParam) {
 	ctx := c.Request.Context()
 	current, size := normalizePage(p.Current, p.Size)
 
 	keyword := strings.TrimSpace(p.Keyword)
-	infos, total, err := listConsumerSessionInfos(ctx, keyword, current, size)
+	infos, total, err := s.listConsumerSessionInfos(ctx, keyword, current, size)
 	if err != nil {
 		infos = []auth.SessionInfo{}
 		total = 0
 	}
 
-	users := LoadUsers(ctx, sessionUserIDs(infos))
+	users := s.repo.LoadUsers(ctx, sessionUserIDs(infos))
 	rows := make([]*SessionPageResult, 0, len(infos))
 	for _, info := range infos {
 		row := &SessionPageResult{
@@ -68,25 +68,21 @@ func SessionPage(c *gin.Context, p *SessionPageParam) {
 	result.PageDataResult(c, rows, total, current, size)
 }
 
-func listConsumerSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
+func (s *Service) listConsumerSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
 	if keyword == "" {
 		return auth.ListSessionInfos(ctx, string(enums.LoginTypeConsumer), current, size, "")
 	}
-	userIDs := FindUserIDs(ctx, keyword, maxKeywordCandidates)
+	userIDs := s.repo.FindUserIDs(ctx, keyword, maxKeywordCandidates)
 	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeConsumer), userIDs, current, size)
 }
 
 const maxKeywordCandidates = 1000
 
-// ===== Exit =====
-
-func SessionExit(c *gin.Context, userID string) {
+func (s *Service) Exit(c *gin.Context, userID string) {
 	auth.Consumer.KickoutWithContext(c.Request.Context(), userID)
 }
 
-// ===== TokenList =====
-
-func SessionTokenList(c *gin.Context, userID string) []*SessionTokenResult {
+func (s *Service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeConsumer), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
@@ -106,15 +102,11 @@ func SessionTokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	return results
 }
 
-// ===== ExitToken =====
-
-func SessionExitToken(c *gin.Context, userID, token string) {
+func (s *Service) ExitToken(c *gin.Context, userID, token string) {
 	auth.Consumer.KickoutTokenWithContext(c.Request.Context(), userID, token)
 }
 
-// ===== ChartData =====
-
-func SessionChart(c *gin.Context) *SessionChartData {
+func (s *Service) Chart(c *gin.Context) *SessionChartData {
 	ctx := c.Request.Context()
 	days := lastNDays(7)
 

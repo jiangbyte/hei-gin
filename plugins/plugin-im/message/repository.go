@@ -9,11 +9,13 @@ import (
 	"hei-gin/sdk/utils"
 )
 
-func CreateMessages(ctx context.Context, records []imModel.Message) error {
+type repository struct{}
+
+func (r *repository) CreateMessages(ctx context.Context, records []imModel.Message) error {
 	return db.DB.WithContext(ctx).Create(&records).Error
 }
 
-func UpsertConversations(ctx context.Context, conversations []imModel.Conversation) error {
+func (r *repository) UpsertConversations(ctx context.Context, conversations []imModel.Conversation) error {
 	if len(conversations) == 0 {
 		return nil
 	}
@@ -25,7 +27,7 @@ func UpsertConversations(ctx context.Context, conversations []imModel.Conversati
 	}).Create(&conversations).Error
 }
 
-func Page(ctx context.Context, userID, userType, status string, current, size int) ([]imModel.Message, int64) {
+func (r *repository) Page(ctx context.Context, userID, userType, status string, current, size int) ([]imModel.Message, int64) {
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND (deleted_by != ? OR deleted_by IS NULL)",
 			userID, userType, userID, userType, userID)
@@ -39,7 +41,7 @@ func Page(ctx context.Context, userID, userType, status string, current, size in
 	return records, total
 }
 
-func CountUnread(ctx context.Context, userID, userType string) int64 {
+func (r *repository) CountUnread(ctx context.Context, userID, userType string) int64 {
 	var count int64
 	db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "unread").
@@ -47,7 +49,7 @@ func CountUnread(ctx context.Context, userID, userType string) int64 {
 	return count
 }
 
-func FindOwnedByID(ctx context.Context, id, userID, userType string) (*imModel.Message, error) {
+func (r *repository) FindOwnedByID(ctx context.Context, id, userID, userType string) (*imModel.Message, error) {
 	var entity imModel.Message
 	if err := db.DB.WithContext(ctx).
 		Where("id = ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
@@ -58,7 +60,7 @@ func FindOwnedByID(ctx context.Context, id, userID, userType string) (*imModel.M
 	return &entity, nil
 }
 
-func FindByID(ctx context.Context, id string) (*imModel.Message, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*imModel.Message, error) {
 	var entity imModel.Message
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		return nil, err
@@ -66,38 +68,38 @@ func FindByID(ctx context.Context, id string) (*imModel.Message, error) {
 	return &entity, nil
 }
 
-func MarkRead(ctx context.Context, id, userID, userType string) error {
+func (r *repository) MarkRead(ctx context.Context, id, userID, userType string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("id = ? AND receiver_id = ? AND receiver_type = ?", id, userID, userType).
 		Updates(map[string]interface{}{"status": "read"}).Error
 }
 
-func MarkConversationRead(ctx context.Context, conversationID, userID, userType string) error {
+func (r *repository) MarkConversationRead(ctx context.Context, conversationID, userID, userType string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("conversation_id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 			conversationID, userID, userType, "unread").
 		Updates(map[string]interface{}{"status": "read"}).Error
 }
 
-func MarkAllRead(ctx context.Context, userID, userType string) error {
+func (r *repository) MarkAllRead(ctx context.Context, userID, userType string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "unread").
 		Updates(map[string]interface{}{"status": "read"}).Error
 }
 
-func SoftDelete(ctx context.Context, ids []string, userID, userType string) error {
+func (r *repository) SoftDelete(ctx context.Context, ids []string, userID, userType string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("id IN ? AND ((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?))",
 			ids, userID, userType, userID, userType).
 		Update("deleted_by", userID).Error
 }
 
-func Recall(ctx context.Context, messageID string) error {
+func (r *repository) Recall(ctx context.Context, messageID string) error {
 	return db.DB.WithContext(ctx).Model(&imModel.Message{}).Where("id = ?", messageID).
 		Updates(map[string]interface{}{"content": "消息已被撤回", "msg_type": imModel.MsgTypeSystem}).Error
 }
 
-func Search(ctx context.Context, userID, userType, keyword, cursor string, size int) []imModel.Message {
+func (r *repository) Search(ctx context.Context, userID, userType, keyword, cursor string, size int) []imModel.Message {
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("((sender_id = ? AND sender_type = ?) OR (receiver_id = ? AND receiver_type = ?)) AND content LIKE ?",
 			userID, userType, userID, userType, "%"+keyword+"%")

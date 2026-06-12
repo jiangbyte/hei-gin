@@ -164,6 +164,68 @@ type Service struct {
 - 当前项目大量 service 仍直接写 HTTP 错误响应，因此 `service` 可以接收 `*gin.Context`
 - 这是当前项目的务实方案，不强行拆成纯 application service
 
+### Service 私有辅助方法
+
+可以保留 `Service` 私有辅助方法，但要满足下面条件：
+
+- 该方法依赖 `repo`
+- 该方法依赖 `Service` 内部缓存、批量加载、装配状态
+- 该方法只服务于当前模块内部流程，不需要对外暴露
+- 该方法本质上是某个公开业务动作的子步骤
+
+推荐示例：
+
+```go
+func (s *Service) Get(c *gin.Context) *HomeVO {
+	userID := auth.GetLoginIDDefaultNull(c)
+	vo := &HomeVO{}
+	if userID != "" {
+		vo.QuickActions = s.findQuickActionsByUserID(c.Request.Context(), userID)
+		vo.AvailableResources = s.getAvailableResources(c.Request.Context(), userID)
+	}
+	vo.Notices = s.getNotices(c.Request.Context())
+	return vo
+}
+
+func (s *Service) findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
+	actions := s.repo.ListQuickActions(ctx, userID)
+	resourceIDs := make([]string, len(actions))
+	for i, a := range actions {
+		resourceIDs[i] = a.ResourceID
+	}
+	resources := s.repo.ListResourcesByIDs(ctx, resourceIDs)
+	return assembleQuickActions(actions, resources)
+}
+```
+
+适合做成 `Service` 私有方法的典型场景：
+
+- 批量 enrich，如用户列表补角色、岗位、组织名
+- 树结构组装前的批量数据预取
+- service 内部缓存读写
+- 某个公开动作下的子流程拆分
+
+更适合保留为自由函数的场景：
+
+- 不依赖 `repo`
+- 不依赖 `Service` 状态
+- 纯计算、纯格式化、纯树节点转换
+
+推荐保留为自由函数的例子：
+
+```go
+func formatTimeout(seconds int) string
+func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]interface{}
+func getParentIDKey(parentID *string) string
+```
+
+避免写法：
+
+- 为了“面向对象”把所有纯函数都挂到 `Service` 上
+- 把可复用的纯装配逻辑写成公开方法暴露出去
+- 私有辅助方法里直接做 HTTP 响应之外，还被多个 handler 绕过公开方法直接调用
+- 一个公开方法只剩一行转发，实际业务都堆在名称含糊的私有方法里
+
 ---
 
 ## api/v1/api.go 规范
@@ -184,6 +246,44 @@ func newHandler(module *banner.Module) *handler {
 }
 ```
 
+推荐完整写法：
+
+```go
+type handler struct {
+	service *banner.Service
+}
+
+var defaultHandler = newHandler(banner.DefaultModule)
+
+func newHandler(module *banner.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
+func RegisterRoutes(r *gin.Engine) {
+	r.GET("/api/v1/sys/banner/page", defaultHandler.page)
+	r.POST("/api/v1/sys/banner/create", defaultHandler.create)
+}
+
+func (h *handler) page(c *gin.Context) {
+	var param banner.BannerPageParam
+	if err := c.ShouldBindQuery(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.Page(c, &param)
+}
+
+func (h *handler) create(c *gin.Context) {
+	var vo banner.BannerVO
+	if err := c.ShouldBindJSON(&vo); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+	h.service.Create(c, &vo)
+	result.Success(c, nil)
+}
+```
+
 路由注册直接绑定 handler 方法：
 
 ```go
@@ -198,6 +298,15 @@ r.GET("/api/v1/sys/banner/page", defaultHandler.page)
 - 成功响应在 handler 层统一包装
 - handler 不直接访问 repo
 - 路由注册只绑定 handler 方法，不直接绑包级业务函数
+- `defaultHandler` 只作为默认装配入口，不承担业务逻辑
+- `newHandler` 只做装配，不做条件判断或兜底初始化
+
+避免写法：
+
+- `func Page(c *gin.Context) { defaultModule.service.Page(c) }`
+- handler 里直接 `db.DB.Model(...)`
+- handler 同时做参数绑定、查库、VO 拼装、响应输出
+- 在 `api` 包内维护独立的全局 `repo` / `service`
 
 ---
 

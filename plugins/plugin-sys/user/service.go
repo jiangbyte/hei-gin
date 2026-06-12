@@ -24,7 +24,7 @@ type nameEntry struct {
 	ParentID *string
 }
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
@@ -35,7 +35,7 @@ var (
 	cacheExpiry  time.Time
 )
 
-func (s *service) batchRoleIDs(uids []string) map[string][]string {
+func (s *Service) batchRoleIDs(uids []string) map[string][]string {
 	if len(uids) == 0 {
 		return nil
 	}
@@ -48,7 +48,7 @@ func (s *service) batchRoleIDs(uids []string) map[string][]string {
 	return m
 }
 
-func (s *service) loadNameCache(ctx context.Context) {
+func (s *Service) loadNameCache(ctx context.Context) {
 	cacheMu.RLock()
 	if time.Since(cacheExpiry) <= 5*time.Minute {
 		cacheMu.RUnlock()
@@ -103,7 +103,7 @@ func resolvePath(id *string, m map[string]nameEntry) []string {
 	return path
 }
 
-func (s *service) enrichNames(vos []*UserVO) {
+func (s *Service) enrichNames(vos []*UserVO) {
 	if len(vos) == 0 {
 		return
 	}
@@ -141,7 +141,7 @@ func (s *service) enrichNames(vos []*UserVO) {
 	}
 }
 
-func (s *service) Page(c *gin.Context, p *UserPageParam) {
+func (s *Service) Page(c *gin.Context, p *UserPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -170,7 +170,7 @@ func (s *service) Page(c *gin.Context, p *UserPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) Create(c *gin.Context, v *UserVO) {
+func (s *Service) Create(c *gin.Context, v *UserVO) {
 	ctx := c.Request.Context()
 
 	if v.Username != nil {
@@ -196,7 +196,7 @@ func (s *service) Create(c *gin.Context, v *UserVO) {
 	}
 }
 
-func (s *service) Detail(c *gin.Context, id string) *UserVO {
+func (s *Service) Detail(c *gin.Context, id string) *UserVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -219,7 +219,7 @@ func (s *service) Detail(c *gin.Context, id string) *UserVO {
 	return vo
 }
 
-func (s *service) Modify(c *gin.Context, v *UserVO) {
+func (s *Service) Modify(c *gin.Context, v *UserVO) {
 	ctx := c.Request.Context()
 	if v.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -295,7 +295,7 @@ func (s *service) Modify(c *gin.Context, v *UserVO) {
 	}
 }
 
-func (s *service) Remove(c *gin.Context, p *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, p *utils.IdsParam) {
 	ids := p.IDs
 	if len(ids) == 0 {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -308,7 +308,7 @@ func (s *service) Remove(c *gin.Context, p *utils.IdsParam) {
 	}
 }
 
-func (s *service) GrantRole(c *gin.Context, p *GrantRoleParam) {
+func (s *Service) GrantRole(c *gin.Context, p *GrantRoleParam) {
 	if p.UserID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
 		return
@@ -328,7 +328,7 @@ func (s *service) GrantRole(c *gin.Context, p *GrantRoleParam) {
 	}
 }
 
-func (s *service) GrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
+func (s *Service) GrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	if p.UserID == "" {
 		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
 		return
@@ -351,7 +351,7 @@ func (s *service) GrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	}
 }
 
-func (s *service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
+func (s *Service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	if len(p.IDs) == 0 {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
@@ -362,7 +362,7 @@ func (s *service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	}
 }
 
-func (s *service) OwnRoleIDs(c *gin.Context, uid string) []string {
+func (s *Service) OwnRoleIDs(c *gin.Context, uid string) []string {
 	rr := s.repo.FindRoleRelsByUserID(c.Request.Context(), uid)
 	ids := make([]string, len(rr))
 	for i, r := range rr {
@@ -371,7 +371,7 @@ func (s *service) OwnRoleIDs(c *gin.Context, uid string) []string {
 	return ids
 }
 
-func (s *service) OwnPermissionDetails(c *gin.Context, uid string) []map[string]interface{} {
+func (s *Service) OwnPermissionDetails(c *gin.Context, uid string) []map[string]interface{} {
 	pp := s.repo.FindPermissionRelsByUserID(c.Request.Context(), uid)
 	r := make([]map[string]interface{}, len(pp))
 	for i, p := range pp {
@@ -385,7 +385,7 @@ func (s *service) OwnPermissionDetails(c *gin.Context, uid string) []map[string]
 	return r
 }
 
-func (s *service) UpdateProfile(c *gin.Context, p *UpdateProfileParam) {
+func (s *Service) UpdateProfile(c *gin.Context, p *UpdateProfileParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
@@ -423,7 +423,7 @@ func (s *service) UpdateProfile(c *gin.Context, p *UpdateProfileParam) {
 	}
 }
 
-func (s *service) UpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
+func (s *Service) UpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	avatar := p.Avatar
 	if uid == "" {
@@ -451,7 +451,7 @@ func (s *service) UpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
 	}
 }
 
-func (s *service) UpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
+func (s *Service) UpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
 	uid := auth.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
@@ -503,12 +503,12 @@ func buildResourceTree(resources []rawResource) []map[string]interface{} {
 	return buildUserMenuTree(cm, "")
 }
 
-func (s *service) OwnRoles(c *gin.Context, uid string) gin.H {
+func (s *Service) OwnRoles(c *gin.Context, uid string) gin.H {
 	roleIDs := s.OwnRoleIDs(c, uid)
 	return gin.H{"code": 200, "message": "请求成功", "success": true, "data": roleIDs}
 }
 
-func (s *service) Current(c *gin.Context) *UserVO {
+func (s *Service) Current(c *gin.Context) *UserVO {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return nil
@@ -516,7 +516,7 @@ func (s *service) Current(c *gin.Context) *UserVO {
 	return s.Detail(c, userID)
 }
 
-func (s *service) Menus(c *gin.Context) []map[string]interface{} {
+func (s *Service) Menus(c *gin.Context) []map[string]interface{} {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]map[string]interface{}, 0)
@@ -581,7 +581,7 @@ func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]int
 	return r
 }
 
-func (s *service) Permissions(c *gin.Context) []string {
+func (s *Service) Permissions(c *gin.Context) []string {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]string, 0)
@@ -603,72 +603,4 @@ func (s *service) Permissions(c *gin.Context) []string {
 	}
 
 	return permCodes
-}
-
-func UserPage(c *gin.Context, p *UserPageParam) {
-	defaultModule.service.Page(c, p)
-}
-
-func UserCreate(c *gin.Context, v *UserVO) {
-	defaultModule.service.Create(c, v)
-}
-
-func UserDetail(c *gin.Context, id string) *UserVO {
-	return defaultModule.service.Detail(c, id)
-}
-
-func UserModify(c *gin.Context, v *UserVO) {
-	defaultModule.service.Modify(c, v)
-}
-
-func UserRemove(c *gin.Context, p *utils.IdsParam) {
-	defaultModule.service.Remove(c, p)
-}
-
-func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
-	defaultModule.service.GrantRole(c, p)
-}
-
-func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
-	defaultModule.service.GrantPermission(c, p)
-}
-
-func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
-	defaultModule.service.UpdateStatus(c, p)
-}
-
-func UserOwnRoleIDs(c *gin.Context, uid string) []string {
-	return defaultModule.service.OwnRoleIDs(c, uid)
-}
-
-func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface{} {
-	return defaultModule.service.OwnPermissionDetails(c, uid)
-}
-
-func UserUpdateProfile(c *gin.Context, p *UpdateProfileParam) {
-	defaultModule.service.UpdateProfile(c, p)
-}
-
-func UserUpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
-	defaultModule.service.UpdateAvatar(c, p)
-}
-
-func UserUpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
-	defaultModule.service.UpdatePassword(c, p)
-}
-
-func UserOwnRoles(c *gin.Context, uid string) gin.H {
-	return defaultModule.service.OwnRoles(c, uid)
-}
-
-func UserCurrent(c *gin.Context) *UserVO {
-	return defaultModule.service.Current(c)
-}
-
-func UserMenus(c *gin.Context) []map[string]interface{} {
-	return defaultModule.service.Menus(c)
-}
-
-func UserPermissions(c *gin.Context) []string {
-	return defaultModule.service.Permissions(c)
 }

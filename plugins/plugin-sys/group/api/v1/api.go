@@ -11,24 +11,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *group.Service
+}
+
+var defaultHandler = newHandler(group.DefaultModule)
+
+func newHandler(module *group.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all group routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/group/page
 	r.GET("/api/v1/sys/group/page",
 		registry.Perm("sys:group:page", "分组分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// GET /api/v1/sys/group/union-tree
 	r.GET("/api/v1/sys/group/union-tree",
 		registry.Perm("sys:group:tree", "分组树"),
-		unionTreeHandler,
+		defaultHandler.unionTree,
 	)
 
 	// GET /api/v1/sys/group/tree
 	r.GET("/api/v1/sys/group/tree",
 		registry.Perm("sys:group:tree", "分组树"),
-		treeHandler,
+		defaultHandler.tree,
 	)
 
 	// POST /api/v1/sys/group/create
@@ -36,27 +46,27 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:group:create", "添加分组"),
 		log.SysLog("添加用户组"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/group/modify
 	r.POST("/api/v1/sys/group/modify",
 		registry.Perm("sys:group:modify", "编辑分组"),
 		log.SysLog("编辑用户组"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/group/remove
 	r.POST("/api/v1/sys/group/remove",
 		registry.Perm("sys:group:remove", "删除分组"),
 		log.SysLog("删除用户组"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/group/detail
 	r.GET("/api/v1/sys/group/detail",
 		registry.Perm("sys:group:detail", "分组详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
@@ -73,14 +83,14 @@ func init() {
 // @Param        query  query  group.GroupPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param group.GroupPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	group.GroupPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // unionTreeHandler handles GET /api/v1/sys/group/union-tree
@@ -91,8 +101,8 @@ func pageHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/union-tree [get]
-func unionTreeHandler(c *gin.Context) {
-	data := group.GroupOptions(c)
+func (h *handler) unionTree(c *gin.Context) {
+	data := h.service.Options(c)
 	result.Success(c, data)
 }
 
@@ -105,14 +115,14 @@ func unionTreeHandler(c *gin.Context) {
 // @Param        query  query  group.GroupTreeParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/tree [get]
-func treeHandler(c *gin.Context) {
+func (h *handler) tree(c *gin.Context) {
 	var param group.GroupTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	data := group.GroupTree(c, &param)
+	data := h.service.Tree(c, &param)
 	result.Success(c, data)
 }
 
@@ -125,14 +135,14 @@ func treeHandler(c *gin.Context) {
 // @Param        body  body  group.GroupVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	group.GroupCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -145,14 +155,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  group.GroupVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo group.GroupVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	group.GroupModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -165,14 +175,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	group.GroupRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -185,7 +195,7 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/group/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := group.GroupDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }

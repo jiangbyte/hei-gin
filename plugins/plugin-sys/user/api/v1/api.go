@@ -11,12 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *user.Service
+}
+
+var defaultHandler = newHandler(user.DefaultModule)
+
+func newHandler(module *user.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all user routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/user/page
 	r.GET("/api/v1/sys/user/page",
 		registry.Perm("sys:user:page", "用户分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/user/create
@@ -24,27 +34,27 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:user:create", "添加用户"),
 		log.SysLog("添加用户"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/user/modify
 	r.POST("/api/v1/sys/user/modify",
 		registry.Perm("sys:user:modify", "编辑用户"),
 		log.SysLog("编辑用户"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/user/remove
 	r.POST("/api/v1/sys/user/remove",
 		registry.Perm("sys:user:remove", "删除用户"),
 		log.SysLog("删除用户"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/user/detail
 	r.GET("/api/v1/sys/user/detail",
 		registry.Perm("sys:user:detail", "用户详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	// POST /api/v1/sys/user/grant-role
@@ -52,7 +62,7 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:user:grant-role", "分配用户角色"),
 		log.SysLog("分配用户角色"),
 		middleware.NoRepeat(3000),
-		grantRoleHandler,
+		defaultHandler.grantRole,
 	)
 
 	// POST /api/v1/sys/user/grant-permission
@@ -60,37 +70,37 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:user:grant-permission", "分配用户权限"),
 		log.SysLog("分配用户权限"),
 		middleware.NoRepeat(3000),
-		grantPermissionHandler,
+		defaultHandler.grantPermission,
 	)
 
 	// GET /api/v1/sys/user/own-permission-detail
 	r.GET("/api/v1/sys/user/own-permission-detail",
 		registry.Perm("sys:user:own-permission-detail", "用户权限详情"),
-		ownPermissionDetailHandler,
+		defaultHandler.ownPermissionDetail,
 	)
 
 	// GET /api/v1/sys/user/own-roles
 	r.GET("/api/v1/sys/user/own-roles",
 		registry.Perm("sys:user:own-roles", "用户角色列表"),
-		ownRolesHandler,
+		defaultHandler.ownRoles,
 	)
 
 	// GET /api/v1/sys/user/current
 	r.GET("/api/v1/sys/user/current",
 		middleware.HeiCheckLogin(),
-		currentHandler,
+		defaultHandler.current,
 	)
 
 	// GET /api/v1/sys/user/menus
 	r.GET("/api/v1/sys/user/menus",
 		middleware.HeiCheckLogin(),
-		menusHandler,
+		defaultHandler.menus,
 	)
 
 	// GET /api/v1/sys/user/permissions
 	r.GET("/api/v1/sys/user/permissions",
 		middleware.HeiCheckLogin(),
-		permissionsHandler,
+		defaultHandler.permissions,
 	)
 
 	// POST /api/v1/sys/user/update-profile
@@ -98,14 +108,14 @@ func RegisterRoutes(r *gin.Engine) {
 		middleware.HeiCheckLogin(),
 		log.SysLog("更新个人信息"),
 		middleware.NoRepeat(3000),
-		updateProfileHandler,
+		defaultHandler.updateProfile,
 	)
 
 	// POST /api/v1/sys/user/update-avatar
 	r.POST("/api/v1/sys/user/update-avatar",
 		middleware.HeiCheckLogin(),
 		log.SysLog("更新头像"),
-		updateAvatarHandler,
+		defaultHandler.updateAvatar,
 	)
 
 	// POST /api/v1/sys/user/update-password
@@ -113,7 +123,7 @@ func RegisterRoutes(r *gin.Engine) {
 		middleware.HeiCheckLogin(),
 		log.SysLog("修改密码"),
 		middleware.NoRepeat(3000),
-		updatePasswordHandler,
+		defaultHandler.updatePassword,
 	)
 }
 
@@ -130,14 +140,14 @@ func init() {
 // @Param        query  query  user.UserPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param user.UserPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/user/create
@@ -149,13 +159,13 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  user.UserVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	user.UserCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -168,13 +178,13 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  user.UserVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo user.UserVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	user.UserModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -187,14 +197,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -207,8 +217,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := user.UserDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -221,13 +231,13 @@ func detailHandler(c *gin.Context) {
 // @Param        body  body  user.GrantRoleParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/grant-role [post]
-func grantRoleHandler(c *gin.Context) {
+func (h *handler) grantRole(c *gin.Context) {
 	var param user.GrantRoleParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	user.UserGrantRole(c, &param)
+	h.service.GrantRole(c, &param)
 	result.Success(c, nil)
 }
 
@@ -240,14 +250,14 @@ func grantRoleHandler(c *gin.Context) {
 // @Param        body  body  user.GrantUserPermissionParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/grant-permission [post]
-func grantPermissionHandler(c *gin.Context) {
+func (h *handler) grantPermission(c *gin.Context) {
 	var param user.GrantUserPermissionParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserGrantPermission(c, &param)
+	h.service.GrantPermission(c, &param)
 	result.Success(c, nil)
 }
 
@@ -260,8 +270,8 @@ func grantPermissionHandler(c *gin.Context) {
 // @Param        user_id  query  string  false  "user_id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/own-permission-detail [get]
-func ownPermissionDetailHandler(c *gin.Context) {
-	data := user.UserOwnPermissionDetails(c, c.Query("user_id"))
+func (h *handler) ownPermissionDetail(c *gin.Context) {
+	data := h.service.OwnPermissionDetails(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
@@ -274,8 +284,8 @@ func ownPermissionDetailHandler(c *gin.Context) {
 // @Param        user_id  query  string  false  "user_id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/own-roles [get]
-func ownRolesHandler(c *gin.Context) {
-	data := user.UserOwnRoles(c, c.Query("user_id"))
+func (h *handler) ownRoles(c *gin.Context) {
+	data := h.service.OwnRoles(c, c.Query("user_id"))
 	result.Success(c, data)
 }
 
@@ -287,8 +297,8 @@ func ownRolesHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/current [get]
-func currentHandler(c *gin.Context) {
-	vo := user.UserCurrent(c)
+func (h *handler) current(c *gin.Context) {
+	vo := h.service.Current(c)
 	result.Success(c, vo)
 }
 
@@ -300,8 +310,8 @@ func currentHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/menus [get]
-func menusHandler(c *gin.Context) {
-	data := user.UserMenus(c)
+func (h *handler) menus(c *gin.Context) {
+	data := h.service.Menus(c)
 	result.Success(c, data)
 }
 
@@ -313,8 +323,8 @@ func menusHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/permissions [get]
-func permissionsHandler(c *gin.Context) {
-	data := user.UserPermissions(c)
+func (h *handler) permissions(c *gin.Context) {
+	data := h.service.Permissions(c)
 	result.Success(c, data)
 }
 
@@ -327,14 +337,14 @@ func permissionsHandler(c *gin.Context) {
 // @Param        body  body  user.UpdateProfileParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/update-profile [post]
-func updateProfileHandler(c *gin.Context) {
+func (h *handler) updateProfile(c *gin.Context) {
 	var param user.UpdateProfileParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserUpdateProfile(c, &param)
+	h.service.UpdateProfile(c, &param)
 	result.Success(c, nil)
 }
 
@@ -347,14 +357,14 @@ func updateProfileHandler(c *gin.Context) {
 // @Param        body  body  user.UpdateAvatarParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/update-avatar [post]
-func updateAvatarHandler(c *gin.Context) {
+func (h *handler) updateAvatar(c *gin.Context) {
 	var param user.UpdateAvatarParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserUpdateAvatar(c, &param)
+	h.service.UpdateAvatar(c, &param)
 	result.Success(c, nil)
 }
 
@@ -367,13 +377,13 @@ func updateAvatarHandler(c *gin.Context) {
 // @Param        body  body  user.UpdatePasswordParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/user/update-password [post]
-func updatePasswordHandler(c *gin.Context) {
+func (h *handler) updatePassword(c *gin.Context) {
 	var param user.UpdatePasswordParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	user.UserUpdatePassword(c, &param)
+	h.service.UpdatePassword(c, &param)
 	result.Success(c, nil)
 }

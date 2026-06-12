@@ -11,11 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) PositionPage(c *gin.Context, p *PositionPageParam) {
+func (s *Service) Page(c *gin.Context, p *PositionPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -36,7 +36,7 @@ func (s *service) PositionPage(c *gin.Context, p *PositionPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) PositionDetail(c *gin.Context, id string) *PositionVO {
+func (s *Service) Detail(c *gin.Context, id string) *PositionVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -54,7 +54,7 @@ func (s *service) PositionDetail(c *gin.Context, id string) *PositionVO {
 	return SysPositionToPositionVO(e)
 }
 
-func (s *service) PositionCreate(c *gin.Context, vo *PositionVO) {
+func (s *Service) Create(c *gin.Context, vo *PositionVO) {
 	ctx := c.Request.Context()
 
 	e := PositionVOToSysPosition(vo)
@@ -65,7 +65,7 @@ func (s *service) PositionCreate(c *gin.Context, vo *PositionVO) {
 	}
 }
 
-func (s *service) PositionModify(c *gin.Context, vo *PositionVO) {
+func (s *Service) Modify(c *gin.Context, vo *PositionVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -107,7 +107,7 @@ func (s *service) PositionModify(c *gin.Context, vo *PositionVO) {
 	}
 }
 
-func (s *service) PositionRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -119,7 +119,7 @@ func (s *service) PositionRemove(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) PositionOptions(c *gin.Context) []any {
+func (s *Service) Options(c *gin.Context) []any {
 	ctx := c.Request.Context()
 	rows := s.repo.ListAll(ctx)
 	vos := make([]any, len(rows))
@@ -127,28 +127,4 @@ func (s *service) PositionOptions(c *gin.Context) []any {
 		vos[i] = SysPositionToPositionVO(&r)
 	}
 	return vos
-}
-
-func PositionPage(c *gin.Context, p *PositionPageParam) {
-	defaultModule.service.PositionPage(c, p)
-}
-
-func PositionDetail(c *gin.Context, id string) *PositionVO {
-	return defaultModule.service.PositionDetail(c, id)
-}
-
-func PositionCreate(c *gin.Context, vo *PositionVO) {
-	defaultModule.service.PositionCreate(c, vo)
-}
-
-func PositionModify(c *gin.Context, vo *PositionVO) {
-	defaultModule.service.PositionModify(c, vo)
-}
-
-func PositionRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.PositionRemove(c, param)
-}
-
-func PositionOptions(c *gin.Context) []any {
-	return defaultModule.service.PositionOptions(c)
 }

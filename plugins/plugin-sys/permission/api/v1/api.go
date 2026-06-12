@@ -8,17 +8,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *permission.Service
+}
+
+var defaultHandler = newHandler(permission.DefaultModule)
+
+func newHandler(module *permission.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all permission routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/permission/modules
 	r.GET("/api/v1/sys/permission/modules",
 		registry.Perm("sys:permission:modules", "权限模块列表"),
-		listModulesHandler,
+		defaultHandler.listModules,
 	)
 	// GET /api/v1/sys/permission/by-module
 	r.GET("/api/v1/sys/permission/by-module",
 		registry.Perm("sys:permission:by-module", "按模块查询权限"),
-		byModuleHandler,
+		defaultHandler.byModule,
 	)
 }
 
@@ -34,8 +44,8 @@ func init() {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/permission/modules [get]
-func listModulesHandler(c *gin.Context) {
-	result.Success(c, permission.PermissionListModules(c))
+func (h *handler) listModules(c *gin.Context) {
+	result.Success(c, h.service.ListModules(c))
 }
 
 // byModuleHandler handles GET /api/v1/sys/permission/by-module
@@ -47,6 +57,6 @@ func listModulesHandler(c *gin.Context) {
 // @Param        module  query  string  false  "module"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/permission/by-module [get]
-func byModuleHandler(c *gin.Context) {
-	result.Success(c, permission.PermissionListByModule(c, c.Query("module")))
+func (h *handler) byModule(c *gin.Context) {
+	result.Success(c, h.service.ListByModule(c, c.Query("module")))
 }

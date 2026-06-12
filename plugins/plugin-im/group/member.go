@@ -20,7 +20,7 @@ import (
 
 // ── Member management ─────────────────────────────────────────────
 
-func GroupInvite(c *gin.Context, p *InviteParam) {
+func (s *Service) Invite(c *gin.Context, p *InviteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -33,7 +33,7 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 		return
 	}
 
-	group, err := FindGroupByID(ctx, p.GroupID)
+	group, err := s.repo.FindGroupByID(ctx, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
@@ -47,18 +47,18 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 		return
 	}
 
-	if _, _, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
 		result.WriteError(c, err)
 		return
 	}
 
-	existingIDs := FindExistingMemberIDs(ctx, p.GroupID, p.UserIDs, p.UserType)
+	existingIDs := s.repo.FindExistingMemberIDs(ctx, p.GroupID, p.UserIDs, p.UserType)
 	if len(existingIDs) > 0 {
 		result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("用户 %v 已在群中", existingIDs), 400))
 		return
 	}
 
-	currentCount := CountActiveMembersByGroup(ctx, p.GroupID)
+	currentCount := s.repo.CountActiveMembersByGroup(ctx, p.GroupID)
 	if int(currentCount)+len(p.UserIDs) > group.MaxMembers {
 		result.WriteError(c, exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
 		return
@@ -81,7 +81,7 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 			MsgType: imModel.MsgTypeSystem,
 		})
 	}
-	if err := InviteMembers(ctx, batch, sysBatch); err != nil {
+	if err := s.repo.InviteMembers(ctx, batch, sysBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("邀请成员失败: "+err.Error(), 500))
 		return
 	}
@@ -89,7 +89,7 @@ func GroupInvite(c *gin.Context, p *InviteParam) {
 
 // ==================== GroupJoin ====================
 
-func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
+func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -99,7 +99,7 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	group, err := FindGroupByID(ctx, p.GroupID)
+	group, err := s.repo.FindGroupByID(ctx, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
@@ -113,19 +113,19 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	existing := CountMemberExists(ctx, p.GroupID, userID, userType)
+	existing := s.repo.CountMemberExists(ctx, p.GroupID, userID, userType)
 	if existing > 0 {
 		result.WriteError(c, exception.NewBusinessError("已在群中", 400))
 		return
 	}
 
-	pending := CountPendingJoin(ctx, p.GroupID, userID, userType)
+	pending := s.repo.CountPendingJoin(ctx, p.GroupID, userID, userType)
 	if pending > 0 {
 		result.WriteError(c, exception.NewBusinessError("已发送过入群申请，请等待审核", 400))
 		return
 	}
 
-	if err := CreateJoinRequest(ctx, &imModel.GroupJoinRequest{
+	if err := s.repo.CreateJoinRequest(ctx, &imModel.GroupJoinRequest{
 		ID:       utils.GenerateID(),
 		GroupID:  p.GroupID,
 		UserID:   userID,
@@ -136,7 +136,7 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	members := ListManagers(ctx, p.GroupID)
+	members := s.repo.ListManagers(ctx, p.GroupID)
 	for _, m := range members {
 		payload := map[string]interface{}{
 			"group_id":  p.GroupID,
@@ -154,7 +154,7 @@ func GroupJoin(c *gin.Context, p *JoinOrLeaveParam) {
 
 // ==================== GroupLeave ====================
 
-func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
+func (s *Service) Leave(c *gin.Context, p *JoinOrLeaveParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
 	userType := getUserType(c)
@@ -164,7 +164,7 @@ func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	member, err := FindActiveMember(ctx, p.GroupID, userID, userType)
+	member, err := s.repo.FindActiveMember(ctx, p.GroupID, userID, userType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
@@ -182,7 +182,7 @@ func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
 		Content: "退出了群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
 	}
-	if err := LeaveGroup(ctx, member, msg); err != nil {
+	if err := s.repo.LeaveGroup(ctx, member, msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("退群失败: "+err.Error(), 500))
 		return
 	}
@@ -190,7 +190,7 @@ func GroupLeave(c *gin.Context, p *JoinOrLeaveParam) {
 
 // ==================== GroupKick ====================
 
-func GroupKick(c *gin.Context, p *KickParam) {
+func (s *Service) Kick(c *gin.Context, p *KickParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -200,7 +200,7 @@ func GroupKick(c *gin.Context, p *KickParam) {
 		return
 	}
 
-	group, operatorMember, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	group, operatorMember, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
 	if err != nil {
 		result.WriteError(c, err)
 		return
@@ -210,7 +210,7 @@ func GroupKick(c *gin.Context, p *KickParam) {
 		return
 	}
 	if operatorMember.Role == RoleAdmin {
-		target, err := FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
+		target, err := s.repo.FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
 		if err != nil {
 			result.WriteError(c, exception.NewBusinessError("成员不存在或已离开", 400))
 			return
@@ -229,7 +229,7 @@ func GroupKick(c *gin.Context, p *KickParam) {
 		Content: "被移出群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
 	}
-	if err := KickMember(ctx, p.GroupID, p.UserID, p.UserType, msg); err != nil {
+	if err := s.repo.KickMember(ctx, p.GroupID, p.UserID, p.UserType, msg); err != nil {
 		result.WriteError(c, exception.NewBusinessError("踢出失败: "+err.Error(), 500))
 		return
 	}
@@ -237,7 +237,7 @@ func GroupKick(c *gin.Context, p *KickParam) {
 
 // ==================== GroupSetRole ====================
 
-func GroupSetRole(c *gin.Context, p *SetRoleParam) {
+func (s *Service) SetRole(c *gin.Context, p *SetRoleParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 
@@ -246,7 +246,7 @@ func GroupSetRole(c *gin.Context, p *SetRoleParam) {
 		return
 	}
 
-	group, err := FindGroupByID(ctx, p.GroupID)
+	group, err := s.repo.FindGroupByID(ctx, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
@@ -258,12 +258,12 @@ func GroupSetRole(c *gin.Context, p *SetRoleParam) {
 
 	switch p.Role {
 	case RoleAdmin:
-		if err := UpdateMemberRole(ctx, p.GroupID, p.UserID, p.UserType, RoleAdmin); err != nil {
+		if err := s.repo.UpdateMemberRole(ctx, p.GroupID, p.UserID, p.UserType, RoleAdmin); err != nil {
 			result.WriteError(c, exception.NewBusinessError("设置管理员失败: "+err.Error(), 500))
 			return
 		}
 	case RoleOwner:
-		if err := TransferOwnerAndRole(ctx, p.GroupID, group.OwnerID, group.OwnerType, p.UserID, p.UserType); err != nil {
+		if err := s.repo.TransferOwnerAndRole(ctx, p.GroupID, group.OwnerID, group.OwnerType, p.UserID, p.UserType); err != nil {
 			result.WriteError(c, exception.NewBusinessError("转让群失败: "+err.Error(), 500))
 			return
 		}
@@ -275,11 +275,11 @@ func GroupSetRole(c *gin.Context, p *SetRoleParam) {
 
 // ==================== GroupTransferOwner ====================
 
-func GroupTransferOwner(c *gin.Context, p *TransferOwnerParam) {
+func (s *Service) TransferOwner(c *gin.Context, p *TransferOwnerParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 
-	group, err := FindGroupByID(ctx, p.GroupID)
+	group, err := s.repo.FindGroupByID(ctx, p.GroupID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("群不存在", 400))
 		return
@@ -289,11 +289,11 @@ func GroupTransferOwner(c *gin.Context, p *TransferOwnerParam) {
 		return
 	}
 
-	if _, err := FindActiveMember(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType); err != nil {
+	if _, err := s.repo.FindActiveMember(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("新群主不在群中", 400))
 		return
 	}
-	if err := TransferOwner(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType, operatorID, group.OwnerType); err != nil {
+	if err := s.repo.TransferOwner(ctx, p.GroupID, p.NewOwnerID, p.NewOwnerType, operatorID, group.OwnerType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("转让失败: "+err.Error(), 500))
 		return
 	}
@@ -301,17 +301,17 @@ func GroupTransferOwner(c *gin.Context, p *TransferOwnerParam) {
 
 // ==================== GroupSetMemberNickname ====================
 
-func GroupSetMemberNickname(c *gin.Context, p *SetNicknameParam) {
+func (s *Service) SetMemberNickname(c *gin.Context, p *SetNicknameParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
 
-	if _, _, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
 		result.WriteError(c, err)
 		return
 	}
 
-	if err := UpdateMemberNickname(ctx, p.GroupID, p.UserID, p.UserType, p.Nickname); err != nil {
+	if err := s.repo.UpdateMemberNickname(ctx, p.GroupID, p.UserID, p.UserType, p.Nickname); err != nil {
 		result.WriteError(c, exception.NewBusinessError("设置昵称失败: "+err.Error(), 500))
 		return
 	}
@@ -319,7 +319,7 @@ func GroupSetMemberNickname(c *gin.Context, p *SetNicknameParam) {
 
 // ==================== GroupSendMessage ====================
 
-func GroupMuteMember(c *gin.Context, p *MuteParam) {
+func (s *Service) MuteMember(c *gin.Context, p *MuteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -329,7 +329,7 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 		return
 	}
 
-	group, operator, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	group, operator, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
 	if err != nil {
 		result.WriteError(c, err)
 		return
@@ -339,7 +339,7 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 		return
 	}
 	if operator.Role == RoleAdmin {
-		target, err := FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
+		target, err := s.repo.FindActiveMember(ctx, p.GroupID, p.UserID, p.UserType)
 		if err != nil {
 			result.WriteError(c, exception.NewBusinessError("成员不存在", 400))
 			return
@@ -355,7 +355,7 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 		duration = p.Duration
 	}
 	until := time.Now().Add(time.Duration(duration) * time.Minute)
-	if err := UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, &until); err != nil {
+	if err := s.repo.UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, &until); err != nil {
 		result.WriteError(c, exception.NewBusinessError("禁言失败: "+err.Error(), 500))
 		return
 	}
@@ -363,7 +363,7 @@ func GroupMuteMember(c *gin.Context, p *MuteParam) {
 
 // ==================== GroupUnmuteMember ====================
 
-func GroupUnmuteMember(c *gin.Context, p *UnmuteParam) {
+func (s *Service) UnmuteMember(c *gin.Context, p *UnmuteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
 	operatorType := getUserType(c)
@@ -373,11 +373,11 @@ func GroupUnmuteMember(c *gin.Context, p *UnmuteParam) {
 		return
 	}
 
-	if _, _, err := checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
 		result.WriteError(c, err)
 		return
 	}
-	if err := UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, nil); err != nil {
+	if err := s.repo.UpdateMutedUntil(ctx, p.GroupID, p.UserID, p.UserType, nil); err != nil {
 		result.WriteError(c, exception.NewBusinessError("解除禁言失败: "+err.Error(), 500))
 		return
 	}

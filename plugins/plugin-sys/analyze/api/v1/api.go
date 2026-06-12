@@ -8,9 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *analyze.Service
+}
+
+var defaultHandler = newHandler(analyze.DefaultModule)
+
+func newHandler(module *analyze.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/analyze/dashboard
-	r.GET("/api/v1/sys/analyze/dashboard", dashboardHandler)
+	r.GET("/api/v1/sys/analyze/dashboard", defaultHandler.dashboard)
 }
 
 func init() {
@@ -25,7 +35,7 @@ func init() {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/analyze/dashboard [get]
-func dashboardHandler(c *gin.Context) {
-	data := analyze.AnalyzeDashboard(c)
+func (h *handler) dashboard(c *gin.Context) {
+	data := h.service.Dashboard(c)
 	result.Success(c, data)
 }

@@ -12,11 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
-func (s *service) HomeGet(c *gin.Context) *HomeVO {
+func (s *Service) Get(c *gin.Context) *HomeVO {
 	userID := auth.GetLoginIDDefaultNull(c)
 	vo := &HomeVO{
 		QuickActions:       make([]QuickActionVO, 0),
@@ -32,7 +32,7 @@ func (s *service) HomeGet(c *gin.Context) *HomeVO {
 	return vo
 }
 
-func (s *service) HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
+func (s *Service) AddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
@@ -55,7 +55,7 @@ func (s *service) HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam)
 	}
 }
 
-func (s *service) HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) RemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
@@ -68,7 +68,7 @@ func (s *service) HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) SortQuickActions(c *gin.Context, param *utils.IdsParam) {
 	userID := auth.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
@@ -81,7 +81,7 @@ func (s *service) HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
+func (s *Service) findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
 	actions := s.repo.ListQuickActions(ctx, userID)
 	if len(actions) == 0 {
 		return make([]QuickActionVO, 0)
@@ -119,7 +119,7 @@ func (s *service) findQuickActionsByUserID(ctx context.Context, userID string) [
 	return vos
 }
 
-func (s *service) getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
+func (s *Service) getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
 	actionIDs := s.repo.QuickActionResourceIDs(ctx, userID)
 	resources := s.repo.AvailableResources(ctx, actionIDs)
 
@@ -141,7 +141,7 @@ func (s *service) getAvailableResources(ctx context.Context, userID string) []Qu
 	return vos
 }
 
-func (s *service) getNotices(ctx context.Context) []HomeNotice {
+func (s *Service) getNotices(ctx context.Context) []HomeNotice {
 	rows := s.repo.LatestNotices(ctx)
 
 	results := make([]HomeNotice, len(rows))
@@ -152,20 +152,4 @@ func (s *service) getNotices(ctx context.Context) []HomeNotice {
 		}
 	}
 	return results
-}
-
-func HomeGet(c *gin.Context) *HomeVO {
-	return defaultModule.service.HomeGet(c)
-}
-
-func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
-	defaultModule.service.HomeAddQuickAction(c, param)
-}
-
-func HomeRemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.HomeRemoveQuickAction(c, param)
-}
-
-func HomeSortQuickActions(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.HomeSortQuickActions(c, param)
 }

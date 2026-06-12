@@ -13,6 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Service struct {
+	repo *repository
+}
+
 func getLoginID(c *gin.Context, userType string) string {
 	if userType == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
@@ -22,7 +26,7 @@ func getLoginID(c *gin.Context, userType string) string {
 
 // ==================== FriendSendRequest ====================
 
-func FriendSendRequest(c *gin.Context, userType string, p *SendRequestParam) {
+func (s *Service) SendRequest(c *gin.Context, userType string, p *SendRequestParam) {
 	ctx := c.Request.Context()
 	senderID := getLoginID(c, userType)
 
@@ -36,14 +40,14 @@ func FriendSendRequest(c *gin.Context, userType string, p *SendRequestParam) {
 	}
 
 	// Check existing friendship
-	count := CountFriendship(ctx, senderID, userType, p.ReceiverID, p.ReceiverType)
+	count := s.repo.CountFriendship(ctx, senderID, userType, p.ReceiverID, p.ReceiverType)
 	if count > 0 {
 		result.WriteError(c, exception.NewBusinessError("已经是好友了", 400))
 		return
 	}
 
 	// Check pending request
-	existing := CountPendingRequest(ctx, senderID, userType, p.ReceiverID, p.ReceiverType)
+	existing := s.repo.CountPendingRequest(ctx, senderID, userType, p.ReceiverID, p.ReceiverType)
 	if existing > 0 {
 		result.WriteError(c, exception.NewBusinessError("已发送过好友请求，请等待回复", 400))
 		return
@@ -58,7 +62,7 @@ func FriendSendRequest(c *gin.Context, userType string, p *SendRequestParam) {
 		Remark:       p.Remark,
 		Status:       "pending",
 	}
-	if err := CreateRequest(ctx, req); err != nil {
+	if err := s.repo.CreateRequest(ctx, req); err != nil {
 		result.WriteError(c, exception.NewBusinessError("发送好友请求失败: "+err.Error(), 500))
 		return
 	}
@@ -81,7 +85,7 @@ func FriendSendRequest(c *gin.Context, userType string, p *SendRequestParam) {
 
 // ==================== FriendAcceptRequest ====================
 
-func FriendAcceptRequest(c *gin.Context, userType string, p *HandleRequestParam) {
+func (s *Service) AcceptRequest(c *gin.Context, userType string, p *HandleRequestParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -90,7 +94,7 @@ func FriendAcceptRequest(c *gin.Context, userType string, p *HandleRequestParam)
 		return
 	}
 
-	req, err := FindPendingRequestForReceiver(ctx, p.RequestID, userID, userType)
+	req, err := s.repo.FindPendingRequestForReceiver(ctx, p.RequestID, userID, userType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("好友请求不存在或已处理", 400))
 		return
@@ -105,7 +109,7 @@ func FriendAcceptRequest(c *gin.Context, userType string, p *HandleRequestParam)
 		ID: utils.GenerateID(), UserID: req.SenderID, UserType: req.SenderType,
 		FriendID: req.ReceiverID, FriendType: req.ReceiverType,
 	}
-	if err := AcceptRequest(ctx, req, &pair1, &pair2); err != nil {
+	if err := s.repo.AcceptRequest(ctx, req, &pair1, &pair2); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加好友失败: "+err.Error(), 500))
 		return
 	}
@@ -127,7 +131,7 @@ func FriendAcceptRequest(c *gin.Context, userType string, p *HandleRequestParam)
 
 // ==================== FriendRejectRequest ====================
 
-func FriendRejectRequest(c *gin.Context, userType string, p *HandleRequestParam) {
+func (s *Service) RejectRequest(c *gin.Context, userType string, p *HandleRequestParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -136,7 +140,7 @@ func FriendRejectRequest(c *gin.Context, userType string, p *HandleRequestParam)
 		return
 	}
 
-	rows, err := RejectRequest(ctx, p.RequestID, userID, userType)
+	rows, err := s.repo.RejectRequest(ctx, p.RequestID, userID, userType)
 	if rows == 0 {
 		result.WriteError(c, exception.NewBusinessError("好友请求不存在或已处理", 400))
 		return
@@ -149,11 +153,11 @@ func FriendRejectRequest(c *gin.Context, userType string, p *HandleRequestParam)
 
 // ==================== FriendList ====================
 
-func FriendList(c *gin.Context, userType string) []FriendVO {
+func (s *Service) List(c *gin.Context, userType string) []FriendVO {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
-	friendships := ListFriendships(ctx, userID, userType)
+	friendships := s.repo.ListFriendships(ctx, userID, userType)
 
 	if len(friendships) == 0 {
 		return nil
@@ -173,7 +177,7 @@ func FriendList(c *gin.Context, userType string) []FriendVO {
 	avatarMap := make(map[string]string, len(friendships))
 
 	if len(businessIDs) > 0 {
-		users := ListSysUsers(ctx, businessIDs)
+		users := s.repo.ListSysUsers(ctx, businessIDs)
 		for _, u := range users {
 			k := "BUSINESS:" + u.ID
 			if u.Nickname != nil {
@@ -185,7 +189,7 @@ func FriendList(c *gin.Context, userType string) []FriendVO {
 		}
 	}
 	if len(consumerIDs) > 0 {
-		users := ListClientUsers(ctx, consumerIDs)
+		users := s.repo.ListClientUsers(ctx, consumerIDs)
 		for _, u := range users {
 			k := "CONSUMER:" + u.ID
 			if u.Nickname != nil {
@@ -210,12 +214,12 @@ func FriendList(c *gin.Context, userType string) []FriendVO {
 
 // ==================== FriendPendingRequests ====================
 
-func FriendPendingRequests(c *gin.Context, userType string) (incoming, outgoing []FriendRequestVO) {
+func (s *Service) PendingRequests(c *gin.Context, userType string) (incoming, outgoing []FriendRequestVO) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
-	inRecs := ListPendingIncoming(ctx, userID, userType)
-	outRecs := ListPendingOutgoing(ctx, userID, userType)
+	inRecs := s.repo.ListPendingIncoming(ctx, userID, userType)
+	outRecs := s.repo.ListPendingOutgoing(ctx, userID, userType)
 
 	incoming = make([]FriendRequestVO, len(inRecs))
 	for i, r := range inRecs {
@@ -230,7 +234,7 @@ func FriendPendingRequests(c *gin.Context, userType string) (incoming, outgoing 
 
 // ==================== FriendRemove ====================
 
-func FriendRemove(c *gin.Context, userType string, p *RemoveFriendParam) {
+func (s *Service) Remove(c *gin.Context, userType string, p *RemoveFriendParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -239,7 +243,7 @@ func FriendRemove(c *gin.Context, userType string, p *RemoveFriendParam) {
 		return
 	}
 
-	r1, r2, err := RemoveFriendshipPair(ctx, userID, userType, p.FriendID, p.FriendType)
+	r1, r2, err := s.repo.RemoveFriendshipPair(ctx, userID, userType, p.FriendID, p.FriendType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除好友失败: "+err.Error(), 500))
 		return
@@ -261,7 +265,7 @@ func FriendRemove(c *gin.Context, userType string, p *RemoveFriendParam) {
 
 // ==================== FriendSearch ====================
 
-func FriendSearch(c *gin.Context, keyword string, limit int) []SearchResult {
+func (s *Service) Search(c *gin.Context, keyword string, limit int) []SearchResult {
 	ctx := c.Request.Context()
 	if keyword == "" || limit < 1 {
 		return nil
@@ -273,7 +277,7 @@ func FriendSearch(c *gin.Context, keyword string, limit int) []SearchResult {
 	like := "%" + keyword + "%"
 	results := make([]SearchResult, 0, limit)
 
-	sysUsers := SearchSysUsers(ctx, like, limit)
+	sysUsers := s.repo.SearchSysUsers(ctx, like, limit)
 	for _, u := range sysUsers {
 		nickname := ""
 		if u.Nickname != nil {
@@ -291,7 +295,7 @@ func FriendSearch(c *gin.Context, keyword string, limit int) []SearchResult {
 
 	if len(results) < limit {
 		remaining := limit - len(results)
-		cliUsers := SearchClientUsers(ctx, like, remaining)
+		cliUsers := s.repo.SearchClientUsers(ctx, like, remaining)
 		for _, u := range cliUsers {
 			nickname := ""
 			if u.Nickname != nil {
@@ -313,7 +317,7 @@ func FriendSearch(c *gin.Context, keyword string, limit int) []SearchResult {
 
 // ==================== FriendBlock ====================
 
-func FriendBlock(c *gin.Context, userType string, p *BlockParam) {
+func (s *Service) Block(c *gin.Context, userType string, p *BlockParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -327,13 +331,13 @@ func FriendBlock(c *gin.Context, userType string, p *BlockParam) {
 	}
 
 	// Check if already blocked
-	existing := CountBlocks(ctx, userID, userType, p.BlockedID, p.BlockedType)
+	existing := s.repo.CountBlocks(ctx, userID, userType, p.BlockedID, p.BlockedType)
 	if existing > 0 {
 		result.WriteError(c, exception.NewBusinessError("已经拉黑了该用户", 400))
 		return
 	}
 
-	if err := CreateBlock(ctx, &imModel.FriendBlock{
+	if err := s.repo.CreateBlock(ctx, &imModel.FriendBlock{
 		ID:          utils.GenerateID(),
 		UserID:      userID,
 		UserType:    userType,
@@ -345,12 +349,12 @@ func FriendBlock(c *gin.Context, userType string, p *BlockParam) {
 	}
 
 	// Also remove friendship if exists
-	DeleteFriendshipForBlock(ctx, userID, userType, p.BlockedID, p.BlockedType)
+	s.repo.DeleteFriendshipForBlock(ctx, userID, userType, p.BlockedID, p.BlockedType)
 }
 
 // ==================== FriendUnblock ====================
 
-func FriendUnblock(c *gin.Context, userType string, p *BlockParam) {
+func (s *Service) Unblock(c *gin.Context, userType string, p *BlockParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -359,7 +363,7 @@ func FriendUnblock(c *gin.Context, userType string, p *BlockParam) {
 		return
 	}
 
-	rows, err := DeleteBlock(ctx, userID, userType, p.BlockedID, p.BlockedType)
+	rows, err := s.repo.DeleteBlock(ctx, userID, userType, p.BlockedID, p.BlockedType)
 	if rows == 0 {
 		result.WriteError(c, exception.NewBusinessError("未拉黑该用户", 400))
 		return
@@ -372,11 +376,11 @@ func FriendUnblock(c *gin.Context, userType string, p *BlockParam) {
 
 // ==================== FriendBlockList ====================
 
-func FriendBlockList(c *gin.Context, userType string) []BlockVO {
+func (s *Service) BlockList(c *gin.Context, userType string) []BlockVO {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
-	blocks := ListBlocks(ctx, userID, userType)
+	blocks := s.repo.ListBlocks(ctx, userID, userType)
 
 	vos := make([]BlockVO, len(blocks))
 	for i, b := range blocks {
@@ -387,7 +391,7 @@ func FriendBlockList(c *gin.Context, userType string) []BlockVO {
 
 // ==================== FriendUpdateRemark ====================
 
-func FriendUpdateRemark(c *gin.Context, userType string, p *RemarkParam) {
+func (s *Service) UpdateRemark(c *gin.Context, userType string, p *RemarkParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c, userType)
 
@@ -395,7 +399,7 @@ func FriendUpdateRemark(c *gin.Context, userType string, p *RemarkParam) {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
-	if err := UpdateRemark(ctx, userID, userType, p.FriendID, p.FriendType, p.Remark); err != nil {
+	if err := s.repo.UpdateRemark(ctx, userID, userType, p.FriendID, p.FriendType, p.Remark); err != nil {
 		result.WriteError(c, exception.NewBusinessError("修改备注失败: "+err.Error(), 500))
 		return
 	}

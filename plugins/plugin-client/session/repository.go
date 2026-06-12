@@ -7,7 +7,9 @@ import (
 	"hei-gin/sdk/infra/db"
 )
 
-func LoadUsers(ctx context.Context, userIDs []string) map[string]*cliUser.ClientUser {
+type repository struct{}
+
+func (r *repository) LoadUsers(ctx context.Context, userIDs []string) map[string]*cliUser.ClientUser {
 	if len(userIDs) == 0 {
 		return map[string]*cliUser.ClientUser{}
 	}
@@ -21,7 +23,7 @@ func LoadUsers(ctx context.Context, userIDs []string) map[string]*cliUser.Client
 	return result
 }
 
-func FindUserIDs(ctx context.Context, keyword string, limit int) []string {
+func (r *repository) FindUserIDs(ctx context.Context, keyword string, limit int) []string {
 	like := keyword + "%"
 	var ids []string
 	db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).

@@ -16,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
@@ -51,7 +51,7 @@ func sortTreeNodes(nodes []map[string]interface{}) {
 	}
 }
 
-func (s *service) OrgPage(c *gin.Context, p *OrgPageParam) {
+func (s *Service) Page(c *gin.Context, p *OrgPageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -72,7 +72,7 @@ func (s *service) OrgPage(c *gin.Context, p *OrgPageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-func (s *service) OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
+func (s *Service) Tree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
 	cacheKey := p.Category
 	orgTreeMu.RLock()
 	if cached, ok := orgTreeCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -151,7 +151,7 @@ func (s *service) OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interfac
 	return roots
 }
 
-func (s *service) OrgCreate(c *gin.Context, vo *OrgVO) {
+func (s *Service) Create(c *gin.Context, vo *OrgVO) {
 	ctx := c.Request.Context()
 
 	if vo.Code == "" || vo.Name == "" || vo.Category == "" {
@@ -168,7 +168,7 @@ func (s *service) OrgCreate(c *gin.Context, vo *OrgVO) {
 	invalidateOrgTreeCache()
 }
 
-func (s *service) OrgModify(c *gin.Context, vo *OrgVO) {
+func (s *Service) Modify(c *gin.Context, vo *OrgVO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
@@ -204,7 +204,7 @@ func (s *service) OrgModify(c *gin.Context, vo *OrgVO) {
 	invalidateOrgTreeCache()
 }
 
-func (s *service) OrgRemove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -238,7 +238,7 @@ func (s *service) OrgRemove(c *gin.Context, param *utils.IdsParam) {
 	invalidateOrgTreeCache()
 }
 
-func (s *service) OrgDetail(c *gin.Context, id string) *OrgVO {
+func (s *Service) Detail(c *gin.Context, id string) *OrgVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -256,7 +256,7 @@ func (s *service) OrgDetail(c *gin.Context, id string) *OrgVO {
 	return SysOrgToOrgVO(e)
 }
 
-func (s *service) OrgOptions(c *gin.Context) []*OrgVO {
+func (s *Service) Options(c *gin.Context) []*OrgVO {
 	ctx := c.Request.Context()
 	rows, err := s.repo.ListAll(ctx)
 	if err != nil {
@@ -269,7 +269,7 @@ func (s *service) OrgOptions(c *gin.Context) []*OrgVO {
 	return vos
 }
 
-func (s *service) collectDescendantOrgIDs(ctx context.Context, ids []string) []string {
+func (s *Service) collectDescendantOrgIDs(ctx context.Context, ids []string) []string {
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
@@ -306,15 +306,3 @@ func (s *service) collectDescendantOrgIDs(ctx context.Context, ids []string) []s
 	}
 	return result
 }
-
-func OrgPage(c *gin.Context, p *OrgPageParam) { defaultModule.service.OrgPage(c, p) }
-func OrgTree(c *gin.Context, p *OrgTreeParam) []map[string]interface{} {
-	return defaultModule.service.OrgTree(c, p)
-}
-func OrgCreate(c *gin.Context, vo *OrgVO) { defaultModule.service.OrgCreate(c, vo) }
-func OrgModify(c *gin.Context, vo *OrgVO) { defaultModule.service.OrgModify(c, vo) }
-func OrgRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.OrgRemove(c, param)
-}
-func OrgDetail(c *gin.Context, id string) *OrgVO { return defaultModule.service.OrgDetail(c, id) }
-func OrgOptions(c *gin.Context) []*OrgVO         { return defaultModule.service.OrgOptions(c) }

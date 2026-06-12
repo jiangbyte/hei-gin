@@ -8,11 +8,13 @@ import (
 	"hei-gin/sdk/utils"
 )
 
-func Create(ctx context.Context, entity *imModel.Broadcast) error {
+type repository struct{}
+
+func (r *repository) Create(ctx context.Context, entity *imModel.Broadcast) error {
 	return db.DB.WithContext(ctx).Create(entity).Error
 }
 
-func Page(ctx context.Context, cursor string, size int) []imModel.Broadcast {
+func (r *repository) Page(ctx context.Context, cursor string, size int) []imModel.Broadcast {
 	q := db.DB.WithContext(ctx).Model(&imModel.Broadcast{})
 	if cursor != "" {
 		if t, err := utils.ParseDateTime(cursor); err == nil {
@@ -24,13 +26,13 @@ func Page(ctx context.Context, cursor string, size int) []imModel.Broadcast {
 	return records
 }
 
-func ListLatest(ctx context.Context, size int) []imModel.Broadcast {
+func (r *repository) ListLatest(ctx context.Context, size int) []imModel.Broadcast {
 	var records []imModel.Broadcast
 	db.DB.WithContext(ctx).Model(&imModel.Broadcast{}).Order("created_at DESC").Limit(size).Find(&records)
 	return records
 }
 
-func ListReads(ctx context.Context, userID, userType string) []imModel.BroadcastRead {
+func (r *repository) ListReads(ctx context.Context, userID, userType string) []imModel.BroadcastRead {
 	var rows []imModel.BroadcastRead
 	db.DB.WithContext(ctx).Model(&imModel.BroadcastRead{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
@@ -38,7 +40,7 @@ func ListReads(ctx context.Context, userID, userType string) []imModel.Broadcast
 	return rows
 }
 
-func MarkRead(ctx context.Context, broadcastID, userID, userType string) {
+func (r *repository) MarkRead(ctx context.Context, broadcastID, userID, userType string) {
 	_ = db.DB.WithContext(ctx).Where("broadcast_id = ? AND user_id = ? AND user_type = ?", broadcastID, userID, userType).
 		FirstOrCreate(&imModel.BroadcastRead{
 			BroadcastID: broadcastID,
@@ -48,7 +50,7 @@ func MarkRead(ctx context.Context, broadcastID, userID, userType string) {
 		})
 }
 
-func FindByID(ctx context.Context, id string) (*imModel.Broadcast, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (*imModel.Broadcast, error) {
 	var entity imModel.Broadcast
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		return nil, err

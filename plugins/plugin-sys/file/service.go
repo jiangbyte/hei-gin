@@ -44,7 +44,7 @@ type chunkUploadState struct {
 	OwnerID     string `json:"owner_id"`
 }
 
-type service struct {
+type Service struct {
 	repo *repository
 }
 
@@ -90,7 +90,7 @@ func currentOwnerID(c *gin.Context) string {
 	return ""
 }
 
-func (s *service) saveChunkState(c *gin.Context, uploadID string, state chunkUploadState) error {
+func (s *Service) saveChunkState(c *gin.Context, uploadID string, state chunkUploadState) error {
 	if s.repo.rdb == nil {
 		return fmt.Errorf("Redis 不可用，无法初始化分片上传")
 	}
@@ -100,7 +100,7 @@ func (s *service) saveChunkState(c *gin.Context, uploadID string, state chunkUpl
 	return nil
 }
 
-func (s *service) loadChunkState(c *gin.Context, uploadID string) (*chunkUploadState, error) {
+func (s *Service) loadChunkState(c *gin.Context, uploadID string) (*chunkUploadState, error) {
 	if strings.TrimSpace(uploadID) == "" {
 		return nil, fmt.Errorf("upload_id 不能为空")
 	}
@@ -121,7 +121,7 @@ func (s *service) loadChunkState(c *gin.Context, uploadID string) (*chunkUploadS
 	return state, nil
 }
 
-func (s *service) deleteChunkState(c *gin.Context, uploadID string) {
+func (s *Service) deleteChunkState(c *gin.Context, uploadID string) {
 	if s.repo.rdb != nil && uploadID != "" {
 		_ = s.repo.DeleteChunkState(c.Request.Context(), uploadID)
 	}
@@ -230,7 +230,7 @@ func (r *contextReader) Read(p []byte) (int, error) {
 
 // ===== Page =====
 
-func (s *service) Page(c *gin.Context, p *FilePageParam) {
+func (s *Service) Page(c *gin.Context, p *FilePageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -253,7 +253,7 @@ func (s *service) Page(c *gin.Context, p *FilePageParam) {
 
 // ===== Detail =====
 
-func (s *service) Detail(c *gin.Context, id string) *FileVO {
+func (s *Service) Detail(c *gin.Context, id string) *FileVO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
@@ -269,7 +269,7 @@ func (s *service) Detail(c *gin.Context, id string) *FileVO {
 
 // ===== Remove =====
 
-func (s *service) Remove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -280,7 +280,7 @@ func (s *service) Remove(c *gin.Context, param *utils.IdsParam) {
 	}
 }
 
-func (s *service) RemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) RemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
@@ -306,7 +306,7 @@ func (s *service) RemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
 
 // ===== Single-file Upload (streaming) =====
 
-func (s *service) Upload(c *gin.Context) (*FileUploadResult, error) {
+func (s *Service) Upload(c *gin.Context) (*FileUploadResult, error) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		return nil, fmt.Errorf("上传文件失败: %w", err)
@@ -389,7 +389,7 @@ func (s *service) Upload(c *gin.Context) (*FileUploadResult, error) {
 
 // ===== Chunk Upload =====
 
-func (s *service) InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
+func (s *Service) InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
 	ext, err := validateUploadMeta(param.FileName, param.FileSize)
 	if err != nil {
 		return nil, err
@@ -470,7 +470,7 @@ func (s *service) InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (
 	}, nil
 }
 
-func (s *service) UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
+func (s *Service) UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
 	state, err := s.loadChunkState(c, param.UploadID)
 	if err != nil {
 		return err
@@ -537,7 +537,7 @@ func (s *service) UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
 	return nil
 }
 
-func (s *service) CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
+func (s *Service) CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
 	state, err := s.loadChunkState(c, param.UploadID)
 	if err != nil {
 		return nil, err
@@ -617,7 +617,7 @@ func (s *service) CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam)
 	}, nil
 }
 
-func (s *service) AbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
+func (s *Service) AbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
 	state, err := s.loadChunkState(c, param.UploadID)
 	if err != nil {
 		return err
@@ -677,7 +677,7 @@ func mergeAndStore(ctx context.Context, eng storage.Engine, bucket, fileKey, tmp
 
 // ===== Download =====
 
-func (s *service) Download(c *gin.Context, id string) error {
+func (s *Service) Download(c *gin.Context, id string) error {
 	entity, err := s.repo.FindByID(c.Request.Context(), id)
 	if err != nil {
 		return fmt.Errorf("文件不存在")
@@ -686,7 +686,7 @@ func (s *service) Download(c *gin.Context, id string) error {
 	return serveFile(c, entity)
 }
 
-func (s *service) DownloadByKey(c *gin.Context, bucket, fileKey string) error {
+func (s *Service) DownloadByKey(c *gin.Context, bucket, fileKey string) error {
 	if bucket == "" || fileKey == "" || strings.Contains(bucket, "..") || strings.Contains(fileKey, "..") ||
 		strings.Contains(bucket, "/") || strings.Contains(bucket, "\\") ||
 		strings.Contains(fileKey, "/") || strings.Contains(fileKey, "\\") {
@@ -722,48 +722,4 @@ func serveFile(c *gin.Context, entity *SysFile) error {
 	}
 
 	return fmt.Errorf("文件路径为空")
-}
-
-func FilePage(c *gin.Context, p *FilePageParam) {
-	defaultModule.service.Page(c, p)
-}
-
-func FileDetail(c *gin.Context, id string) *FileVO {
-	return defaultModule.service.Detail(c, id)
-}
-
-func FileRemove(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.Remove(c, param)
-}
-
-func FileRemoveAbsolute(c *gin.Context, param *utils.IdsParam) {
-	defaultModule.service.RemoveAbsolute(c, param)
-}
-
-func FileUpload(c *gin.Context) (*FileUploadResult, error) {
-	return defaultModule.service.Upload(c)
-}
-
-func FileInitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
-	return defaultModule.service.InitChunkUpload(c, param)
-}
-
-func FileUploadChunk(c *gin.Context, param *ChunkUploadParam) error {
-	return defaultModule.service.UploadChunk(c, param)
-}
-
-func FileCompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
-	return defaultModule.service.CompleteChunkUpload(c, param)
-}
-
-func FileAbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
-	return defaultModule.service.AbortChunkUpload(c, param)
-}
-
-func FileDownload(c *gin.Context, id string) error {
-	return defaultModule.service.Download(c, id)
-}
-
-func FileDownloadByKey(c *gin.Context, bucket, fileKey string) error {
-	return defaultModule.service.DownloadByKey(c, bucket, fileKey)
 }

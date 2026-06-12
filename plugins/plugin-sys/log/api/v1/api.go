@@ -11,68 +11,78 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *logPackage.Service
+}
+
+var defaultHandler = newHandler(logPackage.DefaultModule)
+
+func newHandler(module *logPackage.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all sys/log routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/log/page
 	r.GET("/api/v1/sys/log/page",
 		registry.Perm("sys:log:page", "日志分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/log/create
 	r.POST("/api/v1/sys/log/create",
 		registry.Perm("sys:log:create", "添加日志"),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/log/modify
 	r.POST("/api/v1/sys/log/modify",
 		registry.Perm("sys:log:modify", "编辑日志"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/log/remove
 	r.POST("/api/v1/sys/log/remove",
 		registry.Perm("sys:log:remove", "删除日志"),
 		log.SysLog("删除操作日志"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/log/detail
 	r.GET("/api/v1/sys/log/detail",
 		registry.Perm("sys:log:detail", "日志详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	// POST /api/v1/sys/log/delete-by-category
 	r.POST("/api/v1/sys/log/delete-by-category",
 		registry.Perm("sys:log:remove", "删除日志"),
 		middleware.NoRepeat(5000),
-		deleteByCategoryHandler,
+		defaultHandler.deleteByCategory,
 	)
 
 	// GET /api/v1/sys/log/vis/line-chart-data
 	r.GET("/api/v1/sys/log/vis/line-chart-data",
 		registry.Perm("sys:log:page", "日志分页"),
-		visLineChartHandler,
+		defaultHandler.visLineChart,
 	)
 
 	// GET /api/v1/sys/log/vis/pie-chart-data
 	r.GET("/api/v1/sys/log/vis/pie-chart-data",
 		registry.Perm("sys:log:page", "日志分页"),
-		visPieChartHandler,
+		defaultHandler.visPieChart,
 	)
 
 	// GET /api/v1/sys/log/op/bar-chart-data
 	r.GET("/api/v1/sys/log/op/bar-chart-data",
 		registry.Perm("sys:log:page", "日志分页"),
-		opBarChartHandler,
+		defaultHandler.opBarChart,
 	)
 
 	// GET /api/v1/sys/log/op/pie-chart-data
 	r.GET("/api/v1/sys/log/op/pie-chart-data",
 		registry.Perm("sys:log:page", "日志分页"),
-		opPieChartHandler,
+		defaultHandler.opPieChart,
 	)
 }
 
@@ -89,13 +99,13 @@ func init() {
 // @Param        query  query  logPackage.LogPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param logPackage.LogPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	logPackage.LogPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // createHandler handles POST /api/v1/sys/log/create
@@ -107,13 +117,13 @@ func pageHandler(c *gin.Context) {
 // @Param        body  body  logPackage.LogVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo logPackage.LogVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	logPackage.LogCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -126,13 +136,13 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  logPackage.LogVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo logPackage.LogVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	logPackage.LogModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -145,13 +155,13 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	logPackage.LogRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -164,8 +174,8 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := logPackage.LogDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
@@ -178,13 +188,13 @@ func detailHandler(c *gin.Context) {
 // @Param        body  body  logPackage.LogDeleteByCategoryParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/delete-by-category [post]
-func deleteByCategoryHandler(c *gin.Context) {
+func (h *handler) deleteByCategory(c *gin.Context) {
 	var param logPackage.LogDeleteByCategoryParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	logPackage.LogDeleteByCategory(c, &param)
+	h.service.DeleteByCategory(c, &param)
 	result.Success(c, nil)
 }
 
@@ -196,8 +206,8 @@ func deleteByCategoryHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/vis/line-chart-data [get]
-func visLineChartHandler(c *gin.Context) {
-	data := logPackage.LogLoginBarChart(c)
+func (h *handler) visLineChart(c *gin.Context) {
+	data := h.service.LoginBarChart(c)
 	result.Success(c, data)
 }
 
@@ -209,8 +219,8 @@ func visLineChartHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/vis/pie-chart-data [get]
-func visPieChartHandler(c *gin.Context) {
-	data := logPackage.LogLoginPieChart(c)
+func (h *handler) visPieChart(c *gin.Context) {
+	data := h.service.LoginPieChart(c)
 	result.Success(c, data)
 }
 
@@ -222,8 +232,8 @@ func visPieChartHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/op/bar-chart-data [get]
-func opBarChartHandler(c *gin.Context) {
-	data := logPackage.LogOpBarChart(c)
+func (h *handler) opBarChart(c *gin.Context) {
+	data := h.service.OpBarChart(c)
 	result.Success(c, data)
 }
 
@@ -235,7 +245,7 @@ func opBarChartHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/log/op/pie-chart-data [get]
-func opPieChartHandler(c *gin.Context) {
-	data := logPackage.LogOpPieChart(c)
+func (h *handler) opPieChart(c *gin.Context) {
+	data := h.service.OpPieChart(c)
 	result.Success(c, data)
 }

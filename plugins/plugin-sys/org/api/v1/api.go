@@ -11,18 +11,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *org.Service
+}
+
+var defaultHandler = newHandler(org.DefaultModule)
+
+func newHandler(module *org.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 // RegisterRoutes registers all org routes on the given gin engine.
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/org/page
 	r.GET("/api/v1/sys/org/page",
 		registry.Perm("sys:org:page", "组织分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// GET /api/v1/sys/org/tree
 	r.GET("/api/v1/sys/org/tree",
 		registry.Perm("sys:org:tree", "组织树"),
-		treeHandler,
+		defaultHandler.tree,
 	)
 
 	// POST /api/v1/sys/org/create
@@ -30,27 +40,27 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:org:create", "添加组织"),
 		log.SysLog("添加组织"),
 		middleware.NoRepeat(3000),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// POST /api/v1/sys/org/modify
 	r.POST("/api/v1/sys/org/modify",
 		registry.Perm("sys:org:modify", "编辑组织"),
 		log.SysLog("编辑组织"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/org/remove
 	r.POST("/api/v1/sys/org/remove",
 		registry.Perm("sys:org:remove", "删除组织"),
 		log.SysLog("删除组织"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 
 	// GET /api/v1/sys/org/detail
 	r.GET("/api/v1/sys/org/detail",
 		registry.Perm("sys:org:detail", "组织详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
@@ -67,14 +77,14 @@ func init() {
 // @Param        query  query  org.OrgPageParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/page [get]
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param org.OrgPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	org.OrgPage(c, &param)
+	h.service.Page(c, &param)
 }
 
 // treeHandler handles GET /api/v1/sys/org/tree
@@ -86,14 +96,14 @@ func pageHandler(c *gin.Context) {
 // @Param        query  query  org.OrgTreeParam  false  "查询参数"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/tree [get]
-func treeHandler(c *gin.Context) {
+func (h *handler) tree(c *gin.Context) {
 	var param org.OrgTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	result.Success(c, org.OrgTree(c, &param))
+	result.Success(c, h.service.Tree(c, &param))
 }
 
 // createHandler handles POST /api/v1/sys/org/create
@@ -105,14 +115,14 @@ func treeHandler(c *gin.Context) {
 // @Param        body  body  org.OrgVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/create [post]
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo org.OrgVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	org.OrgCreate(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -125,14 +135,14 @@ func createHandler(c *gin.Context) {
 // @Param        body  body  org.OrgVO  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/modify [post]
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo org.OrgVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	org.OrgModify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
@@ -145,14 +155,14 @@ func modifyHandler(c *gin.Context) {
 // @Param        body  body  utils.IdsParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/remove [post]
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
 
-	org.OrgRemove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 
@@ -165,7 +175,7 @@ func removeHandler(c *gin.Context) {
 // @Param        id  query  string  false  "id"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/org/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := org.OrgDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }

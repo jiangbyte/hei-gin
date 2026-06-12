@@ -13,6 +13,16 @@ import (
 	"hei-gin/sdk/log"
 )
 
+type handler struct {
+	service *broadcast.Service
+}
+
+var defaultHandler = newHandler(broadcast.DefaultModule)
+
+func newHandler(module *broadcast.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
 	// POST /api/v1/sys/im/broadcast/send
 	r.POST("/api/v1/sys/im/broadcast/send",
@@ -20,32 +30,32 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("sys:im:broadcast:send", "发送通知"),
 		log.SysLog("发送通知"),
 		authMW.NoRepeat(5000),
-		sendHandler,
+		defaultHandler.send,
 	)
 
 	// GET /api/v1/sys/im/broadcast/list
 	r.GET("/api/v1/sys/im/broadcast/list",
 		authMW.HeiCheckLogin(),
 		registry.Perm("sys:im:broadcast:list", "通知列表"),
-		listHandler,
+		defaultHandler.list,
 	)
 
 	// GET /api/v1/sys/im/broadcast/unread-list
 	r.GET("/api/v1/sys/im/broadcast/unread-list",
 		authMW.HeiCheckLogin(),
-		unreadListHandler,
+		defaultHandler.unreadList,
 	)
 
 	// POST /api/v1/sys/im/broadcast/read
 	r.POST("/api/v1/sys/im/broadcast/read",
 		authMW.HeiCheckLogin(),
-		readHandler,
+		defaultHandler.read,
 	)
 
 	// GET /api/v1/sys/im/broadcast/detail
 	r.GET("/api/v1/sys/im/broadcast/detail",
 		authMW.HeiCheckLogin(),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
@@ -53,19 +63,19 @@ func RegisterClientRoutes(r *gin.Engine) {
 	// GET /api/v1/c/im/broadcast/unread-list
 	r.GET("/api/v1/c/im/broadcast/unread-list",
 		authMW.HeiClientCheckLogin(),
-		clientUnreadListHandler,
+		defaultHandler.clientUnreadList,
 	)
 
 	// POST /api/v1/c/im/broadcast/read
 	r.POST("/api/v1/c/im/broadcast/read",
 		authMW.HeiClientCheckLogin(),
-		clientReadHandler,
+		defaultHandler.clientRead,
 	)
 
 	// GET /api/v1/c/im/broadcast/detail
 	r.GET("/api/v1/c/im/broadcast/detail",
 		authMW.HeiClientCheckLogin(),
-		detailHandler,
+		defaultHandler.detail,
 	)
 }
 
@@ -83,13 +93,13 @@ func init() {
 // @Param        body  body  broadcast.SendBroadcastParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/send [post]
-func sendHandler(c *gin.Context) {
+func (h *handler) send(c *gin.Context) {
 	var param broadcast.SendBroadcastParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	broadcast.BroadcastSend(c, &param)
+	h.service.Send(c, &param)
 	result.Success(c, nil)
 }
 
@@ -103,7 +113,7 @@ func sendHandler(c *gin.Context) {
 // @Param        size  query  string  false  "size"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/list [get]
-func listHandler(c *gin.Context) {
+func (h *handler) list(c *gin.Context) {
 	cursor := c.Query("cursor")
 	size := 20
 	if s := c.Query("size"); s != "" {
@@ -111,7 +121,7 @@ func listHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list, hasMore := broadcast.BroadcastPage(c, cursor, size)
+	list, hasMore := h.service.Page(c, cursor, size)
 	result.Success(c, gin.H{"records": list, "has_more": hasMore})
 }
 
@@ -123,8 +133,8 @@ func listHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/unread-list [get]
-func unreadListHandler(c *gin.Context) {
-	list := broadcast.BroadcastUnreadList(c, string(enums.LoginTypeBusiness))
+func (h *handler) unreadList(c *gin.Context) {
+	list := h.service.UnreadList(c, string(enums.LoginTypeBusiness))
 	result.Success(c, list)
 }
 
@@ -136,8 +146,8 @@ func unreadListHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/broadcast/unread-list [get]
-func clientUnreadListHandler(c *gin.Context) {
-	list := broadcast.BroadcastUnreadList(c, string(enums.LoginTypeConsumer))
+func (h *handler) clientUnreadList(c *gin.Context) {
+	list := h.service.UnreadList(c, string(enums.LoginTypeConsumer))
 	result.Success(c, list)
 }
 
@@ -150,13 +160,13 @@ func clientUnreadListHandler(c *gin.Context) {
 // @Param        body  body  broadcast.ReadParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/read [post]
-func readHandler(c *gin.Context) {
+func (h *handler) read(c *gin.Context) {
 	var param broadcast.ReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	broadcast.BroadcastMarkRead(c, &param)
+	h.service.MarkRead(c, &param)
 	result.Success(c, nil)
 }
 
@@ -169,13 +179,13 @@ func readHandler(c *gin.Context) {
 // @Param        body  body  broadcast.ReadParam  true  "请求体"
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/broadcast/read [post]
-func clientReadHandler(c *gin.Context) {
+func (h *handler) clientRead(c *gin.Context) {
 	var param broadcast.ReadParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	broadcast.BroadcastMarkReadConsumer(c, &param)
+	h.service.MarkReadConsumer(c, &param)
 	result.Success(c, nil)
 }
 
@@ -189,7 +199,7 @@ func clientReadHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/detail [get]
 // @Router       /api/v1/c/im/broadcast/detail [get]
-func detailHandler(c *gin.Context) {
-	vo := broadcast.BroadcastDetail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
