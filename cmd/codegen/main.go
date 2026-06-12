@@ -167,17 +167,17 @@ func cmdScaffold(repoRoot, name string) {
 	writeTmpl(paramsGoTmpl, filepath.Join(target, moduleName, "params.go"))
 	fmt.Printf("  created %s/%s/params.go\n", name, moduleName)
 
-	// ── demo/mapper.go ──────────────────────────────────────────────
-	writeTmpl(mapperGoTmpl, filepath.Join(target, moduleName, "mapper.go"))
-	fmt.Printf("  created %s/%s/mapper.go\n", name, moduleName)
+	// ── demo/repository.go ──────────────────────────────────────────
+	writeTmpl(repositoryGoTmpl, filepath.Join(target, moduleName, "repository.go"))
+	fmt.Printf("  created %s/%s/repository.go\n", name, moduleName)
 
 	// ── demo/service.go ─────────────────────────────────────────────
 	writeTmpl(serviceGoTmpl, filepath.Join(target, moduleName, "service.go"))
 	fmt.Printf("  created %s/%s/service.go\n", name, moduleName)
 
-	// ── demo/migrate.go ─────────────────────────────────────────────
-	writeTmpl(migrateGoTmpl, filepath.Join(target, moduleName, "migrate.go"))
-	fmt.Printf("  created %s/%s/migrate.go\n", name, moduleName)
+	// ── demo/module.go ──────────────────────────────────────────────
+	writeTmpl(moduleGoTmpl, filepath.Join(target, moduleName, "module.go"))
+	fmt.Printf("  created %s/%s/module.go\n", name, moduleName)
 
 	// ── demo/api/v1/api.go ──────────────────────────────────────────
 	writeTmpl(apiV1GoTmpl, filepath.Join(target, moduleName, "api", "v1", "api.go"))
@@ -190,9 +190,11 @@ func cmdScaffold(repoRoot, name string) {
 	fmt.Printf("  Next steps:\n")
 	fmt.Printf("  1. Edit plugins/%s/%s/model.go — define your GORM models\n", name, moduleName)
 	fmt.Printf("  2. Edit plugins/%s/%s/params.go — define request/response types\n", name, moduleName)
-	fmt.Printf("  3. Edit plugins/%s/%s/service.go — implement business logic\n", name, moduleName)
-	fmt.Printf("  4. Edit plugins/%s/%s/api/v1/api.go — implement route handlers\n", name, moduleName)
-	fmt.Printf("  5. go run main.go\n")
+	fmt.Printf("  3. Edit plugins/%s/%s/repository.go — implement data access\n", name, moduleName)
+	fmt.Printf("  4. Edit plugins/%s/%s/service.go — implement business logic\n", name, moduleName)
+	fmt.Printf("  5. Edit plugins/%s/%s/api/v1/api.go — implement route handlers\n", name, moduleName)
+	fmt.Printf("  6. Register model in plugins/%s/migrate.go\n", name)
+	fmt.Printf("  7. go run main.go\n")
 }
 
 // ── add-module ─────────────────────────────────────────────────────
@@ -256,17 +258,17 @@ func cmdAddModule(repoRoot, pluginName, moduleName string) {
 	writeTmpl(paramsGoTmpl, filepath.Join(pluginDir, moduleName, "params.go"))
 	fmt.Printf("  created %s/%s/params.go\n", pluginName, moduleName)
 
-	// ── mapper.go ──────────────────────────────────────────────────
-	writeTmpl(mapperGoTmpl, filepath.Join(pluginDir, moduleName, "mapper.go"))
-	fmt.Printf("  created %s/%s/mapper.go\n", pluginName, moduleName)
+	// ── repository.go ──────────────────────────────────────────────
+	writeTmpl(repositoryGoTmpl, filepath.Join(pluginDir, moduleName, "repository.go"))
+	fmt.Printf("  created %s/%s/repository.go\n", pluginName, moduleName)
 
 	// ── service.go ─────────────────────────────────────────────────
 	writeTmpl(serviceGoTmpl, filepath.Join(pluginDir, moduleName, "service.go"))
 	fmt.Printf("  created %s/%s/service.go\n", pluginName, moduleName)
 
-	// ── migrate.go ─────────────────────────────────────────────────
-	writeTmpl(migrateGoTmpl, filepath.Join(pluginDir, moduleName, "migrate.go"))
-	fmt.Printf("  created %s/%s/migrate.go\n", pluginName, moduleName)
+	// ── module.go ──────────────────────────────────────────────────
+	writeTmpl(moduleGoTmpl, filepath.Join(pluginDir, moduleName, "module.go"))
+	fmt.Printf("  created %s/%s/module.go\n", pluginName, moduleName)
 
 	// ── api/v1/api.go ──────────────────────────────────────────────
 	writeTmpl(apiV1GoTmpl, filepath.Join(pluginDir, moduleName, "api", "v1", "api.go"))
@@ -364,7 +366,7 @@ func init() {
 var importsGoTmpl = `package @PKG@
 
 import (
-	// Model registrations (migrate.go)
+	// Module import
 	_ "hei-gin/plugins/@FULL@/@MODULE@"
 
 	// Route registrations (api/v1/api.go)
@@ -390,16 +392,9 @@ type @MODULE_PASCAL@ struct {
 func (@MODULE_PASCAL@) TableName() string { return "sys_@MODULE@_template" }
 `
 
-var migrateGoTmpl = `package @MODULE@
-
-import "hei-gin/sdk/infra/db"
-
-func init() {
-	db.RegisterModel(&@MODULE_PASCAL@{})
-}
-`
-
 var paramsGoTmpl = `package @MODULE@
+
+import "hei-gin/sdk/utils"
 
 // @MODULE_PASCAL@VO 视图对象
 type @MODULE_PASCAL@VO struct {
@@ -419,13 +414,7 @@ type @MODULE_PASCAL@PageParam struct {
 	Size    int    ` + "`" + `json:"size" form:"size"` + "`" + `
 	Keyword string ` + "`" + `json:"keyword" form:"keyword"` + "`" + `
 }
-`
 
-var mapperGoTmpl = `package @MODULE@
-
-import "hei-gin/sdk/utils"
-
-// Sys@MODULE_PASCAL@To@MODULE_PASCAL@VO 将 entity 映射到 VO
 func Sys@MODULE_PASCAL@To@MODULE_PASCAL@VO(src *@MODULE_PASCAL@) *@MODULE_PASCAL@VO {
 	if src == nil {
 		return nil
@@ -466,22 +455,72 @@ func @MODULE_PASCAL@VOToSys@MODULE_PASCAL@(src *@MODULE_PASCAL@VO) *@MODULE_PASC
 }
 `
 
+var repositoryGoTmpl = `package @MODULE@
+
+import (
+	"context"
+
+	"gorm.io/gorm"
+)
+
+type repository struct {
+	db *gorm.DB
+}
+
+func (r *repository) Page(ctx context.Context, p *@MODULE_PASCAL@PageParam) ([]@MODULE_PASCAL@, int64) {
+	q := r.db.WithContext(ctx).Model(&@MODULE_PASCAL@{})
+	if p.Keyword != "" {
+		like := "%" + p.Keyword + "%"
+		q = q.Where("name LIKE ?", like)
+	}
+
+	var total int64
+	q.Count(&total)
+
+	var rows []@MODULE_PASCAL@
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	return rows, total
+}
+
+func (r *repository) FindByID(ctx context.Context, id string) (*@MODULE_PASCAL@, error) {
+	var e @MODULE_PASCAL@
+	if err := r.db.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
+func (r *repository) Create(ctx context.Context, entity *@MODULE_PASCAL@) error {
+	return r.db.WithContext(ctx).Create(entity).Error
+}
+
+func (r *repository) UpdateByID(ctx context.Context, id string, up map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&@MODULE_PASCAL@{}).Where("id = ?", id).Updates(up).Error
+}
+
+func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
+	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&@MODULE_PASCAL@{}).Error
+}
+`
+
 var serviceGoTmpl = `package @MODULE@
 
 import (
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-// @MODULE_PASCAL@Page 分页
-func @MODULE_PASCAL@Page(c *gin.Context, p *@MODULE_PASCAL@PageParam) {
+type Service struct {
+	repo *repository
+}
+
+func (s *Service) Page(c *gin.Context, p *@MODULE_PASCAL@PageParam) {
 	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
@@ -493,17 +532,7 @@ func @MODULE_PASCAL@Page(c *gin.Context, p *@MODULE_PASCAL@PageParam) {
 		p.Size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&@MODULE_PASCAL@{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("name LIKE ?", like)
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []@MODULE_PASCAL@
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+	rows, total := s.repo.Page(ctx, p)
 
 	vos := make([]*@MODULE_PASCAL@VO, len(rows))
 	for i, r := range rows {
@@ -512,15 +541,14 @@ func @MODULE_PASCAL@Page(c *gin.Context, p *@MODULE_PASCAL@PageParam) {
 	result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-// @MODULE_PASCAL@Detail 详情
-func @MODULE_PASCAL@Detail(c *gin.Context, id string) *@MODULE_PASCAL@VO {
+func (s *Service) Detail(c *gin.Context, id string) *@MODULE_PASCAL@VO {
 	if id == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return nil
 	}
 	ctx := c.Request.Context()
-	var e @MODULE_PASCAL@
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+	e, err := s.repo.FindByID(ctx, id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return nil
@@ -528,44 +556,39 @@ func @MODULE_PASCAL@Detail(c *gin.Context, id string) *@MODULE_PASCAL@VO {
 		result.WriteError(c, exception.NewBusinessError("查询失败: "+err.Error(), 500))
 		return nil
 	}
-	return Sys@MODULE_PASCAL@To@MODULE_PASCAL@VO(&e)
+	return Sys@MODULE_PASCAL@To@MODULE_PASCAL@VO(e)
 }
 
-// @MODULE_PASCAL@Create 创建
-func @MODULE_PASCAL@Create(c *gin.Context, vo *@MODULE_PASCAL@VO) {
+func (s *Service) Create(c *gin.Context, vo *@MODULE_PASCAL@VO) {
 	ctx := c.Request.Context()
-
 	e := @MODULE_PASCAL@VOToSys@MODULE_PASCAL@(vo)
 	e.Status = string(enums.StatusEnabled)
-	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("创建失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// @MODULE_PASCAL@Remove 删除
-func @MODULE_PASCAL@Remove(c *gin.Context, param *utils.IdsParam) {
+func (s *Service) Remove(c *gin.Context, param *utils.IdsParam) {
 	ids := param.IDs
 	if len(ids) == 0 {
 		return
 	}
-	ctx := c.Request.Context()
-	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&@MODULE_PASCAL@{}).Error; err != nil {
+	if err := s.repo.DeleteByIDs(c.Request.Context(), ids); err != nil {
 		result.WriteError(c, exception.NewBusinessError("删除失败: "+err.Error(), 500))
 		return
 	}
 }
 
-// @MODULE_PASCAL@Modify 编辑
-func @MODULE_PASCAL@Modify(c *gin.Context, vo *@MODULE_PASCAL@VO) {
+func (s *Service) Modify(c *gin.Context, vo *@MODULE_PASCAL@VO) {
 	ctx := c.Request.Context()
 	if vo.ID == "" {
 		result.WriteError(c, exception.NewBusinessError("ID不能为空", 400))
 		return
 	}
 
-	var e @MODULE_PASCAL@
-	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+	_, err := s.repo.FindByID(ctx, vo.ID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			result.WriteError(c, exception.NewBusinessError("数据不存在", 400))
 			return
@@ -580,10 +603,31 @@ func @MODULE_PASCAL@Modify(c *gin.Context, vo *@MODULE_PASCAL@VO) {
 	if vo.Status != "" {
 		up["status"] = vo.Status
 	}
-	if err := db.DB.WithContext(ctx).Model(&@MODULE_PASCAL@{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
+	if err := s.repo.UpdateByID(ctx, vo.ID, up); err != nil {
 		result.WriteError(c, exception.NewBusinessError("编辑失败: "+err.Error(), 500))
 		return
 	}
+}
+`
+
+var moduleGoTmpl = `package @MODULE@
+
+import "hei-gin/sdk/infra/db"
+
+type Module struct {
+	service *Service
+}
+
+var DefaultModule = NewModule()
+
+func NewModule() *Module {
+	repo := &repository{db: db.DB}
+	svc := &Service{repo: repo}
+	return &Module{service: svc}
+}
+
+func (m *Module) Service() *Service {
+	return m.service
 }
 `
 
@@ -599,38 +643,48 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type handler struct {
+	service *@MODULE@.Service
+}
+
+var defaultHandler = newHandler(@MODULE@.DefaultModule)
+
+func newHandler(module *@MODULE@.Module) *handler {
+	return &handler{service: module.Service()}
+}
+
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/@MODULE@/page
 	r.GET("/api/v1/sys/@MODULE@/page",
 		registry.Perm("sys:@MODULE@:page", "@MODULE_PASCAL@分页"),
-		pageHandler,
+		defaultHandler.page,
 	)
 
 	// POST /api/v1/sys/@MODULE@/create
 	r.POST("/api/v1/sys/@MODULE@/create",
 		registry.Perm("sys:@MODULE@:create", "添加@MODULE_PASCAL@"),
 		log.SysLog("添加@MODULE_PASCAL@"),
-		createHandler,
+		defaultHandler.create,
 	)
 
 	// GET /api/v1/sys/@MODULE@/detail
 	r.GET("/api/v1/sys/@MODULE@/detail",
 		registry.Perm("sys:@MODULE@:detail", "@MODULE_PASCAL@详情"),
-		detailHandler,
+		defaultHandler.detail,
 	)
 
 	// POST /api/v1/sys/@MODULE@/modify
 	r.POST("/api/v1/sys/@MODULE@/modify",
 		registry.Perm("sys:@MODULE@:modify", "编辑@MODULE_PASCAL@"),
 		log.SysLog("编辑@MODULE_PASCAL@"),
-		modifyHandler,
+		defaultHandler.modify,
 	)
 
 	// POST /api/v1/sys/@MODULE@/remove
 	r.POST("/api/v1/sys/@MODULE@/remove",
 		registry.Perm("sys:@MODULE@:remove", "删除@MODULE_PASCAL@"),
 		log.SysLog("删除@MODULE_PASCAL@"),
-		removeHandler,
+		defaultHandler.remove,
 	)
 }
 
@@ -638,52 +692,47 @@ func init() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 
-// pageHandler handles GET /api/v1/sys/@MODULE@/page
-func pageHandler(c *gin.Context) {
+func (h *handler) page(c *gin.Context) {
 	var param @MODULE@.@MODULE_PASCAL@PageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	@MODULE@.@MODULE_PASCAL@Page(c, &param)
+	h.service.Page(c, &param)
 }
 
-// createHandler handles POST /api/v1/sys/@MODULE@/create
-func createHandler(c *gin.Context) {
+func (h *handler) create(c *gin.Context) {
 	var vo @MODULE@.@MODULE_PASCAL@VO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	@MODULE@.@MODULE_PASCAL@Create(c, &vo)
+	h.service.Create(c, &vo)
 	result.Success(c, nil)
 }
 
-// detailHandler handles GET /api/v1/sys/@MODULE@/detail
-func detailHandler(c *gin.Context) {
-	vo := @MODULE@.@MODULE_PASCAL@Detail(c, c.Query("id"))
+func (h *handler) detail(c *gin.Context) {
+	vo := h.service.Detail(c, c.Query("id"))
 	result.Success(c, vo)
 }
 
-// modifyHandler handles POST /api/v1/sys/@MODULE@/modify
-func modifyHandler(c *gin.Context) {
+func (h *handler) modify(c *gin.Context) {
 	var vo @MODULE@.@MODULE_PASCAL@VO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	@MODULE@.@MODULE_PASCAL@Modify(c, &vo)
+	h.service.Modify(c, &vo)
 	result.Success(c, nil)
 }
 
-// removeHandler handles POST /api/v1/sys/@MODULE@/remove
-func removeHandler(c *gin.Context) {
+func (h *handler) remove(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
 	}
-	@MODULE@.@MODULE_PASCAL@Remove(c, &param)
+	h.service.Remove(c, &param)
 	result.Success(c, nil)
 }
 `
