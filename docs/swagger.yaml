@@ -1,0 +1,182 @@
+basePath: /api/v1
+definitions:
+  banner.BannerVO:
+    properties:
+      category:
+        type: string
+      click_count:
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      link_type:
+        type: string
+      position:
+        type: string
+      sort_code:
+        type: integer
+      summary:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      url:
+        type: string
+      view_count:
+        type: integer
+    type: object
+  utils.IdsParam:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
+host: localhost:18885
+info:
+  contact:
+    name: Charlie
+    url: https://github.com/jiangbyte
+  description: Hei Gin 后台管理系统 API 文档
+  license:
+    name: MIT
+    url: https://github.com/jiangbyte/hei-gin/blob/main/LICENSE
+  termsOfService: https://github.com/jiangbyte/hei-gin
+  title: Hei Gin API
+  version: 1.0.0
+paths:
+  /api/v1/sys/banner/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建一条新的横幅记录
+      parameters:
+      - description: 横幅数据
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/banner.BannerVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 添加横幅
+      tags:
+      - 横幅管理
+  /api/v1/sys/banner/detail:
+    get:
+      consumes:
+      - application/json
+      description: 根据 ID 获取横幅详情
+      parameters:
+      - description: 横幅 ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 横幅详情
+      tags:
+      - 横幅管理
+  /api/v1/sys/banner/modify:
+    post:
+      consumes:
+      - application/json
+      description: 修改已有的横幅记录
+      parameters:
+      - description: 横幅数据（id 必填）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/banner.BannerVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 修改成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 编辑横幅
+      tags:
+      - 横幅管理
+  /api/v1/sys/banner/page:
+    get:
+      consumes:
+      - application/json
+      description: 获取横幅分页列表
+      parameters:
+      - description: 页码（默认 1）
+        in: query
+        name: current
+        type: integer
+      - description: 每页条数（默认 10，最大 100）
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分页数据
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 横幅分页
+      tags:
+      - 横幅管理
+  /api/v1/sys/banner/remove:
+    post:
+      consumes:
+      - application/json
+      description: 批量删除横幅记录
+      parameters:
+      - description: 待删除 ID 列表
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/utils.IdsParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除横幅
+      tags:
+      - 横幅管理
+securityDefinitions:
+  BearerAuth:
+    description: Bearer token authentication
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

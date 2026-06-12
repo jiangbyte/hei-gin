@@ -88,6 +88,14 @@ ws:
   write_timeout: 10
   online_broadcast_interval: 60
 
+# Swagger API 文档
+swagger:
+  # 是否启用 Swagger UI（生产环境建议关闭）
+  enabled: true
+  # 可选 Basic Auth 认证（留空则不启用）
+  username: ""
+  password: ""
+
 # Auth
 auth:
   # Routes that bypass authentication entirely (prefix match).
@@ -101,3 +109,6 @@ auth:
     - "/redoc"
     - "/openapi.json"
     - "/v3/api-docs"
+    - "/swagger"
+    - "/swagger.json"
+    - "/api/v1/swagger/"

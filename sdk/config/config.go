@@ -18,6 +18,7 @@ type Config struct {
 	CORS      CORSConfig      `yaml:"cors"`
 	User      UserConfig      `yaml:"user"`
 	Snowflake SnowflakeConfig `yaml:"snowflake"`
+	Swagger   SwaggerConfig   `yaml:"swagger"`
 	Raw       map[string]any  `yaml:",inline"`
 }
 
@@ -70,6 +71,13 @@ type SM2Config struct {
 
 type UserConfig struct {
 	ResetPassword string `yaml:"reset_password"`
+}
+
+// SwaggerConfig holds Swagger API documentation settings.
+type SwaggerConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 type AuthConfig struct {

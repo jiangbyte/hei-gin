@@ -1,5 +1,6 @@
 .PHONY: dev build run test lint clean scaffold list-imports
 
+.PHONY: swag swag-serve
 GO_MODULES := . api sdk plugins/plugin-sys plugins/plugin-client plugins/plugin-im
 
 # ── Development ─────────────────────────────────────────────────────
@@ -8,6 +9,16 @@ dev:          ## Start with hot-reload (requires air)
 		echo "Installing air..."; go install github.com/air-verse/air@latest; \
 	}
 	air
+
+swag:         ## Generate swagger docs
+	@command -v swag >/dev/null 2>&1 || { \
+		echo "Installing swag..."; go install github.com/swaggo/swag/cmd/swag@latest; \
+	}
+	swag init --parseDependency --parseInternal --parseDepth 3 && \
+	cp docs/swagger.json sdk/app/swagger.json
+
+swag-serve: swag ## Generate swagger docs & run server
+	go run main.go
 
 build:        ## Build binary
 	go build -o bin/hei-gin main.go
@@ -47,6 +58,8 @@ lint:         ## Run linter
 
 clean:        ## Clean build artifacts
 	rm -rf .air_tmp bin/
+	rm -f docs/swagger.json docs/swagger.yaml docs/docs.go
+	rm -f sdk/app/swagger.json
 
 help:         ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | \

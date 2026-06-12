@@ -53,7 +53,15 @@ func init() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 
-// pageHandler handles GET /api/v1/sys/banner/page
+// @Summary      横幅分页
+// @Description  获取横幅分页列表
+// @Tags         横幅管理
+// @Accept       json
+// @Produce      json
+// @Param        current  query  int  false  "页码（默认 1）"
+// @Param        size     query  int  false  "每页条数（默认 10，最大 100）"
+// @Success      200  {object}  map[string]any  "分页数据"
+// @Router       /api/v1/sys/banner/page [get]
 func pageHandler(c *gin.Context) {
 	var param banner.BannerPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
@@ -64,7 +72,14 @@ func pageHandler(c *gin.Context) {
 	banner.BannerPage(c, &param)
 }
 
-// createHandler handles POST /api/v1/sys/banner/create
+// @Summary      添加横幅
+// @Description  创建一条新的横幅记录
+// @Tags         横幅管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  banner.BannerVO  true  "横幅数据"
+// @Success      200  {object}  map[string]any  "创建成功"
+// @Router       /api/v1/sys/banner/create [post]
 func createHandler(c *gin.Context) {
 	var vo banner.BannerVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -76,7 +91,14 @@ func createHandler(c *gin.Context) {
 	result.Success(c, nil)
 }
 
-// modifyHandler handles POST /api/v1/sys/banner/modify
+// @Summary      编辑横幅
+// @Description  修改已有的横幅记录
+// @Tags         横幅管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  banner.BannerVO  true  "横幅数据（id 必填）"
+// @Success      200  {object}  map[string]any  "修改成功"
+// @Router       /api/v1/sys/banner/modify [post]
 func modifyHandler(c *gin.Context) {
 	var vo banner.BannerVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
@@ -88,7 +110,14 @@ func modifyHandler(c *gin.Context) {
 	result.Success(c, nil)
 }
 
-// removeHandler handles POST /api/v1/sys/banner/remove
+// @Summary      删除横幅
+// @Description  批量删除横幅记录
+// @Tags         横幅管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  utils.IdsParam  true  "待删除 ID 列表"
+// @Success      200  {object}  map[string]any  "删除成功"
+// @Router       /api/v1/sys/banner/remove [post]
 func removeHandler(c *gin.Context) {
 	var param utils.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
@@ -100,7 +129,14 @@ func removeHandler(c *gin.Context) {
 	result.Success(c, nil)
 }
 
-// detailHandler handles GET /api/v1/sys/banner/detail
+// @Summary      横幅详情
+// @Description  根据 ID 获取横幅详情
+// @Tags         横幅管理
+// @Accept       json
+// @Produce      json
+// @Param        id   query  string  true  "横幅 ID"
+// @Success      200  {object}  map[string]any
+// @Router       /api/v1/sys/banner/detail [get]
 func detailHandler(c *gin.Context) {
 	vo := banner.BannerDetail(c, c.Query("id"))
 	result.Success(c, vo)

@@ -2,14 +2,20 @@ package app
 
 import (
 	"context"
+	_ "embed"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/swaggo/swag"
+	"github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/sdk/config"
@@ -101,5 +107,90 @@ func Run() {
 
 func SetupRouters(r *gin.Engine) {
 	r.GET("/", HealthHandler)
+
+	setupSwagger(r)
+
 	registry.ExecuteRoutes(r)
+}
+
+//go:embed swagger.json
+var swaggerEmbeddedJSON []byte
+
+var swaggerRegisterOnce sync.Once
+
+// setupSwagger registers Swagger UI routes when enabled via config.
+// The swagger.json is compiled into the binary via //go:embed — no swag CLI needed at build or runtime.
+func setupSwagger(r *gin.Engine) {
+	if !config.C.Swagger.Enabled {
+		return
+	}
+
+	// Register the embedded swagger spec with the swag registry (once).
+	// This lets gin-swagger's built-in doc.json handler serve it without
+	// needing a separate route that would conflict with the catch-all *any.
+	swaggerRegisterOnce.Do(func() {
+		swag.Register(swag.Name, &swag.Spec{
+			SwaggerTemplate: string(swaggerEmbeddedJSON),
+		})
+	})
+
+	// Decide whether to protect routes with Basic Auth
+	useBasicAuth := config.C.Swagger.Username != "" && config.C.Swagger.Password != ""
+
+	// ── Common OpenAPI spec endpoints (for tools like FoxAPI, Postman, etc.) ──
+		specData := func(c *gin.Context) {
+		c.Data(http.StatusOK, "application/json; charset=utf-8", swaggerEmbeddedJSON)
+	}
+	if useBasicAuth {
+		r.GET("/openapi.json", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), specData)
+		r.GET("/v3/api-docs", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), specData)
+		r.GET("/swagger.json", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), specData)
+		r.GET("/api/v1/swagger/doc.json", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), specData)
+	} else {
+		r.GET("/openapi.json", specData)
+		r.GET("/v3/api-docs", specData)
+		r.GET("/swagger.json", specData)
+		r.GET("/api/v1/swagger/doc.json", specData)
+	}
+
+	// ── Swagger UI ──
+	swaggerHandler := ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		ginSwagger.DefaultModelsExpandDepth(-1),
+		ginSwagger.PersistAuthorization(true),
+	)
+
+
+	// Redirect bare paths to Swagger UI
+		redirectToSwagger := func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	}
+	if useBasicAuth {
+		r.GET("/swagger", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), redirectToSwagger)
+		r.GET("/docs", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), redirectToSwagger)
+		r.GET("/redoc", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), redirectToSwagger)
+		r.GET("/swagger/*any", basicAuth(config.C.Swagger.Username, config.C.Swagger.Password), swaggerHandler)
+	} else {
+		r.GET("/swagger", redirectToSwagger)
+		r.GET("/docs", redirectToSwagger)
+		r.GET("/redoc", redirectToSwagger)
+		r.GET("/swagger/*any", swaggerHandler)
+	}
+
+	log.Println("[Swagger] Swagger UI enabled at /swagger/index.html")
+}
+// basicAuth returns a Gin middleware that enforces HTTP Basic Authentication
+// with the given username and password using constant-time comparison.
+func basicAuth(username, password string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, pass, ok := c.Request.BasicAuth()
+		if !ok ||
+			subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 ||
+			subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
+			c.Header("WWW-Authenticate", `Basic realm="Swagger UI"`)
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		c.Next()
+	}
 }
