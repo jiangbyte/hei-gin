@@ -15,15 +15,10 @@ type PluginInfo struct {
 
 // Plugin defines the lifecycle of an app plugin.
 type Plugin interface {
-	// Info returns metadata about the plugin.
 	Info() PluginInfo
-	// Name returns the plugin name for logging.
 	Name() string
-	// Init is called during app startup, after config and DB are ready, before the HTTP server starts.
 	Init() error
-	// Start is called after the HTTP server starts (for background tasks like cron).
 	Start() error
-	// Stop is called during graceful shutdown.
 	Stop() error
 }
 
@@ -35,10 +30,7 @@ func (NoopPlugin) Init() error      { return nil }
 func (NoopPlugin) Start() error     { return nil }
 func (NoopPlugin) Stop() error      { return nil }
 
-var plugins []Plugin
-var state = newRegistryState()
-
-type pluginStatus struct {
+type SnapshotItem struct {
 	Name        string `json:"name"`
 	InitOK      bool   `json:"init_ok"`
 	StartOK     bool   `json:"start_ok"`
@@ -47,75 +39,59 @@ type pluginStatus struct {
 	Started     bool   `json:"started"`
 }
 
-type registryState struct {
-	mu      sync.RWMutex
-	plugins map[string]pluginStatus
+type registry struct {
+	mu       sync.RWMutex
+	items    []Plugin
+	index    map[string]int
+	status   map[string]SnapshotItem
+	frozen   bool
+	initDone bool
 }
 
-func newRegistryState() *registryState {
-	return &registryState{plugins: make(map[string]pluginStatus)}
+var global = newRegistry()
+
+func newRegistry() *registry {
+	return &registry{
+		index:  make(map[string]int),
+		status: make(map[string]SnapshotItem),
+	}
 }
 
 // Register registers a plugin. Call this from init() to self-register.
 func Register(m Plugin) {
-	plugins = append(plugins, m)
-	state.ensure(m.Name())
-	log.Printf("[plugin] registered: %s", m.Name())
+	if err := global.register(m); err != nil {
+		panic(err)
+	}
+}
+
+func MustRegister(m Plugin) {
+	Register(m)
 }
 
 // InitAll runs Init() on all registered plugins in registration order.
 func InitAll() error {
-	for _, m := range plugins {
-		log.Printf("[plugin] init: %s", m.Name())
-		if err := m.Init(); err != nil {
-			state.setInit(m.Name(), err)
-			return fmt.Errorf("plugin %s init failed: %w", m.Name(), err)
-		}
-		state.setInit(m.Name(), nil)
-	}
-	return nil
+	return global.initAll()
 }
 
 // StartAll runs Start() on all registered plugins.
 func StartAll() error {
-	var startErr error
-	for _, m := range plugins {
-		if err := m.Start(); err != nil {
-			state.setStart(m.Name(), err)
-			log.Printf("[plugin] %s start failed: %v", m.Name(), err)
-			if startErr == nil {
-				startErr = fmt.Errorf("plugin %s start failed: %w", m.Name(), err)
-			}
-			continue
-		}
-		state.setStart(m.Name(), nil)
-	}
-	return startErr
+	return global.startAll()
 }
 
 // StopAll runs Stop() on all registered plugins in reverse order.
 func StopAll() {
-	for i := len(plugins) - 1; i >= 0; i-- {
-		m := plugins[i]
-		if err := m.Stop(); err != nil {
-			log.Printf("[plugin] %s stop failed: %v", m.Name(), err)
-		}
-		state.setStopped(m.Name())
-	}
+	global.stopAll()
 }
 
-func Snapshot() []pluginStatus {
-	state.mu.RLock()
-	defer state.mu.RUnlock()
-
-	items := make([]pluginStatus, 0, len(plugins))
-	for _, m := range plugins {
-		items = append(items, state.plugins[m.Name()])
-	}
-	return items
+func Freeze() {
+	global.freeze()
 }
 
-func Ready() (bool, []pluginStatus) {
+func Snapshot() []SnapshotItem {
+	return global.snapshot()
+}
+
+func Ready() (bool, []SnapshotItem) {
 	snapshot := Snapshot()
 	for _, item := range snapshot {
 		if !item.InitOK || !item.StartOK {
@@ -125,31 +101,132 @@ func Ready() (bool, []pluginStatus) {
 	return true, snapshot
 }
 
-func (s *registryState) ensure(name string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.plugins[name]; !ok {
-		s.plugins[name] = pluginStatus{Name: name}
+func ResetForTest() {
+	global = newRegistry()
+}
+
+func (r *registry) register(m Plugin) error {
+	if m == nil {
+		return fmt.Errorf("plugin register failed: nil plugin")
+	}
+
+	name := m.Name()
+	if name == "" {
+		return fmt.Errorf("plugin register failed: empty plugin name")
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.frozen {
+		return fmt.Errorf("plugin register failed: registry frozen, plugin=%s", name)
+	}
+	if _, ok := r.index[name]; ok {
+		return fmt.Errorf("plugin register failed: duplicate plugin=%s", name)
+	}
+
+	r.index[name] = len(r.items)
+	r.items = append(r.items, m)
+	r.status[name] = SnapshotItem{Name: name}
+	log.Printf("[plugin] registered: %s", name)
+	return nil
+}
+
+func (r *registry) initAll() error {
+	r.freeze()
+
+	r.mu.RLock()
+	items := append([]Plugin(nil), r.items...)
+	r.mu.RUnlock()
+
+	for _, m := range items {
+		log.Printf("[plugin] init: %s", m.Name())
+		if err := m.Init(); err != nil {
+			r.setInitStatus(m.Name(), err)
+			return fmt.Errorf("plugin %s init failed: %w", m.Name(), err)
+		}
+		r.setInitStatus(m.Name(), nil)
+	}
+
+	r.mu.Lock()
+	r.initDone = true
+	r.mu.Unlock()
+	return nil
+}
+
+func (r *registry) startAll() error {
+	r.mu.RLock()
+	items := append([]Plugin(nil), r.items...)
+	initDone := r.initDone
+	r.mu.RUnlock()
+
+	if !initDone {
+		return fmt.Errorf("plugin start failed: InitAll must run first")
+	}
+
+	var startErr error
+	for _, m := range items {
+		if err := m.Start(); err != nil {
+			r.setStartStatus(m.Name(), err)
+			log.Printf("[plugin] %s start failed: %v", m.Name(), err)
+			if startErr == nil {
+				startErr = fmt.Errorf("plugin %s start failed: %w", m.Name(), err)
+			}
+			continue
+		}
+		r.setStartStatus(m.Name(), nil)
+	}
+	return startErr
+}
+
+func (r *registry) stopAll() {
+	r.mu.RLock()
+	items := append([]Plugin(nil), r.items...)
+	r.mu.RUnlock()
+
+	for i := len(items) - 1; i >= 0; i-- {
+		m := items[i]
+		if err := m.Stop(); err != nil {
+			log.Printf("[plugin] %s stop failed: %v", m.Name(), err)
+		}
+		r.setStopped(m.Name())
 	}
 }
 
-func (s *registryState) setInit(name string, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	item := s.plugins[name]
+func (r *registry) freeze() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.frozen = true
+}
+
+func (r *registry) snapshot() []SnapshotItem {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	items := make([]SnapshotItem, 0, len(r.items))
+	for _, p := range r.items {
+		items = append(items, r.status[p.Name()])
+	}
+	return items
+}
+
+func (r *registry) setInitStatus(name string, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item := r.status[name]
 	item.Name = name
 	item.Initialized = true
 	item.InitOK = err == nil
 	if err != nil {
 		item.LastError = err.Error()
 	}
-	s.plugins[name] = item
+	r.status[name] = item
 }
 
-func (s *registryState) setStart(name string, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	item := s.plugins[name]
+func (r *registry) setStartStatus(name string, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item := r.status[name]
 	item.Name = name
 	item.Started = true
 	item.StartOK = err == nil
@@ -158,14 +235,14 @@ func (s *registryState) setStart(name string, err error) {
 	} else if item.InitOK {
 		item.LastError = ""
 	}
-	s.plugins[name] = item
+	r.status[name] = item
 }
 
-func (s *registryState) setStopped(name string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	item := s.plugins[name]
+func (r *registry) setStopped(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	item := r.status[name]
 	item.Started = false
 	item.StartOK = false
-	s.plugins[name] = item
+	r.status[name] = item
 }

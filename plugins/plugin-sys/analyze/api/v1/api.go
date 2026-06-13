@@ -23,7 +23,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/analyze/dashboard", defaultHandler.dashboard)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 

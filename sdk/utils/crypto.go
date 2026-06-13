@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm3"
@@ -254,6 +255,8 @@ func bigIntTo32Bytes(n *big.Int) []byte {
 
 type utilsPlugin struct{ plugin.NoopPlugin }
 
+var registerOnce sync.Once
+
 func (m *utilsPlugin) Name() string { return "utils" }
 
 func (m *utilsPlugin) Init() error {
@@ -261,4 +264,8 @@ func (m *utilsPlugin) Init() error {
 	return nil
 }
 
-func init() { plugin.Register(&utilsPlugin{}) }
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&utilsPlugin{})
+	})
+}

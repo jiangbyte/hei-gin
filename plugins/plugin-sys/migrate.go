@@ -25,7 +25,7 @@ import (
 	"hei-gin/sdk/utils"
 )
 
-func init() {
+func RegisterMigrations() {
 	db.RegisterModel(&user.SysUser{})
 	db.RegisterModel(&user.RelUserRole{})
 	db.RegisterModel(&user.RelUserPermission{})

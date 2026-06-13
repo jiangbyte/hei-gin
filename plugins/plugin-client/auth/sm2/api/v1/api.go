@@ -13,7 +13,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/public/c/sm2/public-key", getPublicKeyHandler)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 

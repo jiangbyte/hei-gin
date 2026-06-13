@@ -16,6 +16,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -268,6 +269,8 @@ var (
 
 type captchaPlugin struct{ plugin.NoopPlugin }
 
+var registerOnce sync.Once
+
 func (m *captchaPlugin) Name() string { return "captcha" }
 
 func (m *captchaPlugin) Init() error {
@@ -276,4 +279,8 @@ func (m *captchaPlugin) Init() error {
 	return nil
 }
 
-func init() { plugin.Register(&captchaPlugin{}) }
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&captchaPlugin{})
+	})
+}

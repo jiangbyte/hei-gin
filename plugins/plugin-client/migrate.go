@@ -5,6 +5,6 @@ import (
 	"hei-gin/sdk/infra/db"
 )
 
-func init() {
+func RegisterMigrations() {
 	db.RegisterModel(&clientUser.ClientUser{})
 }

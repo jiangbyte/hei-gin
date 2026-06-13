@@ -13,7 +13,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/public/c/captcha", getCaptchaHandler)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 

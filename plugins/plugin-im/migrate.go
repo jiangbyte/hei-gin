@@ -5,7 +5,7 @@ import (
 	"hei-gin/sdk/infra/db"
 )
 
-func init() {
+func RegisterMigrations() {
 	db.RegisterModel(&imModel.Message{})
 	db.RegisterModel(&imModel.Conversation{})
 	db.RegisterModel(&imModel.ConversationUnread{})

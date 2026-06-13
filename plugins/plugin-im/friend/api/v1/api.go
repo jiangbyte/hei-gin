@@ -118,7 +118,7 @@ func RegisterClientRoutes(r *gin.Engine) {
 	)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 	registry.RegisterRoute(RegisterClientRoutes)
 }

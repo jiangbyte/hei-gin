@@ -1,7 +1,13 @@
 package plugin_im
 
 import (
+	"sync"
+
+	broadcastv1 "hei-gin/plugins/plugin-im/broadcast/api/v1"
+	friendv1 "hei-gin/plugins/plugin-im/friend/api/v1"
+	groupv1 "hei-gin/plugins/plugin-im/group/api/v1"
 	message "hei-gin/plugins/plugin-im/message"
+	messagev1 "hei-gin/plugins/plugin-im/message/api/v1"
 	ws "hei-gin/plugins/plugin-im/ws"
 	file "hei-gin/plugins/plugin-sys/file"
 	"hei-gin/sdk/enums"
@@ -11,17 +17,11 @@ import (
 	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
-
-	_ "hei-gin/plugins/plugin-im/broadcast"
-	_ "hei-gin/plugins/plugin-im/broadcast/api/v1"
-	_ "hei-gin/plugins/plugin-im/friend"
-	_ "hei-gin/plugins/plugin-im/friend/api/v1"
-	_ "hei-gin/plugins/plugin-im/group"
-	_ "hei-gin/plugins/plugin-im/group/api/v1"
-	_ "hei-gin/plugins/plugin-im/message/api/v1"
 )
 
 type IMPlugin struct{}
+
+var registerOnce sync.Once
 
 func (p *IMPlugin) Info() plugin.PluginInfo {
 	return plugin.PluginInfo{
@@ -48,14 +48,22 @@ func (p *IMPlugin) Stop() error {
 	return nil
 }
 
-func init() {
-	plugin.Register(&IMPlugin{})
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&IMPlugin{})
+	})
+}
 
+func RegisterRoutes() {
 	registry.RegisterRoute(func(r *gin.Engine) {
 		r.GET("/uploads/:bucket/:file_key", uploadHandler)
 		r.GET("/api/v1/sys/im/ws", sysWSHandler)
 		r.GET("/api/v1/c/im/ws", clientWSHandler)
 	})
+	broadcastv1.Register()
+	friendv1.Register()
+	groupv1.Register()
+	messagev1.Register()
 }
 
 // @Summary      即时通讯连接接口调用

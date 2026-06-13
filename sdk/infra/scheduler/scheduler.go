@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"hei-gin/sdk/kernel/plugin"
@@ -81,8 +82,14 @@ func (s *Scheduler) Stop() {
 
 type schedulerPlugin struct{ plugin.NoopPlugin }
 
-func (m *schedulerPlugin) Name() string  { return "scheduler" }
-func (m *schedulerPlugin) Start() error  { Start(); return nil }
-func (m *schedulerPlugin) Stop() error   { Stop(); return nil }
+var registerOnce sync.Once
 
-func init() { plugin.Register(&schedulerPlugin{}) }
+func (m *schedulerPlugin) Name() string { return "scheduler" }
+func (m *schedulerPlugin) Start() error { Start(); return nil }
+func (m *schedulerPlugin) Stop() error  { Stop(); return nil }
+
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&schedulerPlugin{})
+	})
+}

@@ -14,14 +14,24 @@ package main
 // @description                 Bearer token authentication
 
 import (
+	plugin_client "hei-gin/plugins/plugin-client"
+	plugin_im "hei-gin/plugins/plugin-im"
+	plugin_sys "hei-gin/plugins/plugin-sys"
 	"hei-gin/sdk/kernel/app"
-
-	// Plugin route/permission self-registration
-	_ "hei-gin/plugins/plugin-client"
-	_ "hei-gin/plugins/plugin-im"
-	_ "hei-gin/plugins/plugin-sys"
 )
 
 func main() {
+	plugin_sys.RegisterPlugin()
+	plugin_sys.RegisterRoutes()
+	plugin_sys.RegisterMigrations()
+
+	plugin_client.RegisterPlugin()
+	plugin_client.RegisterRoutes()
+	plugin_client.RegisterMigrations()
+
+	plugin_im.RegisterPlugin()
+	plugin_im.RegisterRoutes()
+	plugin_im.RegisterMigrations()
+
 	app.Run()
 }

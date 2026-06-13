@@ -2,9 +2,29 @@ package plugin_sys
 
 import (
 	stdlog "log"
+	"sync"
 	"time"
 
+	analyzerv1 "hei-gin/plugins/plugin-sys/analyze/api/v1"
+	authcaptchav1 "hei-gin/plugins/plugin-sys/auth/captcha/api/v1"
+	authsm2v1 "hei-gin/plugins/plugin-sys/auth/sm2/api/v1"
+	authusernamev1 "hei-gin/plugins/plugin-sys/auth/username/api/v1"
+	bannerv1 "hei-gin/plugins/plugin-sys/banner/api/v1"
+	configv1 "hei-gin/plugins/plugin-sys/config/api/v1"
+	dictv1 "hei-gin/plugins/plugin-sys/dict/api/v1"
+	filev1 "hei-gin/plugins/plugin-sys/file/api/v1"
+	groupv1 "hei-gin/plugins/plugin-sys/group/api/v1"
+	homev1 "hei-gin/plugins/plugin-sys/home/api/v1"
+	logv1 "hei-gin/plugins/plugin-sys/log/api/v1"
+	noticev1 "hei-gin/plugins/plugin-sys/notice/api/v1"
+	orgv1 "hei-gin/plugins/plugin-sys/org/api/v1"
+	permissionv1 "hei-gin/plugins/plugin-sys/permission/api/v1"
+	positionv1 "hei-gin/plugins/plugin-sys/position/api/v1"
 	"hei-gin/plugins/plugin-sys/provider"
+	resourcev1 "hei-gin/plugins/plugin-sys/resource/api/v1"
+	rolev1 "hei-gin/plugins/plugin-sys/role/api/v1"
+	sessionv1 "hei-gin/plugins/plugin-sys/session/api/v1"
+	userv1 "hei-gin/plugins/plugin-sys/user/api/v1"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/kernel/plugin"
 	"hei-gin/sdk/log"
@@ -17,6 +37,8 @@ type SysPlugin struct {
 	permProvider *provider.PermissionProvider
 	userProvider *provider.UserProvider
 }
+
+var registerOnce sync.Once
 
 func (p *SysPlugin) Info() plugin.PluginInfo {
 	return plugin.PluginInfo{
@@ -70,6 +92,30 @@ func (p *SysPlugin) Init() error {
 	return nil
 }
 
-func init() {
-	plugin.Register(&SysPlugin{})
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&SysPlugin{})
+	})
+}
+
+func RegisterRoutes() {
+	userv1.Register()
+	rolev1.Register()
+	orgv1.Register()
+	groupv1.Register()
+	positionv1.Register()
+	dictv1.Register()
+	configv1.Register()
+	bannerv1.Register()
+	homev1.Register()
+	logv1.Register()
+	noticev1.Register()
+	filev1.Register()
+	resourcev1.Register()
+	sessionv1.Register()
+	permissionv1.Register()
+	analyzerv1.Register()
+	authusernamev1.Register()
+	authcaptchav1.Register()
+	authsm2v1.Register()
 }

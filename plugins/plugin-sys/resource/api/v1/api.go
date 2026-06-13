@@ -80,7 +80,7 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 

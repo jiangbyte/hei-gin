@@ -10,6 +10,7 @@ import (
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/kernel/plugin"
+	"hei-gin/sdk/kernel/registry"
 )
 
 func HealthHandler(c *gin.Context) {
@@ -56,6 +57,15 @@ type readinessPayload struct {
 	CheckedAt  string              `json:"checked_at"`
 	Components []readinessState    `json:"components"`
 	Plugins    []pluginStatusBrief `json:"plugins"`
+}
+
+type registryPayload struct {
+	Service   string                `json:"service"`
+	Version   string                `json:"version"`
+	CheckedAt string                `json:"checked_at"`
+	Plugins   []plugin.SnapshotItem `json:"plugins"`
+	Routes    registry.Snapshot     `json:"routes"`
+	Migration db.MigrationSnapshot  `json:"migration"`
 }
 
 func readinessReport(parent context.Context) readinessPayload {
@@ -117,4 +127,19 @@ func checkRedis(ctx context.Context) readinessState {
 		return readinessState{Name: "redis", OK: false, Detail: err.Error()}
 	}
 	return readinessState{Name: "redis", OK: true}
+}
+
+func RegistryHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, registrySnapshot())
+}
+
+func registrySnapshot() registryPayload {
+	return registryPayload{
+		Service:   config.C.App.Name,
+		Version:   config.C.App.Version,
+		CheckedAt: time.Now().Format(time.RFC3339),
+		Plugins:   plugin.Snapshot(),
+		Routes:    registry.SnapshotState(),
+		Migration: db.Snapshot(),
+	}
 }

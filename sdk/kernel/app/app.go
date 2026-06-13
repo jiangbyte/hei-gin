@@ -17,18 +17,24 @@ import (
 
 	"hei-gin/docs"
 	_ "hei-gin/docs"
-	_ "hei-gin/sdk/auth"
-	_ "hei-gin/sdk/captcha"
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/captcha"
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/infra/scheduler"
 	"hei-gin/sdk/kernel/plugin"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/observability"
-	_ "hei-gin/sdk/utils"
+	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/middleware"
 )
 
 func Run() {
+	auth.RegisterPlugin()
+	captcha.RegisterPlugin()
+	utils.RegisterPlugin()
+	scheduler.RegisterPlugin()
+
 	if err := config.FindAndLoad(); err != nil {
 		log.Fatalf("[APP] Failed to load config: %v", err)
 	}
@@ -47,6 +53,9 @@ func Run() {
 	if err := plugin.InitAll(); err != nil {
 		log.Fatalf("[APP] Plugin init failed: %v", err)
 	}
+	registry.Freeze()
+	db.Freeze()
+	logAssemblySummary()
 
 	r := gin.New()
 	r.Use(middleware.Recovery())
@@ -106,9 +115,27 @@ func SetupRouters(r *gin.Engine) {
 	r.GET("/", HealthHandler)
 	r.GET("/health/live", LiveHandler)
 	r.GET("/health/ready", ReadyHandler)
+	if config.C.App.Debug {
+		r.GET("/debug/registry", RegistryHandler)
+	}
 	r.GET("/metrics", gin.WrapH(observability.Handler()))
 	setupSwagger(r)
 	registry.ExecuteRoutes(r)
+}
+
+func logAssemblySummary() {
+	pluginSnapshot := plugin.Snapshot()
+	routeSnapshot := registry.SnapshotState()
+	migrationSnapshot := db.Snapshot()
+
+	log.Printf(
+		"[APP] Assembly frozen: plugins=%d routes=%d middlewares=%d models=%d seeds=%d",
+		len(pluginSnapshot),
+		len(routeSnapshot.Routes),
+		len(routeSnapshot.Middlewares),
+		len(migrationSnapshot.Models),
+		len(migrationSnapshot.Seeds),
+	)
 }
 
 func setupSwagger(r *gin.Engine) {

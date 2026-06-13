@@ -1,22 +1,21 @@
 package plugin_client
 
 import (
+	"sync"
+
+	authcaptchav1 "hei-gin/plugins/plugin-client/auth/captcha/api/v1"
+	authsm2v1 "hei-gin/plugins/plugin-client/auth/sm2/api/v1"
+	authusernamev1 "hei-gin/plugins/plugin-client/auth/username/api/v1"
+	sessionv1 "hei-gin/plugins/plugin-client/session/api/v1"
+	userv1 "hei-gin/plugins/plugin-client/user/api/v1"
 	"hei-gin/sdk/kernel/plugin"
-
-	// Blank-import to trigger model registration and route registration
-	_ "hei-gin/plugins/plugin-client/session"
-	_ "hei-gin/plugins/plugin-client/session/api/v1"
-	_ "hei-gin/plugins/plugin-client/user"
-	_ "hei-gin/plugins/plugin-client/user/api/v1"
-
-	_ "hei-gin/plugins/plugin-client/auth/captcha/api/v1"
-	_ "hei-gin/plugins/plugin-client/auth/sm2/api/v1"
-	_ "hei-gin/plugins/plugin-client/auth/username/api/v1"
 )
 
 type ClientPlugin struct {
 	plugin.NoopPlugin
 }
+
+var registerOnce sync.Once
 
 func (p *ClientPlugin) Info() plugin.PluginInfo {
 	return plugin.PluginInfo{
@@ -28,6 +27,16 @@ func (p *ClientPlugin) Info() plugin.PluginInfo {
 
 func (p *ClientPlugin) Name() string { return "plugin-client" }
 
-func init() {
-	plugin.Register(&ClientPlugin{})
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&ClientPlugin{})
+	})
+}
+
+func RegisterRoutes() {
+	sessionv1.Register()
+	userv1.Register()
+	authcaptchav1.Register()
+	authsm2v1.Register()
+	authusernamev1.Register()
 }

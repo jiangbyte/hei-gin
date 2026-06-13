@@ -70,7 +70,7 @@ func RegisterPublicRoutes(r *gin.Engine) {
 	r.GET("/api/v1/public/c/notice/detail", defaultHandler.detailPublic)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 	registry.RegisterRoute(RegisterPublicRoutes)
 }

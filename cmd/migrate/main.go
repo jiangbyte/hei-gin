@@ -5,32 +5,18 @@ import (
 	"fmt"
 	"log"
 
+	plugin_client "hei-gin/plugins/plugin-client"
+	plugin_im "hei-gin/plugins/plugin-im"
+	plugin_sys "hei-gin/plugins/plugin-sys"
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/infra/db"
-
-	// Blank-import plugins to trigger model + seed self-registration via init()
-	_ "hei-gin/plugins/plugin-client/user"
-	_ "hei-gin/plugins/plugin-im/broadcast"
-	_ "hei-gin/plugins/plugin-im/friend"
-	_ "hei-gin/plugins/plugin-im/group"
-	_ "hei-gin/plugins/plugin-im/message"
-	_ "hei-gin/plugins/plugin-im/model"
-	_ "hei-gin/plugins/plugin-sys/banner"
-	_ "hei-gin/plugins/plugin-sys/config"
-	_ "hei-gin/plugins/plugin-sys/dict"
-	_ "hei-gin/plugins/plugin-sys/file"
-	_ "hei-gin/plugins/plugin-sys/group"
-	_ "hei-gin/plugins/plugin-sys/home"
-	_ "hei-gin/plugins/plugin-sys/log"
-	_ "hei-gin/plugins/plugin-sys/notice"
-	_ "hei-gin/plugins/plugin-sys/org"
-	_ "hei-gin/plugins/plugin-sys/position"
-	_ "hei-gin/plugins/plugin-sys/resource"
-	_ "hei-gin/plugins/plugin-sys/role"
-	_ "hei-gin/plugins/plugin-sys/user"
 )
 
 func main() {
+	plugin_sys.RegisterMigrations()
+	plugin_client.RegisterMigrations()
+	plugin_im.RegisterMigrations()
+
 	skipSeed := flag.Bool("skip-seed", false, "skip seeding initial data")
 	flag.Parse()
 
@@ -45,6 +31,8 @@ func main() {
 		log.Fatalf("failed to init database: %v", err)
 	}
 	defer db.Close()
+
+	db.Freeze()
 
 	models := db.GetModels()
 	if len(models) == 0 {
