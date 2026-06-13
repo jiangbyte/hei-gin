@@ -1,8 +1,8 @@
 # Hei Gin
 
-> 本项目一直由我独立维护。后来我在公司主导某个项目时，为方便起见，直接简化后在项目中采用了该框架，目前已在生产环境中投入使用。
-> 框架完全由我设计实现，正在参考优秀开源方案并在此基础上扩展更多能力。
-> 后续会持续优化。因工作繁忙，维护时间不定，欢迎提出建议、Issue 或 PR。
+> 本项目一直由我独立设计和维护。最初是为了沉淀一套自己在实际业务里反复使用的 Go 后端基础框架，后续也在真实项目中不断裁剪、补强、演进。
+>
+> 它不是为了追求最小化，而是为了把后台系统、双端认证、权限体系、文件存储、在线会话、IM、日志与生产化基础能力，整理成一套可持续扩展的工程底座。
 
 <img width="120" src="vitepress/docs/public/logo.svg">
 
@@ -13,9 +13,22 @@
 
 ## 简介
 
-**Hei Gin** —— Go + Gin + GORM 构建的快速开发框架，开箱即用。包含完善的权限管理（RBAC）、数据权限、认证授权、文件存储（MinIO/S3/Local）、WebSocket IM、操作日志等功能模块。框架采用前后端分离架构，支持快速搭建后台管理系统和 API 服务。
+**Hei Gin** 是一个基于 **Go + Gin + GORM** 的后端开发框架，主要面向后台管理系统、双端 API 服务、权限驱动型业务系统，以及带实时消息能力的场景。
 
-**在线文档**: [https://jiangbyte.github.io/hei-gin/](https://jiangbyte.github.io/hei-gin/)
+它目前已经实现了一批常用基础能力，这些能力主要分布在“认证、权限、会话、插件装配、运行治理”几个方向：
+
+- 认证与鉴权
+- RBAC 与权限范围
+- 在线会话与 ACL 刷新
+- 文件上传与多存储后端
+- 操作日志与链路追踪
+- 图形验证码与基础安全能力
+- WebSocket IM 与跨实例消息投递
+- 插件化业务组织
+- 数据库迁移与种子数据
+- 健康检查、指标与装配快照
+
+在线文档：<https://jiangbyte.github.io/hei-gin/>（暂时未维护）
 
 ## 预览
 
@@ -25,419 +38,325 @@
 
 ![](./docs/readme/home.png)
 
-## 技术栈
+## 项目背景
 
-| 类型 | 技术 |
-| --- | --- |
-| 核心框架 | Go 1.25+ / Gin 1.12+ |
-| ORM | GORM (gorm.io/gorm) |
-| 数据库 | MySQL 8.0+ |
-| 缓存 | Redis 6.0+ (go-redis) |
-| 认证授权 | Token / SM2 国密加解密 / SM3 哈希 / bcrypt 密码哈希 |
-| 文件存储 | MinIO / S3 (AWS SDK) / Local 本地存储 |
-| 定时调度 | cron 表达式 (robfig/cron/v3) |
-| IP 定位 | IP2Region 离线库 |
-| 分布式 ID | Snowflake ID |
-| WebSocket | gorilla/websocket + go-redis List/BRPOP 跨实例 IM |
+Hei Gin 不是从“做一个通用教程项目”出发，而是从真实业务开发的痛点出发逐步沉淀出来的：
+
+- 认证和权限每个项目都要重新搭一遍
+- 文件上传、日志记录、在线会话这类能力经常重复实现
+- 业务不断变大后，代码很容易退化成大包、大 service、大量隐式依赖
+- 很多项目早期能跑，但到后期缺少注册治理、健康检查、观测和会话治理，维护成本会迅速上升
+
+因此，这个项目的目标一直比较明确：
+
+- 不是只解决 CRUD
+- 不是只解决启动
+- 而是整理一套在实际项目里反复使用的后端工程基础
 
 ## 核心特性
 
-- **多模块 Go Workspace** — 采用 Go Workspace 组织 SDK、API 接口、业务插件和 App 入口，模块间依赖清晰
-- **插件化架构** — 业务模块以插件形式自注册（`module.Register()`），自动发现路由、权限、中间件、定时任务、DB 模型、种子数据
-- **双端认证体系** — B 端（后台管理）和 C 端（客户端）独立的两套 Token 认证，通过 `auth.Business` / `auth.Consumer` 统一访问
-- **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
-- **SM3 哈希** — 操作日志防篡改签名
-- **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
-- **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
-- **数据权限（行级）** — 支持 ALL / ORG / ORG_AND_BELOW / SELF / CUSTOM_ORG / GROUP / GROUP_AND_BELOW / CUSTOM_GROUP 等数据范围控制
-- **权限自动发现** — 启动时自动扫描注册的权限并缓存到 Redis
-- **权限匹配器** — 支持 `*` 单级和 `**` 多级通配符匹配
-- **操作日志** — `log.SysLog` 中间件自动记录用户操作，SM3 签名防篡改
-- **防重复提交** — `middleware.NoRepeat` 中间件（基于 Redis）
-- **链路追踪** — 基于 `trace_id` 的全链路追踪
-- **统一验证码** — B 端/C 端独立的图形验证码服务（Redis 存储，300s TTL）
-- **统一响应格式** — `{code, message, data, success, trace_id}` 标准结构
-- **抽象文件存储** — 统一的 `Engine` 接口，三种后端（Local/MinIO/S3），支持配置切换
-- **分片上传** — 大文件分片上传、合并与校验
-- **定时调度** — 支持 cron 表达式和固定间隔的后台任务，优雅关闭
-- **DB 自动迁移** — `cmd/migrate` 命令行工具自动发现所有模块注册的 Model
-- **种子数据** — 模块自注册种子数据，幂等执行
-- **模块生命周期** — `module.Register()` 统一管理模块的 Init / Start / Stop
-- **模块级配置** — 通过 `config.C.Raw` 读取模块专属配置，无需修改 `config.go`
-- **在线会话管理** — B 端和 C 端独立的会话管理，支持在线用户查看和强制下线
-- **雪花 ID** — 分布式 Snowflake ID 生成器
-- **事件总线** — 内置内存事件总线，支持模块间解耦通信（连接/断开/消息事件）
-- **通用 CRUD** — `sdk/crud` 提供通用分页、详情、删除等标准操作函数
-- **跨实例 WebSocket IM** — Redis List + BRPOP 驱动的跨实例消息投递、在线状态感知、消息去重、限流、心跳检测
+### 认证与鉴权
 
-## 项目结构
+- **双端认证体系**
+  - B 端与 C 端分离，统一通过 `auth.Business` 和 `auth.Consumer` 访问
+- **Token 会话化**
+  - 登录后将角色、权限、Scope 信息写入 claims / session，减少请求时重复查询
+- **角色与权限校验**
+  - 支持登录校验、权限校验、角色校验
+- **Claims / Session 职责分层**
+  - claims 负责请求期读取，session 负责在线态管理、刷新与失效控制
+- **ACL 刷新机制**
+  - 用户、角色权限变更后支持刷新在线会话 ACL
+- **显式 Realm 模型**
+  - 不再依赖裸字符串 login type，改为显式 realm 常量
 
-```
-hei-gin/
-├── main.go                          # 应用入口（import 插件并调用 app.Run()）
-├── go.mod / go.sum / go.work        # Go 模块定义 + Workspace
-├── config.example.yaml              # 配置文件示例
-├── config.yaml                      # 本地配置文件
-│
-├── sdk/                             # 框架 SDK（核心基础设施，独立 Go 模块）
-│   ├── app/
-│   │   ├── app.go                   # 应用工厂：初始化编排（Config→DB→Redis→Auth→Router→Server）
-│   │   └── health.go                # 健康检查 Handler
-│   ├── auth/                        # 认证与权限系统
-│   │   ├── base_auth.go             # 认证基础实现（Business + Consumer）
-│   │   ├── auth_tool.go             # B 端（BUSINESS）包级便捷函数
-│   │   ├── permission_interface.go  # 权限查询接口定义 + 默认实现
-│   │   ├── permission_matcher.go    # 权限通配符匹配器（* / **）
-│   │   ├── permission_scan.go       # 权限自动扫描与 Redis 缓存
-│   │   ├── permission_tool.go       # 权限/角色查询门面
-│   │   ├── module.go                # 认证模块初始化
-│   │   ├── middleware/              # 认证与权限中间件
-│   │   │   ├── check_login.go              # B 端登录验证
-│   │   │   ├── client_check_login.go       # C 端登录验证
-│   │   │   ├── check_permission.go         # B 端权限检查
-│   │   │   ├── client_check_permission.go  # C 端权限检查
-│   │   │   ├── check_role.go               # B 端角色检查
-│   │   │   ├── client_check_role.go        # C 端角色检查
-│   │   │   └── norepeat.go                 # 防重复提交
-│   │   └── pojo/                    # 认证 POJO 定义
-│   ├── captcha/                     # 图形验证码生成与验证
-│   ├── config/                      # 配置加载（YAML 加载 + 结构体定义）
-│   ├── constants/                   # 系统常量与 Redis 键前缀定义
-│   ├── crud/                        # 通用 CRUD 帮助函数（分页/详情/删除）
-│   ├── db/                          # 数据库初始化（GORM + go-redis）
-│   ├── enums/                       # 状态/权限/资源/分页字段枚举
-│   ├── eventbus/                    # 内存事件总线（发布/订阅模式）
-│   ├── exception/                   # 业务异常 BusinessError（panic-based）
-│   ├── log/                         # 操作日志系统（SysLog 中间件 + 工具函数）
-│   ├── middleware/                  # 全局中间件
-│   │   ├── trace.go                 # 链路追踪（trace_id）
-│   │   ├── auth_check.go            # 认证路由分流（B/C/Public）
-│   │   ├── recovery.go              # 全局异常恢复（panic→JSON）
-│   │   └── cors.go                  # CORS 跨域配置
-│   ├── module/                      # 模块生命周期管理（Register/Init/Start/Stop）
-│   ├── pojo/                        # 通用 POJO（日期混入、ID 参数）
-│   ├── registry/                    # 注册中心（路由/中间件/权限注册与执行）
-│   ├── result/                      # 统一响应格式
-│   ├── scheduler/                   # 定时调度（cron 表达式 + 固定间隔）
-│   ├── storage/                     # 文件存储抽象（Engine 接口 + Local/MinIO/S3 实现）
-│   └── utils/                       # 工具函数（雪花 ID、加密、IP 定位、图片等）
-│
-├── api/                             # API 接口定义层（独立 Go 模块）
-│   ├── plugin.go                    # PluginInfo / Plugin 接口定义
-│   ├── auth.go                      # 认证/权限相关接口
-│   ├── event.go                     # 事件总线接口定义
-│   └── log.go                       # 日志持久化接口
-│
-├── plugins/                         # 业务插件目录（每个插件为独立 Go 模块）
-│   ├── plugin-sys/                  # 系统管理插件（B 端）
-│   │   ├── plugin.go                # 插件入口：注册模块、权限接口、日志持久化
-│   │   ├── imports.go               # 导入所有子模块触发 init() 自注册
-│   │   ├── persistence.go           # 日志持久化实现
-│   │   ├── provider/                # 权限/用户 Provider 实现
-│   │   ├── auth/                    # 认证模块（captcha / sm2 / username）
-│   │   ├── banner/                  # Banner 管理
-│   │   ├── config/                  # 系统配置管理
-│   │   ├── dict/                    # 数据字典管理
-│   │   ├── file/                    # 文件上传与管理
-│   │   ├── group/                   # 用户组管理
-│   │   ├── home/                    # 首页仪表盘
-│   │   ├── log/                     # 操作日志查询
-│   │   ├── notice/                  # 通知公告
-│   │   ├── org/                     # 组织架构
-│   │   ├── permission/              # 权限查询
-│   │   ├── position/                # 职位管理
-│   │   ├── resource/                # 资源管理（菜单/按钮）
-│   │   ├── role/                    # 角色管理
-│   │   ├── session/                 # 在线会话管理
-│   │   └── user/                    # B 端用户管理
-│   │
-│   ├── plugin-client/               # 客户端插件（C 端）
-│   │   ├── plugin.go                # 插件入口
-│   │   ├── auth/                    # C 端认证（captcha / sm2 / username）
-│   │   ├── session/                 # C 端会话管理
-│   │   └── user/                    # C 端用户管理
-│   │
-│   └── plugin-im/                   # WebSocket IM 插件
-│       ├── plugin.go                # 插件入口
-│       ├── ws/                      # WebSocket 核心（hub / client / cross_hub）
-│       ├── friend/                  # 好友管理
-│       ├── group/                   # 群组管理
-│       ├── message/                 # 消息管理（含消息/会话/文件）
-│       ├── broadcast/               # 广播消息
-│       └── model/                   # IM 数据模型
-│
-├── sdk/app/                         # 应用工厂（Run() 入口）
-│   ├── app.go                       # 初始化编排（Config→DB→Redis→Auth→Router→Server）
-│   └── health.go                    # 健康检查 Handler
-│
-├── cmd/                             # 命令行工具
-│   ├── migrate/main.go              # DB 迁移 + 种子数据
-│   └── codegen/main.go              # 代码生成器（scaffold / list / gen-imports）
-│
-├── Makefile                         # 开发命令（dev / build / scaffold / migrate ...）
-├── .air.toml                        # air 热重载配置
-│
-├── scripts/                         # 辅助脚本
-├── docs/                            # 设计文档
-├── uploads/                         # 本地上传文件存储目录
-└── vitepress/                       # 在线文档站点（VitePress）
-```
+### 权限体系
+
+- **RBAC**
+  - 用户 -> 角色 -> 权限
+- **用户直授权限**
+  - 支持用户直接挂权限，不仅依赖角色
+- **权限扫描与缓存**
+  - 启动时扫描权限，并写入 Redis
+- **权限范围与 Scope**
+  - Scope 信息支持写入 token session，并随会话一起刷新
+- **权限通配符匹配**
+  - 支持单级和多级权限匹配
+- **对外权限 Provider**
+  - 对外提供 `GetPermissionList`、`GetRoleList` 等接口
+
+### 数据权限
+
+- 支持常见数据范围控制模型，包括：
+  - `ALL`
+  - `SELF`
+  - `ORG`
+  - `ORG_AND_BELOW`
+  - `CUSTOM_ORG`
+  - `GROUP`
+  - `GROUP_AND_BELOW`
+  - `CUSTOM_GROUP`
+
+### 在线会话治理
+
+- B 端、C 端独立会话体系
+- 在线用户与会话查询
+- 强制下线
+- 权限变更后的会话 ACL 刷新
+- Session 数据与鉴权逻辑在 auth 模块内处理
+- 会话可用于在线查询、强制下线、ACL 刷新与状态核验
+
+### 安全能力
+
+- **SM2**
+  - 支持国密 SM2 加解密
+- **SM3**
+  - 支持摘要与日志签名
+- **bcrypt**
+  - 密码安全哈希
+- **验证码**
+  - B 端、C 端独立验证码服务
+- **防重复提交**
+  - `NoRepeat` 中间件
+- **基础登录边界**
+  - 公共路径、双端分流、会话校验在认证中间件中处理
+- **中间件收口**
+  - `sdk/auth/middleware` 处理登录态、权限收集、权限校验与上下文写入
+
+### 文件存储
+
+- 统一文件存储抽象
+- 支持：
+  - Local
+  - MinIO
+  - S3
+- 支持文件上传与业务文件访问能力
+- 支持按配置切换存储后端
+
+### WebSocket / IM
+
+- 内置 IM 插件
+- 支持：
+  - 单聊
+  - 好友关系
+  - 群聊
+  - 广播
+  - 在线状态
+- 支持跨实例消息投递
+- 支持连接限流、消息限流、去重、心跳、在线人数统计
+- WebSocket 安全边界已支持：
+  - `allowed_origins`
+  - `trusted_proxies`
+
+### 日志与追踪
+
+- **操作日志**
+  - 统一记录业务操作
+- **日志持久化扩展**
+  - 通过 provider / persistence 机制落库
+- **trace_id**
+  - 全链路透传
+- **统一响应结构**
+  - 便于问题排查与前后端对接
+- **可观测性基础**
+  - 当前已接入 HTTP、DB、Redis、WebSocket 基础指标
+
+### 注册与装配
+
+- **插件化组织**
+  - `plugin-sys`
+  - `plugin-client`
+  - `plugin-im`
+- **显式装配**
+  - 顶层显式调用：
+    - `RegisterPlugin()`
+    - `RegisterRoutes()`
+    - `RegisterMigrations()`
+- **注册中心治理**
+  - 支持去重
+  - 支持冻结
+  - 支持快照
+  - 支持测试重置
+- **装配审计**
+  - 调试模式下支持 `/debug/registry`
+
+### 生产化基础
+
+- 严格配置校验
+- 数据库与 Redis readiness 检查
+- Prometheus 指标输出
+- 装配摘要日志
+- workspace 级测试验证
+- WebSocket 安全边界与代理信任控制
+- debug 模式装配快照查看
+
+## 技术栈
+
+| 类别 | 说明 |
+| --- | --- |
+| 核心框架 | Go 1.25+, Gin 1.12+ |
+| ORM | GORM |
+| 数据库 | MySQL |
+| 缓存 | Redis |
+| 存储 | Local / MinIO / S3 |
+| 安全 | Token / SM2 / SM3 / bcrypt |
+| 调度 | robfig/cron |
+| WebSocket | gorilla/websocket |
+| 可观测性 | Prometheus metrics + health endpoints |
+
+## 当前架构特点
+
+### Go Workspace + 多模块组织
+
+项目不是单一大模块，而是由根应用、`sdk` 和多个业务插件模块共同组成。
+
+### 三大业务插件
+
+- `plugin-sys`
+  - 系统管理插件，覆盖用户、角色、组织、资源、权限、日志、公告、文件、会话等
+- `plugin-client`
+  - C 端用户、认证、会话能力
+- `plugin-im`
+  - 好友、群组、消息、广播、WebSocket IM 能力
+
+### 从副作用注册收口到显式装配
+
+项目当前以显式装配为主。  
+主入口会明确装配 plugin、route 与 migration，而不是只靠 blank import 完成。
+
+### 注册中心已经具备治理能力
+
+当前注册体系不再只是简单地“append 到切片”：
+
+- plugin 注册可去重、冻结、快照
+- route / middleware 注册可去重、冻结、快照
+- model / seed 注册可去重、冻结、快照
+
+这部分能力主要用于排查装配状态和支持测试。
+
+## 适用场景
+
+- 后台管理系统
+- 双端 API 服务
+- 需要权限、会话、日志、文件统一底座的业务系统
+- 带实时消息、通知、站内信、在线状态的业务场景
+- 希望在早期就保留清晰工程边界的项目
+
+## 运行要求
+
+- Go 1.25+
+- MySQL 8+
+- Redis 6+
+
+项目默认使用 `config.yaml` 运行，关键配置缺失时会直接启动失败。
 
 ## 快速开始
 
-### 环境要求
+### 1. 准备配置
 
-| 依赖 | 版本要求 |
-|------|----------|
-| Go | 1.25 或更高版本 |
-| MySQL | 8.0 或更高版本 |
-| Redis | 6.0 或更高版本 |
+基于 `config.example.yaml` 创建本地配置文件：
 
-### 1. 克隆项目
+- `config.example.yaml` -> `config.yaml`
 
-```bash
-git clone https://github.com/jiangbyte/hei-gin.git
-cd hei-gin
-```
+至少需要正确配置：
 
-### 2. 创建数据库
+- `app.host`
+- `app.port`
+- `db.host / db.port / db.user / db.database`
+- `redis.host / redis.port`
+- `token.expire_seconds / token.token_name`
 
-```sql
-CREATE DATABASE IF NOT EXISTS `hei-gin` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+如果启用 WebSocket 并准备上线，建议同时关注：
 
-### 3. 修改配置
+- `ws.allowed_origins`
+- `ws.trusted_proxies`
 
-编辑 `config.yaml`，修改数据库和 Redis 连接信息：
+### 2. 初始化数据库
 
-```yaml
-db:
-  host: 127.0.0.1
-  port: 3306
-  user: root
-  password: "your-password"
-  database: hei-gin
-
-redis:
-  host: 127.0.0.1
-  port: 6379
-  password: ""
-  database: 1
-```
-
-### 4. 运行项目
+执行迁移：
 
 ```bash
-# 方式一：直接运行
-go run main.go
-
-# 方式二：热重载（推荐开发时使用）
-# 安装 air：go install github.com/air-verse/air@latest
-air
-
-# 方式三：使用 Makefile
-make dev
-```
-
-启动成功后访问 `http://localhost:18885/` 验证服务运行状态。
-
-## 开发工具
-
-### Makefile 命令
-
-| 命令 | 说明 |
-|------|------|
-| `make dev` | 热重载启动（需安装 air） |
-| `make build` | 编译二进制到 `bin/hei-gin` |
-| `make run` | 直接运行 |
-| `make scaffold name=plugin-xxx` | 创建新插件脚手架 |
-| `make list-plugins` | 列出所有插件 |
-| `make gen-imports` | 重新生成 `main.go` 中的空白导入 |
-| `make migrate` | 执行数据库迁移 |
-| `make test` | 运行测试 |
-| `make lint` | 代码检查（go vet） |
-| `make clean` | 清理构建产物 |
-
-### 插件脚手架
-
-使用代码生成器快速创建插件：
-
-```bash
-# 列出已发现的插件
-go run cmd/codegen/main.go list
-
-# 创建新插件（自动注册到 main.go）
-go run cmd/codegen/main.go scaffold plugin-xxx
-
-# 重新生成 main.go 中的插件导入
-go run cmd/codegen/main.go gen-imports
-```
-
-生成的插件结构：
-
-```
-plugins/plugin-xxx/
-├── plugin.go      # Module 实现 + init() 注册
-├── model.go       # GORM 模型
-├── migrate.go     # db.RegisterModel()
-├── params.go      # 请求/响应参数
-├── service.go     # 业务逻辑
-└── api/v1/
-    └── api.go     # 路由 + Handler
-```
-
-### 热重载（air）
-
-hei-gin 内置 [air](https://github.com/air-verse/air) 配置，文件变化时自动重编译重启：
-
-```bash
-# 安装 air
-go install github.com/air-verse/air@latest
-
-# 启动（.air.toml 已预配置）
-air
-```
-
-配置说明：
-
-| 参数 | 值 |
-|------|-----|
-| 监控扩展 | `.go`, `.tpl`, `.tmpl`, `.html`, `.yaml`, `.yml` |
-| 排除目录 | `.air_tmp`, `.git`, `node_modules`, `vitepress` |
-| 延迟 | 1000ms（防频繁触发） |
-| 异常时停止 | true |
-
-### 数据库迁移
-
-```bash
-# 迁移 + 种子数据
 go run cmd/migrate/main.go
+```
 
-# 仅迁移，跳过种子数据
+仅执行结构迁移：
+
+```bash
 go run cmd/migrate/main.go -skip-seed
 ```
 
-## WebSocket / 站内信 IM
+### 3. 启动服务
 
-框架内置跨实例 WebSocket IM 系统，支持实时消息推送、在线状态感知、多实例水平扩展。
-
-### 架构
-
-```
-┌─ Instance A ─────────────┐    ┌─ Instance B ─────────────┐
-│  CrossHub                 │    │  CrossHub                 │
-│  ├─ Local Hub (in-mem)    │    │  ├─ Local Hub (in-mem)    │
-│  └─ Redis List BRPOP      │    │  └─ Redis List BRPOP      │
-└──────────┬────────────────┘    └──────────┬────────────────┘
-           │                                │
-           └────────── Redis ───────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │  ws:user:{type}:{uid}     │ → 用户→实例映射（Set）
-        │  ws:messages:{instance}   │ → 实例消息队列（List）
-        │  ws:instance:{instance}   │ → 实例心跳（String + TTL）
-        └───────────────────────────┘
+```bash
+go run main.go
 ```
 
-### WebSocket 端点
+默认基础入口：
 
-| 路径 | 说明 |
-|------|------|
-| `ws://host:port/api/v1/sys/ws` | B 端（后台管理）WebSocket |
-| `ws://host:port/api/v1/c/ws`  | C 端（客户端）WebSocket |
+- `/`
+- `/health/live`
+- `/health/ready`
+- `/metrics`
 
-### 事件类型
+当 `app.debug: true` 时，还会开放：
 
-| 类型 | 方向 | 说明 |
-|------|------|------|
-| `heartbeat` | Client → Server | 客户端心跳，30s 间隔 |
-| `new_message` | Server → Client | 新消息推送 |
-| `unread_count` | Server → Client | 通知前端刷新未读数 |
-| `presence` | Server → Client | 用户在线/离线状态变更 |
-| `online_count` | Server → Client | 在线人数广播（60s） |
+- `/debug/registry`
 
-### 跨实例特性
+## 开发方式
 
-| 特性 | 实现 |
-|------|------|
-| **跨实例消息投递** | Redis List + BRPOP，每个实例独享消息队列 |
-| **用户连接追踪** | `ws:user:{type}:{uid}` → Set（用户→实例映射） |
-| **消息去重** | Redis SETNX + TTL，防止跨实例重复投递 |
-| **限流** | Redis INCR 滑动窗口，默认 10s / 30 条 |
-| **心跳检测** | `ws:instance:{id}` 每 15s 刷新 TTL，60s 过期 |
-| **过期实例清理** | 后台协程每 5 分钟自动清理僵尸实例 |
-| **在线状态广播** | 用户连接/断开时广播 `presence` 事件 |
+常用命令：
 
-### 配置
+- `go run main.go`
+- `go run cmd/migrate/main.go`
+- `make test`
+- `make lint`
+- `make build`
 
-```yaml
-ws:
-  read_buffer_size: 1024            # WS 读取缓冲区（字节）
-  write_buffer_size: 1024           # WS 写入缓冲区（字节）
-  heartbeat_interval: 15            # 心跳发送间隔（秒）
-  instance_ttl: 60                  # 实例心跳 TTL（秒），超时视为宕机
-  stale_clean_interval: 5           # 过期实例清理间隔（分钟）
-  rate_limit_window: 10             # 限流时间窗口（秒）
-  rate_limit_max: 30                # 窗口内最大消息数
-  dedup_ttl: 30                     # 消息去重 TTL（秒）
-  poll_timeout: 2                   # Redis BRPOP 超时（秒）
-  pong_timeout: 60                  # WS Pong 超时（秒）
-  write_timeout: 10                 # WS 写入超时（秒）
-  online_broadcast_interval: 60     # 在线人数广播间隔（秒）
-```
+如果本地安装了 `air`，也可以使用热重载开发。
 
-实例 ID 使用 Snowflake 配置 `snowflake.instance`，生产环境每个实例需配置不同值。
+## 生产化现状
 
-### 前端连接
+当前项目已经补上一些偏运行阶段会直接用到的基础项：
 
-```typescript
-const wsUrl = `ws://${host}/api/v1/sys/ws?token=${token}`
-const ws = new WebSocket(wsUrl)
-// 心跳：每 30s 发送 { type: "heartbeat" }
-// 重连：指数退避，最多 10 次
-```
+- 严格配置校验
+- 健康检查
+- 指标暴露
+- 会话 ACL 刷新
+- 显式注册装配
+- 注册冻结与装配快照
+- workspace 级测试验证
+- WebSocket origin / trusted proxy 安全边界
+- 基础可观测性与调试入口治理
 
-## 库引用说明
+如果继续往生产环境长期使用推进，仍建议补齐：
 
-使用框架 SDK 中的组件时，引用路径统一为 `hei-gin/sdk/...`：
+- 更完善的指标面板与告警
+- 迁移版本记录与执行历史
+- 更完整的 CI / staticcheck / 生成校验
 
-```go
-import (
-    "hei-gin/sdk/config"
-    "hei-gin/sdk/auth"
-    authMiddleware "hei-gin/sdk/auth/middleware"
-    "hei-gin/sdk/middleware"
-    "hei-gin/sdk/result"
-    "hei-gin/sdk/exception"
-    "hei-gin/sdk/log"
-    "hei-gin/sdk/module"
-    "hei-gin/sdk/scheduler"
-    "hei-gin/sdk/storage"
-    "hei-gin/sdk/db"
-    "hei-gin/sdk/crud"
-    "hei-gin/sdk/utils"
-)
-```
+## 目录概览
 
-## 配置管理
+按职责理解即可：
 
-```go
-import "hei-gin/sdk/config"
-
-// 读取标准配置
-dbHost := config.C.DB.Host
-redisPort := config.C.Redis.Port
-
-// 读取模块专属配置（无需修改 config.go）
-rawVal := config.C.Raw["my_module"]
-```
+- `sdk/`
+  - 框架基础设施与通用能力
+- `plugins/plugin-sys/`
+  - 系统管理插件
+- `plugins/plugin-client/`
+  - 客户端业务插件
+- `plugins/plugin-im/`
+  - 即时消息插件
+- `cmd/`
+  - 迁移、代码生成等命令行入口
+- `vitepress/`
+  - 文档站
 
 ## 相关项目
 
-- **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
-- **[Hei FastAPI](https://github.com/jiangbyte/hei-fastapi)** — Python FastAPI 单体版本
-- **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
+- [Hei Boot](https://github.com/jiangbyte/hei-boot)
+- [Hei FastAPI](https://github.com/jiangbyte/hei-fastapi)
+- [Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)
 
-## 开源协议
+## 协议
 
-本项目采用 [MIT License](LICENSE) 开源协议
+[MIT License](LICENSE)

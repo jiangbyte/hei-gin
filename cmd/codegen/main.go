@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -17,7 +17,6 @@ Commands:
   list                    List all discovered plugins
   scaffold <name>         Create a new plugin with demo sub-module (e.g. plugin-xxx)
   add-module <plugin> <module>  Add a sub-module to an existing plugin (e.g. plugin-xxx modname)
-  gen-imports             Regenerate blank imports in main.go
 `)
 	}
 	flag.Parse()
@@ -44,8 +43,6 @@ Commands:
 			os.Exit(1)
 		}
 		cmdAddModule(repoRoot, args[1], args[2])
-	case "gen-imports":
-		cmdGenImports(repoRoot)
 	default:
 		flag.Usage()
 		os.Exit(1)
@@ -139,6 +136,7 @@ func cmdScaffold(repoRoot, name string) {
 			"@NAME@", pluginName,
 			"@FULL@", name,
 			"@MODULE@", moduleName,
+			"@MODULE_PKG@", moduleImportAlias(moduleName),
 			"@MODULE_PASCAL@", modulePascal,
 		)
 		result := r.Replace(tmpl)
@@ -155,9 +153,9 @@ func cmdScaffold(repoRoot, name string) {
 	writeTmpl(goModTmpl, filepath.Join(target, "go.mod"))
 	fmt.Printf("  created %s/go.mod\n", name)
 
-	// ── imports.go ─────────────────────────────────────────────────
-	writeTmpl(importsGoTmpl, filepath.Join(target, "imports.go"))
-	fmt.Printf("  created %s/imports.go\n", name)
+	// ── migrate.go ──────────────────────────────────────────────────
+	writeTmpl(migrateGoTmpl, filepath.Join(target, "migrate.go"))
+	fmt.Printf("  created %s/migrate.go\n", name)
 
 	// ── demo/model.go ───────────────────────────────────────────────
 	writeTmpl(modelGoTmpl, filepath.Join(target, moduleName, "model.go"))
@@ -183,8 +181,8 @@ func cmdScaffold(repoRoot, name string) {
 	writeTmpl(apiV1GoTmpl, filepath.Join(target, moduleName, "api", "v1", "api.go"))
 	fmt.Printf("  created %s/%s/api/v1/api.go\n", name, moduleName)
 
-	// ── Register in main.go ─────────────────────────────────────────
-	registerInMainGo(repoRoot, name)
+	gofmtTree(target)
+	runGoModTidy(target)
 
 	fmt.Printf("\n✓ Created plugin scaffold: %s\n", name)
 	fmt.Printf("  Next steps:\n")
@@ -193,7 +191,7 @@ func cmdScaffold(repoRoot, name string) {
 	fmt.Printf("  3. Edit plugins/%s/%s/repository.go — implement data access\n", name, moduleName)
 	fmt.Printf("  4. Edit plugins/%s/%s/service.go — implement business logic\n", name, moduleName)
 	fmt.Printf("  5. Edit plugins/%s/%s/api/v1/api.go — implement route handlers\n", name, moduleName)
-	fmt.Printf("  6. Register model in plugins/%s/migrate.go\n", name)
+	fmt.Printf("  6. Add %s.RegisterPlugin/RegisterRoutes/RegisterMigrations in main.go and cmd/migrate/main.go\n", pkgName)
 	fmt.Printf("  7. go run main.go\n")
 }
 
@@ -235,6 +233,13 @@ func cmdAddModule(repoRoot, pluginName, moduleName string) {
 		pluginPascal = "Sample"
 	}
 
+	if _, err := os.Stat(filepath.Join(pluginDir, "plugin.go")); err != nil {
+		fatal("plugin.go not found in %s", pluginName)
+	}
+	if _, err := os.Stat(filepath.Join(pluginDir, "migrate.go")); err != nil {
+		fatal("migrate.go not found in %s", pluginName)
+	}
+
 	writeTmpl := func(tmpl, path string) {
 		r := strings.NewReplacer(
 			"@PKG@", pkgName,
@@ -242,6 +247,7 @@ func cmdAddModule(repoRoot, pluginName, moduleName string) {
 			"@NAME@", pluginShortName,
 			"@FULL@", pluginName,
 			"@MODULE@", moduleName,
+			"@MODULE_PKG@", moduleImportAlias(moduleName),
 			"@MODULE_PASCAL@", modulePascal,
 		)
 		result := r.Replace(tmpl)
@@ -274,54 +280,134 @@ func cmdAddModule(repoRoot, pluginName, moduleName string) {
 	writeTmpl(apiV1GoTmpl, filepath.Join(pluginDir, moduleName, "api", "v1", "api.go"))
 	fmt.Printf("  created %s/%s/api/v1/api.go\n", pluginName, moduleName)
 
-	// Update imports.go
-	updateImportsGo(pluginDir, pkgName, pluginName, moduleName)
+	updatePluginRegistrations(pluginDir, pluginName, moduleName)
+	gofmtTree(pluginDir)
 
 	fmt.Printf("\n✓ Added sub-module %s to %s\n", moduleName, pluginName)
 }
 
-func updateImportsGo(pluginDir, pkgName, pluginName, moduleName string) {
-	importsPath := filepath.Join(pluginDir, "imports.go")
-	data, err := os.ReadFile(importsPath)
+func updatePluginRegistrations(pluginDir, pluginName, moduleName string) {
+	updatePluginFile(pluginDir, pluginName, moduleName)
+	updateMigrateFile(pluginDir, pluginName, moduleName)
+}
+
+func updatePluginFile(pluginDir, pluginName, moduleName string) {
+	pluginPath := filepath.Join(pluginDir, "plugin.go")
+	data, err := os.ReadFile(pluginPath)
 	if err != nil {
-		fatal("failed to read imports.go: %v", err)
+		fatal("failed to read plugin.go: %v", err)
 	}
 	content := string(data)
 
-	modelImport := fmt.Sprintf("\t_ \"hei-gin/plugins/%s/%s\"", pluginName, moduleName)
-	routeImport := fmt.Sprintf("\t_ \"hei-gin/plugins/%s/%s/api/v1\"", pluginName, moduleName)
+	alias := moduleImportAlias(moduleName)
+	importLine := fmt.Sprintf("\t%sv1 \"hei-gin/plugins/%s/%s/api/v1\"\n", alias, pluginName, moduleName)
+	callLine := fmt.Sprintf("\t%sv1.Register()\n", alias)
 
-	if strings.Contains(content, modelImport) {
-		fmt.Printf("  imports.go: %s already registered, skipping\n", modelImport)
+	if strings.Contains(content, importLine) && strings.Contains(content, callLine) {
+		fmt.Printf("  plugin.go: %s already registered, skipping\n", moduleName)
 		return
 	}
 
-	// Find "// Route registrations" section and add before it
-	routeMarker := "\t// Route registrations"
+	importBlockEnd := strings.Index(content, "\n)\n")
+	if importBlockEnd < 0 {
+		fatal("cannot find import block in plugin.go")
+	}
+	content = content[:importBlockEnd] + "\n" + importLine + content[importBlockEnd:]
 
-	// Add model import after model registrations section
-	modelSectionEnd := strings.Index(content, routeMarker)
-	if modelSectionEnd < 0 {
-		// Fallback: add at end of import block
-		closing := strings.LastIndex(content, ")")
-		if closing < 0 {
-			fatal("cannot find import closing bracket in imports.go")
-		}
-		content = content[:closing] + modelImport + "\n" + routeImport + "\n" + content[closing:]
-	} else {
-		// Add model import before route marker
-		content = content[:modelSectionEnd] + modelImport + "\n\n" + content[modelSectionEnd:]
-		// Add route import in route section
-		closing := strings.LastIndex(content, ")")
-		if closing >= 0 {
-			content = content[:closing] + routeImport + "\n" + content[closing:]
-		}
+	marker := "func RegisterRoutes() {\n"
+	idx := strings.Index(content, marker)
+	if idx < 0 {
+		fatal("cannot find RegisterRoutes in plugin.go")
+	}
+	insertPos := idx + len(marker)
+	content = content[:insertPos] + callLine + content[insertPos:]
+
+	if err := os.WriteFile(pluginPath, []byte(content), 0644); err != nil {
+		fatal("failed to write plugin.go: %v", err)
+	}
+	fmt.Printf("  updated %s/plugin.go\n", pluginName)
+}
+
+func updateMigrateFile(pluginDir, pluginName, moduleName string) {
+	migratePath := filepath.Join(pluginDir, "migrate.go")
+	data, err := os.ReadFile(migratePath)
+	if err != nil {
+		fatal("failed to read migrate.go: %v", err)
+	}
+	content := string(data)
+
+	alias := moduleImportAlias(moduleName)
+	importLine := fmt.Sprintf("\t%s \"hei-gin/plugins/%s/%s\"\n", alias, pluginName, moduleName)
+	callLine := fmt.Sprintf("\tdb.RegisterModel(&%s.%s{})\n", alias, modulePascalName(moduleName))
+
+	if strings.Contains(content, importLine) && strings.Contains(content, callLine) {
+		fmt.Printf("  migrate.go: %s already registered, skipping\n", moduleName)
+		return
 	}
 
-	if err := os.WriteFile(importsPath, []byte(content), 0644); err != nil {
-		fatal("failed to write imports.go: %v", err)
+	importBlockEnd := strings.Index(content, "\n)\n")
+	if importBlockEnd < 0 {
+		fatal("cannot find import block in migrate.go")
 	}
-	fmt.Printf("  updated %s/imports.go\n", pluginName)
+	content = content[:importBlockEnd] + "\n" + importLine + content[importBlockEnd:]
+
+	marker := "func RegisterMigrations() {\n"
+	idx := strings.Index(content, marker)
+	if idx < 0 {
+		fatal("cannot find RegisterMigrations in migrate.go")
+	}
+	insertPos := idx + len(marker)
+	content = content[:insertPos] + callLine + content[insertPos:]
+
+	if err := os.WriteFile(migratePath, []byte(content), 0644); err != nil {
+		fatal("failed to write migrate.go: %v", err)
+	}
+	fmt.Printf("  updated %s/migrate.go\n", pluginName)
+}
+
+func moduleImportAlias(moduleName string) string {
+	return strings.ReplaceAll(moduleName, "-", "_")
+}
+
+func modulePascalName(moduleName string) string {
+	parts := strings.Split(moduleName, "-")
+	pascal := ""
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		pascal += strings.ToUpper(p[:1]) + p[1:]
+	}
+	if pascal == "" {
+		return "Demo"
+	}
+	return pascal
+}
+
+func gofmtTree(root string) {
+	cmd := exec.Command("gofmt", "-w", root)
+	if err := cmd.Run(); err == nil {
+		return
+	}
+
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() || filepath.Ext(path) != ".go" {
+			return nil
+		}
+		if runErr := exec.Command("gofmt", "-w", path).Run(); runErr != nil {
+			return runErr
+		}
+		return nil
+	})
+}
+
+func runGoModTidy(dir string) {
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = dir
+	_ = cmd.Run()
 }
 
 // ── Templates (@PKG@, @PASCAL@, @NAME@, @FULL@) ────────────────────
@@ -342,6 +428,9 @@ replace hei-gin/sdk => ../../sdk
 var pluginGoTmpl = `package @PKG@
 
 import (
+	"sync"
+
+		@MODULE_PKG@v1 "hei-gin/plugins/@FULL@/@MODULE@/api/v1"
 	"hei-gin/sdk/kernel/plugin"
 )
 
@@ -349,32 +438,41 @@ type @PASCAL@Plugin struct {
 	plugin.NoopPlugin
 }
 
+var registerOnce sync.Once
+
 func (p *@PASCAL@Plugin) Info() plugin.PluginInfo {
 	return plugin.PluginInfo{
-		Name:        "@NAME@",
+		Name:        "@FULL@",
 		Version:     "1.0.0",
 		Description: "@NAME@ plugin",
 	}
 }
 func (p *@PASCAL@Plugin) Name() string { return "@FULL@" }
 
-func init() {
-	plugin.Register(&@PASCAL@Plugin{})
+func RegisterPlugin() {
+	registerOnce.Do(func() {
+		plugin.Register(&@PASCAL@Plugin{})
+	})
+}
+
+func RegisterRoutes() {
+	@MODULE_PKG@v1.Register()
 }
 `
 
-var importsGoTmpl = `package @PKG@
+var migrateGoTmpl = `package @PKG@
 
 import (
-	// Module import
-	_ "hei-gin/plugins/@FULL@/@MODULE@"
-
-	// Route registrations (api/v1/api.go)
-	_ "hei-gin/plugins/@FULL@/@MODULE@/api/v1"
+	@MODULE_PKG@ "hei-gin/plugins/@FULL@/@MODULE@"
+	"hei-gin/sdk/infra/db"
 )
+
+func RegisterMigrations() {
+	db.RegisterModel(&@MODULE_PKG@.@MODULE_PASCAL@{})
+}
 `
 
-var modelGoTmpl = `package @MODULE@
+var modelGoTmpl = `package @MODULE_PKG@
 
 import "time"
 
@@ -392,7 +490,7 @@ type @MODULE_PASCAL@ struct {
 func (@MODULE_PASCAL@) TableName() string { return "sys_@MODULE@_template" }
 `
 
-var paramsGoTmpl = `package @MODULE@
+var paramsGoTmpl = `package @MODULE_PKG@
 
 import "hei-gin/sdk/utils"
 
@@ -455,7 +553,7 @@ func @MODULE_PASCAL@VOToSys@MODULE_PASCAL@(src *@MODULE_PASCAL@VO) *@MODULE_PASC
 }
 `
 
-var repositoryGoTmpl = `package @MODULE@
+var repositoryGoTmpl = `package @MODULE_PKG@
 
 import (
 	"context"
@@ -503,7 +601,7 @@ func (r *repository) DeleteByIDs(ctx context.Context, ids []string) error {
 }
 `
 
-var serviceGoTmpl = `package @MODULE@
+var serviceGoTmpl = `package @MODULE_PKG@
 
 import (
 	"gorm.io/gorm"
@@ -610,7 +708,7 @@ func (s *Service) Modify(c *gin.Context, vo *@MODULE_PASCAL@VO) {
 }
 `
 
-var moduleGoTmpl = `package @MODULE@
+var moduleGoTmpl = `package @MODULE_PKG@
 
 import "hei-gin/sdk/infra/db"
 
@@ -638,18 +736,18 @@ import (
 	"hei-gin/sdk/web/result"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
-	@MODULE@ "hei-gin/plugins/@FULL@/@MODULE@"
+	@MODULE_PKG@ "hei-gin/plugins/@FULL@/@MODULE@"
 
 	"github.com/gin-gonic/gin"
 )
 
 type handler struct {
-	service *@MODULE@.Service
+	service *@MODULE_PKG@.Service
 }
 
-var defaultHandler = newHandler(@MODULE@.DefaultModule)
+var defaultHandler = newHandler(@MODULE_PKG@.DefaultModule)
 
-func newHandler(module *@MODULE@.Module) *handler {
+func newHandler(module *@MODULE_PKG@.Module) *handler {
 	return &handler{service: module.Service()}
 }
 
@@ -688,12 +786,12 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
-func init() {
+func Register() {
 	registry.RegisterRoute(RegisterRoutes)
 }
 
 func (h *handler) page(c *gin.Context) {
-	var param @MODULE@.@MODULE_PASCAL@PageParam
+	var param @MODULE_PKG@.@MODULE_PASCAL@PageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
@@ -702,7 +800,7 @@ func (h *handler) page(c *gin.Context) {
 }
 
 func (h *handler) create(c *gin.Context) {
-	var vo @MODULE@.@MODULE_PASCAL@VO
+	var vo @MODULE_PKG@.@MODULE_PASCAL@VO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
@@ -717,7 +815,7 @@ func (h *handler) detail(c *gin.Context) {
 }
 
 func (h *handler) modify(c *gin.Context) {
-	var vo @MODULE@.@MODULE_PASCAL@VO
+	var vo @MODULE_PKG@.@MODULE_PASCAL@VO
 	if err := c.ShouldBindJSON(&vo); err != nil {
 		result.Failure(c, "参数错误: "+err.Error(), 400)
 		return
@@ -736,84 +834,3 @@ func (h *handler) remove(c *gin.Context) {
 	result.Success(c, nil)
 }
 `
-
-func registerInMainGo(repoRoot, pluginName string) {
-	mainPath := filepath.Join(repoRoot, "main.go")
-	data, err := os.ReadFile(mainPath)
-	if err != nil {
-		fatal("failed to read main.go: %v", err)
-	}
-	content := string(data)
-
-	importLine := fmt.Sprintf("\t_ \"hei-gin/plugins/%s\"", pluginName)
-	if strings.Contains(content, importLine) {
-		return
-	}
-
-	marker := "// Plugin route/permission self-registration"
-	idx := strings.Index(content, marker)
-	if idx < 0 {
-		fatal("cannot find plugin import marker in main.go")
-	}
-	closing := strings.Index(content[idx:], ")")
-	if closing < 0 {
-		fatal("cannot find import closing bracket")
-	}
-	insertPos := idx + closing
-
-	newContent := content[:insertPos] + "\t" + importLine + "\n" + content[insertPos:]
-	if err := os.WriteFile(mainPath, []byte(newContent), 0644); err != nil {
-		fatal("failed to write main.go: %v", err)
-	}
-	fmt.Printf("  registered %s in main.go\n", pluginName)
-}
-
-// ── gen-imports ─────────────────────────────────────────────────────
-
-func cmdGenImports(repoRoot string) {
-	pluginsDir := filepath.Join(repoRoot, "plugins")
-	entries, err := os.ReadDir(pluginsDir)
-	if err != nil {
-		fatal("failed to read plugins dir: %v", err)
-	}
-
-	var imports []string
-	for _, e := range entries {
-		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
-			continue
-		}
-		pluginFile := filepath.Join(pluginsDir, e.Name(), "plugin.go")
-		if _, err := os.Stat(pluginFile); err == nil {
-			imports = append(imports, fmt.Sprintf("\t_ \"hei-gin/plugins/%s\"", e.Name()))
-		}
-	}
-	sort.Strings(imports)
-
-	mainPath := filepath.Join(repoRoot, "main.go")
-	data, err := os.ReadFile(mainPath)
-	if err != nil {
-		fatal("failed to read main.go: %v", err)
-	}
-	content := string(data)
-
-	marker := "// Plugin route/permission self-registration"
-	idx := strings.Index(content, marker)
-	if idx < 0 {
-		fatal("cannot find plugin import marker in main.go")
-	}
-
-	before := content[:idx]
-	after := content[idx:]
-	closing := strings.Index(after, ")")
-	if closing < 0 {
-		fatal("cannot find import closing bracket")
-	}
-	after = after[closing:]
-
-	newContent := before + marker + "\n" + strings.Join(imports, "\n") + "\n" + after
-	if err := os.WriteFile(mainPath, []byte(newContent), 0644); err != nil {
-		fatal("failed to write main.go: %v", err)
-	}
-
-	fmt.Printf("Generated %d imports in main.go\n", len(imports))
-}
