@@ -20,7 +20,7 @@ import (
 func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 	ctx := c.Request.Context()
 	senderID := getLoginID(c)
-	senderType := getUserType(c)
+	senderRealmID := getRealmID(c)
 
 	if p.GroupID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
@@ -38,7 +38,7 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 		return
 	}
 
-	member, err := s.repo.FindActiveMember(ctx, p.GroupID, senderID, senderType)
+	member, err := s.repo.FindActiveMember(ctx, p.GroupID, senderID, senderRealmID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
@@ -55,7 +55,7 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 
 	msg := imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
-		SenderID: senderID, SenderType: senderType,
+		SenderID: senderID, SenderType: senderRealmID,
 		Content: p.Content, Extra: p.Extra, MsgType: msgType,
 		ReplyTo: p.ReplyTo,
 	}
@@ -64,7 +64,7 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 		return
 	}
 
-	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, senderID, senderType)
+	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, senderID, senderRealmID)
 
 	msgPayload := buildPushPayload(&msg)
 	if runtime := ws.Runtime(); runtime != nil {
@@ -83,7 +83,7 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if p.GroupID == "" || p.MessageID == "" || operatorID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
@@ -95,7 +95,7 @@ func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
 		return
 	}
-	if msg.SenderID != operatorID || msg.SenderType != operatorType {
+	if msg.SenderID != operatorID || msg.SenderType != operatorRealmID {
 		result.WriteError(c, exception.NewBusinessError("只能撤回自己的消息", 403))
 		return
 	}
@@ -113,11 +113,11 @@ func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 		return
 	}
 
-	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, operatorID, operatorType)
+	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, operatorID, operatorRealmID)
 
 	msg.Content = "消息已被撤回"
 	msg.MsgType = imModel.MsgTypeSystem
-	recallPayload := buildRecallPayload(msg, operatorID, operatorType)
+	recallPayload := buildRecallPayload(msg, operatorID, operatorRealmID)
 	if runtime := ws.Runtime(); runtime != nil {
 		for _, m := range memberIDs {
 			if m.UserType == string(auth.ConsumerID) {
@@ -134,7 +134,7 @@ func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 func (s *Service) MarkRead(c *gin.Context, p *MarkReadParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if p.GroupID == "" || userID == "" {
 		return
@@ -143,7 +143,7 @@ func (s *Service) MarkRead(c *gin.Context, p *MarkReadParam) {
 	_ = s.repo.UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: p.MessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
-		UserID: userID, UserType: userType,
+		UserID: userID, UserType: realmID,
 	})
 }
 
@@ -152,7 +152,7 @@ func (s *Service) MarkRead(c *gin.Context, p *MarkReadParam) {
 func (s *Service) MarkConversationRead(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	var p struct{ GroupID string }
 	if err := c.ShouldBindJSON(&p); err != nil {
@@ -171,7 +171,7 @@ func (s *Service) MarkConversationRead(c *gin.Context) {
 	_ = s.repo.UpsertMessageRead(ctx, &imModel.GroupMessageRead{
 		MessageID: lastMessageID, GroupID: p.GroupID,
 		ID:     utils.GenerateID(),
-		UserID: userID, UserType: userType,
+		UserID: userID, UserType: realmID,
 	})
 }
 

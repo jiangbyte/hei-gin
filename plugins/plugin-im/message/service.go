@@ -26,16 +26,16 @@ func getLoginID(c *gin.Context) string {
 			return uid
 		}
 	}
-	if getUserType(c) == string(auth.ConsumerID) {
+	if getRealmID(c) == string(auth.ConsumerID) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.Business.GetLoginID(c)
 }
 
-func getUserType(c *gin.Context) string {
-	if v, ok := c.Get("login_type"); ok {
-		if loginType, ok := v.(string); ok && loginType != "" {
-			return loginType
+func getRealmID(c *gin.Context) string {
+	if v, ok := c.Get("login_realm_id"); ok {
+		if realmID, ok := v.(string); ok && realmID != "" {
+			return realmID
 		}
 	}
 	path := c.Request.URL.Path
@@ -63,7 +63,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 	ctx := c.Request.Context()
 
 	senderID := getLoginID(c)
-	senderType := getUserType(c)
+	senderType := getRealmID(c)
 
 	if runtime := ws.Runtime(); runtime != nil && !runtime.AllowMessage(senderID, auth.RealmID(senderType)) {
 		result.WriteError(c, exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
@@ -181,7 +181,7 @@ func normalizeReceiverIDs(ids []string) []string {
 func (s *Service) Page(c *gin.Context, param *MessagePageParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	if param.Current < 1 {
 		param.Current = 1
@@ -206,7 +206,7 @@ func (s *Service) Page(c *gin.Context, param *MessagePageParam) {
 
 func (s *Service) UnreadCount(c *gin.Context) {
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	count := s.repo.CountUnread(c.Request.Context(), userID, userType)
 	result.Success(c, UnreadCountVO{Count: count})
@@ -217,7 +217,7 @@ func (s *Service) UnreadCount(c *gin.Context) {
 func (s *Service) Detail(c *gin.Context) {
 	id := c.Query("id")
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	entity, err := s.repo.FindOwnedByID(c.Request.Context(), id, userID, userType)
 	if err != nil {
@@ -235,7 +235,7 @@ func (s *Service) Detail(c *gin.Context) {
 
 func (s *Service) MarkRead(c *gin.Context, param *utils.IdParam) {
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 	if err := s.repo.MarkRead(c.Request.Context(), param.ID, userID, userType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 		return
@@ -246,7 +246,7 @@ func (s *Service) MarkRead(c *gin.Context, param *utils.IdParam) {
 
 func (s *Service) MarkConversationRead(c *gin.Context, param *ConversationReadParam) {
 	receiverID := getLoginID(c)
-	receiverType := getUserType(c)
+	receiverType := getRealmID(c)
 
 	if param == nil || param.ConversationID == "" {
 		return
@@ -262,7 +262,7 @@ func (s *Service) MarkConversationRead(c *gin.Context, param *ConversationReadPa
 
 func (s *Service) MarkAllRead(c *gin.Context) {
 	receiverID := getLoginID(c)
-	receiverType := getUserType(c)
+	receiverType := getRealmID(c)
 
 	if err := s.repo.MarkAllRead(c.Request.Context(), receiverID, receiverType); err != nil {
 		result.WriteError(c, exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
@@ -274,7 +274,7 @@ func (s *Service) MarkAllRead(c *gin.Context) {
 
 func (s *Service) Remove(c *gin.Context, param *DeleteParam) {
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	if len(param.IDs) == 0 {
 		return
@@ -289,7 +289,7 @@ func (s *Service) Remove(c *gin.Context, param *DeleteParam) {
 
 func (s *Service) Recall(c *gin.Context, param *RecallParam) {
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	msg, err := s.repo.FindByID(c.Request.Context(), param.MessageID)
 	if err != nil {
@@ -314,7 +314,7 @@ func (s *Service) Recall(c *gin.Context, param *RecallParam) {
 
 func (s *Service) Forward(c *gin.Context, param *ForwardParam) {
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 	original, err := s.repo.FindOwnedByID(c.Request.Context(), param.MessageID, userID, userType)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("消息不存在", 400))
@@ -336,7 +336,7 @@ func (s *Service) Forward(c *gin.Context, param *ForwardParam) {
 func (s *Service) Search(c *gin.Context, param *SearchParam) ([]MessageVO, bool) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	userType := getRealmID(c)
 
 	if param.Size < 1 {
 		param.Size = 20

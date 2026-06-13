@@ -18,7 +18,7 @@ func AttachLoginContext(c *gin.Context, realm *auth.Realm, uid string) {
 	}
 
 	c.Set("login_id", uid)
-	c.Set("login_type", string(realm.ID))
+	c.Set("login_realm_id", string(realm.ID))
 	c.Set("login_realm", realm)
 
 	if username := realm.GetExtra(c, "username"); username != nil {

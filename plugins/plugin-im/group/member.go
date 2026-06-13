@@ -23,7 +23,7 @@ import (
 func (s *Service) Invite(c *gin.Context, p *InviteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if len(p.UserIDs) == 0 {
 		return
@@ -47,7 +47,7 @@ func (s *Service) Invite(c *gin.Context, p *InviteParam) {
 		return
 	}
 
-	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID); err != nil {
 		result.WriteError(c, err)
 		return
 	}
@@ -76,7 +76,7 @@ func (s *Service) Invite(c *gin.Context, p *InviteParam) {
 		extraBytes, _ := json.Marshal(extra)
 		sysBatch = append(sysBatch, imModel.GroupMessage{
 			ID: utils.GenerateID(), GroupID: p.GroupID,
-			SenderID: operatorID, SenderType: operatorType,
+			SenderID: operatorID, SenderType: operatorRealmID,
 			Content: "欢迎加入群聊", Extra: string(extraBytes),
 			MsgType: imModel.MsgTypeSystem,
 		})
@@ -92,7 +92,7 @@ func (s *Service) Invite(c *gin.Context, p *InviteParam) {
 func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if p.GroupID == "" || userID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
@@ -108,18 +108,18 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 		result.WriteError(c, exception.NewBusinessError("群已解散", 400))
 		return
 	}
-	if err := validateMemberType(group.GroupType, userType); err != nil {
+	if err := validateMemberType(group.GroupType, realmID); err != nil {
 		result.WriteError(c, err)
 		return
 	}
 
-	existing := s.repo.CountMemberExists(ctx, p.GroupID, userID, userType)
+	existing := s.repo.CountMemberExists(ctx, p.GroupID, userID, realmID)
 	if existing > 0 {
 		result.WriteError(c, exception.NewBusinessError("已在群中", 400))
 		return
 	}
 
-	pending := s.repo.CountPendingJoin(ctx, p.GroupID, userID, userType)
+	pending := s.repo.CountPendingJoin(ctx, p.GroupID, userID, realmID)
 	if pending > 0 {
 		result.WriteError(c, exception.NewBusinessError("已发送过入群申请，请等待审核", 400))
 		return
@@ -129,7 +129,7 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 		ID:       utils.GenerateID(),
 		GroupID:  p.GroupID,
 		UserID:   userID,
-		UserType: userType,
+		UserType: realmID,
 		Status:   "pending",
 	}); err != nil {
 		result.WriteError(c, exception.NewBusinessError("申请加入失败: "+err.Error(), 500))
@@ -142,7 +142,7 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 			payload := map[string]interface{}{
 				"group_id":  p.GroupID,
 				"user_id":   userID,
-				"user_type": userType,
+				"user_type": realmID,
 				"action":    "join_request",
 			}
 			if m.UserType == string(auth.ConsumerID) {
@@ -159,14 +159,14 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 func (s *Service) Leave(c *gin.Context, p *JoinOrLeaveParam) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if p.GroupID == "" || userID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
 
-	member, err := s.repo.FindActiveMember(ctx, p.GroupID, userID, userType)
+	member, err := s.repo.FindActiveMember(ctx, p.GroupID, userID, realmID)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("不在群中", 400))
 		return
@@ -176,11 +176,11 @@ func (s *Service) Leave(c *gin.Context, p *JoinOrLeaveParam) {
 		return
 	}
 
-	extra := imModel.MsgExtraSystem{Action: "leave", UserID: userID, UserType: userType}
+	extra := imModel.MsgExtraSystem{Action: "leave", UserID: userID, UserType: realmID}
 	extraBytes, _ := json.Marshal(extra)
 	msg := &imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
-		SenderID: userID, SenderType: userType,
+		SenderID: userID, SenderType: realmID,
 		Content: "退出了群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
 	}
@@ -195,14 +195,14 @@ func (s *Service) Leave(c *gin.Context, p *JoinOrLeaveParam) {
 func (s *Service) Kick(c *gin.Context, p *KickParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if p.GroupID == "" || p.UserID == "" || p.UserType == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
 
-	group, operatorMember, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	group, operatorMember, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID)
 	if err != nil {
 		result.WriteError(c, err)
 		return
@@ -227,7 +227,7 @@ func (s *Service) Kick(c *gin.Context, p *KickParam) {
 	extraBytes, _ := json.Marshal(extra)
 	msg := &imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
-		SenderID: operatorID, SenderType: operatorType,
+		SenderID: operatorID, SenderType: operatorRealmID,
 		Content: "被移出群聊", Extra: string(extraBytes),
 		MsgType: imModel.MsgTypeSystem,
 	}
@@ -306,9 +306,9 @@ func (s *Service) TransferOwner(c *gin.Context, p *TransferOwnerParam) {
 func (s *Service) SetMemberNickname(c *gin.Context, p *SetNicknameParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
-	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID); err != nil {
 		result.WriteError(c, err)
 		return
 	}
@@ -324,14 +324,14 @@ func (s *Service) SetMemberNickname(c *gin.Context, p *SetNicknameParam) {
 func (s *Service) MuteMember(c *gin.Context, p *MuteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if p.GroupID == "" || p.UserID == "" || p.UserType == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
 
-	group, operator, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	group, operator, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID)
 	if err != nil {
 		result.WriteError(c, err)
 		return
@@ -368,14 +368,14 @@ func (s *Service) MuteMember(c *gin.Context, p *MuteParam) {
 func (s *Service) UnmuteMember(c *gin.Context, p *UnmuteParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if p.GroupID == "" || p.UserID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
 
-	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID); err != nil {
 		result.WriteError(c, err)
 		return
 	}

@@ -130,10 +130,10 @@ func TestCheckLoginMiddlewareAttachesContext(t *testing.T) {
 	r := gin.New()
 	r.GET("/protected", CheckLogin(realm), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"login_id":   c.GetString("login_id"),
-			"login_type": c.GetString("login_type"),
-			"login_user": c.MustGet("loginUser"),
-			"ctx_login":  c.Request.Context().Value(db.CtxKeyLoginID{}),
+			"login_id":       c.GetString("login_id"),
+			"login_realm_id": c.GetString("login_realm_id"),
+			"login_user":     c.MustGet("loginUser"),
+			"ctx_login":      c.Request.Context().Value(db.CtxKeyLoginID{}),
 		})
 	})
 
@@ -150,8 +150,8 @@ func TestCheckLoginMiddlewareAttachesContext(t *testing.T) {
 	if body["login_id"] != "u1" {
 		t.Fatalf("unexpected login_id: %#v", body)
 	}
-	if body["login_type"] != string(realm.ID) {
-		t.Fatalf("unexpected login_type: %#v", body)
+	if body["login_realm_id"] != string(realm.ID) {
+		t.Fatalf("unexpected login_realm_id: %#v", body)
 	}
 	if body["login_user"] != "alice" {
 		t.Fatalf("unexpected login_user: %#v", body)

@@ -21,13 +21,13 @@ import (
 func (s *Service) MyGroups(c *gin.Context) []GroupVO {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if userID == "" {
 		return nil
 	}
 
-	members := s.repo.ListMyGroupMemberships(ctx, userID, userType)
+	members := s.repo.ListMyGroupMemberships(ctx, userID, realmID)
 	if len(members) == 0 {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (s *Service) MyGroups(c *gin.Context) []GroupVO {
 		lastMap[l.GroupID] = l
 	}
 
-	unreads := s.repo.CountUnreadByGroupIDs(ctx, groupIDs, userID, userType)
+	unreads := s.repo.CountUnreadByGroupIDs(ctx, groupIDs, userID, realmID)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
@@ -225,7 +225,7 @@ func (s *Service) PendingJoinRequests(c *gin.Context) []imModel.GroupJoinRequest
 func (s *Service) HandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	req, err := s.repo.FindPendingJoinRequest(ctx, p.RequestID)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *Service) HandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 		return
 	}
 
-	if _, _, err := s.checkOwnerOrAdmin(ctx, req.GroupID, operatorID, operatorType); err != nil {
+	if _, _, err := s.checkOwnerOrAdmin(ctx, req.GroupID, operatorID, operatorRealmID); err != nil {
 		result.WriteError(c, err)
 		return
 	}

@@ -27,12 +27,12 @@ func (s *Service) Conversations(c *gin.Context, cursor string, size int) ([]Conv
 	}
 
 	currentUserID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	ctx := c.Request.Context()
-	singleResult := s.buildFromMessages(ctx, currentUserID, userType)
+	singleResult := s.buildFromMessages(ctx, currentUserID, realmID)
 
-	groupConvs := group.DefaultModule.Service().MyGroupConversationsWithContext(ctx, currentUserID, userType)
+	groupConvs := group.DefaultModule.Service().MyGroupConversationsWithContext(ctx, currentUserID, realmID)
 	for _, gv := range groupConvs {
 		singleResult["group:"+gv.GroupID] = &ConversationVO{
 			ConversationID:   "group:" + gv.GroupID,
@@ -168,7 +168,7 @@ func (s *Service) buildFromMessages(ctx context.Context, currentUserID, userType
 
 func (s *Service) ConversationMessages(c *gin.Context, conversationID, cursor string, size int) ([]ConversationMessageVO, bool) {
 	currentUserID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if size < 1 {
 		size = 20
@@ -177,7 +177,7 @@ func (s *Service) ConversationMessages(c *gin.Context, conversationID, cursor st
 		size = 100
 	}
 
-	records := s.repo.ListConversationMessages(c.Request.Context(), conversationID, currentUserID, userType, cursor, size)
+	records := s.repo.ListConversationMessages(c.Request.Context(), conversationID, currentUserID, realmID, cursor, size)
 
 	hasMore := len(records) > size
 	if hasMore {
@@ -199,13 +199,13 @@ func (s *Service) ConversationMessages(c *gin.Context, conversationID, cursor st
 
 func (s *Service) GetOrCreateConversation(c *gin.Context, param *GetOrCreateConversationParam) {
 	currentUserID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	if param.UserID == "" || param.UserType == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
-	cid := imModel.GenerateConversationID(currentUserID, auth.RealmID(userType), param.UserID, auth.RealmID(param.UserType))
+	cid := imModel.GenerateConversationID(currentUserID, auth.RealmID(realmID), param.UserID, auth.RealmID(param.UserType))
 
 	displayName := param.UserID
 	if param.UserType == string(auth.BusinessID) {

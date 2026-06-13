@@ -22,16 +22,16 @@ func getLoginID(c *gin.Context) string {
 			return uid
 		}
 	}
-	if getUserType(c) == string(auth.ConsumerID) {
+	if getRealmID(c) == string(auth.ConsumerID) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.Business.GetLoginID(c)
 }
 
-func getUserType(c *gin.Context) string {
-	if v, ok := c.Get("login_type"); ok {
-		if loginType, ok := v.(string); ok && loginType != "" {
-			return loginType
+func getRealmID(c *gin.Context) string {
+	if v, ok := c.Get("login_realm_id"); ok {
+		if realmID, ok := v.(string); ok && realmID != "" {
+			return realmID
 		}
 	}
 	path := c.Request.URL.Path

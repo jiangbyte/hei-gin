@@ -18,8 +18,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// baseAuthTool is the shared authentication implementation for both BUSINESS and CONSUMER.
-// It is parameterized by loginType and generates Redis key prefixes accordingly.
+// baseAuthTool is the shared authentication implementation for both BUSINESS and CONSUMER realms.
+// It is parameterized by realmID and generates Redis key prefixes accordingly.
 type baseAuthTool struct {
 	expire    int
 	tokenName string
@@ -83,8 +83,8 @@ func (t *baseAuthTool) Init(expire int, tokenName string) {
 	}
 }
 
-// GetLoginType returns the login type identifier.
-func (t *baseAuthTool) GetLoginType() string {
+// GetRealmID returns the realm identifier.
+func (t *baseAuthTool) GetRealmID() string {
 	t.ensureConfig()
 	return string(t.realmID)
 }

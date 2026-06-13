@@ -17,16 +17,16 @@ func newMessageContext(path string) *gin.Context {
 	return c
 }
 
-func TestGetUserTypePrefersContextValue(t *testing.T) {
+func TestGetRealmIDPrefersContextValue(t *testing.T) {
 	c := newMessageContext("/api/v1/c/im/message/page")
-	c.Set("login_type", string(auth.BusinessID))
+	c.Set("login_realm_id", string(auth.BusinessID))
 
-	if got := getUserType(c); got != string(auth.BusinessID) {
-		t.Fatalf("getUserType = %q", got)
+	if got := getRealmID(c); got != string(auth.BusinessID) {
+		t.Fatalf("getRealmID = %q", got)
 	}
 }
 
-func TestGetUserTypeDetectsConsumerAPIPath(t *testing.T) {
+func TestGetRealmIDDetectsConsumerAPIPath(t *testing.T) {
 	tests := map[string]string{
 		"/api/v1/c/im/message/page":  string(auth.ConsumerID),
 		"/api/v12/c/im/message/page": string(auth.ConsumerID),
@@ -36,8 +36,8 @@ func TestGetUserTypeDetectsConsumerAPIPath(t *testing.T) {
 
 	for path, want := range tests {
 		t.Run(path, func(t *testing.T) {
-			if got := getUserType(newMessageContext(path)); got != want {
-				t.Fatalf("getUserType = %q, want %q", got, want)
+			if got := getRealmID(newMessageContext(path)); got != want {
+				t.Fatalf("getRealmID = %q, want %q", got, want)
 			}
 		})
 	}

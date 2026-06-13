@@ -25,7 +25,7 @@ type Service struct {
 func (s *Service) Create(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := getLoginID(c)
-	userType := getUserType(c)
+	realmID := getRealmID(c)
 
 	var p CreateParam
 	if err := c.ShouldBindJSON(&p); err != nil {
@@ -47,7 +47,7 @@ func (s *Service) Create(c *gin.Context) {
 	}
 
 	groupType := GroupTypeMixed
-	if userType == string(auth.ConsumerID) {
+	if realmID == string(auth.ConsumerID) {
 		groupType = GroupTypeConsumerOnly
 	}
 
@@ -56,7 +56,7 @@ func (s *Service) Create(c *gin.Context) {
 		Name:       p.Name,
 		Avatar:     p.Avatar,
 		OwnerID:    userID,
-		OwnerType:  userType,
+		OwnerType:  realmID,
 		GroupType:  groupType,
 		MaxMembers: 200,
 		Status:     GroupNormal,
@@ -64,7 +64,7 @@ func (s *Service) Create(c *gin.Context) {
 
 	ownerMember := imModel.GroupMember{
 		ID: utils.GenerateID(), GroupID: group.ID,
-		UserID: userID, UserType: userType,
+		UserID: userID, UserType: realmID,
 		Role: RoleOwner, Status: MemberActive,
 	}
 
@@ -90,7 +90,7 @@ func (s *Service) Create(c *gin.Context) {
 			extraBytes, _ := json.Marshal(extra)
 			sysBatch = append(sysBatch, imModel.GroupMessage{
 				ID: utils.GenerateID(), GroupID: group.ID,
-				SenderID: userID, SenderType: userType,
+				SenderID: userID, SenderType: realmID,
 				Content: "欢迎加入群聊", Extra: string(extraBytes),
 				MsgType: imModel.MsgTypeSystem,
 			})
@@ -115,13 +115,13 @@ func (s *Service) Create(c *gin.Context) {
 func (s *Service) Update(c *gin.Context, p *UpdateParam) {
 	ctx := c.Request.Context()
 	operatorID := getLoginID(c)
-	operatorType := getUserType(c)
+	operatorRealmID := getRealmID(c)
 
 	if p.GroupID == "" {
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
-	_, member, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
+	_, member, err := s.checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorRealmID)
 	if err != nil {
 		result.WriteError(c, err)
 		return
