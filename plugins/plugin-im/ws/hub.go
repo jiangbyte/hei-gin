@@ -49,11 +49,12 @@ const maxClientsPerUser = 3
 
 // Hub maintains the set of active clients and broadcasts online counts.
 type Hub struct {
-	mu          sync.RWMutex
-	clients     map[*Client]bool
-	lifecycleMu sync.Mutex
-	onlineStop  chan struct{}
-	onlineDone  chan struct{}
+	mu            sync.RWMutex
+	clients       map[*Client]bool
+	clientsByUser map[string]map[*Client]struct{}
+	lifecycleMu   sync.Mutex
+	onlineStop    chan struct{}
+	onlineDone    chan struct{}
 
 	// ipCount tracks connections per IP for rate limiting
 	ipCount map[string]int
@@ -69,9 +70,10 @@ type Hub struct {
 // NewHub creates a new Hub.
 func NewHub() *Hub {
 	return &Hub{
-		clients:   make(map[*Client]bool),
-		ipCount:   make(map[string]int),
-		userCount: make(map[string]int),
+		clients:       make(map[*Client]bool),
+		clientsByUser: make(map[string]map[*Client]struct{}),
+		ipCount:       make(map[string]int),
+		userCount:     make(map[string]int),
 	}
 }
 
@@ -100,6 +102,10 @@ func (h *Hub) Register(client *Client) bool {
 	}
 
 	h.clients[client] = true
+	if h.clientsByUser[userKey] == nil {
+		h.clientsByUser[userKey] = make(map[*Client]struct{})
+	}
+	h.clientsByUser[userKey][client] = struct{}{}
 	if ip != "" {
 		h.ipCount[ip]++
 	}
@@ -132,6 +138,12 @@ func (h *Hub) Unregister(client *Client) {
 			}
 		}
 		userKey := client.userKey()
+		if userClients := h.clientsByUser[userKey]; userClients != nil {
+			delete(userClients, client)
+			if len(userClients) == 0 {
+				delete(h.clientsByUser, userKey)
+			}
+		}
 		h.userCount[userKey]--
 		if h.userCount[userKey] <= 0 {
 			delete(h.userCount, userKey)
@@ -159,32 +171,14 @@ func (h *Hub) OnlineCount() int {
 func (h *Hub) isUserConnected(userID string, userType auth.RealmID) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	for client := range h.clients {
-		if client.UserID == userID && client.UserType == userType {
-			return true
-		}
-	}
-	return false
+	return len(h.clientsByUser[userKey(userType, userID)]) > 0
 }
 
 // SendToUser sends a message to a specific business (admin) user.
 
 // SendToUsers sends a message to multiple business users in a single lock acquisition.
 func (h *Hub) SendToUsers(userIDs []string, msg Message) {
-	userSet := make(map[string]struct{}, len(userIDs))
-	for _, uid := range userIDs {
-		userSet[uid] = struct{}{}
-	}
-	clients := make([]*Client, 0, len(userIDs))
-	h.mu.RLock()
-	for client := range h.clients {
-		if client.UserType == auth.BusinessID {
-			if _, ok := userSet[client.UserID]; ok {
-				clients = append(clients, client)
-			}
-		}
-	}
-	h.mu.RUnlock()
+	clients := h.snapshotUsers(auth.BusinessID, userIDs)
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
@@ -193,20 +187,7 @@ func (h *Hub) SendToUsers(userIDs []string, msg Message) {
 
 // SendToConsumers sends a message to multiple consumer users in a single lock acquisition.
 func (h *Hub) SendToConsumers(userIDs []string, msg Message) {
-	userSet := make(map[string]struct{}, len(userIDs))
-	for _, uid := range userIDs {
-		userSet[uid] = struct{}{}
-	}
-	clients := make([]*Client, 0, len(userIDs))
-	h.mu.RLock()
-	for client := range h.clients {
-		if client.UserType == auth.ConsumerID {
-			if _, ok := userSet[client.UserID]; ok {
-				clients = append(clients, client)
-			}
-		}
-	}
-	h.mu.RUnlock()
+	clients := h.snapshotUsers(auth.ConsumerID, userIDs)
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
@@ -228,16 +209,15 @@ func (h *Hub) sendMessagesByUser(userType auth.RealmID, messages map[string]Mess
 	clients := make([]*Client, 0, len(messages))
 	clientMsgs := make([]Message, 0, len(messages))
 	h.mu.RLock()
-	for client := range h.clients {
-		if client.UserType != userType {
+	for userID, msg := range messages {
+		userID = strings.TrimSpace(userID)
+		if userID == "" {
 			continue
 		}
-		msg, ok := messages[client.UserID]
-		if !ok {
-			continue
+		for client := range h.clientsByUser[userKey(userType, userID)] {
+			clients = append(clients, client)
+			clientMsgs = append(clientMsgs, msg)
 		}
-		clients = append(clients, client)
-		clientMsgs = append(clientMsgs, msg)
 	}
 	h.mu.RUnlock()
 	for i, client := range clients {
@@ -247,14 +227,7 @@ func (h *Hub) sendMessagesByUser(userType auth.RealmID, messages map[string]Mess
 }
 
 func (h *Hub) SendToUser(userID string, msg Message) {
-	clients := make([]*Client, 0, 1)
-	h.mu.RLock()
-	for client := range h.clients {
-		if client.UserType == auth.BusinessID && client.UserID == userID {
-			clients = append(clients, client)
-		}
-	}
-	h.mu.RUnlock()
+	clients := h.snapshotUser(auth.BusinessID, userID)
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
@@ -263,14 +236,7 @@ func (h *Hub) SendToUser(userID string, msg Message) {
 
 // SendToConsumer sends a message to a specific consumer (client) user.
 func (h *Hub) SendToConsumer(userID string, msg Message) {
-	clients := make([]*Client, 0, 1)
-	h.mu.RLock()
-	for client := range h.clients {
-		if client.UserType == auth.ConsumerID && client.UserID == userID {
-			clients = append(clients, client)
-		}
-	}
-	h.mu.RUnlock()
+	clients := h.snapshotUser(auth.ConsumerID, userID)
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
@@ -292,6 +258,49 @@ func (h *Hub) snapshotClients(match func(*Client) bool) []*Client {
 	clients := make([]*Client, 0, len(h.clients))
 	for client := range h.clients {
 		if match(client) {
+			clients = append(clients, client)
+		}
+	}
+	return clients
+}
+
+func userKey(userType auth.RealmID, userID string) string {
+	return string(userType) + ":" + userID
+}
+
+func (h *Hub) snapshotUser(userType auth.RealmID, userID string) []*Client {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil
+	}
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	userClients := h.clientsByUser[userKey(userType, userID)]
+	clients := make([]*Client, 0, len(userClients))
+	for client := range userClients {
+		clients = append(clients, client)
+	}
+	return clients
+}
+
+func (h *Hub) snapshotUsers(userType auth.RealmID, userIDs []string) []*Client {
+	if len(userIDs) == 0 {
+		return nil
+	}
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	clients := make([]*Client, 0, len(userIDs))
+	seenUsers := make(map[string]struct{}, len(userIDs))
+	for _, userID := range userIDs {
+		userID = strings.TrimSpace(userID)
+		if userID == "" {
+			continue
+		}
+		if _, ok := seenUsers[userID]; ok {
+			continue
+		}
+		seenUsers[userID] = struct{}{}
+		for client := range h.clientsByUser[userKey(userType, userID)] {
 			clients = append(clients, client)
 		}
 	}

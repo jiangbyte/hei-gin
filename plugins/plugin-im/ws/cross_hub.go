@@ -497,11 +497,10 @@ func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
 	}
 
 	ch.local.SendToUsers(userIDs, msg)
-	if ch.rdb != nil {
-		for _, uid := range userIDs {
-			ch.publishToRemote(uid, auth.BusinessID, msg, "")
-		}
+	if ch.rdb == nil {
+		return
 	}
+	ch.publishBatchToRemote(userIDs, auth.BusinessID, msg)
 }
 
 func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
@@ -510,11 +509,10 @@ func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
 	}
 
 	ch.local.SendToConsumers(userIDs, msg)
-	if ch.rdb != nil {
-		for _, uid := range userIDs {
-			ch.publishToRemote(uid, auth.ConsumerID, msg, "")
-		}
+	if ch.rdb == nil {
+		return
 	}
+	ch.publishBatchToRemote(userIDs, auth.ConsumerID, msg)
 }
 
 func (ch *CrossHub) SendMessagesToUsers(messages map[string]Message, messageIDs map[string]string) {
@@ -526,9 +524,7 @@ func (ch *CrossHub) SendMessagesToUsers(messages map[string]Message, messageIDs 
 	if ch.rdb == nil {
 		return
 	}
-	for uid, msg := range messages {
-		ch.publishToRemote(uid, auth.BusinessID, msg, messageIDs[uid])
-	}
+	ch.publishMessageMapToRemote(messages, messageIDs, auth.BusinessID)
 }
 
 func (ch *CrossHub) SendMessagesToConsumers(messages map[string]Message, messageIDs map[string]string) {
@@ -540,9 +536,7 @@ func (ch *CrossHub) SendMessagesToConsumers(messages map[string]Message, message
 	if ch.rdb == nil {
 		return
 	}
-	for uid, msg := range messages {
-		ch.publishToRemote(uid, auth.ConsumerID, msg, messageIDs[uid])
-	}
+	ch.publishMessageMapToRemote(messages, messageIDs, auth.ConsumerID)
 }
 
 func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) {
@@ -607,6 +601,71 @@ func (ch *CrossHub) publishToRemote(userID string, userType auth.RealmID, msg Me
 			log.Printf("[CrossHub] LPush to %s error: %v", instID, err)
 		}
 	}
+}
+
+func (ch *CrossHub) publishBatchToRemote(userIDs []string, userType auth.RealmID, msg Message) {
+	if len(userIDs) == 0 {
+		return
+	}
+	messages := make(map[string]Message, len(userIDs))
+	messageIDs := make(map[string]string, len(userIDs))
+	for _, uid := range userIDs {
+		if uid == "" {
+			continue
+		}
+		messages[uid] = msg
+	}
+	ch.publishMessageMapToRemote(messages, messageIDs, userType)
+}
+
+func (ch *CrossHub) publishMessageMapToRemote(messages map[string]Message, messageIDs map[string]string, userType auth.RealmID) {
+	if ch.rdb == nil || len(messages) == 0 {
+		return
+	}
+
+	byInstance := make(map[string][]string)
+	for userID := range messages {
+		for _, instID := range ch.getTargetInstances(userID, userType) {
+			if instID == ch.instanceID {
+				continue
+			}
+			byInstance[instID] = append(byInstance[instID], userID)
+		}
+	}
+	if len(byInstance) == 0 {
+		return
+	}
+
+	pipe := ch.rdb.Pipeline()
+	for instID, userIDs := range byInstance {
+		listKey := "ws:messages:" + instID
+		for _, userID := range userIDs {
+			data, err := ch.encodeRemoteMessage(userID, userType, messages[userID], messageIDs[userID])
+			if err != nil {
+				continue
+			}
+			pipe.LPush(ch.ctx, listKey, data)
+		}
+	}
+	if _, err := pipe.Exec(ch.ctx); err != nil {
+		log.Printf("[CrossHub] batch LPush error: %v", err)
+	}
+}
+
+func (ch *CrossHub) encodeRemoteMessage(userID string, userType auth.RealmID, msg Message, messageID string) ([]byte, error) {
+	rawMsg, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	xMsg := crossInstanceMessage{
+		ToUserID:   userID,
+		ToUserType: string(userType),
+		Message:    rawMsg,
+		MessageID:  messageID,
+		Timestamp:  time.Now().UnixMilli(),
+	}
+	return json.Marshal(xMsg)
 }
 
 func (ch *CrossHub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType auth.RealmID) {

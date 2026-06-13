@@ -57,6 +57,7 @@ type RedisConfig struct {
 	Password             string `yaml:"password"`
 	Database             int    `yaml:"database"`
 	MaxConnections       int    `yaml:"max_connections"`
+	PoolTimeout          int    `yaml:"pool_timeout"`
 	SocketConnectTimeout int    `yaml:"socket_connect_timeout"`
 	SocketTimeout        int    `yaml:"socket_timeout"`
 	RetryOnTimeout       bool   `yaml:"retry_on_timeout"`

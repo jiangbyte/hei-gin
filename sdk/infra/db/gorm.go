@@ -19,8 +19,12 @@ var DB *gorm.DB
 
 func InitDB() error {
 	cfg := config.C.DB
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
+	connectTimeout := cfg.ConnectTimeout
+	if connectTimeout <= 0 {
+		connectTimeout = 10
+	}
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=%ds",
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database, connectTimeout)
 
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
@@ -35,8 +39,17 @@ func InitDB() error {
 		return fmt.Errorf("failed to get sql.DB: %w", err)
 	}
 
-	sqlDB.SetMaxOpenConns(cfg.PoolSize + cfg.MaxOverflow)
-	sqlDB.SetMaxIdleConns(cfg.PoolSize)
+	poolSize := cfg.PoolSize
+	if poolSize <= 0 {
+		poolSize = 20
+	}
+	maxOverflow := cfg.MaxOverflow
+	if maxOverflow < 0 {
+		maxOverflow = 0
+	}
+	maxOpenConns := poolSize + maxOverflow
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetMaxIdleConns(poolSize)
 
 	maxLifetime := time.Duration(cfg.PoolRecycle) * time.Second
 	if maxLifetime <= 0 || maxLifetime > 1*time.Hour {
@@ -51,7 +64,7 @@ func InitDB() error {
 	}
 
 	log.Printf("[Database] MySQL connection verified, max_conns=%d, max_lifetime=%v",
-		cfg.PoolSize+cfg.MaxOverflow, maxLifetime)
+		maxOpenConns, maxLifetime)
 
 	registerModelHooks()
 	registerUpdateHook()
