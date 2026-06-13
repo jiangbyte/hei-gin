@@ -3,16 +3,16 @@ package ws
 import (
 	"testing"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 )
 
 func TestCrossHubKeyHelpers(t *testing.T) {
 	ch := &CrossHub{instanceID: "inst-1"}
 
-	if got := ch.userSetKey(enums.LoginTypeConsumer, "u1"); got != "ws:user:CONSUMER:u1" {
+	if got := ch.userSetKey(auth.ConsumerID, "u1"); got != "ws:user:CONSUMER:u1" {
 		t.Fatalf("userSetKey = %q", got)
 	}
-	if got := ch.userCountKey(enums.LoginTypeBusiness, "u2"); got != "ws:usercnt:BUSINESS:u2" {
+	if got := ch.userCountKey(auth.BusinessID, "u2"); got != "ws:usercnt:BUSINESS:u2" {
 		t.Fatalf("userCountKey = %q", got)
 	}
 	if got := ch.dedupKey("m1"); got != "ws:dedup:inst-1:m1" {

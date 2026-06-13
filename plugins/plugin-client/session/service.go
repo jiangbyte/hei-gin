@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
@@ -126,7 +125,7 @@ func (s *Service) Chart(c *gin.Context) *SessionChartData {
 		},
 		PieChart: PieChartData{
 			Data: []CategoryTotal{
-				{Category: string(enums.LoginTypeConsumer), Total: cStats.TotalCount},
+				{Category: string(auth.ConsumerID), Total: cStats.TotalCount},
 			},
 		},
 	}

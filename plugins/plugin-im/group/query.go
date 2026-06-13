@@ -3,7 +3,7 @@ package group
 import (
 	"encoding/json"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -271,7 +271,7 @@ func (s *Service) HandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 		"action":   "join_request_result",
 	}
 	if runtime := ws.Runtime(); runtime != nil {
-		if req.UserType == string(enums.LoginTypeConsumer) {
+		if req.UserType == string(auth.ConsumerID) {
 			runtime.SendToConsumer(req.UserID, ws.Message{Type: "group_event", Payload: msg})
 		} else {
 			runtime.SendToUser(req.UserID, ws.Message{Type: "group_event", Payload: msg})

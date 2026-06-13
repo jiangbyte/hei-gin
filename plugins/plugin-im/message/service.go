@@ -9,7 +9,6 @@ import (
 	imModel "hei-gin/plugins/plugin-im/model"
 	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -27,7 +26,7 @@ func getLoginID(c *gin.Context) string {
 			return uid
 		}
 	}
-	if getUserType(c) == string(enums.LoginTypeConsumer) {
+	if getUserType(c) == string(auth.ConsumerID) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.Business.GetLoginID(c)
@@ -41,9 +40,9 @@ func getUserType(c *gin.Context) string {
 	}
 	path := c.Request.URL.Path
 	if isConsumerAPIPath(path) {
-		return string(enums.LoginTypeConsumer)
+		return string(auth.ConsumerID)
 	}
-	return string(enums.LoginTypeBusiness)
+	return string(auth.BusinessID)
 }
 
 func isConsumerAPIPath(path string) bool {
@@ -66,7 +65,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 	senderID := getLoginID(c)
 	senderType := getUserType(c)
 
-	if runtime := ws.Runtime(); runtime != nil && !runtime.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
+	if runtime := ws.Runtime(); runtime != nil && !runtime.AllowMessage(senderID, auth.RealmID(senderType)) {
 		result.WriteError(c, exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
 		return
 	}
@@ -77,7 +76,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 	}
 	receiverType := param.ReceiverType
 	if receiverType == "" {
-		receiverType = string(enums.LoginTypeBusiness)
+		receiverType = string(auth.BusinessID)
 	}
 	receiverIDs := normalizeReceiverIDs(param.ReceiverIDs)
 	if len(receiverIDs) == 0 {
@@ -95,7 +94,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 
 	records := make([]imModel.Message, len(receiverIDs))
 	for i, rid := range receiverIDs {
-		cid := imModel.GenerateConversationID(senderID, enums.LoginTypeEnum(senderType), rid, enums.LoginTypeEnum(receiverType))
+		cid := imModel.GenerateConversationID(senderID, auth.RealmID(senderType), rid, auth.RealmID(receiverType))
 		records[i] = imModel.Message{
 			ID:             utils.GenerateID(),
 			ConversationID: cid,
@@ -152,7 +151,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 		messageIDs[rid] = records[i].ID
 	}
 	if runtime := ws.Runtime(); runtime != nil {
-		if receiverType == string(enums.LoginTypeConsumer) {
+		if receiverType == string(auth.ConsumerID) {
 			runtime.SendMessagesToConsumers(pushMessages, messageIDs)
 		} else {
 			runtime.SendMessagesToUsers(pushMessages, messageIDs)

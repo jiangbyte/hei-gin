@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,19 +19,19 @@ func newMessageContext(path string) *gin.Context {
 
 func TestGetUserTypePrefersContextValue(t *testing.T) {
 	c := newMessageContext("/api/v1/c/im/message/page")
-	c.Set("login_type", string(enums.LoginTypeBusiness))
+	c.Set("login_type", string(auth.BusinessID))
 
-	if got := getUserType(c); got != string(enums.LoginTypeBusiness) {
+	if got := getUserType(c); got != string(auth.BusinessID) {
 		t.Fatalf("getUserType = %q", got)
 	}
 }
 
 func TestGetUserTypeDetectsConsumerAPIPath(t *testing.T) {
 	tests := map[string]string{
-		"/api/v1/c/im/message/page":  string(enums.LoginTypeConsumer),
-		"/api/v12/c/im/message/page": string(enums.LoginTypeConsumer),
-		"/api/v1/b/im/message/page":  string(enums.LoginTypeBusiness),
-		"/c/im/message/page":         string(enums.LoginTypeBusiness),
+		"/api/v1/c/im/message/page":  string(auth.ConsumerID),
+		"/api/v12/c/im/message/page": string(auth.ConsumerID),
+		"/api/v1/b/im/message/page":  string(auth.BusinessID),
+		"/c/im/message/page":         string(auth.BusinessID),
 	}
 
 	for path, want := range tests {

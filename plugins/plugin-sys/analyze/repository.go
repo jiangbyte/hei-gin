@@ -5,8 +5,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	logModel "hei-gin/plugins/plugin-sys/log"
-	"hei-gin/sdk/enums"
 )
 
 type repository struct {
@@ -117,5 +117,5 @@ func (r *repository) RoleCategoryCounts(ctx context.Context) []catCount {
 }
 
 func (r *repository) ActiveStatus() string {
-	return string(enums.UserStatusActive)
+	return shared.UserStatusActive
 }

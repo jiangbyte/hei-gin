@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/infra/storage"
 	"hei-gin/sdk/web/exception"
 
@@ -23,7 +22,7 @@ func getLoginID(c *gin.Context) string {
 			return uid
 		}
 	}
-	if getUserType(c) == string(enums.LoginTypeConsumer) {
+	if getUserType(c) == string(auth.ConsumerID) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.Business.GetLoginID(c)
@@ -37,9 +36,9 @@ func getUserType(c *gin.Context) string {
 	}
 	path := c.Request.URL.Path
 	if isConsumerAPIPath(path) {
-		return string(enums.LoginTypeConsumer)
+		return string(auth.ConsumerID)
 	}
-	return string(enums.LoginTypeBusiness)
+	return string(auth.BusinessID)
 }
 
 func isConsumerAPIPath(path string) bool {
@@ -57,7 +56,7 @@ func isConsumerAPIPath(path string) bool {
 // ==================== GroupCreate ====================
 
 func validateMemberType(groupType, userType string) error {
-	if groupType == GroupTypeConsumerOnly && userType != string(enums.LoginTypeConsumer) {
+	if groupType == GroupTypeConsumerOnly && userType != string(auth.ConsumerID) {
 		return exception.NewBusinessError("该群仅限C端用户", 403)
 	}
 	return nil

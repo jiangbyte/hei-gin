@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/constants"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
 
@@ -36,7 +35,7 @@ func NoRepeat(interval int) gin.HandlerFunc {
 
 		// Hash request params
 		phash := paramsHash(c)
-		cacheKey := constants.NO_REPEAT_PREFIX + ip + ":" + userID + ":" + c.Request.URL.Path + ":" + phash
+		cacheKey := auth.NoRepeatPrefix + ip + ":" + userID + ":" + c.Request.URL.Path + ":" + phash
 
 		// Check Redis
 		redisClient := db.Redis

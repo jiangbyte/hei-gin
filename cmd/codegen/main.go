@@ -606,7 +606,7 @@ var serviceGoTmpl = `package @MODULE_PKG@
 import (
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
 	"hei-gin/sdk/utils"
@@ -660,7 +660,7 @@ func (s *Service) Detail(c *gin.Context, id string) *@MODULE_PASCAL@VO {
 func (s *Service) Create(c *gin.Context, vo *@MODULE_PASCAL@VO) {
 	ctx := c.Request.Context()
 	e := @MODULE_PASCAL@VOToSys@MODULE_PASCAL@(vo)
-	e.Status = string(enums.StatusEnabled)
+	e.Status = shared.StatusEnabled
 	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("创建失败: "+err.Error(), 500))
 		return

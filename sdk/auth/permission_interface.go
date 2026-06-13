@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/shared/contracts"
 )
 
@@ -20,11 +19,7 @@ type ScopeRow = contracts.ScopeRow
 type ScopeInfo = contracts.ScopeInfo
 
 func MergeScope(permScope map[string]map[string]interface{}, path string, rows []ScopeRow) {
-	priority := map[string]int{
-		string(enums.PermissionPathDirect):   0,
-		string(enums.PermissionPathUserRole): 1,
-	}
-	currentPrio, _ := priority[path]
+	currentPrio, _ := permissionPathPriority[path]
 	for _, row := range rows {
 		existing, exists := permScope[row.PermissionCode]
 		if !exists {
@@ -45,7 +40,7 @@ func mergeScopeEntry(existing map[string]interface{}, row ScopeRow, currentPrio 
 	for k, v := range existing {
 		result[k] = v
 	}
-	result["group_scope"] = enums.MostRestrictive(
+	result["group_scope"] = mostRestrictiveScope(
 		safeString(result["group_scope"]),
 		row.Scope,
 	)
@@ -55,7 +50,7 @@ func mergeScopeEntry(existing map[string]interface{}, row ScopeRow, currentPrio 
 	newCustomOrgs := parseCSV(row.CustomOrgIDs)
 	result["custom_group_ids"] = mergeUnique(prevCustomGroups, newCustomGroups)
 	result["custom_org_ids"] = mergeUnique(prevCustomOrgs, newCustomOrgs)
-	result["org_scope"] = enums.MostRestrictive(
+	result["org_scope"] = mostRestrictiveScope(
 		safeString(result["org_scope"]),
 		row.Scope,
 	)

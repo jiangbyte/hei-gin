@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -47,7 +47,7 @@ func (s *Service) Create(c *gin.Context) {
 	}
 
 	groupType := GroupTypeMixed
-	if userType == string(enums.LoginTypeConsumer) {
+	if userType == string(auth.ConsumerID) {
 		groupType = GroupTypeConsumerOnly
 	}
 

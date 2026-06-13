@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/infra/eventbus"
 
 	"github.com/redis/go-redis/v9"
@@ -128,9 +128,9 @@ func (ch *CrossHub) onClientRegistered(c *Client) {
 	ch.broadcastPresence(c.UserID, c.UserType, true)
 	eventbus.DefaultBus.Publish(eventbus.TopicUserConnected, c)
 	switch c.UserType {
-	case enums.LoginTypeBusiness:
+	case auth.BusinessID:
 		ch.local.SendToUser(c.UserID, Message{Type: MsgUnreadCount})
-	case enums.LoginTypeConsumer:
+	case auth.ConsumerID:
 		ch.local.SendToConsumer(c.UserID, Message{Type: MsgUnreadCount})
 	}
 }
@@ -145,7 +145,7 @@ func (ch *CrossHub) onClientUnregistered(c *Client) {
 
 // ─── Redis key helpers ────────────────────────────────────────────────
 
-func (ch *CrossHub) userSetKey(userType enums.LoginTypeEnum, userID string) string {
+func (ch *CrossHub) userSetKey(userType auth.RealmID, userID string) string {
 	return "ws:user:" + string(userType) + ":" + userID
 }
 
@@ -157,11 +157,11 @@ func (ch *CrossHub) instanceKey() string {
 	return "ws:instance:" + ch.instanceID
 }
 
-func (ch *CrossHub) rateLimitKey(userID string, userType enums.LoginTypeEnum) string {
+func (ch *CrossHub) rateLimitKey(userID string, userType auth.RealmID) string {
 	return "ws:ratelimit:" + string(userType) + ":" + userID
 }
 
-func (ch *CrossHub) userCountKey(userType enums.LoginTypeEnum, userID string) string {
+func (ch *CrossHub) userCountKey(userType auth.RealmID, userID string) string {
 	return "ws:usercnt:" + string(userType) + ":" + userID
 }
 
@@ -171,7 +171,7 @@ func (ch *CrossHub) dedupKey(messageID string) string {
 
 // ─── Presence ─────────────────────────────────────────────────────────
 
-func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType enums.LoginTypeEnum) bool {
+func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType auth.RealmID) bool {
 	if ch == nil {
 		return false
 	}
@@ -187,11 +187,11 @@ func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType enums.LoginType
 	return count > 0
 }
 
-func (ch *CrossHub) IsUserOnlineLocally(userID string, userType enums.LoginTypeEnum) bool {
+func (ch *CrossHub) IsUserOnlineLocally(userID string, userType auth.RealmID) bool {
 	return ch.local.isUserConnected(userID, userType)
 }
 
-func (ch *CrossHub) broadcastPresence(userID string, userType enums.LoginTypeEnum, online bool) {
+func (ch *CrossHub) broadcastPresence(userID string, userType auth.RealmID, online bool) {
 	msg := Message{
 		Type: MsgPresence,
 		Payload: PresencePayload{
@@ -203,7 +203,7 @@ func (ch *CrossHub) broadcastPresence(userID string, userType enums.LoginTypeEnu
 	ch.local.BroadcastAll(msg)
 }
 
-func (ch *CrossHub) TrackConnection(userID string, userType enums.LoginTypeEnum) {
+func (ch *CrossHub) TrackConnection(userID string, userType auth.RealmID) {
 	if ch.rdb == nil {
 		return
 	}
@@ -219,7 +219,7 @@ func (ch *CrossHub) TrackConnection(userID string, userType enums.LoginTypeEnum)
 	ch.rdb.Expire(ch.ctx, countKey, instTTL()+30*time.Second)
 }
 
-func (ch *CrossHub) UntrackConnection(userID string, userType enums.LoginTypeEnum) {
+func (ch *CrossHub) UntrackConnection(userID string, userType auth.RealmID) {
 	if ch.rdb == nil {
 		return
 	}
@@ -248,7 +248,7 @@ func userCountKeyFromSetKey(key string) string {
 	return "ws:usercnt:" + key[len(prefix):]
 }
 
-func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEnum) []string {
+func (ch *CrossHub) getTargetInstances(userID string, userType auth.RealmID) []string {
 	if ch.rdb == nil {
 		return nil
 	}
@@ -263,7 +263,7 @@ func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEn
 
 // ─── Rate Limiting ────────────────────────────────────────────────────
 
-func (ch *CrossHub) AllowMessage(userID string, userType enums.LoginTypeEnum) bool {
+func (ch *CrossHub) AllowMessage(userID string, userType auth.RealmID) bool {
 	if ch == nil {
 		return false
 	}
@@ -354,10 +354,10 @@ func (ch *CrossHub) handleMessage(payload string) {
 		return
 	}
 
-	switch enums.LoginTypeEnum(xMsg.ToUserType) {
-	case enums.LoginTypeBusiness:
+	switch auth.RealmID(xMsg.ToUserType) {
+	case auth.BusinessID:
 		ch.local.SendToUser(xMsg.ToUserID, msg)
-	case enums.LoginTypeConsumer:
+	case auth.ConsumerID:
 		ch.local.SendToConsumer(xMsg.ToUserID, msg)
 	}
 }
@@ -499,7 +499,7 @@ func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
 	ch.local.SendToUsers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
-			ch.publishToRemote(uid, enums.LoginTypeBusiness, msg, "")
+			ch.publishToRemote(uid, auth.BusinessID, msg, "")
 		}
 	}
 }
@@ -512,7 +512,7 @@ func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
 	ch.local.SendToConsumers(userIDs, msg)
 	if ch.rdb != nil {
 		for _, uid := range userIDs {
-			ch.publishToRemote(uid, enums.LoginTypeConsumer, msg, "")
+			ch.publishToRemote(uid, auth.ConsumerID, msg, "")
 		}
 	}
 }
@@ -527,7 +527,7 @@ func (ch *CrossHub) SendMessagesToUsers(messages map[string]Message, messageIDs 
 		return
 	}
 	for uid, msg := range messages {
-		ch.publishToRemote(uid, enums.LoginTypeBusiness, msg, messageIDs[uid])
+		ch.publishToRemote(uid, auth.BusinessID, msg, messageIDs[uid])
 	}
 }
 
@@ -541,7 +541,7 @@ func (ch *CrossHub) SendMessagesToConsumers(messages map[string]Message, message
 		return
 	}
 	for uid, msg := range messages {
-		ch.publishToRemote(uid, enums.LoginTypeConsumer, msg, messageIDs[uid])
+		ch.publishToRemote(uid, auth.ConsumerID, msg, messageIDs[uid])
 	}
 }
 
@@ -555,7 +555,7 @@ func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) 
 		if len(messageID) > 0 {
 			mid = messageID[0]
 		}
-		ch.publishToRemote(userID, enums.LoginTypeBusiness, msg, mid)
+		ch.publishToRemote(userID, auth.BusinessID, msg, mid)
 	}
 }
 
@@ -569,12 +569,12 @@ func (ch *CrossHub) SendToConsumer(userID string, msg Message, messageID ...stri
 		if len(messageID) > 0 {
 			mid = messageID[0]
 		}
-		ch.publishToRemote(userID, enums.LoginTypeConsumer, msg, mid)
+		ch.publishToRemote(userID, auth.ConsumerID, msg, mid)
 	}
 }
 
 // publishToRemote pushes a message to remote instances where the user is connected.
-func (ch *CrossHub) publishToRemote(userID string, userType enums.LoginTypeEnum, msg Message, messageID string) {
+func (ch *CrossHub) publishToRemote(userID string, userType auth.RealmID, msg Message, messageID string) {
 	instances := ch.getTargetInstances(userID, userType)
 	if len(instances) == 0 {
 		return
@@ -609,7 +609,7 @@ func (ch *CrossHub) publishToRemote(userID string, userType enums.LoginTypeEnum,
 	}
 }
 
-func (ch *CrossHub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType enums.LoginTypeEnum) {
+func (ch *CrossHub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType auth.RealmID) {
 	if ch == nil {
 		return
 	}

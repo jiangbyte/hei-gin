@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/observability"
 
 	"github.com/gorilla/websocket"
@@ -156,7 +156,7 @@ func (h *Hub) OnlineCount() int {
 }
 
 // isUserConnected checks if a specific user is connected to this hub.
-func (h *Hub) isUserConnected(userID string, userType enums.LoginTypeEnum) bool {
+func (h *Hub) isUserConnected(userID string, userType auth.RealmID) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for client := range h.clients {
@@ -178,7 +178,7 @@ func (h *Hub) SendToUsers(userIDs []string, msg Message) {
 	clients := make([]*Client, 0, len(userIDs))
 	h.mu.RLock()
 	for client := range h.clients {
-		if client.UserType == enums.LoginTypeBusiness {
+		if client.UserType == auth.BusinessID {
 			if _, ok := userSet[client.UserID]; ok {
 				clients = append(clients, client)
 			}
@@ -200,7 +200,7 @@ func (h *Hub) SendToConsumers(userIDs []string, msg Message) {
 	clients := make([]*Client, 0, len(userIDs))
 	h.mu.RLock()
 	for client := range h.clients {
-		if client.UserType == enums.LoginTypeConsumer {
+		if client.UserType == auth.ConsumerID {
 			if _, ok := userSet[client.UserID]; ok {
 				clients = append(clients, client)
 			}
@@ -214,14 +214,14 @@ func (h *Hub) SendToConsumers(userIDs []string, msg Message) {
 }
 
 func (h *Hub) SendMessagesToUsers(messages map[string]Message) {
-	h.sendMessagesByUser(enums.LoginTypeBusiness, messages)
+	h.sendMessagesByUser(auth.BusinessID, messages)
 }
 
 func (h *Hub) SendMessagesToConsumers(messages map[string]Message) {
-	h.sendMessagesByUser(enums.LoginTypeConsumer, messages)
+	h.sendMessagesByUser(auth.ConsumerID, messages)
 }
 
-func (h *Hub) sendMessagesByUser(userType enums.LoginTypeEnum, messages map[string]Message) {
+func (h *Hub) sendMessagesByUser(userType auth.RealmID, messages map[string]Message) {
 	if len(messages) == 0 {
 		return
 	}
@@ -250,7 +250,7 @@ func (h *Hub) SendToUser(userID string, msg Message) {
 	clients := make([]*Client, 0, 1)
 	h.mu.RLock()
 	for client := range h.clients {
-		if client.UserType == enums.LoginTypeBusiness && client.UserID == userID {
+		if client.UserType == auth.BusinessID && client.UserID == userID {
 			clients = append(clients, client)
 		}
 	}
@@ -266,7 +266,7 @@ func (h *Hub) SendToConsumer(userID string, msg Message) {
 	clients := make([]*Client, 0, 1)
 	h.mu.RLock()
 	for client := range h.clients {
-		if client.UserType == enums.LoginTypeConsumer && client.UserID == userID {
+		if client.UserType == auth.ConsumerID && client.UserID == userID {
 			clients = append(clients, client)
 		}
 	}
@@ -302,7 +302,7 @@ func (h *Hub) snapshotClients(match func(*Client) bool) []*Client {
 func (h *Hub) BroadcastBusiness(msg Message) {
 	data, _ := json.Marshal(msg)
 	clients := h.snapshotClients(func(client *Client) bool {
-		return client.UserType == enums.LoginTypeBusiness
+		return client.UserType == auth.BusinessID
 	})
 	for _, client := range clients {
 		client.sendBytes(data)
@@ -312,7 +312,7 @@ func (h *Hub) BroadcastBusiness(msg Message) {
 func (h *Hub) BroadcastConsumers(msg Message) {
 	data, _ := json.Marshal(msg)
 	clients := h.snapshotClients(func(client *Client) bool {
-		return client.UserType == enums.LoginTypeConsumer
+		return client.UserType == auth.ConsumerID
 	})
 	for _, client := range clients {
 		client.sendBytes(data)
@@ -378,7 +378,7 @@ func (h *Hub) StopOnlineBroadcast() {
 }
 
 // HandleWebSocket upgrades an HTTP connection to WebSocket and registers the client.
-func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType enums.LoginTypeEnum) {
+func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType auth.RealmID) {
 	conn, err := getUpgrader().Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[WS] Upgrade error: %v", err)

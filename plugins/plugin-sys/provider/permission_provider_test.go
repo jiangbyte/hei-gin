@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/constants"
 	"hei-gin/sdk/infra/db"
 
 	"github.com/alicebob/miniredis/v2"
@@ -30,7 +30,7 @@ func TestGetAllPermissionsFromRedisSupportsFlatList(t *testing.T) {
 	setupProviderRedisTest(t)
 
 	payload, _ := json.Marshal([]string{"sys:user:view", "sys:user:edit"})
-	if err := db.Redis.Set(context.Background(), constants.PERMISSION_CACHE_KEY, payload, 0).Err(); err != nil {
+	if err := db.Redis.Set(context.Background(), shared.PermissionCacheKey, payload, 0).Err(); err != nil {
 		t.Fatalf("set redis: %v", err)
 	}
 
@@ -54,7 +54,7 @@ func TestGetAllPermissionsFromRedisSupportsModuleTree(t *testing.T) {
 		},
 	}
 	payload, _ := json.Marshal(tree)
-	if err := db.Redis.Set(context.Background(), constants.PERMISSION_CACHE_KEY, payload, 0).Err(); err != nil {
+	if err := db.Redis.Set(context.Background(), shared.PermissionCacheKey, payload, 0).Err(); err != nil {
 		t.Fatalf("set redis: %v", err)
 	}
 

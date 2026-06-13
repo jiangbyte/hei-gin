@@ -3,8 +3,8 @@ package user
 import (
 	"gorm.io/gorm"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -68,7 +68,7 @@ func (s *Service) Create(c *gin.Context, v *ClientUserVO) {
 	}
 
 	e := ClientUserVOToClientUser(v)
-	e.Status = string(enums.UserStatusActive)
+	e.Status = shared.UserStatusActive
 
 	if v.Password != nil {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(*v.Password), bcrypt.DefaultCost)

@@ -5,7 +5,6 @@ import (
 
 	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -18,7 +17,7 @@ type Service struct {
 }
 
 func getLoginID(c *gin.Context, userType string) string {
-	if userType == string(enums.LoginTypeConsumer) {
+	if userType == string(auth.ConsumerID) {
 		return auth.Consumer.GetLoginID(c)
 	}
 	return auth.Business.GetLoginID(c)
@@ -77,7 +76,7 @@ func (s *Service) SendRequest(c *gin.Context, userType string, p *SendRequestPar
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
 	if runtime := ws.Runtime(); runtime != nil {
-		if p.ReceiverType == string(enums.LoginTypeConsumer) {
+		if p.ReceiverType == string(auth.ConsumerID) {
 			runtime.SendToConsumer(p.ReceiverID, msg)
 		} else {
 			runtime.SendToUser(p.ReceiverID, msg)
@@ -125,7 +124,7 @@ func (s *Service) AcceptRequest(c *gin.Context, userType string, p *HandleReques
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
 	if runtime := ws.Runtime(); runtime != nil {
-		if req.SenderType == string(enums.LoginTypeConsumer) {
+		if req.SenderType == string(auth.ConsumerID) {
 			runtime.SendToConsumer(req.SenderID, msg)
 		} else {
 			runtime.SendToUser(req.SenderID, msg)
@@ -170,9 +169,9 @@ func (s *Service) List(c *gin.Context, userType string) []FriendVO {
 	var businessIDs, consumerIDs []string
 	for _, f := range friendships {
 		switch f.FriendType {
-		case string(enums.LoginTypeBusiness):
+		case string(auth.BusinessID):
 			businessIDs = append(businessIDs, f.FriendID)
-		case string(enums.LoginTypeConsumer):
+		case string(auth.ConsumerID):
 			consumerIDs = append(consumerIDs, f.FriendID)
 		}
 	}
@@ -294,7 +293,7 @@ func (s *Service) Search(c *gin.Context, keyword string, limit int) []SearchResu
 			avatar = *u.Avatar
 		}
 		results = append(results, SearchResult{
-			UserID: u.ID, UserType: string(enums.LoginTypeBusiness),
+			UserID: u.ID, UserType: string(auth.BusinessID),
 			Nickname: nickname, Avatar: avatar,
 		})
 	}
@@ -312,7 +311,7 @@ func (s *Service) Search(c *gin.Context, keyword string, limit int) []SearchResu
 				avatar = *u.Avatar
 			}
 			results = append(results, SearchResult{
-				UserID: u.ID, UserType: string(enums.LoginTypeConsumer),
+				UserID: u.ID, UserType: string(auth.ConsumerID),
 				Nickname: nickname, Avatar: avatar,
 			})
 		}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	resModel "hei-gin/plugins/plugin-sys/resource"
-	"hei-gin/sdk/enums"
+	"hei-gin/plugins/plugin-sys/shared"
 )
 
 type repository struct {
@@ -72,8 +72,8 @@ func (r *repository) QuickActionResourceIDs(ctx context.Context, userID string) 
 func (r *repository) AvailableResources(ctx context.Context, actionIDs []string) []resModel.SysResource {
 	q := r.db.WithContext(ctx).Model(&resModel.SysResource{}).Where(
 		"category IN ? AND status = ?",
-		[]string{string(enums.ResourceCategoryBackendMenu), string(enums.ResourceCategoryFrontendMenu)},
-		string(enums.StatusEnabled),
+		[]string{shared.ResourceCategoryBackendMenu, shared.ResourceCategoryFrontendMenu},
+		shared.StatusEnabled,
 	)
 	if len(actionIDs) > 0 {
 		q = q.Where("id NOT IN ?", actionIDs)
@@ -86,7 +86,7 @@ func (r *repository) AvailableResources(ctx context.Context, actionIDs []string)
 func (r *repository) LatestNotices(ctx context.Context) []homeNoticeRow {
 	var rows []homeNoticeRow
 	r.db.WithContext(ctx).Table("sys_notice").
-		Where("status = ?", string(enums.StatusEnabled)).
+		Where("status = ?", shared.StatusEnabled).
 		Where("category = ?", "PLATFORM").
 		Order("sort_code ASC, is_top DESC").
 		Select("id, title, level, created_at").

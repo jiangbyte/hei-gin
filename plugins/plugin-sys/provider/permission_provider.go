@@ -8,11 +8,10 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	roleModel "hei-gin/plugins/plugin-sys/role"
 	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/constants"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/shared/contracts"
 )
@@ -132,7 +131,7 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, realmID 
 					CustomOrgIDs:   e.CustomScopeOrgIds,
 				})
 			}
-			auth.MergeScope(permScope, string(enums.PermissionPathUserRole), scopeRows)
+			auth.MergeScope(permScope, "P1", scopeRows)
 		}
 	}
 
@@ -149,7 +148,7 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, realmID 
 				CustomOrgIDs:   e.CustomScopeOrgIds,
 			})
 		}
-		auth.MergeScope(permScope, string(enums.PermissionPathDirect), scopeRows)
+		auth.MergeScope(permScope, "P0", scopeRows)
 	}
 
 	result := make(map[string]contracts.ScopeInfo, len(permScope))
@@ -165,7 +164,7 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, realmID 
 }
 
 func (p *PermissionProvider) getAllPermissionsFromRedis(ctx context.Context) ([]string, error) {
-	val, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	val, err := db.Redis.Get(ctx, shared.PermissionCacheKey).Result()
 	if err != nil {
 		return nil, err
 	}

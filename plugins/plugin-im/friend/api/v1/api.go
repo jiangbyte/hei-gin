@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"hei-gin/plugins/plugin-im/friend"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
@@ -132,7 +131,7 @@ func Register() {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/send-request [post]
 func (h *handler) sendRequest(c *gin.Context) {
-	h.sendRequestByType(c, string(enums.LoginTypeBusiness))
+	h.sendRequestByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友发送申请
@@ -144,7 +143,7 @@ func (h *handler) sendRequest(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/send-request [post]
 func (h *handler) clientSendRequest(c *gin.Context) {
-	h.sendRequestByType(c, string(enums.LoginTypeConsumer))
+	h.sendRequestByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) sendRequestByType(c *gin.Context, userType string) {
@@ -166,7 +165,7 @@ func (h *handler) sendRequestByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/accept [post]
 func (h *handler) accept(c *gin.Context) {
-	h.acceptByType(c, string(enums.LoginTypeBusiness))
+	h.acceptByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友接受申请
@@ -178,7 +177,7 @@ func (h *handler) accept(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/accept [post]
 func (h *handler) clientAccept(c *gin.Context) {
-	h.acceptByType(c, string(enums.LoginTypeConsumer))
+	h.acceptByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) acceptByType(c *gin.Context, userType string) {
@@ -200,7 +199,7 @@ func (h *handler) acceptByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/reject [post]
 func (h *handler) reject(c *gin.Context) {
-	h.rejectByType(c, string(enums.LoginTypeBusiness))
+	h.rejectByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友拒绝申请
@@ -212,7 +211,7 @@ func (h *handler) reject(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/reject [post]
 func (h *handler) clientReject(c *gin.Context) {
-	h.rejectByType(c, string(enums.LoginTypeConsumer))
+	h.rejectByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) rejectByType(c *gin.Context, userType string) {
@@ -233,7 +232,7 @@ func (h *handler) rejectByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/list [get]
 func (h *handler) list(c *gin.Context) {
-	result.Success(c, h.service.List(c, string(enums.LoginTypeBusiness)))
+	result.Success(c, h.service.List(c, string(auth.BusinessID)))
 }
 
 // @Summary      即时通讯好友列表查询
@@ -244,7 +243,7 @@ func (h *handler) list(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/list [get]
 func (h *handler) clientList(c *gin.Context) {
-	result.Success(c, h.service.List(c, string(enums.LoginTypeConsumer)))
+	result.Success(c, h.service.List(c, string(auth.ConsumerID)))
 }
 
 // @Summary      即时通讯好友待处理申请列表
@@ -255,7 +254,7 @@ func (h *handler) clientList(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/pending-requests [get]
 func (h *handler) pendingRequests(c *gin.Context) {
-	h.pendingRequestsByType(c, string(enums.LoginTypeBusiness))
+	h.pendingRequestsByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友待处理申请列表
@@ -266,7 +265,7 @@ func (h *handler) pendingRequests(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/pending-requests [get]
 func (h *handler) clientPendingRequests(c *gin.Context) {
-	h.pendingRequestsByType(c, string(enums.LoginTypeConsumer))
+	h.pendingRequestsByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) pendingRequestsByType(c *gin.Context, userType string) {
@@ -283,7 +282,7 @@ func (h *handler) pendingRequestsByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/remove [post]
 func (h *handler) remove(c *gin.Context) {
-	h.removeByType(c, string(enums.LoginTypeBusiness))
+	h.removeByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友删除
@@ -295,7 +294,7 @@ func (h *handler) remove(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/remove [post]
 func (h *handler) clientRemove(c *gin.Context) {
-	h.removeByType(c, string(enums.LoginTypeConsumer))
+	h.removeByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) removeByType(c *gin.Context, userType string) {
@@ -317,7 +316,7 @@ func (h *handler) removeByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/block [post]
 func (h *handler) block(c *gin.Context) {
-	h.blockByType(c, string(enums.LoginTypeBusiness))
+	h.blockByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友拉黑
@@ -329,7 +328,7 @@ func (h *handler) block(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/block [post]
 func (h *handler) clientBlock(c *gin.Context) {
-	h.blockByType(c, string(enums.LoginTypeConsumer))
+	h.blockByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) blockByType(c *gin.Context, userType string) {
@@ -351,7 +350,7 @@ func (h *handler) blockByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/unblock [post]
 func (h *handler) unblock(c *gin.Context) {
-	h.unblockByType(c, string(enums.LoginTypeBusiness))
+	h.unblockByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友取消拉黑
@@ -363,7 +362,7 @@ func (h *handler) unblock(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/unblock [post]
 func (h *handler) clientUnblock(c *gin.Context) {
-	h.unblockByType(c, string(enums.LoginTypeConsumer))
+	h.unblockByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) unblockByType(c *gin.Context, userType string) {
@@ -384,7 +383,7 @@ func (h *handler) unblockByType(c *gin.Context, userType string) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/block-list [get]
 func (h *handler) blockList(c *gin.Context) {
-	result.Success(c, h.service.BlockList(c, string(enums.LoginTypeBusiness)))
+	result.Success(c, h.service.BlockList(c, string(auth.BusinessID)))
 }
 
 // @Summary      即时通讯好友拉黑列表
@@ -395,7 +394,7 @@ func (h *handler) blockList(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/block-list [get]
 func (h *handler) clientBlockList(c *gin.Context) {
-	result.Success(c, h.service.BlockList(c, string(enums.LoginTypeConsumer)))
+	result.Success(c, h.service.BlockList(c, string(auth.ConsumerID)))
 }
 
 // @Summary      即时通讯好友设置备注
@@ -407,7 +406,7 @@ func (h *handler) clientBlockList(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/friend/remark [post]
 func (h *handler) remark(c *gin.Context) {
-	h.remarkByType(c, string(enums.LoginTypeBusiness))
+	h.remarkByType(c, string(auth.BusinessID))
 }
 
 // @Summary      即时通讯好友设置备注
@@ -419,7 +418,7 @@ func (h *handler) remark(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/friend/remark [post]
 func (h *handler) clientRemark(c *gin.Context) {
-	h.remarkByType(c, string(enums.LoginTypeConsumer))
+	h.remarkByType(c, string(auth.ConsumerID))
 }
 
 func (h *handler) remarkByType(c *gin.Context, userType string) {

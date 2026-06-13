@@ -10,7 +10,7 @@ import (
 	messagev1 "hei-gin/plugins/plugin-im/message/api/v1"
 	ws "hei-gin/plugins/plugin-im/ws"
 	file "hei-gin/plugins/plugin-sys/file"
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/kernel/plugin"
 	"hei-gin/sdk/kernel/registry"
@@ -95,7 +95,7 @@ func uploadHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/ws [get]
 func sysWSHandler(c *gin.Context) {
-	result := ws.AuthenticateFromToken(c, enums.LoginTypeBusiness)
+	result := ws.AuthenticateFromToken(c, auth.BusinessID)
 	if !result.OK {
 		return
 	}
@@ -110,7 +110,7 @@ func sysWSHandler(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/ws [get]
 func clientWSHandler(c *gin.Context) {
-	result := ws.AuthenticateFromToken(c, enums.LoginTypeConsumer)
+	result := ws.AuthenticateFromToken(c, auth.ConsumerID)
 	if !result.OK {
 		return
 	}

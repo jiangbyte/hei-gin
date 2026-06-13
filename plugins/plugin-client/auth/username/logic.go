@@ -3,10 +3,10 @@ package username
 import (
 	"golang.org/x/crypto/bcrypt"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	cliUser "hei-gin/plugins/plugin-client/user"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/captcha"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/utils"
@@ -51,14 +51,14 @@ func DoLogin(c *gin.Context) {
 
 	status := user.Status
 	switch status {
-	case string(enums.UserStatusLocked):
+	case shared.UserStatusLocked:
 		result.WriteError(c, exception.NewBusinessError("账号已被锁定", 400))
 		return
-	case string(enums.UserStatusInactive):
+	case shared.UserStatusInactive:
 		result.WriteError(c, exception.NewBusinessError("账号已停用", 400))
 		return
 	default:
-		if status != string(enums.UserStatusActive) {
+		if status != shared.UserStatusActive {
 			result.WriteError(c, exception.NewBusinessError("账号状态异常", 400))
 			return
 		}
@@ -150,7 +150,7 @@ func DoRegister(c *gin.Context) {
 	hashedPwdStr := string(hashedPwd)
 	entity := cliUser.ClientUser{
 		Username: &param.Username, Password: &hashedPwdStr,
-		Nickname: &param.Username, Status: string(enums.UserStatusActive),
+		Nickname: &param.Username, Status: shared.UserStatusActive,
 	}
 	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
 		result.WriteError(c, exception.NewBusinessError("注册失败", 500))

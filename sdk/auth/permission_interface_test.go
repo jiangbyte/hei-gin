@@ -2,8 +2,6 @@ package auth
 
 import (
 	"testing"
-
-	"hei-gin/sdk/enums"
 )
 
 func TestMergeScopeCombinesRoleAndDirectScope(t *testing.T) {
@@ -13,28 +11,28 @@ func TestMergeScopeCombinesRoleAndDirectScope(t *testing.T) {
 	directOrgs := `["o2"]`
 
 	permScope := make(map[string]map[string]interface{})
-	MergeScope(permScope, string(enums.PermissionPathUserRole), []ScopeRow{
+	MergeScope(permScope, permissionPathUserRole, []ScopeRow{
 		{
 			PermissionCode: "sys:user:view",
-			Scope:          string(enums.DataScopeOrg),
+			Scope:          "ORG",
 			CustomGroupIDs: &roleGroups,
 			CustomOrgIDs:   &roleOrgs,
 		},
 	})
-	MergeScope(permScope, string(enums.PermissionPathDirect), []ScopeRow{
+	MergeScope(permScope, permissionPathDirect, []ScopeRow{
 		{
 			PermissionCode: "sys:user:view",
-			Scope:          string(enums.DataScopeSelf),
+			Scope:          "SELF",
 			CustomGroupIDs: &directGroups,
 			CustomOrgIDs:   &directOrgs,
 		},
 	})
 
 	got := permScope["sys:user:view"]
-	if got["group_scope"] != string(enums.DataScopeSelf) {
+	if got["group_scope"] != "SELF" {
 		t.Fatalf("group_scope = %v", got["group_scope"])
 	}
-	if got["org_scope"] != string(enums.DataScopeSelf) {
+	if got["org_scope"] != "SELF" {
 		t.Fatalf("org_scope = %v", got["org_scope"])
 	}
 

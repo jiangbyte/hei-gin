@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 )
 
 // ─── New Unified Models ───────────────────────────────────────────────
@@ -90,7 +90,7 @@ type MsgExtraSystem struct {
 }
 
 // GenerateConversationID generates a deterministic conversation ID from two user identifiers.
-func GenerateConversationID(u1ID string, u1Type enums.LoginTypeEnum, u2ID string, u2Type enums.LoginTypeEnum) string {
+func GenerateConversationID(u1ID string, u1Type auth.RealmID, u2ID string, u2Type auth.RealmID) string {
 	key1 := string(u1Type) + ":" + u1ID
 	key2 := string(u2Type) + ":" + u2ID
 	if key1 > key2 {

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	imModel "hei-gin/plugins/plugin-im/model"
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -120,9 +120,9 @@ func (s *Service) buildFromMessages(ctx context.Context, currentUserID, userType
 			parts := strings.SplitN(key, ":", 2)
 			if len(parts) == 2 {
 				switch parts[0] {
-				case string(enums.LoginTypeBusiness):
+				case string(auth.BusinessID):
 					businessIDs = append(businessIDs, parts[1])
-				case string(enums.LoginTypeConsumer):
+				case string(auth.ConsumerID):
 					consumerIDs = append(consumerIDs, parts[1])
 				}
 			}
@@ -135,10 +135,10 @@ func (s *Service) buildFromMessages(ctx context.Context, currentUserID, userType
 			busUsers := s.repo.FindBusinessUsers(ctx, businessIDs)
 			for _, u := range busUsers {
 				if u.Nickname != nil {
-					nicknameMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Nickname
+					nicknameMap[string(auth.BusinessID)+":"+u.ID] = *u.Nickname
 				}
 				if u.Avatar != nil {
-					avatarMap[string(enums.LoginTypeBusiness)+":"+u.ID] = *u.Avatar
+					avatarMap[string(auth.BusinessID)+":"+u.ID] = *u.Avatar
 				}
 			}
 		}
@@ -146,10 +146,10 @@ func (s *Service) buildFromMessages(ctx context.Context, currentUserID, userType
 			conUsers := s.repo.FindConsumerUsers(ctx, consumerIDs)
 			for _, u := range conUsers {
 				if u.Nickname != nil {
-					nicknameMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Nickname
+					nicknameMap[string(auth.ConsumerID)+":"+u.ID] = *u.Nickname
 				}
 				if u.Avatar != nil {
-					avatarMap[string(enums.LoginTypeConsumer)+":"+u.ID] = *u.Avatar
+					avatarMap[string(auth.ConsumerID)+":"+u.ID] = *u.Avatar
 				}
 			}
 		}
@@ -205,10 +205,10 @@ func (s *Service) GetOrCreateConversation(c *gin.Context, param *GetOrCreateConv
 		result.WriteError(c, exception.NewBusinessError("参数错误", 400))
 		return
 	}
-	cid := imModel.GenerateConversationID(currentUserID, enums.LoginTypeEnum(userType), param.UserID, enums.LoginTypeEnum(param.UserType))
+	cid := imModel.GenerateConversationID(currentUserID, auth.RealmID(userType), param.UserID, auth.RealmID(param.UserType))
 
 	displayName := param.UserID
-	if param.UserType == string(enums.LoginTypeBusiness) {
+	if param.UserType == string(auth.BusinessID) {
 		if u, err := s.repo.FindBusinessUser(c.Request.Context(), param.UserID); err == nil && u.Nickname != nil {
 			displayName = *u.Nickname
 		}

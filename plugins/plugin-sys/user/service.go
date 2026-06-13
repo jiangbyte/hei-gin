@@ -5,15 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	"gorm.io/gorm"
 
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
-
-	"hei-gin/sdk/constants"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -182,7 +180,7 @@ func (s *Service) Create(c *gin.Context, v *UserVO) {
 	}
 
 	e := UserVOToSysUser(v)
-	e.Status = string(enums.UserStatusActive)
+	e.Status = shared.UserStatusActive
 
 	if v.Password != nil {
 		h, _ := bcrypt.GenerateFromPassword([]byte(*v.Password), bcrypt.DefaultCost)
@@ -400,7 +398,7 @@ func (s *Service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 		result.WriteError(c, exception.NewBusinessError("更新用户状态失败: "+err.Error(), 500))
 		return
 	}
-	if p.Status != string(enums.UserStatusActive) {
+	if p.Status != shared.UserStatusActive {
 		for _, userID := range p.IDs {
 			auth.Business.Sessions().KickoutUser(c.Request.Context(), userID)
 		}
@@ -572,7 +570,7 @@ func (s *Service) Menus(c *gin.Context) []map[string]interface{} {
 	if len(roleIDs) > 0 {
 		roleRows := s.repo.FindRoleCodesByIDs(c.Request.Context(), roleIDs)
 		for _, role := range roleRows {
-			if role.Code == constants.SUPER_ADMIN_CODE {
+			if role.Code == shared.SuperAdminCode {
 				isSuperAdmin = true
 				break
 			}

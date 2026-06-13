@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -145,7 +145,7 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 				"user_type": userType,
 				"action":    "join_request",
 			}
-			if m.UserType == string(enums.LoginTypeConsumer) {
+			if m.UserType == string(auth.ConsumerID) {
 				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_event", Payload: payload})
 			} else {
 				runtime.SendToUser(m.UserID, ws.Message{Type: "group_event", Payload: payload})

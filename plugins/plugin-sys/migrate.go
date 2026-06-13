@@ -19,8 +19,8 @@ import (
 	"hei-gin/plugins/plugin-sys/position"
 	"hei-gin/plugins/plugin-sys/resource"
 	"hei-gin/plugins/plugin-sys/role"
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/plugins/plugin-sys/user"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/utils"
 )
@@ -67,7 +67,7 @@ func seedAdminUser() error {
 		Username:   strPtr("admin"),
 		Password:   strPtr(string(hashed)),
 		Nickname:   strPtr("超管"),
-		Status:     string(enums.UserStatusActive),
+		Status:     shared.UserStatusActive,
 		LoginCount: 0,
 		CreatedAt:  &now,
 		UpdatedAt:  &now,

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -95,7 +95,7 @@ func (s *Service) ModuleCreate(c *gin.Context, vo *ModuleVO) {
 
 	e := ModuleVOToSysModule(vo)
 	if e.Status == "" {
-		e.Status = string(enums.StatusEnabled)
+		e.Status = shared.StatusEnabled
 	}
 	if err := s.repo.CreateModule(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加模块失败: "+err.Error(), 500))
@@ -351,7 +351,7 @@ func (s *Service) ResourceCreate(c *gin.Context, vo *ResourceVO) {
 
 	e := ResourceVOToSysResource(vo)
 	if e.Status == "" {
-		e.Status = string(enums.StatusEnabled)
+		e.Status = shared.StatusEnabled
 	}
 	if err := s.repo.CreateResource(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加资源失败: "+err.Error(), 500))

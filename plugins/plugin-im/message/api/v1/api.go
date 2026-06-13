@@ -7,7 +7,6 @@ import (
 	"hei-gin/plugins/plugin-im/group"
 	"hei-gin/plugins/plugin-im/message"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/result"
 
@@ -426,10 +425,10 @@ func (h *handler) conversationRead(c *gin.Context) {
 	}
 	if strings.HasPrefix(param.ConversationID, "group:") {
 		userID := auth.Business.GetLoginID(c)
-		userType := string(enums.LoginTypeBusiness)
+		userType := string(auth.BusinessID)
 		if strings.HasPrefix(c.Request.URL.Path, "/api/v") && strings.Contains(c.Request.URL.Path, "/c/") {
 			userID = auth.Consumer.GetLoginID(c)
-			userType = string(enums.LoginTypeConsumer)
+			userType = string(auth.ConsumerID)
 		}
 		group.DefaultModule.Service().MarkConversationReadWithContext(
 			c.Request.Context(),
@@ -474,7 +473,7 @@ func (h *handler) getOrCreateConversation(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/file/upload [post]
 func (h *handler) uploadFile(c *gin.Context) {
-	h.service.UploadFile(c, auth.Business.GetLoginID(c), string(enums.LoginTypeBusiness))
+	h.service.UploadFile(c, auth.Business.GetLoginID(c), string(auth.BusinessID))
 }
 
 // @Summary      即时通讯消息上传文件
@@ -490,5 +489,5 @@ func (h *handler) uploadFile(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/file/upload [post]
 func (h *handler) clientUploadFile(c *gin.Context) {
-	h.service.UploadFile(c, auth.Consumer.GetLoginID(c), string(enums.LoginTypeConsumer))
+	h.service.UploadFile(c, auth.Consumer.GetLoginID(c), string(auth.ConsumerID))
 }

@@ -6,7 +6,6 @@ import (
 
 	"hei-gin/plugins/plugin-im/ws"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -52,9 +51,9 @@ func (s *Service) Send(c *gin.Context, p *SendBroadcastParam) {
 		switch p.Scope {
 		case "ALL":
 			runtime.BroadcastAll(msg)
-		case string(enums.LoginTypeBusiness):
+		case string(auth.BusinessID):
 			runtime.BroadcastBusiness(msg)
-		case string(enums.LoginTypeConsumer):
+		case string(auth.ConsumerID):
 			runtime.BroadcastConsumers(msg)
 		}
 	}
@@ -90,7 +89,7 @@ func (s *Service) Page(c *gin.Context, cursor string, size int) ([]BroadcastVO, 
 func (s *Service) UnreadList(c *gin.Context, userType string) []BroadcastVO {
 	ctx := c.Request.Context()
 	var userID string
-	if userType == string(enums.LoginTypeConsumer) {
+	if userType == string(auth.ConsumerID) {
 		userID = auth.Consumer.GetLoginID(c)
 	} else {
 		userID = auth.Business.GetLoginID(c)
@@ -120,7 +119,7 @@ func (s *Service) MarkRead(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.Business.GetLoginID(c)
 
-	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeBusiness))
+	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(auth.BusinessID))
 }
 
 // ==================== BroadcastMarkReadConsumer ====================
@@ -129,7 +128,7 @@ func (s *Service) MarkReadConsumer(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
 	userID := auth.Consumer.GetLoginID(c)
 
-	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeConsumer))
+	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(auth.ConsumerID))
 }
 
 // ==================== BroadcastDetail ====================

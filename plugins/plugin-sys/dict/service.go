@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/plugins/plugin-sys/shared"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -98,7 +98,7 @@ func (s *Service) Create(c *gin.Context, vo *DictVO) {
 	}
 
 	e := DictVOToSysDict(vo)
-	e.Status = string(enums.StatusEnabled)
+	e.Status = shared.StatusEnabled
 	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加字典失败: "+err.Error(), 500))
 		return

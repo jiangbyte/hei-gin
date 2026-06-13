@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 )
 
 func TestHubOnlineBroadcastStartStopIdempotent(t *testing.T) {
@@ -51,9 +51,9 @@ func TestHubRegisterUsesPerUserCount(t *testing.T) {
 
 func TestHubSendMessagesToUsersRoutesDistinctMessages(t *testing.T) {
 	h := NewHub()
-	c1 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u1", UserType: enums.LoginTypeBusiness}
-	c2 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u2", UserType: enums.LoginTypeBusiness}
-	c3 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u3", UserType: enums.LoginTypeBusiness}
+	c1 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u1", UserType: auth.BusinessID}
+	c2 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u2", UserType: auth.BusinessID}
+	c3 := &Client{Hub: h, Send: make(chan []byte, 1), UserID: "u3", UserType: auth.BusinessID}
 	if !h.Register(c1) || !h.Register(c2) || !h.Register(c3) {
 		t.Fatal("failed to register test clients")
 	}

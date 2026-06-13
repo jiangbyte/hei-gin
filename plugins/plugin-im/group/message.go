@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -69,7 +69,7 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 	msgPayload := buildPushPayload(&msg)
 	if runtime := ws.Runtime(); runtime != nil {
 		for _, m := range memberIDs {
-			if m.UserType == string(enums.LoginTypeConsumer) {
+			if m.UserType == string(auth.ConsumerID) {
 				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
 			} else {
 				runtime.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
@@ -120,7 +120,7 @@ func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 	recallPayload := buildRecallPayload(msg, operatorID, operatorType)
 	if runtime := ws.Runtime(); runtime != nil {
 		for _, m := range memberIDs {
-			if m.UserType == string(enums.LoginTypeConsumer) {
+			if m.UserType == string(auth.ConsumerID) {
 				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
 			} else {
 				runtime.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})

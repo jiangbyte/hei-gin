@@ -1,7 +1,6 @@
 package result
 
 import (
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/exception"
 
 	"github.com/gin-gonic/gin"
@@ -88,11 +87,11 @@ func PageDataResult(c *gin.Context, records any, total int64, page, size int) {
 		"code":    200,
 		"message": "请求成功",
 		"data": gin.H{
-			string(enums.PageDataFieldRecords): records,
-			string(enums.PageDataFieldTotal):   total,
-			string(enums.PageDataFieldPage):    page,
-			string(enums.PageDataFieldSize):    size,
-			string(enums.PageDataFieldPages):   pages,
+			"records": records,
+			"total":   total,
+			"page":    page,
+			"size":    size,
+			"pages":   pages,
 		},
 		"success":  true,
 		"trace_id": getTraceID(c),

@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"hei-gin/plugins/plugin-im/broadcast"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
@@ -135,7 +134,7 @@ func (h *handler) list(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/broadcast/unread-list [get]
 func (h *handler) unreadList(c *gin.Context) {
-	list := h.service.UnreadList(c, string(enums.LoginTypeBusiness))
+	list := h.service.UnreadList(c, string(auth.BusinessID))
 	result.Success(c, list)
 }
 
@@ -148,7 +147,7 @@ func (h *handler) unreadList(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/c/im/broadcast/unread-list [get]
 func (h *handler) clientUnreadList(c *gin.Context) {
-	list := h.service.UnreadList(c, string(enums.LoginTypeConsumer))
+	list := h.service.UnreadList(c, string(auth.ConsumerID))
 	result.Success(c, list)
 }
 

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"hei-gin/sdk/enums"
+	"hei-gin/sdk/auth"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,7 +16,7 @@ type Client struct {
 	Conn     *websocket.Conn
 	Send     chan []byte
 	UserID   string
-	UserType enums.LoginTypeEnum
+	UserType auth.RealmID
 	IP       string
 }
 

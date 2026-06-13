@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/constants"
 	"hei-gin/sdk/infra/db"
 )
 
@@ -73,7 +72,7 @@ func RunPermissionScan() error {
 	}
 
 	ctx := context.Background()
-	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), permissionCacheTTL()).Err(); err != nil {
+	if err := db.Redis.Set(ctx, PermissionCacheKey, string(data), permissionCacheTTL()).Err(); err != nil {
 		log.Printf("[PermissionScan] Failed to store permission cache in Redis: %v", err)
 		return err
 	}
@@ -93,7 +92,7 @@ func GetModulesFromRedis() ([]string, error) {
 	}
 
 	ctx := context.Background()
-	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	data, err := db.Redis.Get(ctx, PermissionCacheKey).Result()
 	if err != nil {
 		return []string{}, nil
 	}
@@ -121,7 +120,7 @@ func GetPermissionsByModuleFromRedis(module string) ([]PermissionEntry, error) {
 	}
 
 	ctx := context.Background()
-	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	data, err := db.Redis.Get(ctx, PermissionCacheKey).Result()
 	if err != nil {
 		return []PermissionEntry{}, nil
 	}

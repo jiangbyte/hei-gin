@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"gorm.io/gorm"
-	"hei-gin/sdk/enums"
+	"hei-gin/plugins/plugin-sys/shared"
 )
 
 type repository struct {
@@ -30,7 +30,7 @@ func (r *repository) Page(ctx context.Context, p *NoticePageParam) ([]SysNotice,
 }
 
 func (r *repository) PublicPage(ctx context.Context, p *NoticePageParam) ([]SysNotice, int64) {
-	q := r.db.WithContext(ctx).Model(&SysNotice{}).Where("status = ?", string(enums.StatusEnabled))
+	q := r.db.WithContext(ctx).Model(&SysNotice{}).Where("status = ?", shared.StatusEnabled)
 	if p.Keyword != "" {
 		q = q.Where("title LIKE ?", "%"+p.Keyword+"%")
 	}
@@ -54,7 +54,7 @@ func (r *repository) FindByID(ctx context.Context, id string) (*SysNotice, error
 
 func (r *repository) FindEnabledByID(ctx context.Context, id string) (*SysNotice, error) {
 	var e SysNotice
-	if err := r.db.WithContext(ctx).Where("id = ? AND status = ?", id, string(enums.StatusEnabled)).First(&e).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ? AND status = ?", id, shared.StatusEnabled).First(&e).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
@@ -81,7 +81,7 @@ func (r *repository) ListAll(ctx context.Context) []SysNotice {
 func (r *repository) Latest(ctx context.Context, size int) []SysNotice {
 	var rows []SysNotice
 	r.db.WithContext(ctx).
-		Where("status = ?", string(enums.StatusEnabled)).
+		Where("status = ?", shared.StatusEnabled).
 		Order("is_top DESC, sort_code DESC, created_at DESC").
 		Limit(size).
 		Find(&rows)

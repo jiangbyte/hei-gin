@@ -7,9 +7,9 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/plugins/plugin-sys/shared"
 	userModel "hei-gin/plugins/plugin-sys/user"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
@@ -46,7 +46,7 @@ func (s *Service) Create(c *gin.Context, vo *RoleVO) {
 	ctx := c.Request.Context()
 
 	e := RoleVOToSysRole(vo)
-	e.Status = string(enums.StatusEnabled)
+	e.Status = shared.StatusEnabled
 	if err := s.repo.Create(ctx, e); err != nil {
 		result.WriteError(c, exception.NewBusinessError("添加角色失败: "+err.Error(), 500))
 		return
