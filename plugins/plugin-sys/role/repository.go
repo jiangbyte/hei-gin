@@ -93,6 +93,19 @@ func (r *repository) FindRoleResources(ctx context.Context, roleID string) []use
 	return rows
 }
 
+func (r *repository) FindUserIDsByRoleID(ctx context.Context, roleID string) []string {
+	var rows []userModel.RelUserRole
+	r.db.WithContext(ctx).Where("role_id = ?", roleID).Select("user_id").Find(&rows)
+	userIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row.UserID == "" {
+			continue
+		}
+		userIDs = append(userIDs, row.UserID)
+	}
+	return userIDs
+}
+
 func (r *repository) ReplaceRolePermissions(ctx context.Context, roleID string, perms []userModel.RelRolePermission) error {
 	tx := r.db.WithContext(ctx).Begin()
 	if err := tx.Where("role_id = ?", roleID).Delete(&userModel.RelRolePermission{}).Error; err != nil {

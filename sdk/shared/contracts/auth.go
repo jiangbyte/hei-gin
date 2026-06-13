@@ -2,10 +2,12 @@ package contracts
 
 import "context"
 
+type RealmID string
+
 type PermissionAPI interface {
-	GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error)
-	GetRoleList(ctx context.Context, loginID string, loginType string) ([]string, error)
-	GetPermissionScopeMap(ctx context.Context, loginID string, loginType string) (map[string]ScopeInfo, error)
+	GetPermissionList(ctx context.Context, realmID RealmID, userID string) ([]string, error)
+	GetRoleList(ctx context.Context, realmID RealmID, userID string) ([]string, error)
+	GetPermissionScopeMap(ctx context.Context, realmID RealmID, userID string) (map[string]ScopeInfo, error)
 }
 
 type ScopeInfo struct {

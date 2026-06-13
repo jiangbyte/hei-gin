@@ -4,6 +4,7 @@ import (
 	"log"
 	"runtime/debug"
 
+	"hei-gin/sdk/observability"
 	"hei-gin/sdk/web/exception"
 	"hei-gin/sdk/web/result"
 
@@ -14,6 +15,7 @@ func Recovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if rec := recover(); rec != nil {
+				observability.IncHTTPPanic()
 				switch e := rec.(type) {
 				case *exception.BusinessError:
 					result.Failure(c, e.Message, e.Code)

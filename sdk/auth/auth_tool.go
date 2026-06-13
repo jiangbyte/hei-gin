@@ -1,78 +1,14 @@
 package auth
 
 import (
-	"context"
 	"log"
 
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/kernel/plugin"
-
-	"github.com/gin-gonic/gin"
 )
 
-// Business singleton for BUSINESS login type.
-var businessAuth = newBaseAuthTool(string(enums.LoginTypeBusiness))
-
-// Consumer singleton for CONSUMER (client) login type.
-// Consumer is the auth tool for CONSUMER (client) login type.
-var Consumer = newBaseAuthTool(string(enums.LoginTypeConsumer))
-
-// ---- BUSINESS package-level convenience functions ----
-
-func Init(expire int, tokenName string)   { businessAuth.Init(expire, tokenName) }
-func GetLoginType() string                { return businessAuth.GetLoginType() }
-func GetTokenName() string                { return businessAuth.GetTokenName() }
-func GetTokenValue(c *gin.Context) string { return businessAuth.GetTokenValue(c) }
-func Login(c *gin.Context, id string, extra map[string]any) (string, error) {
-	return businessAuth.Login(c, id, extra)
-}
-func Logout(c *gin.Context, loginID ...string) { businessAuth.Logout(c, loginID...) }
-func Kickout(loginID string)                   { businessAuth.Kickout(loginID) }
-func KickoutToken(loginID, token string)       { businessAuth.KickoutToken(loginID, token) }
-func KickoutWithContext(ctx context.Context, loginID string) {
-	businessAuth.KickoutWithContext(ctx, loginID)
-}
-func KickoutTokenWithContext(ctx context.Context, loginID, token string) {
-	businessAuth.KickoutTokenWithContext(ctx, loginID, token)
-}
-func IsLogin(c *gin.Context) bool                 { return businessAuth.IsLogin(c) }
-func CheckLogin(c *gin.Context) error             { return businessAuth.CheckLogin(c) }
-func GetLoginID(c *gin.Context) string            { return businessAuth.GetLoginID(c) }
-func GetLoginIDDefaultNull(c *gin.Context) string { return businessAuth.GetLoginIDDefaultNull(c) }
-func GetLoginIDByToken(token string) string       { return businessAuth.GetLoginIDByToken(token) }
-func GetTokenInfo(c *gin.Context) map[string]any  { return businessAuth.GetTokenInfo(c) }
-func GetExtra(c *gin.Context, key string) any     { return businessAuth.GetExtra(c, key) }
-func GetSession(c *gin.Context) map[string]any    { return businessAuth.GetSession(c) }
-func RenewTimeout(c *gin.Context, timeout ...int) { businessAuth.RenewTimeout(c, timeout...) }
-func GetTokenTimeout(c *gin.Context) int          { return businessAuth.GetTokenTimeout(c) }
-func GetSessionTimeout(c *gin.Context) int        { return businessAuth.GetSessionTimeout(c) }
-func GetTokenValueByLoginID(loginID string) string {
-	return businessAuth.GetTokenValueByLoginID(loginID)
-}
-func GetTokenValuesByLoginID(loginID string) []string {
-	return businessAuth.GetTokenValuesByLoginID(loginID)
-}
-func Disable(loginID string, timeSeconds int) { businessAuth.Disable(loginID, timeSeconds) }
-func IsDisable(loginID string) bool           { return businessAuth.IsDisable(loginID) }
-func CheckDisable(loginID string) error       { return businessAuth.CheckDisable(loginID) }
-func GetDisableTime(loginID string) int       { return businessAuth.GetDisableTime(loginID) }
-func UntieDisable(loginID string)             { businessAuth.UntieDisable(loginID) }
-
-func ToolForLoginType(loginType string) *baseAuthTool {
-	if loginType == string(enums.LoginTypeConsumer) {
-		return Consumer
-	}
-	return businessAuth
-}
-
-func GetLoginIDByType(c *gin.Context, loginType string) string {
-	return ToolForLoginType(loginType).GetLoginIDDefaultNull(c)
-}
-
-func GetExtraByType(c *gin.Context, loginType, key string) any {
-	return ToolForLoginType(loginType).GetExtra(c, key)
-}
+var Business = &Realm{ID: BusinessID, tool: newBaseAuthTool(BusinessID)}
+var Consumer = &Realm{ID: ConsumerID, tool: newBaseAuthTool(ConsumerID)}
 
 // ---- plugin registration ----
 
@@ -81,8 +17,8 @@ type authPlugin struct{ plugin.NoopPlugin }
 func (m *authPlugin) Name() string { return "auth" }
 
 func (m *authPlugin) Init() error {
-	Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
-	Consumer.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	Business.tool.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	Consumer.tool.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
 	log.Println("[auth] plugin initialized")
 	return nil
 }

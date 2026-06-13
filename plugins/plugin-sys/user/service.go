@@ -286,7 +286,7 @@ func (s *Service) Modify(c *gin.Context, v *UserVO) {
 		up["status"] = v.Status
 	}
 	up["updated_at"] = time.Now()
-	if uid := auth.GetLoginIDDefaultNull(c); uid != "" {
+	if uid := auth.Business.GetLoginIDDefaultNull(c); uid != "" {
 		up["updated_by"] = uid
 	}
 	if err := s.repo.UpdateByID(ctx, v.ID, up); err != nil {
@@ -326,6 +326,10 @@ func (s *Service) GrantRole(c *gin.Context, p *GrantRoleParam) {
 		result.WriteError(c, exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
 		return
 	}
+	if err := auth.Business.RefreshUserSessionsACL(ctx, p.UserID); err != nil {
+		result.WriteError(c, exception.NewBusinessError("刷新用户会话权限失败: "+err.Error(), 500))
+		return
+	}
 }
 
 func (s *Service) GrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
@@ -349,6 +353,42 @@ func (s *Service) GrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 		result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
 		return
 	}
+	if err := auth.Business.RefreshUserSessionsACL(ctx, p.UserID); err != nil {
+		result.WriteError(c, exception.NewBusinessError("刷新用户会话权限失败: "+err.Error(), 500))
+		return
+	}
+}
+
+func (s *Service) RefreshSessionACL(c *gin.Context, p *RefreshSessionACLParam) {
+	if p.UserID == "" {
+		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
+		return
+	}
+	if err := auth.Business.RefreshUserSessionsACL(c.Request.Context(), p.UserID); err != nil {
+		result.WriteError(c, exception.NewBusinessError("刷新用户会话权限失败: "+err.Error(), 500))
+		return
+	}
+}
+
+func (s *Service) BatchRefreshSessionACL(c *gin.Context, p *BatchRefreshSessionACLParam) {
+	if len(p.UserIDs) == 0 {
+		result.WriteError(c, exception.NewBusinessError("用户ID不能为空", 400))
+		return
+	}
+	seen := make(map[string]struct{}, len(p.UserIDs))
+	for _, userID := range p.UserIDs {
+		if userID == "" {
+			continue
+		}
+		if _, ok := seen[userID]; ok {
+			continue
+		}
+		seen[userID] = struct{}{}
+		if err := auth.Business.RefreshUserSessionsACL(c.Request.Context(), userID); err != nil {
+			result.WriteError(c, exception.NewBusinessError("刷新用户会话权限失败: "+err.Error(), 500))
+			return
+		}
+	}
 }
 
 func (s *Service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
@@ -359,6 +399,11 @@ func (s *Service) UpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	if err := s.repo.UpdateStatusByIDs(c.Request.Context(), p.IDs, p.Status); err != nil {
 		result.WriteError(c, exception.NewBusinessError("更新用户状态失败: "+err.Error(), 500))
 		return
+	}
+	if p.Status != string(enums.UserStatusActive) {
+		for _, userID := range p.IDs {
+			auth.Business.Sessions().KickoutUser(c.Request.Context(), userID)
+		}
 	}
 }
 
@@ -386,7 +431,7 @@ func (s *Service) OwnPermissionDetails(c *gin.Context, uid string) []map[string]
 }
 
 func (s *Service) UpdateProfile(c *gin.Context, p *UpdateProfileParam) {
-	uid := auth.GetLoginIDDefaultNull(c)
+	uid := auth.Business.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
@@ -424,7 +469,7 @@ func (s *Service) UpdateProfile(c *gin.Context, p *UpdateProfileParam) {
 }
 
 func (s *Service) UpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
-	uid := auth.GetLoginIDDefaultNull(c)
+	uid := auth.Business.GetLoginIDDefaultNull(c)
 	avatar := p.Avatar
 	if uid == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
@@ -452,7 +497,7 @@ func (s *Service) UpdateAvatar(c *gin.Context, p *UpdateAvatarParam) {
 }
 
 func (s *Service) UpdatePassword(c *gin.Context, p *UpdatePasswordParam) {
-	uid := auth.GetLoginIDDefaultNull(c)
+	uid := auth.Business.GetLoginIDDefaultNull(c)
 	if uid == "" {
 		result.WriteError(c, exception.NewBusinessError("用户未登录", 401))
 		return
@@ -509,7 +554,7 @@ func (s *Service) OwnRoles(c *gin.Context, uid string) gin.H {
 }
 
 func (s *Service) Current(c *gin.Context) *UserVO {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return nil
 	}
@@ -517,7 +562,7 @@ func (s *Service) Current(c *gin.Context) *UserVO {
 }
 
 func (s *Service) Menus(c *gin.Context) []map[string]interface{} {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]map[string]interface{}, 0)
 	}
@@ -582,7 +627,7 @@ func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]int
 }
 
 func (s *Service) Permissions(c *gin.Context) []string {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		return make([]string, 0)
 	}

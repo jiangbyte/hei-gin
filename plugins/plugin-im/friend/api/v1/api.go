@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"hei-gin/sdk/auth"
 	"strconv"
 
 	"hei-gin/plugins/plugin-im/friend"
@@ -24,95 +25,95 @@ func newHandler(module *friend.Module) *handler {
 
 func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/im/friend/send-request",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		authMW.NoRepeat(3000),
 		defaultHandler.sendRequest,
 	)
 	r.POST("/api/v1/sys/im/friend/accept",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.accept,
 	)
 	r.POST("/api/v1/sys/im/friend/reject",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.reject,
 	)
 	r.GET("/api/v1/sys/im/friend/list",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.list,
 	)
 	r.GET("/api/v1/sys/im/friend/pending-requests",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.pendingRequests,
 	)
 	r.POST("/api/v1/sys/im/friend/remove",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.remove,
 	)
 	r.POST("/api/v1/sys/im/friend/block",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.block,
 	)
 	r.POST("/api/v1/sys/im/friend/unblock",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.unblock,
 	)
 	r.GET("/api/v1/sys/im/friend/block-list",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.blockList,
 	)
 	r.POST("/api/v1/sys/im/friend/remark",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.remark,
 	)
 	r.GET("/api/v1/sys/im/friend/search",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.search,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/im/friend/send-request",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientSendRequest,
 	)
 	r.POST("/api/v1/c/im/friend/accept",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientAccept,
 	)
 	r.POST("/api/v1/c/im/friend/reject",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientReject,
 	)
 	r.GET("/api/v1/c/im/friend/list",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientList,
 	)
 	r.GET("/api/v1/c/im/friend/pending-requests",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientPendingRequests,
 	)
 	r.POST("/api/v1/c/im/friend/remove",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientRemove,
 	)
 	r.POST("/api/v1/c/im/friend/block",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientBlock,
 	)
 	r.POST("/api/v1/c/im/friend/unblock",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientUnblock,
 	)
 	r.GET("/api/v1/c/im/friend/block-list",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientBlockList,
 	)
 	r.POST("/api/v1/c/im/friend/remark",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientRemark,
 	)
 	r.GET("/api/v1/c/im/friend/search",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.search,
 	)
 }

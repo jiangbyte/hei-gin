@@ -9,15 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AttachLoginContext(c *gin.Context, loginType, uid string) {
+func AttachLoginContext(c *gin.Context, realm *auth.Realm, uid string) {
 	if uid == "" {
 		return
 	}
+	if realm == nil {
+		realm = auth.Business
+	}
 
 	c.Set("login_id", uid)
-	c.Set("login_type", loginType)
+	c.Set("login_type", string(realm.ID))
+	c.Set("login_realm", realm)
 
-	if username := auth.GetExtraByType(c, loginType, "username"); username != nil {
+	if username := realm.GetExtra(c, "username"); username != nil {
 		if u, ok := username.(string); ok && u != "" {
 			c.Set("loginUser", u)
 		}

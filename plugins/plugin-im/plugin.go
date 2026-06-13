@@ -42,8 +42,8 @@ func (p *IMPlugin) Start() error {
 }
 func (p *IMPlugin) Stop() error {
 	ws.GlobalHub.StopOnlineBroadcast()
-	if ws.GlobalCrossHub != nil {
-		ws.GlobalCrossHub.Close()
+	if runtime := ws.Runtime(); runtime != nil {
+		runtime.Close()
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-.PHONY: dev build run test lint clean scaffold list-imports
+.PHONY: dev build run test lint clean scaffold list-imports test-root test-sdk test-plugin-sys test-plugin-client test-plugin-im test-all
 
 .PHONY: swag swag-serve
 GO_MODULES := . api sdk plugins/plugin-sys plugins/plugin-client plugins/plugin-im
@@ -43,7 +43,24 @@ migrate-dry:  ## Preview database migrations (dry-run)
 	go run cmd/migrate/main.go -skip-seed
 
 # ── Quality ─────────────────────────────────────────────────────────
-test:         ## Run tests
+test: test-all ## Run tests
+
+test-root:    ## Run tests for root module
+	go test ./...
+
+test-sdk:     ## Run tests for sdk module
+	(cd sdk && go test ./...)
+
+test-plugin-sys: ## Run tests for plugin-sys module
+	(cd plugins/plugin-sys && go test ./...)
+
+test-plugin-client: ## Run tests for plugin-client module
+	(cd plugins/plugin-client && go test ./...)
+
+test-plugin-im: ## Run tests for plugin-im module
+	(cd plugins/plugin-im && go test ./...)
+
+test-all:     ## Run tests for all workspace modules
 	@for module in $(GO_MODULES); do \
 		echo "==> go test $$module"; \
 		(cd $$module && go test ./...) || exit 1; \

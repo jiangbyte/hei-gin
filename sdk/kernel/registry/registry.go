@@ -53,7 +53,7 @@ func Perm(code, name string) gin.HandlerFunc {
 			Name:   name,
 		})
 	}
-	return middleware.HeiCheckPermission([]string{code})
+	return middleware.CheckPermission(auth.Business, []string{code})
 }
 
 // ClientPerm registers a permission entry and returns a permission-checking middleware for CONSUMER.
@@ -66,7 +66,7 @@ func ClientPerm(code, name string) gin.HandlerFunc {
 			Name:   name,
 		})
 	}
-	return middleware.HeiClientCheckPermission([]string{code})
+	return middleware.CheckPermission(auth.Consumer, []string{code})
 }
 
 func moduleFromCode(code string) string {

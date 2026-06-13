@@ -148,6 +148,14 @@ type GrantUserPermissionParam struct {
 	Permissions []PermissionItem `json:"permissions"`
 }
 
+type RefreshSessionACLParam struct {
+	UserID string `json:"user_id"`
+}
+
+type BatchRefreshSessionACLParam struct {
+	UserIDs []string `json:"user_ids"`
+}
+
 type UpdateProfileParam struct {
 	Username *string `json:"username"`
 	Nickname *string `json:"nickname"`

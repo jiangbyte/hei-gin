@@ -23,13 +23,17 @@ import (
 	"hei-gin/sdk/infra/db"
 	"hei-gin/sdk/kernel/plugin"
 	"hei-gin/sdk/kernel/registry"
-	"hei-gin/sdk/web/middleware"
+	"hei-gin/sdk/observability"
 	_ "hei-gin/sdk/utils"
+	"hei-gin/sdk/web/middleware"
 )
 
 func Run() {
 	if err := config.FindAndLoad(); err != nil {
 		log.Fatalf("[APP] Failed to load config: %v", err)
+	}
+	if err := config.C.ValidateRuntime(true); err != nil {
+		log.Fatalf("[APP] Invalid config: %v", err)
 	}
 
 	if err := db.InitDB(); err != nil {
@@ -46,6 +50,7 @@ func Run() {
 
 	r := gin.New()
 	r.Use(middleware.Recovery())
+	r.Use(middleware.Metrics())
 	r.Use(gin.Logger())
 	r.Use(middleware.Trace())
 	r.Use(middleware.CORS())
@@ -53,7 +58,9 @@ func Run() {
 
 	registry.ApplyMiddlewares(r)
 	SetupRouters(r)
-	plugin.StartAll()
+	if err := plugin.StartAll(); err != nil {
+		log.Fatalf("[APP] Plugin start failed: %v", err)
+	}
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
 	idleTimeout := time.Duration(config.C.App.TimeoutKeepAlive) * time.Second
@@ -97,6 +104,9 @@ func Run() {
 
 func SetupRouters(r *gin.Engine) {
 	r.GET("/", HealthHandler)
+	r.GET("/health/live", LiveHandler)
+	r.GET("/health/ready", ReadyHandler)
+	r.GET("/metrics", gin.WrapH(observability.Handler()))
 	setupSwagger(r)
 	registry.ExecuteRoutes(r)
 }

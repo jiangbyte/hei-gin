@@ -1,9 +1,12 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -25,6 +28,7 @@ type Config struct {
 type AppConfig struct {
 	Name             string `yaml:"name"`
 	Version          string `yaml:"version"`
+	Env              string `yaml:"env"`
 	Debug            bool   `yaml:"debug"`
 	Host             string `yaml:"host"`
 	Port             int    `yaml:"port"`
@@ -98,6 +102,8 @@ type SnowflakeConfig struct {
 	Instance int64 `yaml:"instance"`
 }
 
+var ErrConfigNotFound = errors.New("config.yaml not found")
+
 var C *Config
 
 func Load(path string) error {
@@ -141,7 +147,59 @@ func FindAndLoad() error {
 		}
 		dir = parent
 	}
-	log.Printf("[Config] No config.yaml found, using defaults")
-	C = &Config{}
+	return ErrConfigNotFound
+}
+
+func (c *Config) ValidateRuntime(redisRequired bool) error {
+	if c == nil {
+		return errors.New("config is nil")
+	}
+
+	var missing []string
+	requireString(&missing, "app.host", c.App.Host)
+	requirePositive(&missing, "app.port", c.App.Port)
+	requireString(&missing, "db.host", c.DB.Host)
+	requirePositive(&missing, "db.port", c.DB.Port)
+	requireString(&missing, "db.user", c.DB.User)
+	requireString(&missing, "db.database", c.DB.Database)
+	requirePositive(&missing, "token.expire_seconds", c.Token.ExpireSeconds)
+	requireString(&missing, "token.token_name", c.Token.TokenName)
+
+	if redisRequired {
+		requireString(&missing, "redis.host", c.Redis.Host)
+		requirePositive(&missing, "redis.port", c.Redis.Port)
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("invalid runtime config, missing or invalid fields: %s", strings.Join(missing, ", "))
+	}
 	return nil
+}
+
+func (c *Config) ValidateMigration() error {
+	if c == nil {
+		return errors.New("config is nil")
+	}
+
+	var missing []string
+	requireString(&missing, "db.host", c.DB.Host)
+	requirePositive(&missing, "db.port", c.DB.Port)
+	requireString(&missing, "db.user", c.DB.User)
+	requireString(&missing, "db.database", c.DB.Database)
+	if len(missing) > 0 {
+		return fmt.Errorf("invalid migration config, missing or invalid fields: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+func requireString(missing *[]string, key, value string) {
+	if strings.TrimSpace(value) == "" {
+		*missing = append(*missing, key)
+	}
+}
+
+func requirePositive(missing *[]string, key string, value int) {
+	if value <= 0 {
+		*missing = append(*missing, key)
+	}
 }

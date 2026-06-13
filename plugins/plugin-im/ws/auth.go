@@ -32,7 +32,7 @@ func AuthenticateFromToken(c *gin.Context, loginType enums.LoginTypeEnum) AuthRe
 	if loginType == enums.LoginTypeConsumer {
 		userID = auth.Consumer.GetLoginIDByToken(token)
 	} else {
-		userID = auth.GetLoginIDByToken(token)
+		userID = auth.Business.GetLoginIDByToken(token)
 	}
 
 	if userID == "" {
@@ -57,7 +57,7 @@ func getWebSocketToken(c *gin.Context, loginType enums.LoginTypeEnum) string {
 		return token
 	}
 
-	tokenName := auth.GetTokenName()
+	tokenName := auth.Business.GetTokenName()
 	if loginType == enums.LoginTypeConsumer {
 		tokenName = auth.Consumer.GetTokenName()
 	}

@@ -19,8 +19,8 @@ type Service struct {
 
 func (s *Service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	ctx := c.Request.Context()
-	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
-	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
+	bStats, _ := auth.Business.Sessions().Stats(ctx)
+	cStats, _ := auth.Consumer.Sessions().Stats(ctx)
 
 	maxTokenCount := bStats.MaxTokenCount
 	if cStats.MaxTokenCount > maxTokenCount {
@@ -70,10 +70,10 @@ func (s *Service) Page(c *gin.Context, p *SessionPageParam) {
 
 func (s *Service) listConsumerSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
 	if keyword == "" {
-		return auth.ListSessionInfos(ctx, string(enums.LoginTypeConsumer), current, size, "")
+		return auth.Consumer.Sessions().Page(ctx, current, size, "")
 	}
 	userIDs := s.repo.FindUserIDs(ctx, keyword, maxKeywordCandidates)
-	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeConsumer), userIDs, current, size)
+	return auth.Consumer.Sessions().PageByUserIDs(ctx, userIDs, current, size)
 }
 
 const maxKeywordCandidates = 1000
@@ -83,7 +83,7 @@ func (s *Service) Exit(c *gin.Context, userID string) {
 }
 
 func (s *Service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
-	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeConsumer), userID)
+	tokens, err := auth.Consumer.Sessions().Tokens(c.Request.Context(), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
 	}
@@ -110,14 +110,13 @@ func (s *Service) Chart(c *gin.Context) *SessionChartData {
 	ctx := c.Request.Context()
 	days := lastNDays(7)
 
-	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
-	cDaily := auth.GetSessionDailyCounts(ctx, string(enums.LoginTypeConsumer), days)
+	cStats, _ := auth.Consumer.Sessions().Stats(ctx)
+	cDaily := auth.Consumer.Sessions().Trend(ctx, days)
 
 	series := make([]int, len(days))
 	for i, day := range days {
 		series[i] = cDaily[day]
 	}
-
 	return &SessionChartData{
 		BarChart: BarChartData{
 			Days: days,

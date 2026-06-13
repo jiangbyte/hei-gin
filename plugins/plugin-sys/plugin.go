@@ -32,7 +32,7 @@ func (p *SysPlugin) Init() error {
 	p.permProvider = &provider.PermissionProvider{}
 	p.userProvider = &provider.UserProvider{}
 
-	auth.RegisterInterface(p.permProvider)
+	auth.RegisterPermissionProvider(p.permProvider)
 
 	var persister contracts.LogPersistenceAPI = &logPersister{}
 

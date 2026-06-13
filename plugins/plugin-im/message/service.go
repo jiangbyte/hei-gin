@@ -30,7 +30,7 @@ func getLoginID(c *gin.Context) string {
 	if getUserType(c) == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
 	}
-	return auth.GetLoginID(c)
+	return auth.Business.GetLoginID(c)
 }
 
 func getUserType(c *gin.Context) string {
@@ -66,7 +66,7 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 	senderID := getLoginID(c)
 	senderType := getUserType(c)
 
-	if ws.GlobalCrossHub != nil && !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
+	if runtime := ws.Runtime(); runtime != nil && !runtime.AllowMessage(senderID, enums.LoginTypeEnum(senderType)) {
 		result.WriteError(c, exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
 		return
 	}
@@ -151,10 +151,12 @@ func (s *Service) Send(c *gin.Context, param *MessageSendParam) {
 		pushMessages[rid] = msg
 		messageIDs[rid] = records[i].ID
 	}
-	if receiverType == string(enums.LoginTypeConsumer) {
-		ws.GlobalCrossHub.SendMessagesToConsumers(pushMessages, messageIDs)
-	} else {
-		ws.GlobalCrossHub.SendMessagesToUsers(pushMessages, messageIDs)
+	if runtime := ws.Runtime(); runtime != nil {
+		if receiverType == string(enums.LoginTypeConsumer) {
+			runtime.SendMessagesToConsumers(pushMessages, messageIDs)
+		} else {
+			runtime.SendMessagesToUsers(pushMessages, messageIDs)
+		}
 	}
 }
 

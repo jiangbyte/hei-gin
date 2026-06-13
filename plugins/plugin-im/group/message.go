@@ -67,11 +67,13 @@ func (s *Service) SendMessage(c *gin.Context, p *SendMessageParam) {
 	memberIDs := s.repo.ListRecipientMembers(ctx, p.GroupID, senderID, senderType)
 
 	msgPayload := buildPushPayload(&msg)
-	for _, m := range memberIDs {
-		if m.UserType == string(enums.LoginTypeConsumer) {
-			ws.GlobalCrossHub.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
-		} else {
-			ws.GlobalCrossHub.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
+	if runtime := ws.Runtime(); runtime != nil {
+		for _, m := range memberIDs {
+			if m.UserType == string(enums.LoginTypeConsumer) {
+				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
+			} else {
+				runtime.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: msgPayload})
+			}
 		}
 	}
 }
@@ -116,11 +118,13 @@ func (s *Service) RecallMessage(c *gin.Context, p *RecallMessageParam) {
 	msg.Content = "消息已被撤回"
 	msg.MsgType = imModel.MsgTypeSystem
 	recallPayload := buildRecallPayload(msg, operatorID, operatorType)
-	for _, m := range memberIDs {
-		if m.UserType == string(enums.LoginTypeConsumer) {
-			ws.GlobalCrossHub.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
-		} else {
-			ws.GlobalCrossHub.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
+	if runtime := ws.Runtime(); runtime != nil {
+		for _, m := range memberIDs {
+			if m.UserType == string(enums.LoginTypeConsumer) {
+				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
+			} else {
+				runtime.SendToUser(m.UserID, ws.Message{Type: "group_message", Payload: recallPayload})
+			}
 		}
 	}
 }

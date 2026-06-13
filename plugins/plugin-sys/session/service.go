@@ -19,8 +19,8 @@ type Service struct {
 
 func (s *Service) Analysis(c *gin.Context) *SessionAnalysisResult {
 	ctx := c.Request.Context()
-	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
-	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
+	bStats, _ := auth.Business.Sessions().Stats(ctx)
+	cStats, _ := auth.Consumer.Sessions().Stats(ctx)
 
 	maxTokenCount := bStats.MaxTokenCount
 	if cStats.MaxTokenCount > maxTokenCount {
@@ -76,20 +76,20 @@ func (s *Service) Page(c *gin.Context, param *SessionPageParam) {
 
 func (s *Service) listBusinessSessionInfos(ctx context.Context, keyword string, current, size int) ([]auth.SessionInfo, int64, error) {
 	if keyword == "" {
-		return auth.ListSessionInfos(ctx, string(enums.LoginTypeBusiness), current, size, "")
+		return auth.Business.Sessions().Page(ctx, current, size, "")
 	}
 	userIDs := s.repo.FindUserIDs(ctx, keyword, maxKeywordCandidates)
-	return auth.ListSessionInfosByUserIDs(ctx, string(enums.LoginTypeBusiness), userIDs, current, size)
+	return auth.Business.Sessions().PageByUserIDs(ctx, userIDs, current, size)
 }
 
 const maxKeywordCandidates = 1000
 
 func (s *Service) Exit(c *gin.Context, param *SessionExitParam) {
-	auth.KickoutWithContext(c.Request.Context(), param.UserID)
+	auth.Business.Sessions().KickoutUser(c.Request.Context(), param.UserID)
 }
 
 func (s *Service) TokenList(c *gin.Context, userID string) []*SessionTokenResult {
-	tokens, err := auth.GetSessionTokens(c.Request.Context(), string(enums.LoginTypeBusiness), userID)
+	tokens, err := auth.Business.Sessions().Tokens(c.Request.Context(), userID)
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
 	}
@@ -109,17 +109,17 @@ func (s *Service) TokenList(c *gin.Context, userID string) []*SessionTokenResult
 }
 
 func (s *Service) ExitToken(c *gin.Context, param *SessionExitTokenParam) {
-	auth.KickoutTokenWithContext(c.Request.Context(), param.UserID, param.Token)
+	auth.Business.Sessions().KickoutToken(c.Request.Context(), param.UserID, param.Token)
 }
 
 func (s *Service) Chart(c *gin.Context) *SessionChartData {
 	ctx := c.Request.Context()
 	days := lastNDays(7)
 
-	bStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeBusiness))
-	cStats, _ := auth.GetSessionStats(ctx, string(enums.LoginTypeConsumer))
-	bDaily := auth.GetSessionDailyCounts(ctx, string(enums.LoginTypeBusiness), days)
-	cDaily := auth.GetSessionDailyCounts(ctx, string(enums.LoginTypeConsumer), days)
+	bStats, _ := auth.Business.Sessions().Stats(ctx)
+	cStats, _ := auth.Consumer.Sessions().Stats(ctx)
+	bDaily := auth.Business.Sessions().Trend(ctx, days)
+	cDaily := auth.Consumer.Sessions().Trend(ctx, days)
 
 	bSeries := make([]int, len(days))
 	cSeries := make([]int, len(days))

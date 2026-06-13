@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"hei-gin/sdk/auth"
 	"strconv"
 
 	"hei-gin/plugins/plugin-im/group"
@@ -25,157 +26,157 @@ func newHandler(module *group.Module) *handler {
 
 func RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/sys/im/group/create",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		authMW.NoRepeat(3000),
 		defaultHandler.create,
 	)
 	r.GET("/api/v1/sys/im/group/my-groups",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.myGroups,
 	)
 	r.GET("/api/v1/sys/im/group/detail",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.detail,
 	)
 	r.POST("/api/v1/sys/im/group/update",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.update,
 	)
 	r.POST("/api/v1/sys/im/group/dissolve",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("解散群"),
 		defaultHandler.dissolve,
 	)
 	r.POST("/api/v1/sys/im/group/invite",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		authMW.NoRepeat(3000),
 		defaultHandler.invite,
 	)
 	r.POST("/api/v1/sys/im/group/join",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.join,
 	)
 	r.GET("/api/v1/sys/im/group/pending-join-requests",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.pendingJoinRequests,
 	)
 	r.POST("/api/v1/sys/im/group/handle-join-request",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.handleJoinRequest,
 	)
 	r.POST("/api/v1/sys/im/group/leave",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.leave,
 	)
 	r.POST("/api/v1/sys/im/group/kick",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("踢出成员"),
 		defaultHandler.kick,
 	)
 	r.POST("/api/v1/sys/im/group/set-role",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("设置角色"),
 		defaultHandler.setRole,
 	)
 	r.POST("/api/v1/sys/im/group/transfer-owner",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("转让群"),
 		defaultHandler.transferOwner,
 	)
 	r.POST("/api/v1/sys/im/group/set-nickname",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.setNickname,
 	)
 	r.GET("/api/v1/sys/im/group/messages",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.messages,
 	)
 	r.GET("/api/v1/sys/im/group/search",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.search,
 	)
 	r.GET("/api/v1/sys/im/group/search-groups",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.searchGroups,
 	)
 	r.POST("/api/v1/sys/im/group/send",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		middleware.RateLimiter("sys_group_send", 3, 20),
 		authMW.NoRepeat(3000),
 		defaultHandler.send,
 	)
 	r.POST("/api/v1/sys/im/group/recall",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.recall,
 	)
 	r.POST("/api/v1/sys/im/group/mark-read",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.markRead,
 	)
 	r.POST("/api/v1/sys/im/group/mute",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("禁言"),
 		defaultHandler.mute,
 	)
 	r.POST("/api/v1/sys/im/group/unmute",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		log.SysLog("解禁"),
 		defaultHandler.unmute,
 	)
 	r.GET("/api/v1/sys/im/group/members",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.members,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/im/group/create",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.create,
 	)
 	r.GET("/api/v1/c/im/group/my-groups",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.myGroups,
 	)
 	r.GET("/api/v1/c/im/group/detail",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.detail,
 	)
 	r.POST("/api/v1/c/im/group/join",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.join,
 	)
 	r.POST("/api/v1/c/im/group/leave",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.leave,
 	)
 	r.GET("/api/v1/c/im/group/messages",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.messages,
 	)
 	r.GET("/api/v1/c/im/group/search",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.search,
 	)
 	r.GET("/api/v1/c/im/group/search-groups",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.searchGroups,
 	)
 	r.POST("/api/v1/c/im/group/send",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		middleware.RateLimiter("c_group_send", 3, 20),
 		defaultHandler.send,
 	)
 	r.POST("/api/v1/c/im/group/recall",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.recall,
 	)
 	r.POST("/api/v1/c/im/group/mark-read",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.markRead,
 	)
 	r.GET("/api/v1/c/im/group/members",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.members,
 	)
 }

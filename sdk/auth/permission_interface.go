@@ -10,9 +10,9 @@ import (
 
 var PermissionDelegate contracts.PermissionAPI
 
-func RegisterInterface(impl contracts.PermissionAPI) {
+func RegisterPermissionProvider(impl contracts.PermissionAPI) {
 	PermissionDelegate = impl
-	log.Println("[auth] PermissionInterface registered via delegate")
+	log.Println("[auth] PermissionProvider registered")
 }
 
 type ScopeRow = contracts.ScopeRow

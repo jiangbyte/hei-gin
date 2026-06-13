@@ -79,7 +79,7 @@ func DoLogin(c *gin.Context) {
 		"device_type": utils.GetBrowser(ua),
 		"device_id":   param.DeviceID,
 	}
-	tokenStr, err := auth.Login(c, user.ID, extra)
+	tokenStr, err := auth.Business.Login(c, user.ID, extra)
 	if err != nil {
 		result.WriteError(c, exception.NewBusinessError("登录失败", 500))
 		return
@@ -156,7 +156,7 @@ func DoRegister(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/b/logout [post]
 func DoLogout(c *gin.Context) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID != "" {
 		var user userModel.SysUser
 		if err := db.DB.First(&user, "id = ?", userID).Error; err == nil {
@@ -164,6 +164,6 @@ func DoLogout(c *gin.Context) {
 			log.RecordAuthLog(c, "登出", "LOGOUT", "SUCCESS", "", username)
 		}
 	}
-	auth.Logout(c)
+	auth.Business.Logout(c)
 	result.Success(c, UsernameLogoutResult{Message: "登出成功"})
 }

@@ -73,6 +73,14 @@ func RegisterRoutes(r *gin.Engine) {
 		defaultHandler.grantResource,
 	)
 
+	// POST /api/v1/sys/role/refresh-session-acl
+	r.POST("/api/v1/sys/role/refresh-session-acl",
+		registry.Perm("sys:role:refresh-session-acl", "刷新角色会话权限"),
+		log.SysLog("刷新角色会话权限"),
+		middleware.NoRepeat(1000),
+		defaultHandler.refreshSessionACL,
+	)
+
 	// GET /api/v1/sys/role/own-permission
 	r.GET("/api/v1/sys/role/own-permission",
 		registry.Perm("sys:role:own-permission", "角色权限列表"),
@@ -225,6 +233,26 @@ func (h *handler) grantResource(c *gin.Context) {
 	}
 
 	h.service.GrantResources(c, &param)
+	result.Success(c, nil)
+}
+
+// refreshSessionACLHandler handles POST /api/v1/sys/role/refresh-session-acl
+// @Summary      角色管理刷新会话权限
+// @Description  访问 /api/v1/sys/role/refresh-session-acl，角色管理刷新会话权限
+// @Tags         角色管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  role.RefreshRoleSessionACLParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/role/refresh-session-acl [post]
+func (h *handler) refreshSessionACL(c *gin.Context) {
+	var param role.RefreshRoleSessionACLParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	h.service.RefreshSessionACL(c, &param)
 	result.Success(c, nil)
 }
 

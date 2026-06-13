@@ -270,10 +270,12 @@ func (s *Service) HandleJoinRequest(c *gin.Context, p *HandleJoinRequestParam) {
 		"status":   p.Action,
 		"action":   "join_request_result",
 	}
-	if req.UserType == string(enums.LoginTypeConsumer) {
-		ws.GlobalCrossHub.SendToConsumer(req.UserID, ws.Message{Type: "group_event", Payload: msg})
-	} else {
-		ws.GlobalCrossHub.SendToUser(req.UserID, ws.Message{Type: "group_event", Payload: msg})
+	if runtime := ws.Runtime(); runtime != nil {
+		if req.UserType == string(enums.LoginTypeConsumer) {
+			runtime.SendToConsumer(req.UserID, ws.Message{Type: "group_event", Payload: msg})
+		} else {
+			runtime.SendToUser(req.UserID, ws.Message{Type: "group_event", Payload: msg})
+		}
 	}
 }
 

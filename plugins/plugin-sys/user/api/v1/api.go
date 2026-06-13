@@ -2,6 +2,7 @@ package v1
 
 import (
 	user "hei-gin/plugins/plugin-sys/user"
+	"hei-gin/sdk/auth"
 	middleware "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
@@ -73,6 +74,22 @@ func RegisterRoutes(r *gin.Engine) {
 		defaultHandler.grantPermission,
 	)
 
+	// POST /api/v1/sys/user/refresh-session-acl
+	r.POST("/api/v1/sys/user/refresh-session-acl",
+		registry.Perm("sys:user:refresh-session-acl", "刷新用户会话权限"),
+		log.SysLog("刷新用户会话权限"),
+		middleware.NoRepeat(1000),
+		defaultHandler.refreshSessionACL,
+	)
+
+	// POST /api/v1/sys/user/batch-refresh-session-acl
+	r.POST("/api/v1/sys/user/batch-refresh-session-acl",
+		registry.Perm("sys:user:batch-refresh-session-acl", "批量刷新用户会话权限"),
+		log.SysLog("批量刷新用户会话权限"),
+		middleware.NoRepeat(1000),
+		defaultHandler.batchRefreshSessionACL,
+	)
+
 	// GET /api/v1/sys/user/own-permission-detail
 	r.GET("/api/v1/sys/user/own-permission-detail",
 		registry.Perm("sys:user:own-permission-detail", "用户权限详情"),
@@ -87,25 +104,25 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// GET /api/v1/sys/user/current
 	r.GET("/api/v1/sys/user/current",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		defaultHandler.current,
 	)
 
 	// GET /api/v1/sys/user/menus
 	r.GET("/api/v1/sys/user/menus",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		defaultHandler.menus,
 	)
 
 	// GET /api/v1/sys/user/permissions
 	r.GET("/api/v1/sys/user/permissions",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		defaultHandler.permissions,
 	)
 
 	// POST /api/v1/sys/user/update-profile
 	r.POST("/api/v1/sys/user/update-profile",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("更新个人信息"),
 		middleware.NoRepeat(3000),
 		defaultHandler.updateProfile,
@@ -113,14 +130,14 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/user/update-avatar
 	r.POST("/api/v1/sys/user/update-avatar",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("更新头像"),
 		defaultHandler.updateAvatar,
 	)
 
 	// POST /api/v1/sys/user/update-password
 	r.POST("/api/v1/sys/user/update-password",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("修改密码"),
 		middleware.NoRepeat(3000),
 		defaultHandler.updatePassword,
@@ -258,6 +275,46 @@ func (h *handler) grantPermission(c *gin.Context) {
 	}
 
 	h.service.GrantPermission(c, &param)
+	result.Success(c, nil)
+}
+
+// refreshSessionACLHandler handles POST /api/v1/sys/user/refresh-session-acl
+// @Summary      用户管理刷新会话权限
+// @Description  访问 /api/v1/sys/user/refresh-session-acl，用户管理刷新会话权限
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.RefreshSessionACLParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/refresh-session-acl [post]
+func (h *handler) refreshSessionACL(c *gin.Context) {
+	var param user.RefreshSessionACLParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	h.service.RefreshSessionACL(c, &param)
+	result.Success(c, nil)
+}
+
+// batchRefreshSessionACLHandler handles POST /api/v1/sys/user/batch-refresh-session-acl
+// @Summary      用户管理批量刷新会话权限
+// @Description  访问 /api/v1/sys/user/batch-refresh-session-acl，用户管理批量刷新会话权限
+// @Tags         用户管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body  user.BatchRefreshSessionACLParam  true  "请求体"
+// @Success      200  {object}  map[string]any  "成功响应"
+// @Router       /api/v1/sys/user/batch-refresh-session-acl [post]
+func (h *handler) batchRefreshSessionACL(c *gin.Context) {
+	var param user.BatchRefreshSessionACLParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		result.Failure(c, "参数错误: "+err.Error(), 400)
+		return
+	}
+
+	h.service.BatchRefreshSessionACL(c, &param)
 	result.Success(c, nil)
 }
 

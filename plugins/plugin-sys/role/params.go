@@ -47,6 +47,10 @@ type GrantResourceParam struct {
 	Permissions []PermissionItem `json:"permissions"`
 }
 
+type RefreshRoleSessionACLParam struct {
+	RoleID string `json:"role_id"`
+}
+
 func SysRoleToRoleVO(src *SysRole) *RoleVO {
 	if src == nil {
 		return nil

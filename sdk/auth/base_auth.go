@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/infra/db"
+	"hei-gin/sdk/shared/contracts"
 
 	"github.com/gin-gonic/gin"
 
@@ -22,11 +24,11 @@ type baseAuthTool struct {
 	expire    int
 	tokenName string
 
-	loginType string
+	realmID RealmID
 }
 
-func newBaseAuthTool(loginType string) *baseAuthTool {
-	t := &baseAuthTool{loginType: loginType}
+func newBaseAuthTool(realmID RealmID) *baseAuthTool {
+	t := &baseAuthTool{realmID: realmID}
 	t.ensureConfig()
 	return t
 }
@@ -52,15 +54,15 @@ func (t *baseAuthTool) getRedis() *redis.Client {
 }
 
 func (t *baseAuthTool) getTokenKey(token string) string {
-	return "hei:auth:" + t.loginType + ":token:" + token
+	return "hei:auth:" + string(t.realmID) + ":token:" + token
 }
 
 func (t *baseAuthTool) getSessionKey(userID string) string {
-	return "hei:auth:" + t.loginType + ":session:" + userID
+	return "hei:auth:" + string(t.realmID) + ":session:" + userID
 }
 
 func (t *baseAuthTool) getDisableKey(loginID string) string {
-	return "hei:auth:" + t.loginType + ":disable:" + loginID
+	return "hei:auth:" + string(t.realmID) + ":disable:" + loginID
 }
 
 func requestContext(c *gin.Context) context.Context {
@@ -84,7 +86,7 @@ func (t *baseAuthTool) Init(expire int, tokenName string) {
 // GetLoginType returns the login type identifier.
 func (t *baseAuthTool) GetLoginType() string {
 	t.ensureConfig()
-	return t.loginType
+	return string(t.realmID)
 }
 
 // GetTokenName returns the HTTP header name used to carry the token.
@@ -109,18 +111,11 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 
 	now := time.Now()
 	signedToken := t.tokenURLSafe(32)
-
-	tokenData := map[string]any{
-		"user_id":    id,
-		"type":       t.loginType,
-		"created_at": now.Format("2006-01-02 15:04:05"),
-		"extra":      extra,
+	claims, err := t.buildClaims(ctx, id, now, extra)
+	if err != nil {
+		return "", err
 	}
-	if extra == nil {
-		tokenData["extra"] = map[string]any{}
-	}
-
-	tokenDataJSON, err := json.Marshal(tokenData)
+	tokenDataJSON, err := json.Marshal(claims)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +132,7 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 	// Clean expired tokens from the session set
 	existingTokens, _ := redisClient.SMembers(ctx, sessionKey).Result()
 	for _, existingToken := range existingTokens {
-		if t.getTokenDataWithContext(ctx, existingToken) == nil {
+		if _, ok := t.getClaimsWithContext(ctx, existingToken); !ok {
 			_ = redisClient.SRem(ctx, sessionKey, existingToken).Err()
 		}
 	}
@@ -156,6 +151,58 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 	return signedToken, nil
 }
 
+func (t *baseAuthTool) buildClaims(ctx context.Context, userID string, now time.Time, extra map[string]any) (*SessionClaims, error) {
+	if extra == nil {
+		extra = map[string]any{}
+	}
+	acl, err := t.loadACL(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &SessionClaims{
+		UserID:    userID,
+		RealmID:   t.realmID,
+		CreatedAt: now.Format("2006-01-02 15:04:05"),
+		Extra:     extra,
+		ACL:       acl,
+	}, nil
+}
+
+func (t *baseAuthTool) loadACL(ctx context.Context, userID string) (ACLSnapshot, error) {
+	if PermissionDelegate == nil || userID == "" {
+		return ACLSnapshot{
+			Permissions: []string{},
+			Roles:       []string{},
+			ScopeMap:    map[string]ScopeInfo{},
+		}, nil
+	}
+
+	perms, err := PermissionDelegate.GetPermissionList(ctx, contracts.RealmID(t.realmID), userID)
+	if err != nil {
+		return ACLSnapshot{}, err
+	}
+	roles, err := PermissionDelegate.GetRoleList(ctx, contracts.RealmID(t.realmID), userID)
+	if err != nil {
+		return ACLSnapshot{}, err
+	}
+	scopeMap, err := PermissionDelegate.GetPermissionScopeMap(ctx, contracts.RealmID(t.realmID), userID)
+	if err != nil {
+		return ACLSnapshot{}, err
+	}
+
+	sort.Strings(perms)
+	sort.Strings(roles)
+	if scopeMap == nil {
+		scopeMap = map[string]ScopeInfo{}
+	}
+
+	return ACLSnapshot{
+		Permissions: perms,
+		Roles:       roles,
+		ScopeMap:    scopeMap,
+	}, nil
+}
+
 // Logout invalidates the current session. If loginID is provided, it kicks out all sessions for that user.
 func (t *baseAuthTool) Logout(c *gin.Context, loginID ...string) {
 	ctx := requestContext(c)
@@ -171,15 +218,15 @@ func (t *baseAuthTool) Logout(c *gin.Context, loginID ...string) {
 		return
 	}
 
-	data := t.getTokenDataWithContext(ctx, token)
+	claims, ok := t.getClaimsWithContext(ctx, token)
 	userID := ""
-	if data != nil {
-		userID, _ = data["user_id"].(string)
-		if userID != "" {
-			redisClient := t.getRedis()
-			sessionKey := t.getSessionKey(userID)
-			_ = redisClient.SRem(ctx, sessionKey, token).Err()
-		}
+	if ok {
+		userID = claims.UserID
+	}
+	if userID != "" {
+		redisClient := t.getRedis()
+		sessionKey := t.getSessionKey(userID)
+		_ = redisClient.SRem(ctx, sessionKey, token).Err()
 	}
 
 	redisClient := t.getRedis()
@@ -278,12 +325,11 @@ func (t *baseAuthTool) GetLoginIDDefaultNull(c *gin.Context) string {
 	if token == "" {
 		return ""
 	}
-	data := t.decodeToken(c, token)
-	if data == nil {
+	claims, ok := t.decodeClaims(c, token)
+	if !ok {
 		return ""
 	}
-	userID, _ := data["user_id"].(string)
-	return userID
+	return claims.UserID
 }
 
 // GetLoginIDByToken extracts the login ID from the given token value.
@@ -291,53 +337,45 @@ func (t *baseAuthTool) GetLoginIDByToken(token string) string {
 	if token == "" {
 		return ""
 	}
-	data := t.getTokenData(token)
-	if data == nil {
+	claims, ok := t.getClaims(token)
+	if !ok {
 		return ""
 	}
-	userID, _ := data["user_id"].(string)
-	return userID
+	return claims.UserID
 }
 
-// decodeToken retrieves token data from Redis .
-func (t *baseAuthTool) decodeToken(c *gin.Context, token string) map[string]any {
+func (t *baseAuthTool) decodeClaims(c *gin.Context, token string) (*SessionClaims, bool) {
 	if token == "" {
-		return nil
+		return nil, false
 	}
 
-	data := t.getTokenDataForRequest(c, token)
-	if data == nil {
-		return nil
-	}
-
-	return data
+	return t.getClaimsForRequest(c, token)
 }
 
-// getTokenData retrieves the token payload from Redis.
-func (t *baseAuthTool) getTokenData(token string) map[string]any {
-	return t.getTokenDataWithContext(context.Background(), token)
+func (t *baseAuthTool) getClaims(token string) (*SessionClaims, bool) {
+	return t.getClaimsWithContext(context.Background(), token)
 }
 
-func (t *baseAuthTool) getTokenDataForRequest(c *gin.Context, token string) map[string]any {
+func (t *baseAuthTool) getClaimsForRequest(c *gin.Context, token string) (*SessionClaims, bool) {
 	if c == nil {
-		return t.getTokenData(token)
+		return t.getClaims(token)
 	}
-	cacheKey := "_auth_token_data:" + t.loginType + ":" + token
+	cacheKey := "_auth_claims:" + string(t.realmID) + ":" + token
 	if cached, exists := c.Get(cacheKey); exists {
-		if data, ok := cached.(map[string]any); ok {
-			return data
+		if claims, ok := cached.(*SessionClaims); ok {
+			return claims, true
 		}
 	}
-	data := t.getTokenDataWithContext(requestContext(c), token)
-	if data != nil {
-		c.Set(cacheKey, data)
+	claims, ok := t.getClaimsWithContext(requestContext(c), token)
+	if ok {
+		c.Set(cacheKey, claims)
 	}
-	return data
+	return claims, ok
 }
 
-func (t *baseAuthTool) getTokenDataWithContext(ctx context.Context, token string) map[string]any {
+func (t *baseAuthTool) getClaimsWithContext(ctx context.Context, token string) (*SessionClaims, bool) {
 	if token == "" {
-		return nil
+		return nil, false
 	}
 
 	redisClient := t.getRedis()
@@ -345,36 +383,30 @@ func (t *baseAuthTool) getTokenDataWithContext(ctx context.Context, token string
 
 	data, err := redisClient.Get(ctx, tokenKey).Result()
 	if err == redis.Nil {
-		return nil
+		return nil, false
 	}
 	if err != nil {
-		return nil
+		return nil, false
 	}
 
-	var result map[string]any
+	var result SessionClaims
 	if err := json.Unmarshal([]byte(data), &result); err != nil {
-		return nil
+		return nil, false
 	}
-	return result
-}
-
-// GetTokenInfo returns the full token data stored in Redis for the current request.
-func (t *baseAuthTool) GetTokenInfo(c *gin.Context) map[string]any {
-	token := t.GetTokenValue(c)
-	if token == "" {
-		return nil
+	if result.Extra == nil {
+		result.Extra = map[string]any{}
 	}
-	return t.getTokenDataForRequest(c, token)
+	if result.ACL.ScopeMap == nil {
+		result.ACL.ScopeMap = map[string]ScopeInfo{}
+	}
+	return &result, true
 }
 
 // GetExtra returns a specific extra field from the token data.
 func (t *baseAuthTool) GetExtra(c *gin.Context, key string) any {
-	data := t.GetTokenInfo(c)
-	if data != nil {
-		extra, ok := data["extra"].(map[string]any)
-		if ok {
-			return extra[key]
-		}
+	claims, ok := t.CurrentClaims(c)
+	if ok {
+		return claims.Extra[key]
 	}
 	return nil
 }
@@ -385,7 +417,72 @@ func (t *baseAuthTool) GetSession(c *gin.Context) map[string]any {
 	if token == "" {
 		return nil
 	}
-	return t.getTokenDataForRequest(c, token)
+	claims, ok := t.getClaimsForRequest(c, token)
+	if !ok {
+		return nil
+	}
+	return claimsToMap(claims)
+}
+
+func (t *baseAuthTool) CurrentClaims(c *gin.Context) (*SessionClaims, bool) {
+	token := t.GetTokenValue(c)
+	if token == "" {
+		return nil, false
+	}
+	return t.getClaimsForRequest(c, token)
+}
+
+func (t *baseAuthTool) GetClaims(c *gin.Context) (*SessionClaims, bool) {
+	return t.CurrentClaims(c)
+}
+
+func (t *baseAuthTool) refreshUserSessionsACL(ctx context.Context, userID string) error {
+	if userID == "" {
+		return nil
+	}
+	redisClient := t.getRedis()
+	if redisClient == nil {
+		return nil
+	}
+
+	tokens, err := redisClient.SMembers(ctx, t.getSessionKey(userID)).Result()
+	if err != nil || len(tokens) == 0 {
+		return err
+	}
+
+	acl, err := t.loadACL(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	staleTokens := make([]string, 0)
+	pipe := redisClient.Pipeline()
+	for _, token := range tokens {
+		claims, ok := t.getClaimsWithContext(ctx, token)
+		if !ok {
+			staleTokens = append(staleTokens, token)
+			continue
+		}
+		claims.ACL = acl
+		payload, marshalErr := json.Marshal(claims)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		ttl, ttlErr := redisClient.TTL(ctx, t.getTokenKey(token)).Result()
+		if ttlErr != nil || ttl <= 0 {
+			staleTokens = append(staleTokens, token)
+			continue
+		}
+		pipe.Set(ctx, t.getTokenKey(token), payload, ttl)
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return err
+	}
+	if len(staleTokens) > 0 {
+		t.removeStaleTokens(ctx, userID, staleTokens)
+	}
+	t.refreshSessionIndexes(ctx, userID)
+	return nil
 }
 
 // RenewTimeout extends the token and session timeouts.
@@ -525,4 +622,21 @@ func (t *baseAuthTool) UntieDisable(loginID string) {
 	ctx := context.Background()
 	disableKey := t.getDisableKey(loginID)
 	_ = redisClient.Del(ctx, disableKey).Err()
+}
+
+func claimsToMap(claims *SessionClaims) map[string]any {
+	if claims == nil {
+		return nil
+	}
+	return map[string]any{
+		"user_id":    claims.UserID,
+		"realm_id":   string(claims.RealmID),
+		"created_at": claims.CreatedAt,
+		"extra":      claims.Extra,
+		"acl": map[string]any{
+			"permissions": claims.ACL.Permissions,
+			"roles":       claims.ACL.Roles,
+			"scope_map":   claims.ACL.ScopeMap,
+		},
+	}
 }

@@ -2,6 +2,7 @@ package v1
 
 import (
 	clientuser "hei-gin/plugins/plugin-client/user"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
@@ -48,25 +49,25 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 
 	r.GET("/api/v1/c/client-user/current",
-		middleware.HeiClientCheckLogin(),
+		middleware.CheckLogin(auth.Consumer),
 		defaultHandler.current,
 	)
 
 	r.POST("/api/v1/c/client-user/update-profile",
-		middleware.HeiClientCheckLogin(),
+		middleware.CheckLogin(auth.Consumer),
 		log.SysLog("C端用户更新个人信息"),
 		middleware.NoRepeat(3000),
 		defaultHandler.updateProfile,
 	)
 
 	r.POST("/api/v1/c/client-user/update-avatar",
-		middleware.HeiClientCheckLogin(),
+		middleware.CheckLogin(auth.Consumer),
 		log.SysLog("C端用户更新头像"),
 		defaultHandler.updateAvatar,
 	)
 
 	r.POST("/api/v1/c/client-user/update-password",
-		middleware.HeiClientCheckLogin(),
+		middleware.CheckLogin(auth.Consumer),
 		log.SysLog("C端用户修改密码"),
 		middleware.NoRepeat(3000),
 		defaultHandler.updatePassword,

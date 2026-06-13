@@ -137,17 +137,19 @@ func (s *Service) Join(c *gin.Context, p *JoinOrLeaveParam) {
 	}
 
 	members := s.repo.ListManagers(ctx, p.GroupID)
-	for _, m := range members {
-		payload := map[string]interface{}{
-			"group_id":  p.GroupID,
-			"user_id":   userID,
-			"user_type": userType,
-			"action":    "join_request",
-		}
-		if m.UserType == string(enums.LoginTypeConsumer) {
-			ws.GlobalCrossHub.SendToConsumer(m.UserID, ws.Message{Type: "group_event", Payload: payload})
-		} else {
-			ws.GlobalCrossHub.SendToUser(m.UserID, ws.Message{Type: "group_event", Payload: payload})
+	if runtime := ws.Runtime(); runtime != nil {
+		for _, m := range members {
+			payload := map[string]interface{}{
+				"group_id":  p.GroupID,
+				"user_id":   userID,
+				"user_type": userType,
+				"action":    "join_request",
+			}
+			if m.UserType == string(enums.LoginTypeConsumer) {
+				runtime.SendToConsumer(m.UserID, ws.Message{Type: "group_event", Payload: payload})
+			} else {
+				runtime.SendToUser(m.UserID, ws.Message{Type: "group_event", Payload: payload})
+			}
 		}
 	}
 }

@@ -2,8 +2,8 @@ package v1
 
 import (
 	"hei-gin/plugins/plugin-client/auth/username"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
 
@@ -19,7 +19,7 @@ func RegisterRoutes(r *gin.Engine) {
 		username.DoRegister,
 	)
 	r.POST("/api/v1/c/logout",
-		middleware.HeiCheckLogin(string(enums.LoginTypeConsumer)),
+		middleware.CheckLogin(auth.Consumer),
 		username.DoLogout,
 	)
 }

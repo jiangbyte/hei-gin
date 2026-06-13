@@ -26,7 +26,7 @@ func getLoginID(c *gin.Context) string {
 	if getUserType(c) == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
 	}
-	return auth.GetLoginID(c)
+	return auth.Business.GetLoginID(c)
 }
 
 func getUserType(c *gin.Context) string {

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"hei-gin/sdk/auth"
 	"strconv"
 
 	file "hei-gin/plugins/plugin-sys/file"
@@ -79,7 +80,7 @@ func RegisterRoutes(r *gin.Engine) {
 // RegisterClientRoutes registers client file routes.
 func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/file/upload",
-		middleware.HeiClientCheckLogin(),
+		middleware.CheckLogin(auth.Consumer),
 		log.SysLog("C端上传文件"),
 		defaultHandler.clientUpload,
 	)

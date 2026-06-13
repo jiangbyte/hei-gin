@@ -1,12 +1,14 @@
 package role
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
 	"gorm.io/gorm"
 
 	userModel "hei-gin/plugins/plugin-sys/user"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/web/exception"
@@ -185,6 +187,7 @@ func (s *Service) GrantPermissions(c *gin.Context, param *GrantPermissionParam) 
 		result.WriteError(c, exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
 		return
 	}
+	s.refreshRoleUserSessionsACL(ctx, roleID)
 }
 
 func (s *Service) GrantResources(c *gin.Context, param *GrantResourceParam) {
@@ -237,5 +240,29 @@ func (s *Service) GrantResources(c *gin.Context, param *GrantResourceParam) {
 	if err := s.repo.ReplaceRoleResourcesAndAppendPerms(ctx, roleID, rrBatch, uIDs, permBatch); err != nil {
 		result.WriteError(c, exception.NewBusinessError("分配资源权限失败: "+err.Error(), 500))
 		return
+	}
+	s.refreshRoleUserSessionsACL(ctx, roleID)
+}
+
+func (s *Service) RefreshSessionACL(c *gin.Context, param *RefreshRoleSessionACLParam) {
+	if param.RoleID == "" {
+		result.WriteError(c, exception.NewBusinessError("角色ID不能为空", 400))
+		return
+	}
+	s.refreshRoleUserSessionsACL(c.Request.Context(), param.RoleID)
+}
+
+func (s *Service) refreshRoleUserSessionsACL(ctx context.Context, roleID string) {
+	userIDs := s.repo.FindUserIDsByRoleID(ctx, roleID)
+	seen := make(map[string]struct{}, len(userIDs))
+	for _, userID := range userIDs {
+		if userID == "" {
+			continue
+		}
+		if _, ok := seen[userID]; ok {
+			continue
+		}
+		seen[userID] = struct{}{}
+		_ = auth.Business.RefreshUserSessionsACL(ctx, userID)
 	}
 }

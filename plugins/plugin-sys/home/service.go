@@ -17,7 +17,7 @@ type Service struct {
 }
 
 func (s *Service) Get(c *gin.Context) *HomeVO {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	vo := &HomeVO{
 		QuickActions:       make([]QuickActionVO, 0),
 		AvailableResources: make([]QuickActionVO, 0),
@@ -33,7 +33,7 @@ func (s *Service) Get(c *gin.Context) *HomeVO {
 }
 
 func (s *Service) AddQuickAction(c *gin.Context, param *AddQuickActionParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
@@ -56,7 +56,7 @@ func (s *Service) AddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 }
 
 func (s *Service) RemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return
@@ -69,7 +69,7 @@ func (s *Service) RemoveQuickAction(c *gin.Context, param *utils.IdsParam) {
 }
 
 func (s *Service) SortQuickActions(c *gin.Context, param *utils.IdsParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
+	userID := auth.Business.GetLoginIDDefaultNull(c)
 	if userID == "" {
 		result.WriteError(c, exception.NewBusinessError("登录用户不存在", 500))
 		return

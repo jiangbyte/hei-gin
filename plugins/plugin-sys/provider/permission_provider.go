@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sort"
 
 	"gorm.io/gorm"
 
@@ -47,33 +48,15 @@ func (p *PermissionProvider) getRolesByIDs(ctx context.Context, roleIDs []string
 	return roles, nil
 }
 
-// isSuperAdmin checks if any of the given role IDs correspond to SUPER_ADMIN.
-func (p *PermissionProvider) isSuperAdmin(ctx context.Context, roleIDs []string) bool {
-	if len(roleIDs) == 0 {
-		return false
-	}
-	var count int64
-	db.DB.WithContext(ctx).Model(&roleModel.SysRole{}).
-		Where("id IN ? AND code = ?", roleIDs, constants.SUPER_ADMIN_CODE).
-		Count(&count)
-	return count > 0
-}
-
-func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error) {
-
-	roleIDs, err := p.getRoleIDs(ctx, loginID)
+func (p *PermissionProvider) GetPermissionList(ctx context.Context, realmID contracts.RealmID, userID string) ([]string, error) {
+	roleIDs, err := p.getRoleIDs(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Super admin check — single batch query instead of N queries
-	if p.isSuperAdmin(ctx, roleIDs) {
-		return p.getAllPermissionsFromRedis(ctx)
-	}
-
 	permissionCodes := make(map[string]struct{})
 
-	if loginType == string(enums.LoginTypeBusiness) || loginType == string(enums.LoginTypeConsumer) {
+	if realmID == contracts.RealmID(auth.BusinessID) || realmID == contracts.RealmID(auth.ConsumerID) {
 		if len(roleIDs) > 0 {
 			var entities []userModel.RelRolePermission
 			if err := db.DB.WithContext(ctx).Where("role_id IN ?", roleIDs).Find(&entities).Error; err != nil {
@@ -86,7 +69,7 @@ func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID stri
 		}
 
 		var entities []userModel.RelUserPermission
-		if err := db.DB.WithContext(ctx).Where("user_id = ?", loginID).Find(&entities).Error; err != nil {
+		if err := db.DB.WithContext(ctx).Where("user_id = ?", userID).Find(&entities).Error; err != nil {
 			log.Printf("[Permission] Failed to query user permissions: %v", err)
 		} else {
 			for _, e := range entities {
@@ -102,9 +85,9 @@ func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID stri
 	return result, nil
 }
 
-func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType string) ([]string, error) {
-
-	roleIDs, err := p.getRoleIDs(ctx, loginID)
+func (p *PermissionProvider) GetRoleList(ctx context.Context, realmID contracts.RealmID, userID string) ([]string, error) {
+	_ = realmID
+	roleIDs, err := p.getRoleIDs(ctx, userID)
 	if err != nil || len(roleIDs) == 0 {
 		return []string{}, err
 	}
@@ -122,40 +105,15 @@ func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType
 	return roleCodes, nil
 }
 
-func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID, loginType string) (map[string]contracts.ScopeInfo, error) {
-
-	if loginType != string(enums.LoginTypeBusiness) && loginType != string(enums.LoginTypeConsumer) {
+func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, realmID contracts.RealmID, userID string) (map[string]contracts.ScopeInfo, error) {
+	if realmID != contracts.RealmID(auth.BusinessID) && realmID != contracts.RealmID(auth.ConsumerID) {
 		return map[string]contracts.ScopeInfo{}, nil
 	}
 
-	// Single call to get role IDs — reused below instead of calling getRoleIDs twice
-	roleIDs, err := p.getRoleIDs(ctx, loginID)
+	roleIDs, err := p.getRoleIDs(ctx, userID)
 	if err != nil {
 		log.Printf("[Permission] Failed to query user roles: %v", err)
 		roleIDs = nil
-	}
-
-	// Check super admin via role codes using a single batch query
-	if len(roleIDs) > 0 {
-		roles, _ := p.getRolesByIDs(ctx, roleIDs)
-		for _, role := range roles {
-			if role.Code == constants.SUPER_ADMIN_CODE {
-				allCodes, cacheErr := p.getAllPermissionsFromRedis(ctx)
-				if cacheErr != nil {
-					return nil, cacheErr
-				}
-				result := make(map[string]contracts.ScopeInfo, len(allCodes))
-				for _, code := range allCodes {
-					result[code] = contracts.ScopeInfo{
-						GroupScope:     string(enums.DataScopeAll),
-						OrgScope:       string(enums.DataScopeAll),
-						CustomGroupIDs: []string{},
-						CustomOrgIDs:   []string{},
-					}
-				}
-				return result, nil
-			}
-		}
 	}
 
 	permScope := make(map[string]map[string]interface{})
@@ -179,7 +137,7 @@ func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID,
 	}
 
 	var entities []userModel.RelUserPermission
-	if err := db.DB.WithContext(ctx).Where("user_id = ?", loginID).Find(&entities).Error; err != nil {
+	if err := db.DB.WithContext(ctx).Where("user_id = ?", userID).Find(&entities).Error; err != nil {
 		log.Printf("[Permission] Failed to query user permission scopes: %v", err)
 	} else {
 		scopeRows := make([]auth.ScopeRow, 0, len(entities))
@@ -211,10 +169,29 @@ func (p *PermissionProvider) getAllPermissionsFromRedis(ctx context.Context) ([]
 	if err != nil {
 		return nil, err
 	}
+
 	var perms []string
-	if err := json.Unmarshal([]byte(val), &perms); err != nil {
+	if err := json.Unmarshal([]byte(val), &perms); err == nil {
+		return perms, nil
+	}
+
+	var tree map[string]map[string]auth.PermissionEntry
+	if err := json.Unmarshal([]byte(val), &tree); err != nil {
 		return nil, err
 	}
+
+	codeSet := make(map[string]struct{})
+	for _, modulePerms := range tree {
+		for code := range modulePerms {
+			codeSet[code] = struct{}{}
+		}
+	}
+
+	perms = make([]string, 0, len(codeSet))
+	for code := range codeSet {
+		perms = append(perms, code)
+	}
+	sort.Strings(perms)
 	return perms, nil
 }
 

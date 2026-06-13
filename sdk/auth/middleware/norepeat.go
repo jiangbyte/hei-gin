@@ -28,7 +28,7 @@ func NoRepeat(interval int) gin.HandlerFunc {
 		clientAuth := auth.Consumer
 		userID := clientAuth.GetLoginIDDefaultNull(c)
 		if userID == "" {
-			userID = auth.GetLoginIDDefaultNull(c)
+			userID = auth.Business.GetLoginIDDefaultNull(c)
 		}
 
 		// Get client IP

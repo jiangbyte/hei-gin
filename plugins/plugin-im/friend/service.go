@@ -21,7 +21,7 @@ func getLoginID(c *gin.Context, userType string) string {
 	if userType == string(enums.LoginTypeConsumer) {
 		return auth.Consumer.GetLoginID(c)
 	}
-	return auth.GetLoginID(c)
+	return auth.Business.GetLoginID(c)
 }
 
 // ==================== FriendSendRequest ====================
@@ -76,10 +76,12 @@ func (s *Service) SendRequest(c *gin.Context, userType string, p *SendRequestPar
 		"action":      "friend_request",
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
-	if p.ReceiverType == string(enums.LoginTypeConsumer) {
-		ws.GlobalCrossHub.SendToConsumer(p.ReceiverID, msg)
-	} else {
-		ws.GlobalCrossHub.SendToUser(p.ReceiverID, msg)
+	if runtime := ws.Runtime(); runtime != nil {
+		if p.ReceiverType == string(enums.LoginTypeConsumer) {
+			runtime.SendToConsumer(p.ReceiverID, msg)
+		} else {
+			runtime.SendToUser(p.ReceiverID, msg)
+		}
 	}
 }
 
@@ -122,10 +124,12 @@ func (s *Service) AcceptRequest(c *gin.Context, userType string, p *HandleReques
 		"action":        "friend_request_accepted",
 	}
 	msg := ws.Message{Type: "friend_request", Payload: payload}
-	if req.SenderType == string(enums.LoginTypeConsumer) {
-		ws.GlobalCrossHub.SendToConsumer(req.SenderID, msg)
-	} else {
-		ws.GlobalCrossHub.SendToUser(req.SenderID, msg)
+	if runtime := ws.Runtime(); runtime != nil {
+		if req.SenderType == string(enums.LoginTypeConsumer) {
+			runtime.SendToConsumer(req.SenderID, msg)
+		} else {
+			runtime.SendToUser(req.SenderID, msg)
+		}
 	}
 }
 
@@ -260,7 +264,9 @@ func (s *Service) Remove(c *gin.Context, userType string, p *RemoveFriendParam) 
 		"action":      "friend_removed",
 	}
 	msg := ws.Message{Type: "friend", Payload: payload}
-	ws.GlobalCrossHub.SendToUser(userID, msg)
+	if runtime := ws.Runtime(); runtime != nil {
+		runtime.SendToUser(userID, msg)
+	}
 }
 
 // ==================== FriendSearch ====================

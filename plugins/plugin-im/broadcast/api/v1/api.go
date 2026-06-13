@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"hei-gin/sdk/auth"
 	"strconv"
 
 	"hei-gin/plugins/plugin-im/broadcast"
@@ -26,7 +27,7 @@ func newHandler(module *broadcast.Module) *handler {
 func RegisterRoutes(r *gin.Engine) {
 	// POST /api/v1/sys/im/broadcast/send
 	r.POST("/api/v1/sys/im/broadcast/send",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		registry.Perm("sys:im:broadcast:send", "发送通知"),
 		log.SysLog("发送通知"),
 		authMW.NoRepeat(5000),
@@ -35,26 +36,26 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// GET /api/v1/sys/im/broadcast/list
 	r.GET("/api/v1/sys/im/broadcast/list",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		registry.Perm("sys:im:broadcast:list", "通知列表"),
 		defaultHandler.list,
 	)
 
 	// GET /api/v1/sys/im/broadcast/unread-list
 	r.GET("/api/v1/sys/im/broadcast/unread-list",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.unreadList,
 	)
 
 	// POST /api/v1/sys/im/broadcast/read
 	r.POST("/api/v1/sys/im/broadcast/read",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.read,
 	)
 
 	// GET /api/v1/sys/im/broadcast/detail
 	r.GET("/api/v1/sys/im/broadcast/detail",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.detail,
 	)
 }
@@ -62,19 +63,19 @@ func RegisterRoutes(r *gin.Engine) {
 func RegisterClientRoutes(r *gin.Engine) {
 	// GET /api/v1/c/im/broadcast/unread-list
 	r.GET("/api/v1/c/im/broadcast/unread-list",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientUnreadList,
 	)
 
 	// POST /api/v1/c/im/broadcast/read
 	r.POST("/api/v1/c/im/broadcast/read",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientRead,
 	)
 
 	// GET /api/v1/c/im/broadcast/detail
 	r.GET("/api/v1/c/im/broadcast/detail",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.detail,
 	)
 }

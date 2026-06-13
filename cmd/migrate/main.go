@@ -37,6 +37,9 @@ func main() {
 	if err := config.FindAndLoad(); err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+	if err := config.C.ValidateMigration(); err != nil {
+		log.Fatalf("invalid migration config: %v", err)
+	}
 
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("failed to init database: %v", err)

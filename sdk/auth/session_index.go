@@ -45,27 +45,27 @@ type parsedTokenData struct {
 }
 
 func (t *baseAuthTool) getSessionIndexKey() string {
-	return "hei:auth:" + t.loginType + ":session:index"
+	return "hei:auth:" + string(t.realmID) + ":session:index"
 }
 
 func (t *baseAuthTool) getSessionExpiryKey() string {
-	return "hei:auth:" + t.loginType + ":session:expiry"
+	return "hei:auth:" + string(t.realmID) + ":session:expiry"
 }
 
 func (t *baseAuthTool) getSessionCountKey() string {
-	return "hei:auth:" + t.loginType + ":session:counts"
+	return "hei:auth:" + string(t.realmID) + ":session:counts"
 }
 
 func (t *baseAuthTool) getTokenCreatedIndexKey() string {
-	return "hei:auth:" + t.loginType + ":token:created"
+	return "hei:auth:" + string(t.realmID) + ":token:created"
 }
 
 func (t *baseAuthTool) getTokenExpiryIndexKey() string {
-	return "hei:auth:" + t.loginType + ":token:expiry"
+	return "hei:auth:" + string(t.realmID) + ":token:expiry"
 }
 
 func (t *baseAuthTool) getTokenOwnerKey() string {
-	return "hei:auth:" + t.loginType + ":token:owners"
+	return "hei:auth:" + string(t.realmID) + ":token:owners"
 }
 
 func (t *baseAuthTool) trackLoginSession(ctx context.Context, userID, token string, createdAt time.Time, ttl time.Duration) {
@@ -589,26 +589,6 @@ func (t *baseAuthTool) sessionTokens(ctx context.Context, userID string) ([]Sess
 	})
 	t.refreshSessionIndexes(ctx, userID)
 	return result, nil
-}
-
-func ListSessionInfos(ctx context.Context, loginType string, current, size int, keyword string) ([]SessionInfo, int64, error) {
-	return ToolForLoginType(loginType).listSessionInfos(ctx, current, size, keyword)
-}
-
-func GetSessionStats(ctx context.Context, loginType string) (SessionStats, error) {
-	return ToolForLoginType(loginType).sessionStats(ctx)
-}
-
-func GetSessionDailyCounts(ctx context.Context, loginType string, days []string) map[string]int {
-	return ToolForLoginType(loginType).sessionDailyCounts(ctx, days)
-}
-
-func GetSessionTokens(ctx context.Context, loginType, userID string) ([]SessionTokenInfo, error) {
-	return ToolForLoginType(loginType).sessionTokens(ctx, userID)
-}
-
-func ListSessionInfosByUserIDs(ctx context.Context, loginType string, userIDs []string, current, size int) ([]SessionInfo, int64, error) {
-	return ToolForLoginType(loginType).listSessionInfosByUserIDs(ctx, userIDs, current, size)
 }
 
 func parseTokenData(raw string) (parsedTokenData, bool) {

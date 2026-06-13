@@ -29,125 +29,125 @@ func newHandler(module *message.Module) *handler {
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/im/message/page",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.page,
 	)
 	r.GET("/api/v1/sys/im/message/detail",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.detail,
 	)
 	r.GET("/api/v1/sys/im/message/unread-count",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.unreadCount,
 	)
 	r.POST("/api/v1/sys/im/message/send",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		middleware.RateLimiter("sys_send", 5, 20),
 		authMW.NoRepeat(3000),
 		defaultHandler.send,
 	)
 	r.POST("/api/v1/sys/im/message/recall",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.recall,
 	)
 	r.POST("/api/v1/sys/im/message/forward",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.forward,
 	)
 	r.POST("/api/v1/sys/im/message/delete",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.delete,
 	)
 	r.GET("/api/v1/sys/im/message/search",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.search,
 	)
 	r.POST("/api/v1/sys/im/message/mark-read",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.markRead,
 	)
 	r.POST("/api/v1/sys/im/message/mark-all-read",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.markAllRead,
 	)
 	r.POST("/api/v1/sys/im/message/remove",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.remove,
 	)
 	r.GET("/api/v1/sys/im/conversation/list",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.conversations,
 	)
 	r.GET("/api/v1/sys/im/conversation/messages",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.conversationMessages,
 	)
 	r.POST("/api/v1/sys/im/conversation/read",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.conversationRead,
 	)
 	r.POST("/api/v1/sys/im/conversation/get-or-create",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.getOrCreateConversation,
 	)
 	r.POST("/api/v1/sys/im/file/upload",
-		authMW.HeiCheckLogin(),
+		authMW.CheckLogin(auth.Business),
 		defaultHandler.uploadFile,
 	)
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/im/message/send",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		middleware.RateLimiter("c_send", 5, 20),
 		defaultHandler.send,
 	)
 	r.POST("/api/v1/c/im/message/recall",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.recall,
 	)
 	r.POST("/api/v1/c/im/message/forward",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.forward,
 	)
 	r.POST("/api/v1/c/im/message/delete",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.delete,
 	)
 	r.GET("/api/v1/c/im/message/search",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.search,
 	)
 	r.POST("/api/v1/c/im/message/mark-read",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.markRead,
 	)
 	r.POST("/api/v1/c/im/message/mark-all-read",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.markAllRead,
 	)
 	r.POST("/api/v1/c/im/message/remove",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.remove,
 	)
 	r.GET("/api/v1/c/im/conversation/list",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.conversations,
 	)
 	r.GET("/api/v1/c/im/conversation/messages",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.conversationMessages,
 	)
 	r.POST("/api/v1/c/im/conversation/read",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.conversationRead,
 	)
 	r.POST("/api/v1/c/im/conversation/get-or-create",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.getOrCreateConversation,
 	)
 	r.POST("/api/v1/c/im/file/upload",
-		authMW.HeiClientCheckLogin(),
+		authMW.CheckLogin(auth.Consumer),
 		defaultHandler.clientUploadFile,
 	)
 }
@@ -425,7 +425,7 @@ func (h *handler) conversationRead(c *gin.Context) {
 		return
 	}
 	if strings.HasPrefix(param.ConversationID, "group:") {
-		userID := auth.GetLoginID(c)
+		userID := auth.Business.GetLoginID(c)
 		userType := string(enums.LoginTypeBusiness)
 		if strings.HasPrefix(c.Request.URL.Path, "/api/v") && strings.Contains(c.Request.URL.Path, "/c/") {
 			userID = auth.Consumer.GetLoginID(c)
@@ -474,7 +474,7 @@ func (h *handler) getOrCreateConversation(c *gin.Context) {
 // @Success      200  {object}  map[string]any  "成功响应"
 // @Router       /api/v1/sys/im/file/upload [post]
 func (h *handler) uploadFile(c *gin.Context) {
-	h.service.UploadFile(c, auth.GetLoginID(c), string(enums.LoginTypeBusiness))
+	h.service.UploadFile(c, auth.Business.GetLoginID(c), string(enums.LoginTypeBusiness))
 }
 
 // @Summary      即时通讯消息上传文件

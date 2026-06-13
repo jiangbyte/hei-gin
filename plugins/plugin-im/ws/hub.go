@@ -3,13 +3,16 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/observability"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,9 +30,7 @@ func getConfig() WSConfig {
 		_upgrader = &websocket.Upgrader{
 			ReadBufferSize:  _cfg.ReadBufferSize,
 			WriteBufferSize: _cfg.WriteBufferSize,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
+			CheckOrigin:     checkOrigin,
 		}
 	})
 	return _cfg
@@ -83,6 +84,7 @@ func (h *Hub) Register(client *Client) bool {
 	if ip != "" {
 		if h.ipCount[ip] >= maxClientsPerIP {
 			h.mu.Unlock()
+			observability.IncWSRejected()
 			log.Printf("[WS] IP %s exceeded max connections (%d)", ip, maxClientsPerIP)
 			return false
 		}
@@ -91,6 +93,7 @@ func (h *Hub) Register(client *Client) bool {
 	userKey := client.userKey()
 	if h.userCount[userKey] >= maxClientsPerUser {
 		h.mu.Unlock()
+		observability.IncWSRejected()
 		log.Printf("[WS] User %s/%s exceeded max connections (%d)",
 			client.UserType, client.UserID, maxClientsPerUser)
 		return false
@@ -108,6 +111,7 @@ func (h *Hub) Register(client *Client) bool {
 	if onRegistered != nil {
 		onRegistered(client)
 	}
+	observability.IncWSConnection()
 
 	log.Printf("[WS] Client connected: %s/%s from %s (online: %d)", client.UserType, client.UserID, ip, count)
 	return true
@@ -139,6 +143,7 @@ func (h *Hub) Unregister(client *Client) {
 	if h.OnClientUnregistered != nil {
 		h.OnClientUnregistered(client)
 	}
+	observability.DecWSConnection()
 
 	log.Printf("[WS] Client disconnected: %s/%s (online: %d)", client.UserType, client.UserID, count)
 }
@@ -183,6 +188,7 @@ func (h *Hub) SendToUsers(userIDs []string, msg Message) {
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
+	observability.ObserveWSMessage("business_users", len(clients))
 }
 
 // SendToConsumers sends a message to multiple consumer users in a single lock acquisition.
@@ -204,6 +210,7 @@ func (h *Hub) SendToConsumers(userIDs []string, msg Message) {
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
+	observability.ObserveWSMessage("consumer_users", len(clients))
 }
 
 func (h *Hub) SendMessagesToUsers(messages map[string]Message) {
@@ -236,6 +243,7 @@ func (h *Hub) sendMessagesByUser(userType enums.LoginTypeEnum, messages map[stri
 	for i, client := range clients {
 		client.SendJSON(clientMsgs[i])
 	}
+	observability.ObserveWSMessage("by_user", len(clients))
 }
 
 func (h *Hub) SendToUser(userID string, msg Message) {
@@ -250,6 +258,7 @@ func (h *Hub) SendToUser(userID string, msg Message) {
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
+	observability.ObserveWSMessage("business_single", len(clients))
 }
 
 // SendToConsumer sends a message to a specific consumer (client) user.
@@ -265,6 +274,7 @@ func (h *Hub) SendToConsumer(userID string, msg Message) {
 	for _, client := range clients {
 		client.SendJSON(msg)
 	}
+	observability.ObserveWSMessage("consumer_single", len(clients))
 }
 
 // BroadcastAll sends a message to all connected clients.
@@ -393,25 +403,89 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID str
 	go client.ReadPump()
 }
 
-// getClientIP extracts the client IP from the request, respecting X-Forwarded-For.
+// getClientIP extracts the client IP from the request, trusting proxy headers only for trusted proxies.
 func getClientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if idx := strings.Index(xff, ","); idx >= 0 {
-			return xff[:idx]
+	if isTrustedProxy(remoteIP(r)) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			if idx := strings.Index(xff, ","); idx >= 0 {
+				return strings.TrimSpace(xff[:idx])
+			}
+			return strings.TrimSpace(xff)
 		}
-		return xff
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-	// Strip port from RemoteAddr
-	addr := r.RemoteAddr
-	for i := len(addr) - 1; i >= 0; i-- {
-		if addr[i] == ':' {
-			return addr[:i]
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return strings.TrimSpace(xri)
 		}
+	}
+	return remoteIP(r)
+}
+
+func remoteIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil {
+		return host
+	}
+	addr := strings.TrimSpace(r.RemoteAddr)
+	if parsed := net.ParseIP(addr); parsed != nil {
+		return parsed.String()
+	}
+	if strings.HasPrefix(addr, "[") && strings.HasSuffix(addr, "]") {
+		return strings.Trim(addr, "[]")
 	}
 	return addr
+}
+
+func isTrustedProxy(ip string) bool {
+	if ip == "" {
+		return false
+	}
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+	for _, rule := range getConfig().TrustedProxies {
+		rule = strings.TrimSpace(rule)
+		if rule == "" {
+			continue
+		}
+		if strings.Contains(rule, "/") {
+			_, cidr, err := net.ParseCIDR(rule)
+			if err == nil && cidr.Contains(parsedIP) {
+				return true
+			}
+			continue
+		}
+		if proxyIP := net.ParseIP(rule); proxyIP != nil && proxyIP.Equal(parsedIP) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkOrigin(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return true
+	}
+	parsedOrigin, err := url.Parse(origin)
+	if err != nil || parsedOrigin.Host == "" {
+		return false
+	}
+	for _, candidate := range getConfig().AllowedOrigins {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if candidate == "*" || candidate == origin || candidate == parsedOrigin.Host {
+			return true
+		}
+		if strings.HasPrefix(candidate, "http://") || strings.HasPrefix(candidate, "https://") {
+			parsedCandidate, err := url.Parse(candidate)
+			if err == nil && strings.EqualFold(parsedCandidate.Scheme, parsedOrigin.Scheme) && strings.EqualFold(parsedCandidate.Host, parsedOrigin.Host) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // GlobalHub is the singleton hub instance used by the application.
@@ -419,12 +493,16 @@ func getClientIP(r *http.Request) string {
 // before config.FindAndLoad(). Use lazy loading for any config-dependent fields.
 var GlobalHub = NewHub()
 
-// GlobalCrossHub is the cross-instance hub. Initialized by app.go after Redis setup.
-var GlobalCrossHub *CrossHub
+var globalCrossHub *CrossHub
 
-// InitCrossHub initializes GlobalCrossHub exactly once with sync.Once protection.
-func InitCrossHub(local *Hub, rdb *redis.Client) {
+// InitCrossHub initializes the process-wide hub runtime exactly once.
+func InitCrossHub(local *Hub, rdb *redis.Client) *CrossHub {
 	_initHubOnce.Do(func() {
-		GlobalCrossHub = NewCrossHub(local, rdb)
+		globalCrossHub = NewCrossHub(local, rdb)
 	})
+	return globalCrossHub
+}
+
+func Runtime() *CrossHub {
+	return globalCrossHub
 }

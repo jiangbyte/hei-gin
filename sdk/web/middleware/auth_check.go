@@ -6,7 +6,6 @@ import (
 	"hei-gin/sdk/auth"
 	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/config"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/web/result"
 
 	"github.com/gin-gonic/gin"
@@ -51,18 +50,18 @@ func AuthCheck() gin.HandlerFunc {
 						result.Failure(c, "未授权/未登录", 401)
 						return
 					}
-					authMW.AttachLoginContext(c, string(enums.LoginTypeConsumer), uid)
+					authMW.AttachLoginContext(c, auth.Consumer, uid)
 					c.Next()
 					return
 				}
 
-				uid := auth.GetLoginIDDefaultNull(c)
+				uid := auth.Business.GetLoginIDDefaultNull(c)
 				if uid == "" {
 					c.Abort()
 					result.Failure(c, "未授权/未登录", 401)
 					return
 				}
-				authMW.AttachLoginContext(c, string(enums.LoginTypeBusiness), uid)
+				authMW.AttachLoginContext(c, auth.Business, uid)
 				c.Next()
 				return
 			}
@@ -74,10 +73,10 @@ func AuthCheck() gin.HandlerFunc {
 }
 
 func attachOptionalLogin(c *gin.Context) {
-	if uid := auth.GetLoginIDDefaultNull(c); uid != "" {
-		authMW.AttachLoginContext(c, string(enums.LoginTypeBusiness), uid)
+	if uid := auth.Business.GetLoginIDDefaultNull(c); uid != "" {
+		authMW.AttachLoginContext(c, auth.Business, uid)
 	} else if uid := auth.Consumer.GetLoginIDDefaultNull(c); uid != "" {
-		authMW.AttachLoginContext(c, string(enums.LoginTypeConsumer), uid)
+		authMW.AttachLoginContext(c, auth.Consumer, uid)
 	}
 }
 

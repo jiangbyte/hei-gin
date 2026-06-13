@@ -2,6 +2,7 @@ package v1
 
 import (
 	home "hei-gin/plugins/plugin-sys/home"
+	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/kernel/registry"
 	"hei-gin/sdk/log"
@@ -25,27 +26,27 @@ func newHandler(module *home.Module) *handler {
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/home
 	r.GET("/api/v1/sys/home",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		defaultHandler.get,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/add
 	r.POST("/api/v1/sys/home/quick-actions/add",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("添加快捷方式"),
 		defaultHandler.addQuickAction,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/remove
 	r.POST("/api/v1/sys/home/quick-actions/remove",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("移除快捷方式"),
 		defaultHandler.removeQuickAction,
 	)
 
 	// POST /api/v1/sys/home/quick-actions/sort
 	r.POST("/api/v1/sys/home/quick-actions/sort",
-		middleware.HeiCheckLogin(),
+		middleware.CheckLogin(auth.Business),
 		log.SysLog("排序快捷方式"),
 		defaultHandler.sortQuickActions,
 	)

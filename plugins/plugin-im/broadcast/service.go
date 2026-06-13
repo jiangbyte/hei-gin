@@ -22,7 +22,7 @@ type Service struct {
 
 func (s *Service) Send(c *gin.Context, p *SendBroadcastParam) {
 	ctx := c.Request.Context()
-	senderID := auth.GetLoginID(c)
+	senderID := auth.Business.GetLoginID(c)
 
 	if p.Scope == "" {
 		p.Scope = "ALL"
@@ -48,13 +48,15 @@ func (s *Service) Send(c *gin.Context, p *SendBroadcastParam) {
 		"action":  "broadcast",
 	}
 	msg := ws.Message{Type: "broadcast", Payload: payload}
-	switch p.Scope {
-	case "ALL":
-		ws.GlobalCrossHub.BroadcastAll(msg)
-	case string(enums.LoginTypeBusiness):
-		ws.GlobalCrossHub.BroadcastBusiness(msg)
-	case string(enums.LoginTypeConsumer):
-		ws.GlobalCrossHub.BroadcastConsumers(msg)
+	if runtime := ws.Runtime(); runtime != nil {
+		switch p.Scope {
+		case "ALL":
+			runtime.BroadcastAll(msg)
+		case string(enums.LoginTypeBusiness):
+			runtime.BroadcastBusiness(msg)
+		case string(enums.LoginTypeConsumer):
+			runtime.BroadcastConsumers(msg)
+		}
 	}
 }
 
@@ -91,7 +93,7 @@ func (s *Service) UnreadList(c *gin.Context, userType string) []BroadcastVO {
 	if userType == string(enums.LoginTypeConsumer) {
 		userID = auth.Consumer.GetLoginID(c)
 	} else {
-		userID = auth.GetLoginID(c)
+		userID = auth.Business.GetLoginID(c)
 	}
 
 	records := s.repo.ListLatest(ctx, 50)
@@ -116,7 +118,7 @@ func (s *Service) UnreadList(c *gin.Context, userType string) []BroadcastVO {
 
 func (s *Service) MarkRead(c *gin.Context, p *ReadParam) {
 	ctx := c.Request.Context()
-	userID := auth.GetLoginID(c)
+	userID := auth.Business.GetLoginID(c)
 
 	s.repo.MarkRead(ctx, p.BroadcastID, userID, string(enums.LoginTypeBusiness))
 }

@@ -20,6 +20,9 @@ import (
 // permissionCacheTTL returns the TTL for the Redis permission cache.
 // Reads from config.C.Raw["permission_cache_ttl"] if set, defaults to 300 seconds.
 func permissionCacheTTL() time.Duration {
+	if config.C == nil {
+		return 300 * time.Second
+	}
 	if v, ok := config.C.Raw["permission_cache_ttl"]; ok {
 		if ttl, ok := v.(int); ok && ttl >= 0 {
 			return time.Duration(ttl) * time.Second
