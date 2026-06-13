@@ -1,115 +1,115 @@
-app:
-  name: hei-gin
-  version: 1.0.0
-  debug: true
-  host: 127.0.0.1
-  port: 18885
-  upload_max_size: 52428800
-  import_max_file_size_mb: 10
-  timeout_keep_alive: 15
+# app:
+#   name: hei-gin
+#   version: 1.0.0
+#   debug: true
+#   host: 127.0.0.1
+#   port: 18885
+#   upload_max_size: 52428800
+#   import_max_file_size_mb: 10
+#   timeout_keep_alive: 15
 
-db:
-  host: localhost
-  port: 3306
-  user: root
-  password: "YOUR_DB_PASSWORD"
-  database: hei_data
-  pool_size: 20
-  max_overflow: 10
-  pool_recycle: 3600
-  pool_pre_ping: true
-  pool_timeout: 30
-  connect_timeout: 10
-  echo: false
+# db:
+#   host: localhost
+#   port: 3306
+#   user: root
+#   password: "YOUR_DB_PASSWORD"
+#   database: hei_data
+#   pool_size: 20
+#   max_overflow: 10
+#   pool_recycle: 3600
+#   pool_pre_ping: true
+#   pool_timeout: 30
+#   connect_timeout: 10
+#   echo: false
 
-redis:
-  host: localhost
-  port: 6379
-  password: "YOUR_REDIS_PASSWORD"
-  database: 1
-  max_connections: 200
-  socket_connect_timeout: 10
-  socket_timeout: 30
-  retry_on_timeout: true
-  health_check_interval: 30
+# redis:
+#   host: localhost
+#   port: 6379
+#   password: "YOUR_REDIS_PASSWORD"
+#   database: 1
+#   max_connections: 200
+#   socket_connect_timeout: 10
+#   socket_timeout: 30
+#   retry_on_timeout: true
+#   health_check_interval: 30
 
-token:
-  expire_seconds: 2592000
-  token_name: Authorization
+# token:
+#   expire_seconds: 2592000
+#   token_name: Authorization
 
-sm2:
-  private_key: YOUR_SM2_PRIVATE_KEY
-  public_key: "YOUR_SM2_PUBLIC_KEY"
+# sm2:
+#   private_key: YOUR_SM2_PRIVATE_KEY
+#   public_key: "YOUR_SM2_PUBLIC_KEY"
 
-# User settings
-user:
-  # Reset password (empty = generate random)
-  reset_password: "123456"
+# # User settings
+# user:
+#   # Reset password (empty = generate random)
+#   reset_password: "123456"
 
-cors:
-  allow_origins: ["*"]
-  allow_methods: ["*"]
-  allow_headers: ["*"]
-  allow_credentials: false
+# cors:
+#   allow_origins: ["*"]
+#   allow_methods: ["*"]
+#   allow_headers: ["*"]
+#   allow_credentials: false
 
-snowflake:
-  instance: 1
+# snowflake:
+#   instance: 1
 
-storage:
-  default: LOCAL
-  local:
-    upload_folder: ./uploads
-  # minio:
-  #   endpoint: localhost:9000
-  #   access_key: YOUR_MINIO_ACCESS_KEY
-  #   secret_key: YOUR_MINIO_SECRET_KEY
-  #   bucket: hei-files
-  #   secure: false
-  #   region: us-east-1
-  # s3:
-  #   endpoint: https://s3.amazonaws.com
-  #   access_key: YOUR_S3_ACCESS_KEY
-  #   secret_key: YOUR_S3_SECRET_KEY
-  #   bucket: hei-files
-  #   region: ap-northeast-1
-  #   path_style: false
+# storage:
+#   default: LOCAL
+#   local:
+#     upload_folder: ./uploads
+#   # minio:
+#   #   endpoint: localhost:9000
+#   #   access_key: YOUR_MINIO_ACCESS_KEY
+#   #   secret_key: YOUR_MINIO_SECRET_KEY
+#   #   bucket: hei-files
+#   #   secure: false
+#   #   region: us-east-1
+#   # s3:
+#   #   endpoint: https://s3.amazonaws.com
+#   #   access_key: YOUR_S3_ACCESS_KEY
+#   #   secret_key: YOUR_S3_SECRET_KEY
+#   #   bucket: hei-files
+#   #   region: ap-northeast-1
+#   #   path_style: false
 
-# WebSocket / IM 配置
-ws:
-  read_buffer_size: 1024
-  write_buffer_size: 1024
-  heartbeat_interval: 15          # 心跳间隔（秒）
-  instance_ttl: 60               # 实例TTL（秒）
-  stale_clean_interval: 5        # 过期实例清理间隔（分钟）
-  rate_limit_window: 10          # 限流时间窗口（秒）
-  rate_limit_max: 30             # 窗口内最大消息数
-  dedup_ttl: 30                  # 消息去重TTL（秒）
-  poll_timeout: 2                # Redis BRPOP超时（秒）
-  pong_timeout: 60               # WS Pong超时（秒）
-  write_timeout: 10              # WS写入超时（秒）
-  online_broadcast_interval: 60  # 在线人数广播间隔（秒）
+# # WebSocket / IM 配置
+# ws:
+#   read_buffer_size: 1024
+#   write_buffer_size: 1024
+#   heartbeat_interval: 15          # 心跳间隔（秒）
+#   instance_ttl: 60               # 实例TTL（秒）
+#   stale_clean_interval: 5        # 过期实例清理间隔（分钟）
+#   rate_limit_window: 10          # 限流时间窗口（秒）
+#   rate_limit_max: 30             # 窗口内最大消息数
+#   dedup_ttl: 30                  # 消息去重TTL（秒）
+#   poll_timeout: 2                # Redis BRPOP超时（秒）
+#   pong_timeout: 60               # WS Pong超时（秒）
+#   write_timeout: 10              # WS写入超时（秒）
+#   online_broadcast_interval: 60  # 在线人数广播间隔（秒）
 
-# Swagger API 文档
-swagger:
-  # 是否启用 Swagger UI（生产环境建议关闭）
-  enabled: true
-  # 可选 Basic Auth 认证（留空则不启用）
-  username: ""
-  password: ""
+# # Swagger API 文档
+# swagger:
+#   # 是否启用 Swagger UI（生产环境建议关闭）
+#   enabled: true
+#   # 可选 Basic Auth 认证（留空则不启用）
+#   username: ""
+#   password: ""
 
-# Auth
-auth:
-  # Routes that bypass authentication entirely (prefix match).
-  # For /api/v{n}/... paths the version digit is treated as a wildcard;
-  # non-API paths like /favicon.ico are matched as-is.
-  public_paths:
-    - "/api/v1/public/"
-    - "/api/v1/sys/dict/tree"
-    - "/favicon.ico"
-    - "/docs"
-    - "/redoc"
-    - "/openapi.json"
-    - "/v3/api-docs"
-    - "/swagger"
-    - "/swagger.json"
-    - "/api/v1/swagger/"
+# # Auth
+# auth:
+#   # Routes that bypass authentication entirely (prefix match).
+#   # For /api/v{n}/... paths the version digit is treated as a wildcard;
+#   # non-API paths like /favicon.ico are matched as-is.
+#   public_paths:
+#     - "/api/v1/public/"
+#     - "/api/v1/sys/dict/tree"
+#     - "/favicon.ico"
+#     - "/docs"
+#     - "/redoc"
+#     - "/openapi.json"
+#     - "/v3/api-docs"
+#     - "/swagger"
+#     - "/swagger.json"
+#     - "/api/v1/swagger/"
