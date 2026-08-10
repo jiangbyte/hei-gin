@@ -8,7 +8,7 @@
 
 HEI Gin 是 HEI 项目的 Go / Gin 后端模板。设计思想对齐原型 [hei-fastapi](https://github.com/jiangbyte/hei-fastapi)（模块插件、双端 ADMIN/PORTAL、双配置、wire 字符串 JSON、RBAC + 数据范围）。
 
-工程上用 **`go.work` 多模块工作区**（类比 Maven reactor：多个 `go.mod`，根目录无业务 `go.mod`）——对齐 boot 的工程边界，而不是照抄 Java：
+工程化对齐 [hei-boot](https://github.com/jiangbyte/hei-boot) 的可改脚手架思路：**单模块单体**，仓根一个 `go.mod`，`go run ./app/cmd/api` 直接启动。
 
 1. **一般情况下**：整仓使用，改配置、加业务即可跑。
 2. **复杂场景**：**可以改 framework**（会话、中间件、注册表等），不是黑盒。
@@ -20,42 +20,37 @@ HTTP JSON 对齐 boot 的 **全局 stringly**：`boolean` 与数字在线上为�
 
 > **请注意：** 生产仍需自行加固密钥、对象存储、Cookie Secure、TLS 后再上线。
 
-## 仓库结构（多模块）
-
-根目录只有 `go.work`（类似 Maven 父 POM / reactor），**没有**根 `go.mod`。每个子目录一个独立 module：
+## 仓库结构
 
 ```text
-go.work                    # 工作区清单（use 下列全部 module）
-framework/                 # hei-gin/framework — 可改的运行时
-modules/
-  shared/                  # 跨业务共享模型/工具
-  auth/ iam/ sys/ …        # 粗粒度业务 module（各有 go.mod）
-app/                       # hei-gin/app — 组装根（类似 boot 的 admin 应用）
-  cmd/{api,worker,migrate}
-  internal/app/            # OpenInfra + AttachRegisteredModules
-  internal/modules/all/    # 汇总 blank import 全部内置业务 module
-migrations/                # goose SQL（仓库根，cwd 从根跑）
+go.mod                     # 唯一 Go module：hei-gin
+framework/                 # 可改的运行时（包路径 hei-gin/framework/...）
+modules/                   # 业务包（hei-gin/modules/...），目录分层不是独立 go.mod
+  shared/ auth/ iam/ …
+app/                       # 组装与入口（类似 boot 的 admin 应用）
+  cmd/{api,migrate}        # 唯一运行入口 api；migrate 为运维命令
+  internal/app/
+  internal/modules/all/    # 汇总 blank import
+migrations/
 web/                       # 前端（admin / portal / admin-uniapp）
 config.yaml / scripts/
 ```
 
-`app` 通过 `require` + `replace` 依赖 `framework` 与各 `modules/*`；本地开发时 `go.work` 把它们绑成一个工作区，改任一 module 立刻生效（无需 publish）。
+目录上的 `modules/*` 只是包边界，**全部属于同一个 module**，本地改完即可被 `go run` 编进单体进程。
 
 ## 二次开发
 
 | 诉求 | 做法 |
 |------|------|
 | 跟进上游 bugfix / 新内置模块 | `git fetch` + **merge/rebase**；保留 `_ "hei-gin/app/internal/modules/all"`，合并 `all` 即可带上新官方模块 |
-| 默认使用 | 在仓根 `go run ./app/cmd/api`；业务写在 `modules/<name>` 或自有 module |
-| 只加自有业务 | 新建 `modules/xxx`（自有 `go.mod`），`init` 里 `module.Register`；在 **自己的** `cmd` 里再 `_` import（少改官方 `all`） |
+| 默认使用 | 在仓根 `go run ./app/cmd/api`；业务写在 `modules/<name>` |
+| 只加自有业务 | 新包 `init` 里 `module.Register`；在 **自己的** `cmd` 里再 `_` import（少改官方 `all`） |
 | 关掉某内置 | 配置 `modules.disabled`，不必删代码 |
-| 改框架行为 | **直接改本仓 `framework/`**，再随业务一起合并上游 |
-
-`go.work` / `replace` 只服务 **本仓内** 模块边界与本地开发，不是靠依赖坐标升级 framework。
+| 改框架行为 | **直接改本仓 `framework/`** |
 
 ## 快速启动
 
-在**仓库根**执行（保证读到 `config.yaml` / `migrations/`）：
+在**仓库根**（需本机 Postgres / Redis，库名见配置）：
 
 ```bash
 cp config.example.yaml config.yaml
@@ -99,13 +94,15 @@ handler.go    # Bind → Service → response；JSON 用 bind.JSON
 
 ## 模块装配
 
-业务 module 在各自包 `init` 中调用 `module.Register`；[`app/internal/modules/all`](app/internal/modules/all) 仅作汇总 import。
+业务包在各自 `init` 中调用 `module.Register`；[`app/internal/modules/all`](app/internal/modules/all) 仅作汇总 import。
 
-`app/cmd/api` / `worker`：
+`app/cmd/api`：
 
 ```go
 import _ "hei-gin/app/internal/modules/all"
 ```
+
+定时任务使用 **XXL-JOB**（执行器嵌在 `api` 进程）。配置见 `xxl_job`；本地 Admin 见 [script/docker/README.md](script/docker/README.md)。迁移用 `./scripts/migrate.sh`。
 
 上游若新增官方模块，通常只改 `all` 包；合并上游后即可自动注册。
 
@@ -123,15 +120,3 @@ import _ "hei-gin/app/internal/modules/all"
 ```json
 { "code": "200", "message": "success", "data": {} }
 ```
-
-## 与原型 / Boot
-
-| | hei-fastapi | hei-boot | hei-gin |
-|--|-------------|----------|---------|
-| 上游同步 | 整仓 | 整仓合并 | **整仓 Git 合并**（非依赖升级） |
-| 框架边界 | 同仓 platform | common 等 | `framework/` module |
-| 多模块 | 包目录 | Maven modules | **`go.work` + 多 `go.mod`** |
-| 装配 | ModuleSpec 发现 | 显式 Maven 依赖 | init 自注册 + `app/.../all` |
-| 包内分层 | — | param/result/mapper/… | **同包** param/result/repo/service/handler |
-| JSON 标量 | 字符串 wire | StringlyTypedJackson | **全局 stringly**（`framework/core/stringly`） |
-| 复杂定制 | 改源码 | 改 common | **改 framework** |

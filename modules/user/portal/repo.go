@@ -37,6 +37,29 @@ func (r *Repo) UpdateProfile(ctx context.Context, accountID string, updates map[
 	return r.with(ctx).Model(&Profile{}).Where("account_id = ?", accountID).Updates(updates).Error
 }
 
+// UpsertProfile 按 account_id 插入或更新资料（供 iam/account 跨模块调用，对齐 boot ProfileApi）。
+func (r *Repo) UpsertProfile(ctx context.Context, p *Profile) error {
+	var n int64
+	if err := r.with(ctx).Model(&Profile{}).Where("account_id = ?", p.AccountID).Count(&n).Error; err != nil {
+		return err
+	}
+	if n == 0 {
+		return r.CreateProfile(ctx, p)
+	}
+	return r.UpdateProfile(ctx, p.AccountID, map[string]any{
+		"name": p.Name, "nickname": p.Nickname, "avatar": p.Avatar, "signature": p.Signature,
+		"phone": p.Phone, "email": p.Email,
+	})
+}
+
+// DeleteByAccountIDs 按账号 ID 批量删除资料。
+func (r *Repo) DeleteByAccountIDs(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.with(ctx).Where("account_id IN ?", ids).Delete(&Profile{}).Error
+}
+
 // GetAccountPassword 查账号密码哈希。
 func (r *Repo) GetAccountPassword(ctx context.Context, accountID string) (*AccountPassword, error) {
 	var acc AccountPassword

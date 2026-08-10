@@ -27,6 +27,10 @@ func New(d *shared.Deps) module.Module {
 		Name:   "sys.banner",
 		Models: []any{&Banner{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
+		Jobs: []module.Job{{
+			Name: "bannerStatusJob",
+			Run:  s.bannerStatusJobHandler,
+		}},
 	}
 }
 

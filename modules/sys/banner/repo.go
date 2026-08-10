@@ -14,6 +14,9 @@ type Repo struct{ db *gorm.DB }
 // NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
+// DB 返回底层 gorm.DB。
+func (r *Repo) DB() *gorm.DB { return r.db }
+
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }

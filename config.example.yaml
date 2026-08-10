@@ -63,9 +63,15 @@ cors:
     - X-Requested-With
     - X-HEI-CSRF
 
-tasks:
+
+xxl_job:
   enabled: true
-  shutdown_timeout_seconds: 10
+  access_token: default_token
+  admin:
+    addresses: http://127.0.0.1:9004/xxl-job-admin
+  executor:
+    appname: hei-gin-api
+    port: 9999
 
 storage:
   provider: local

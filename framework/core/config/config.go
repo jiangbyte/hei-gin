@@ -16,7 +16,7 @@ type Config struct {
 	Redis   RedisConfig   `mapstructure:"redis"`
 	Auth    AuthConfig    `mapstructure:"auth"`
 	CORS    CORSConfig    `mapstructure:"cors"`
-	Tasks   TasksConfig   `mapstructure:"tasks"`
+	XxlJob  XxlJobConfig  `mapstructure:"xxl_job"`
 	Storage StorageConfig `mapstructure:"storage"`
 	IDGen   IDGenConfig   `mapstructure:"id_generator"`
 	Modules ModulesConfig `mapstructure:"modules"`
@@ -89,12 +89,29 @@ type CORSConfig struct {
 	AllowHeaders     []string `mapstructure:"allow_headers"`
 }
 
-// TasksConfig Worker 定时任务开关与关停超时。
+// XxlJobConfig XXL-JOB 执行器（嵌在 API 进程，对齐 boot hei.xxl-job）。
 //
 // Author: Charlie
-type TasksConfig struct {
-	Enabled                bool `mapstructure:"enabled"`
-	ShutdownTimeoutSeconds int  `mapstructure:"shutdown_timeout_seconds"`
+type XxlJobConfig struct {
+	Enabled     bool               `mapstructure:"enabled"`
+	AccessToken string             `mapstructure:"access_token"`
+	Admin       XxlJobAdminConfig  `mapstructure:"admin"`
+	Executor    XxlJobExecutorConf `mapstructure:"executor"`
+}
+
+// XxlJobAdminConfig 调度中心地址。
+//
+// Author: Charlie
+type XxlJobAdminConfig struct {
+	Addresses string `mapstructure:"addresses"`
+}
+
+// XxlJobExecutorConf 执行器注册名与端口。
+//
+// Author: Charlie
+type XxlJobExecutorConf struct {
+	AppName string `mapstructure:"appname"`
+	Port    int    `mapstructure:"port"`
 }
 
 // StorageConfig 对象存储（local / S3 兼容）参数。
@@ -192,8 +209,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cors.allow_credentials", true)
 	v.SetDefault("cors.allow_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
 	v.SetDefault("cors.allow_headers", []string{"Authorization", "Content-Type", "X-Request-Id", "Accept", "Origin", "X-Requested-With", "X-HEI-CSRF"})
-	v.SetDefault("tasks.enabled", true)
-	v.SetDefault("tasks.shutdown_timeout_seconds", 10)
+	v.SetDefault("xxl_job.enabled", true)
+	v.SetDefault("xxl_job.access_token", "default_token")
+	v.SetDefault("xxl_job.admin.addresses", "http://127.0.0.1:9004/xxl-job-admin")
+	v.SetDefault("xxl_job.executor.appname", "hei-gin-api")
+	v.SetDefault("xxl_job.executor.port", 9999)
 	v.SetDefault("storage.provider", "local")
 	v.SetDefault("storage.bucket", "hei-gin")
 	v.SetDefault("storage.public_path", "/api/v1/files")

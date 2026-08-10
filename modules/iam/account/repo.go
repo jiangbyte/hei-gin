@@ -8,7 +8,7 @@ import (
 	"hei-gin/framework/core/security"
 )
 
-// Repo 账号持久化。
+// Repo 账号持久化（仅 sys_account / sys_account_identity；资料表归 user 模块）。
 //
 // Author: Charlie
 type Repo struct{ db *gorm.DB }
@@ -19,6 +19,9 @@ func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
+
+// DB 返回底层 DB（供同事务扩展；一般业务勿用）。
+func (r *Repo) DB() *gorm.DB { return r.db }
 
 // FindIdentity 按类型与标识查身份。
 func (r *Repo) FindIdentity(ctx context.Context, identityType, identifier string) (*Identity, error) {
@@ -45,24 +48,6 @@ func (r *Repo) FindAccountIdentity(ctx context.Context, accountID string) (*Iden
 		return nil, err
 	}
 	return &ident, nil
-}
-
-// GetAdminProfile 查管理端资料。
-func (r *Repo) GetAdminProfile(ctx context.Context, accountID string) (*AdminUserProfile, error) {
-	var p AdminUserProfile
-	if err := r.with(ctx).First(&p, "account_id = ?", accountID).Error; err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
-// GetPortalProfile 查门户资料。
-func (r *Repo) GetPortalProfile(ctx context.Context, accountID string) (*PortalUserProfile, error) {
-	var p PortalUserProfile
-	if err := r.with(ctx).First(&p, "account_id = ?", accountID).Error; err != nil {
-		return nil, err
-	}
-	return &p, nil
 }
 
 // ListRoleIDs 查账号已启用角色 ID。
@@ -103,50 +88,31 @@ func (r *Repo) ListRolePermissions(ctx context.Context, roleIDs []string) ([]per
 	return rows, err
 }
 
-// CreateBundle 事务创建账号、身份与资料。
-func (r *Repo) CreateBundle(ctx context.Context, acc Account, ident Identity, admin *AdminUserProfile, portal *PortalUserProfile) error {
+// CreateAccount 事务创建账号与主身份。
+func (r *Repo) CreateAccount(ctx context.Context, acc Account, ident Identity) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&acc).Error; err != nil {
 			return err
 		}
-		if err := tx.Create(&ident).Error; err != nil {
-			return err
-		}
-		if admin != nil {
-			return tx.Create(admin).Error
-		}
-		if portal != nil {
-			return tx.Create(portal).Error
-		}
-		return nil
+		return tx.Create(&ident).Error
 	})
 }
 
-// UpdateBundle 事务更新账号、身份与资料。
-func (r *Repo) UpdateBundle(ctx context.Context, id string, updates map[string]any, accountIdent string, accountType string, profile map[string]any) error {
+// UpdateAccount 更新账号字段与主登录标识。
+func (r *Repo) UpdateAccount(ctx context.Context, id string, updates map[string]any, accountIdent string) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&Account{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 			return err
 		}
-		_ = tx.Model(&Identity{}).Where("account_id = ? AND identity_type = ?", id, IdentityAccount).
+		return tx.Model(&Identity{}).Where("account_id = ? AND identity_type = ?", id, IdentityAccount).
 			Update("identifier", accountIdent).Error
-		if accountType == string(security.AccountAdmin) {
-			return tx.Model(&AdminUserProfile{}).Where("account_id = ?", id).Updates(profile).Error
-		}
-		return tx.Model(&PortalUserProfile{}).Where("account_id = ?", id).Updates(profile).Error
 	})
 }
 
-// DeleteByIDs 事务删除账号及关联。
+// DeleteByIDs 事务删除身份与账号（资料由 user 模块先删）。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("account_id IN ?", ids).Delete(&Identity{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("account_id IN ?", ids).Delete(&AdminUserProfile{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("account_id IN ?", ids).Delete(&PortalUserProfile{}).Error; err != nil {
 			return err
 		}
 		return tx.Where("id IN ?", ids).Delete(&Account{}).Error

@@ -1,6 +1,6 @@
-// Package app 是应用装配根：基础设施、自注册模块、HTTP/Worker 生命周期。
+// Package app 是应用装配根：基础设施、自注册模块、HTTP 与 XXL-JOB 执行器。
 //
-// 默认 blank import app/internal/modules/all；社区可改 framework（replace/fork）。
+// 默认 blank import app/internal/modules/all；复杂场景可直接改 framework。
 package app
 
 import (
@@ -26,7 +26,7 @@ import (
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
 	"hei-gin/framework/platform/storage"
-	"hei-gin/framework/platform/tasks"
+	"hei-gin/framework/platform/xxljob"
 )
 
 // Deps 应用进程级依赖。
@@ -44,7 +44,7 @@ type Deps struct {
 	Modules  *module.Registry
 }
 
-// API HTTP 服务。
+// API 单体进程：HTTP + 模块钩子 + XXL-JOB 执行器。
 //
 // Author: Charlie
 type API struct {
@@ -52,16 +52,7 @@ type API struct {
 	Engine *gin.Engine
 	Server *http.Server
 	Audit  *audit.Queue
-}
-
-// Worker 定时任务进程。
-//
-// Author: Charlie
-type Worker struct {
-	Deps   *Deps
-	Tasks  *tasks.Manager
-	Audit  *audit.Queue
-	cancel context.CancelFunc
+	XxlJob *xxljob.Manager
 }
 
 // OpenInfra 连接 DB/Redis/存储，准备空 Deps（随后 AttachRegisteredModules）。
@@ -125,10 +116,16 @@ func NewAPI(d *Deps) *API {
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	return &API{Deps: d, Engine: r, Server: srv, Audit: d.Audit}
+	return &API{
+		Deps:   d,
+		Engine: r,
+		Server: srv,
+		Audit:  d.Audit,
+		XxlJob: xxljob.NewManager(d.Cfg.XxlJob, d.Modules),
+	}
 }
 
-// Start 启动审计队列、模块钩子与监听。
+// Start 启动审计队列、模块钩子、XXL-JOB 执行器与 HTTP 监听。
 func (a *API) Start(ctx context.Context) error {
 	a.Audit.Start(ctx)
 	if err := a.Deps.Modules.RunStart(ctx); err != nil {
@@ -141,6 +138,11 @@ func (a *API) Start(ctx context.Context) error {
 		logger.L.Warn("权限注册表同步失败", zap.Error(err))
 	} else {
 		_ = a.Deps.Events.Emit(ctx, events.OnPermissionsSynced, nil)
+	}
+	if a.Deps.Cfg.XxlJob.Enabled {
+		if err := a.XxlJob.Start(); err != nil {
+			return err
+		}
 	}
 	logger.L.Info("api 正在启动", zap.String("addr", a.Server.Addr))
 	errCh := make(chan error, 1)
@@ -165,6 +167,9 @@ func (a *API) Start(ctx context.Context) error {
 
 // Stop 优雅关闭。
 func (a *API) Stop(ctx context.Context) error {
+	if a.XxlJob != nil {
+		_ = a.XxlJob.Stop(ctx)
+	}
 	_ = a.Deps.Modules.RunStop(ctx)
 	a.Audit.Stop()
 	err := a.Server.Shutdown(ctx)
@@ -175,45 +180,6 @@ func (a *API) Stop(ctx context.Context) error {
 	}
 	logger.Sync()
 	return err
-}
-
-// NewWorker 构建 worker。
-func NewWorker(d *Deps) *Worker {
-	return &Worker{
-		Deps:  d,
-		Tasks: tasks.NewManager(d.Modules),
-		Audit: d.Audit,
-	}
-}
-
-// Start 启动 worker。
-func (w *Worker) Start(parent context.Context) error {
-	ctx, cancel := context.WithCancel(parent)
-	w.cancel = cancel
-	w.Audit.Start(ctx)
-	if err := w.Deps.Modules.RunStart(ctx); err != nil {
-		return err
-	}
-	w.Tasks.Start(ctx)
-	logger.L.Info("worker 已启动")
-	return nil
-}
-
-// Stop 停止 worker。
-func (w *Worker) Stop(ctx context.Context) error {
-	if w.cancel != nil {
-		w.cancel()
-	}
-	w.Tasks.Stop()
-	_ = w.Deps.Modules.RunStop(ctx)
-	w.Audit.Stop()
-	_ = w.Deps.Redis.Close()
-	sqlDB, e := w.Deps.DB.DB()
-	if e == nil {
-		_ = sqlDB.Close()
-	}
-	logger.Sync()
-	return nil
 }
 
 // CloseIdle 关闭空闲连接。

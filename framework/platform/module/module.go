@@ -18,13 +18,23 @@ import (
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Schedule 是命名周期任务（worker 进程）。
+// Schedule 保留字段名兼容；新任务请用 Jobs（XXL-JOB Handler）。
+//
+// Deprecated: 使用 Jobs。
 //
 // Author: Charlie
 type Schedule struct {
 	Name     string
-	Interval string // 例如 "@every 1m"
+	Interval string
 	Run      func(ctx context.Context) error
+}
+
+// Job 是 XXL-JOB BEAN 模式 Handler（Name 须与 Admin 中 JobHandler 一致）。
+//
+// Author: Charlie
+type Job struct {
+	Name string
+	Run  func(ctx context.Context, param string) error
 }
 
 // EventHandler 订阅平台生命周期 / 领域事件。
@@ -43,7 +53,8 @@ type Module struct {
 	Order         int
 	Routes        []RouteRegistrar
 	Models        []any
-	Schedules     []Schedule
+	Jobs          []Job
+	Schedules     []Schedule // Deprecated: 请用 Jobs
 	OnStart       []func(ctx context.Context) error
 	OnStop        []func(ctx context.Context) error
 	EventHandlers []EventHandler

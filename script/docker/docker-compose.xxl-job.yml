@@ -1,0 +1,20 @@
+# XXL-JOB：本地调度中心（可选）。生产请连外部 Admin，勿部署本 compose。
+# 启动：docker compose -f script/docker/docker-compose.xxl-job.yml up -d
+# 控制台：http://127.0.0.1:9004/xxl-job-admin  admin / 123456
+# 执行器 AppName 须与 config xxl_job.executor.appname 一致（默认 hei-gin-api）。
+
+services:
+  xxl-job-admin:
+    image: dongbusi/xxl-job-admin:3.1.1
+    container_name: hei-gin-xxl-job-admin
+    ports:
+      - "9004:8080"
+    environment:
+      PARAMS: >-
+        --spring.datasource.url=jdbc:postgresql://host.docker.internal:5432/hei_gin
+        --spring.datasource.username=postgres
+        --spring.datasource.password=123456
+        --spring.datasource.driver-class-name=org.postgresql.Driver
+        --xxl.job.accessToken=default_token
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

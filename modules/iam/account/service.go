@@ -9,6 +9,8 @@ import (
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
 	"hei-gin/modules/shared"
+	adminuser "hei-gin/modules/user/admin"
+	portaluser "hei-gin/modules/user/portal"
 )
 
 // Lookup 供 auth 按身份或 ID 解析账号。
@@ -19,22 +21,32 @@ type Lookup interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
 }
 
-// Service 账号服务。
+// Service 账号服务（资料经 user 模块 Repo，对齐 boot ProfileApi 边界）。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	repo   *Repo
+	admin  *adminuser.Repo
+	portal *portaluser.Repo
+}
 
 // NewService 构造账号服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB) *Service {
+	return &Service{
+		repo:   NewRepo(db),
+		admin:  adminuser.NewRepo(db),
+		portal: portaluser.NewRepo(db),
+	}
+}
 
 // New 构建 iam.account 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
-	return module.Module{
+	return s.withJobs(module.Module{
 		Name:   "iam.account",
-		Models: []any{&Account{}, &Identity{}, &AdminUserProfile{}, &PortalUserProfile{}},
+		Models: []any{&Account{}, &Identity{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
-	}
+	})
 }
 
 // AsLookup 返回 auth 查找接口。
@@ -100,7 +112,7 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 	return keys, grants, nil
 }
 
-// Create 创建账号。
+// Create 创建账号并写入对应端资料。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	hash, err := security.HashPassword(req.Password)
 	if err != nil {
@@ -116,23 +128,22 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		ID: idgen.Next(), AccountID: accID, IdentityType: IdentityAccount, Identifier: req.Account,
 		Verified: true, IsPrimary: true, BindStatus: BindBound,
 	}
-	var admin *AdminUserProfile
-	var portal *PortalUserProfile
+	if err := s.repo.CreateAccount(ctx, acc, ident); err != nil {
+		return err
+	}
 	if req.AccountType == string(security.AccountAdmin) {
-		admin = &AdminUserProfile{
+		return s.admin.UpsertProfile(ctx, &adminuser.Profile{
 			AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
-		}
-	} else {
-		portal = &PortalUserProfile{
-			AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
-			Signature: req.Signature, Phone: req.Phone, Email: req.Email,
-		}
+		})
 	}
-	return s.repo.CreateBundle(ctx, acc, ident, admin, portal)
+	return s.portal.UpsertProfile(ctx, &portaluser.Profile{
+		AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
+	})
 }
 
-// Update 更新账号。
+// Update 更新账号与资料。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
 	st := req.AccountStatus
 	if st == "" {
@@ -146,18 +157,29 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		}
 		updates["password_hash"] = hash
 	}
-	profile := map[string]any{
-		"name": req.Name, "nickname": req.Nickname, "avatar": req.Avatar, "signature": req.Signature,
-		"phone": req.Phone, "email": req.Email,
+	if err := s.repo.UpdateAccount(ctx, req.ID, updates, req.Account); err != nil {
+		return err
 	}
 	if req.AccountType == string(security.AccountAdmin) {
-		profile["remark"] = req.Remark
+		return s.admin.UpsertProfile(ctx, &adminuser.Profile{
+			AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
+		})
 	}
-	return s.repo.UpdateBundle(ctx, req.ID, updates, req.Account, req.AccountType, profile)
+	return s.portal.UpsertProfile(ctx, &portaluser.Profile{
+		AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
+	})
 }
 
-// Delete 批量删除。
+// Delete 先删双端资料，再删身份与账号。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	if err := s.admin.DeleteByAccountIDs(ctx, ids); err != nil {
+		return err
+	}
+	if err := s.portal.DeleteByAccountIDs(ctx, ids); err != nil {
+		return err
+	}
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
@@ -201,11 +223,11 @@ func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, er
 		vo.Account = ident.Identifier
 	}
 	if acc.AccountType == string(security.AccountAdmin) {
-		if p, err := s.repo.GetAdminProfile(ctx, id); err == nil {
+		if p, err := s.admin.GetProfile(ctx, id); err == nil {
 			vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email, vo.Remark =
 				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
 		}
-	} else if p, err := s.repo.GetPortalProfile(ctx, id); err == nil {
+	} else if p, err := s.portal.GetProfile(ctx, id); err == nil {
 		vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
 			p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
 	}

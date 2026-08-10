@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Account 映射 sys_account 账号主表。
+// Account 映射 sys_account 账号主表（对齐 boot SysAccount；资料实体在 user 模块）。
 //
 // Author: Charlie
 type Account struct {
@@ -34,7 +34,7 @@ type Account struct {
 // TableName 返回表名。
 func (Account) TableName() string { return "sys_account" }
 
-// Identity 映射 sys_account_identity 登录身份。
+// Identity 映射 sys_account_identity 登录身份（对齐 boot SysAccountIdentity）。
 //
 // Author: Charlie
 type Identity struct {
@@ -53,47 +53,6 @@ type Identity struct {
 
 // TableName 返回表名。
 func (Identity) TableName() string { return "sys_account_identity" }
-
-// AdminUserProfile 映射 admin_user_profile 管理端资料。
-//
-// Author: Charlie
-type AdminUserProfile struct {
-	AccountID string    `gorm:"column:account_id;primaryKey;size:64" json:"account_id"`
-	Name      *string   `gorm:"column:name;size:64" json:"name"`
-	Nickname  *string   `gorm:"column:nickname;size:64" json:"nickname"`
-	Avatar    *string   `gorm:"column:avatar" json:"avatar"`
-	Signature *string   `gorm:"column:signature" json:"signature"`
-	Phone     *string   `gorm:"column:phone;size:32" json:"phone"`
-	Email     *string   `gorm:"column:email;size:128" json:"email"`
-	Remark    *string   `gorm:"column:remark" json:"remark"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	CreatedBy *string   `gorm:"column:created_by;size:64" json:"created_by"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UpdatedBy *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
-}
-
-// TableName 返回表名。
-func (AdminUserProfile) TableName() string { return "admin_user_profile" }
-
-// PortalUserProfile 映射 portal_user_profile 门户资料。
-//
-// Author: Charlie
-type PortalUserProfile struct {
-	AccountID string    `gorm:"column:account_id;primaryKey;size:64" json:"account_id"`
-	Name      *string   `gorm:"column:name;size:64" json:"name"`
-	Nickname  *string   `gorm:"column:nickname;size:64" json:"nickname"`
-	Avatar    *string   `gorm:"column:avatar" json:"avatar"`
-	Signature *string   `gorm:"column:signature" json:"signature"`
-	Phone     *string   `gorm:"column:phone;size:32" json:"phone"`
-	Email     *string   `gorm:"column:email;size:128" json:"email"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	CreatedBy *string   `gorm:"column:created_by;size:64" json:"created_by"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UpdatedBy *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
-}
-
-// TableName 返回表名。
-func (PortalUserProfile) TableName() string { return "portal_user_profile" }
 
 // 身份类型与绑定状态常量。
 const (

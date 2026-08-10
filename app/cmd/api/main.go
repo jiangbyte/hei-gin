@@ -1,4 +1,4 @@
-// Package main 是 HTTP API 进程入口：加载配置、装配自注册模块并监听。
+// Package main 是单体 API 进程入口：加载配置、装配模块、HTTP 与进程内定时任务。
 package main
 
 import (
