@@ -4,7 +4,7 @@
 
 | 文档 / 目录 | 说明 |
 |-------------|------|
-| [README.md](../README.md) | 架构、启动、登录 RSA、整仓合并、多模块、**业务分层**、**全局 stringly** |
+| [README.md](../README.md) | 架构、启动、登录 RSA、二次开发、多模块、业务分层、全局 stringly |
 | [config.example.yaml](../config.example.yaml) | 启动配置样例（库名 `hei_gin`） |
 | [go.work](../go.work) | Maven-like reactor：framework + modules/* + app |
 | [framework/](../framework/) | `hei-gin/framework`，可修改的运行时 |
@@ -30,4 +30,4 @@
 
 - **JSON**：标量 bool/数字线上为字符串；对象与数组不变。业务字段用原生类型，禁止再加 Wire* 包裹。
 - **分层**：handler → service → repo；handler 不直接 `db.`。
-- **同步**：整仓 Git 合并，不是依赖坐标升级 framework。
+- **同步**：整仓 Git 合并上游，不是依赖坐标升级 framework。

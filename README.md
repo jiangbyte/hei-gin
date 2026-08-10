@@ -8,11 +8,11 @@
 
 HEI Gin 是 HEI 项目的 Go / Gin 后端模板。设计思想对齐原型 [hei-fastapi](https://github.com/jiangbyte/hei-fastapi)（模块插件、双端 ADMIN/PORTAL、双配置、wire 字符串 JSON、RBAC + 数据范围）。
 
-工程上用 **`go.work` 多模块工作区**（类比 Maven reactor：多个 `go.mod`，根目录无业务 `go.mod`）——对齐 boot 的社区目的，而不是照抄 Java：
+工程上用 **`go.work` 多模块工作区**（类比 Maven reactor：多个 `go.mod`，根目录无业务 `go.mod`）——对齐 boot 的工程边界，而不是照抄 Java：
 
 1. **一般情况下**：整仓使用，改配置、加业务即可跑。
 2. **复杂场景**：**可以改 framework**（会话、中间件、注册表等），不是黑盒。
-3. **跟进上游**：社区成员通过 **Git 合并本仓库代码**（merge / rebase）同步，**不是**把本项目当外部 `go get` 依赖来升级。
+3. **跟进上游**：用 **Git 合并本仓库代码**（merge / rebase）同步，**不是**把本项目当外部 `go get` 依赖来升级。
 
 HTTP JSON 对齐 boot 的 **全局 stringly**：`boolean` 与数字在线上为字符串，对象与 list 保持结构（见 `framework/core/stringly`，由 `response` / `bind.JSON` 统一挂载）。业务 DTO 写普通 `bool`/`int`，**不要**再引入包裹类型。
 
@@ -35,15 +35,13 @@ app/                       # hei-gin/app — 组装根（类似 boot 的 admin �
   internal/app/            # OpenInfra + AttachRegisteredModules
   internal/modules/all/    # 汇总 blank import 全部内置业务 module
 migrations/                # goose SQL（仓库根，cwd 从根跑）
-web/                       # 前端（可后续从 fastapi 复制再定制）
+web/                       # 前端（admin / portal / admin-uniapp）
 config.yaml / scripts/
 ```
 
 `app` 通过 `require` + `replace` 依赖 `framework` 与各 `modules/*`；本地开发时 `go.work` 把它们绑成一个工作区，改任一 module 立刻生效（无需 publish）。
 
-## 社区二次开发（代码合并同步）
-
-推荐把本仓库当作 **可 fork 的整仓模板**，用 Git 跟上游：
+## 二次开发
 
 | 诉求 | 做法 |
 |------|------|
@@ -53,7 +51,7 @@ config.yaml / scripts/
 | 关掉某内置 | 配置 `modules.disabled`，不必删代码 |
 | 改框架行为 | **直接改本仓 `framework/`**，再随业务一起合并上游 |
 
-`go.work` / `replace` 只服务 **本仓内** 模块边界与本地开发，不是「社区靠依赖坐标升级 framework」的模型。
+`go.work` / `replace` 只服务 **本仓内** 模块边界与本地开发，不是靠依赖坐标升级 framework。
 
 ## 快速启动
 
@@ -109,7 +107,7 @@ handler.go    # Bind → Service → response；JSON 用 bind.JSON
 import _ "hei-gin/app/internal/modules/all"
 ```
 
-上游若新增官方模块，通常只改 `all` 包；你合并上游后即可自动注册。
+上游若新增官方模块，通常只改 `all` 包；合并上游后即可自动注册。
 
 ## 主要 API 前缀
 
@@ -130,7 +128,7 @@ import _ "hei-gin/app/internal/modules/all"
 
 | | hei-fastapi | hei-boot | hei-gin |
 |--|-------------|----------|---------|
-| 社区同步 | 整仓 | 整仓合并 | **整仓 Git 合并**（非依赖升级） |
+| 上游同步 | 整仓 | 整仓合并 | **整仓 Git 合并**（非依赖升级） |
 | 框架边界 | 同仓 platform | common 等 | `framework/` module |
 | 多模块 | 包目录 | Maven modules | **`go.work` + 多 `go.mod`** |
 | 装配 | ModuleSpec 发现 | 显式 Maven 依赖 | init 自注册 + `app/.../all` |
