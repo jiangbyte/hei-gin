@@ -22,7 +22,7 @@ type PermissionGrant struct {
 	SourceID           string    `json:"source_id"`
 }
 
-// SessionPayload 存于 Redis（JSON），对齐 hei-fastapi。
+// SessionPayload 存于 Redis（JSON）。
 //
 // Author: Charlie
 type SessionPayload struct {

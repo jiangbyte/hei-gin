@@ -21,7 +21,7 @@ type Lookup interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
 }
 
-// Service 账号服务（资料经 user 模块 Repo，对齐 boot ProfileApi 边界）。
+// Service 账号服务（资料经 user 模块 Repo）。
 //
 // Author: Charlie
 type Service struct {

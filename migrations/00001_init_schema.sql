@@ -1,5 +1,4 @@
 -- +goose Up
--- Align with hei-fastapi initial schema (27c193fc4b22)
 
 CREATE TABLE IF NOT EXISTS admin_user_profile (
   account_id VARCHAR(64) NOT NULL,

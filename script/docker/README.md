@@ -3,7 +3,7 @@
 生产请使用外部调度中心；本地可用：
 
 ```bash
-# 1) 在业务库执行官方 tables_xxl_job.sql（可参考 hei-boot app/xxl-job/.../tables_xxl_job.sql）
+# 1) 在业务库执行官方 tables_xxl_job.sql 初始化表结构
 # 2) 执行种子
 psql "$DATABASE_URL" -f script/sql/xxl_job_hei_gin_seed.sql
 

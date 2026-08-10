@@ -6,15 +6,15 @@
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI Gin 是 HEI 项目的 Go / Gin 后端模板。设计思想对齐原型 [hei-fastapi](https://github.com/jiangbyte/hei-fastapi)（模块插件、双端 ADMIN/PORTAL、双配置、wire 字符串 JSON、RBAC + 数据范围）。
+HEI Gin 是 HEI 项目的 Go / Gin 后端模板：模块插件、ADMIN / PORTAL 双端、全局 stringly JSON、RBAC + 数据范围。
 
-工程化对齐 [hei-boot](https://github.com/jiangbyte/hei-boot) 的可改脚手架思路：**单模块单体**，仓根一个 `go.mod`，`go run ./app/cmd/api` 直接启动。
+**单模块单体**：仓根一个 `go.mod`，`go run ./app/cmd/api` 直接启动。
 
 1. **一般情况下**：整仓使用，改配置、加业务即可跑。
 2. **复杂场景**：**可以改 framework**（会话、中间件、注册表等），不是黑盒。
 3. **跟进上游**：用 **Git 合并本仓库代码**（merge / rebase）同步，**不是**把本项目当外部 `go get` 依赖来升级。
 
-HTTP JSON 对齐 boot 的 **全局 stringly**：`boolean` 与数字在线上为字符串，对象与 list 保持结构（见 `framework/core/stringly`，由 `response` / `bind.JSON` 统一挂载）。业务 DTO 写普通 `bool`/`int`，**不要**再引入包裹类型。
+HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串，对象与 list 保持结构（见 `framework/core/stringly`，由 `response` / `bind.JSON` 统一挂载）。业务 DTO 写普通 `bool`/`int`，**不要**再引入包裹类型。
 
 文档索引见 [docs/README.md](docs/README.md)。
 
@@ -27,7 +27,7 @@ go.mod                     # 唯一 Go module：hei-gin
 framework/                 # 可改的运行时（包路径 hei-gin/framework/...）
 modules/                   # 业务包（hei-gin/modules/...），目录分层不是独立 go.mod
   shared/ auth/ iam/ …
-app/                       # 组装与入口（类似 boot 的 admin 应用）
+app/                       # 组装与入口
   cmd/{api,migrate}        # 唯一运行入口 api；migrate 为运维命令
   internal/app/
   internal/modules/all/    # 汇总 blank import
@@ -68,7 +68,7 @@ go run ./app/cmd/api
 |------|------|------|
 | `superadmin` | `123456` | seed 超管（含 `*:*:*`） |
 
-### 登录（对齐 fastapi transport）
+### 登录
 
 1. `GET /api/v1/admin/captcha` — 4 位字母验证码；答案 bcrypt 存 Redis（`captcha:{id}`）
 2. `GET /api/v1/admin/password-key` — RSA-2048；`public_key` 为 SubjectPublicKeyInfo DER 的 base64；私钥在 Redis（`password:crypto:{id}`）

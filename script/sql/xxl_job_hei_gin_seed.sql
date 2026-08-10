@@ -1,4 +1,4 @@
--- XXL-JOB Admin 表结构请使用官方/hei-boot 的 tables_xxl_job.sql 先初始化。
+-- XXL-JOB Admin 表结构请先用官方 tables_xxl_job.sql 初始化。
 -- 本文件为 hei-gin 执行器与 Job Handler 种子（AppName = hei-gin-api）。
 
 INSERT INTO xxl_job_group (id, app_name, title, address_type, address_list, update_time)

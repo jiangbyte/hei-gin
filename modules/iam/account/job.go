@@ -11,7 +11,7 @@ import (
 	"hei-gin/framework/platform/module"
 )
 
-// PurgeExpiredCancelled 物理清理超期已注销账号（对齐 boot accountPurgeCancelledJob）。
+// PurgeExpiredCancelled 物理清理超期已注销账号（JobHandler: accountPurgeCancelledJob）。
 func (s *Service) PurgeExpiredCancelled(ctx context.Context, retentionDays int) (int64, error) {
 	if retentionDays <= 0 {
 		retentionDays = 15

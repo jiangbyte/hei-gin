@@ -1,4 +1,4 @@
-// Package shared 向业务模块注入的依赖视图（与 framework/module.Deps 字段对齐）。
+// Package shared 向业务模块注入的依赖视图（字段同 framework/module.Deps）。
 package shared
 
 import (

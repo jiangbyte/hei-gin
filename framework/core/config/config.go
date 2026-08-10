@@ -89,7 +89,7 @@ type CORSConfig struct {
 	AllowHeaders     []string `mapstructure:"allow_headers"`
 }
 
-// XxlJobConfig XXL-JOB 执行器（嵌在 API 进程，对齐 boot hei.xxl-job）。
+// XxlJobConfig XXL-JOB 执行器（嵌在 API 进程）。
 //
 // Author: Charlie
 type XxlJobConfig struct {

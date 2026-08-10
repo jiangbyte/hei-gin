@@ -37,7 +37,7 @@ func (r *Repo) UpdateProfile(ctx context.Context, accountID string, updates map[
 	return r.with(ctx).Model(&Profile{}).Where("account_id = ?", accountID).Updates(updates).Error
 }
 
-// UpsertProfile 按 account_id 插入或更新资料（供 iam/account 跨模块调用，对齐 boot ProfileApi）。
+// UpsertProfile 按 account_id 插入或更新资料（供 iam/account 跨模块调用）。
 func (r *Repo) UpsertProfile(ctx context.Context, p *Profile) error {
 	var n int64
 	if err := r.with(ctx).Model(&Profile{}).Where("account_id = ?", p.AccountID).Count(&n).Error; err != nil {

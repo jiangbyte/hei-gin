@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// 与 hei-fastapi transport / 缓存键对齐。
+// 验证码与密码传输、缓存键约定。
 const (
 	captchaAlphabet   = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 	captchaKeyPrefix  = "captcha:"

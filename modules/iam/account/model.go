@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Account 映射 sys_account 账号主表（对齐 boot SysAccount；资料实体在 user 模块）。
+// Account 映射 sys_account 账号主表（资料实体在 user 模块）。
 //
 // Author: Charlie
 type Account struct {
@@ -34,7 +34,7 @@ type Account struct {
 // TableName 返回表名。
 func (Account) TableName() string { return "sys_account" }
 
-// Identity 映射 sys_account_identity 登录身份（对齐 boot SysAccountIdentity）。
+// Identity 映射 sys_account_identity 登录身份。
 //
 // Author: Charlie
 type Identity struct {

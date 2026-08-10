@@ -8,7 +8,7 @@
 | [config.example.yaml](../config.example.yaml) | 启动配置样例（库名 `hei_gin`） |
 | [go.mod](../go.mod) | 唯一 Go module：`hei-gin` |
 | [framework/](../framework/) | 可修改的运行时包 |
-| [framework/core/stringly](../framework/core/stringly/) | 对齐 boot 的全局 stringly JSON |
+| [framework/core/stringly](../framework/core/stringly/) | 全局 stringly JSON |
 | [framework/core/bind](../framework/core/bind/) | `bind.JSON`（入参走 stringly） |
 | [modules/](../modules/) | 业务包目录（同属根 module） |
 | [modules/iam/account](../modules/iam/account/) | 业务包分层样板 |

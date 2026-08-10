@@ -1,4 +1,4 @@
-// Package xxljob 在 API 进程内嵌入 XXL-JOB 执行器（对齐 hei-boot common-job）。
+// Package xxljob 在 API 进程内嵌入 XXL-JOB 执行器。
 //
 // Author: Charlie
 package xxljob

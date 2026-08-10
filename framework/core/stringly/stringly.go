@@ -1,4 +1,4 @@
-// Package stringly 提供对齐 hei-boot StringlyTypedJacksonModule 的全局 JSON 编解码：
+// Package stringly 提供全局 stringly JSON 编解码：
 // 标量 bool/数值在线上为 JSON 字符串；对象与数组保持结构。
 //
 // Author: Charlie

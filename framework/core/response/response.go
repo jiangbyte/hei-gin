@@ -17,7 +17,7 @@ type ApiResponse struct {
 	Data    any    `json:"data"`
 }
 
-// PageData 对齐 fastapi 分页结构。
+// PageData 为统一分页结构。
 //
 // Author: Charlie
 type PageData struct {
