@@ -1,0 +1,47 @@
+# --- 本地 / 密钥 ---
+.env.local
+.env.*.local
+
+# --- Go / 后端运行产物 ---
+*.db
+*.sqlite
+*.sqlite3
+/storage/
+/bin/
+/tmp/
+coverage.out
+vendor/
+*.exe
+*.test
+
+# --- 前端依赖与构建（web/admin、portal、admin-uniapp）---
+node_modules/
+dist/
+dist-ssr/
+build/
+.output/
+.vite/
+.pnpm-store/
+unpackage/
+*.local
+*.tsbuildinfo
+
+# unplugin-auto-import / components 生成
+**/src/typing/auto-imports.d.ts
+**/src/typing/components.d.ts
+**/.eslintrc-auto-import.json
+
+# 日志与包管理调试
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+*.sw?

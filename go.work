@@ -1,0 +1,15 @@
+go 1.25.7
+
+use (
+	./app
+	./framework
+	./modules/auth
+	./modules/biz
+	./modules/dashboard
+	./modules/health
+	./modules/iam
+	./modules/message
+	./modules/shared
+	./modules/sys
+	./modules/user
+)

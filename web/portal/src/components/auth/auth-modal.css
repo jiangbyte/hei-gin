@@ -1,0 +1,103 @@
+/* Portal 登录/注册弹窗：复用 auth-card 双栏，圆角/主色跟 Ant Design token */
+
+.auth-modal.ant-modal .ant-modal-container,
+.auth-modal.ant-modal .ant-modal-content {
+  padding: 0 !important;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-modal.ant-modal .ant-modal-close {
+  top: 16px;
+  inset-inline-end: 16px;
+  z-index: 2;
+  color: var(--ant-color-text-secondary, #6b7280);
+}
+
+.auth-modal__card.auth-card {
+  --auth-primary: var(--ant-color-primary, #1677ff);
+  --auth-card-radius: var(--ant-border-radius, 5px);
+  --auth-muted: var(--ant-color-text-tertiary, #8b95a5);
+
+  width: 100%;
+  min-height: 520px;
+  border-radius: var(--auth-card-radius);
+  box-shadow: 0 12px 40px color-mix(in srgb, #0f172a 16%, transparent);
+}
+
+.auth-modal__card .auth-card__brand {
+  padding: 32px 28px 24px;
+}
+
+.auth-modal__card .auth-card__brand-inner {
+  min-height: 440px;
+}
+
+.auth-modal__card .auth-card__form {
+  padding: 36px 40px 28px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.auth-modal__card .auth-card__form-head {
+  margin-bottom: 18px;
+  padding-right: 28px;
+}
+
+.auth-modal__card .auth-card__form-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.auth-modal__footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ant-color-border-secondary, #eef2f7);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ant-color-text-tertiary, #8b95a5);
+  text-align: center;
+}
+
+.auth-modal__footer a {
+  color: var(--auth-primary);
+}
+
+.auth-modal__card .auth-card__form-extra button.linkish {
+  color: var(--auth-primary);
+  padding: 0;
+  height: auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.auth-modal__card .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.auth-modal__card .ant-tabs-nav {
+  margin-bottom: 12px !important;
+}
+
+.auth-modal__card .ant-btn-primary {
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .auth-modal__card.auth-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .auth-modal__card .auth-card__brand {
+    display: none;
+  }
+
+  .auth-modal__card .auth-card__form {
+    padding: 28px 22px 22px;
+  }
+}

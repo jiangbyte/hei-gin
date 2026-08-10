@@ -1,0 +1,342 @@
+/* 认证页：分栏简洁风；主色对齐 theme.json #1677FF */
+
+.auth-page {
+  --auth-primary: var(--n-primary-color, #1677ff);
+  --auth-primary-soft: color-mix(in srgb, var(--auth-primary) 14%, #fff);
+  --auth-bg: #f0f4f8;
+  /* 圆角跟 Naive 主题 token，不另起一套 */
+  --auth-card-radius: var(--border-radius, var(--n-border-radius, 3px));
+  --auth-text: var(--n-text-color, #1f2937);
+  --auth-muted: var(--n-text-color-3, #8b95a5);
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 28px 16px 40px;
+  box-sizing: border-box;
+  overflow: auto;
+  background: var(--auth-bg);
+  color: var(--auth-text);
+}
+
+.auth-page--dark {
+  --auth-bg: #12141a;
+  --auth-primary-soft: color-mix(in srgb, var(--auth-primary) 22%, #1a1d24);
+}
+
+.auth-page--center {
+  align-items: flex-start;
+  padding-top: clamp(48px, 12vh, 120px);
+}
+
+.auth-page__tools {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.auth-page > .auth-card,
+.auth-page > .auth-center {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- 登录卡片 ---- */
+.auth-card {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(340px, 1.05fr);
+  width: min(100%, 960px);
+  min-height: 560px;
+  border-radius: var(--auth-card-radius);
+  overflow: hidden;
+  background: var(--n-card-color, #fff);
+  box-shadow: 0 12px 40px color-mix(in srgb, #0f172a 8%, transparent);
+}
+
+.auth-card__brand {
+  position: relative;
+  color: #fff;
+  background: var(--auth-primary);
+  padding: 40px 36px 28px;
+  overflow: hidden;
+}
+
+/* 同色系轻波纹，不用深色渐变 */
+.auth-card__brand-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 0% 100%, rgba(255, 255, 255, 0.16), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(255, 255, 255, 0.12), transparent 50%);
+}
+
+.auth-card__brand-deco::before,
+.auth-card__brand-deco::after {
+  content: '';
+  position: absolute;
+  border-radius: var(--auth-card-radius);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+
+.auth-card__brand-deco::before {
+  width: 120px;
+  height: 88px;
+  right: 36px;
+  top: 42%;
+  transform: rotate(-8deg);
+}
+
+.auth-card__brand-deco::after {
+  width: 168px;
+  height: 72px;
+  right: 56px;
+  top: 58%;
+  transform: rotate(6deg);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.auth-card__brand-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 480px;
+}
+
+.auth-card__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.auth-card__logo:hover {
+  color: #fff;
+  opacity: 0.92;
+}
+
+.auth-card__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--auth-card-radius);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.auth-card__logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.auth-card__eyebrow {
+  margin: 28px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.auth-card__headline {
+  margin: 10px 0 0;
+  font-size: clamp(24px, 2.6vw, 30px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.auth-card__lead {
+  margin: 14px 0 0;
+  max-width: 280px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.auth-card__brand-foot {
+  margin-top: auto;
+  padding-top: 28px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.auth-card__copyright-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.auth-card__copyright-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.auth-card__form {
+  padding: 40px 44px 36px;
+  min-width: 0;
+  background: var(--n-card-color, #fff);
+}
+
+.auth-card__form-head {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.auth-card__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--auth-primary);
+}
+
+.auth-card__form-extra {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--auth-muted);
+}
+
+.auth-card__form-extra a {
+  color: var(--auth-primary);
+  text-decoration: none;
+}
+
+/* 紧凑行距：压小 Naive 默认反馈占位，而不是清零导致粘连 */
+.auth-card__form :deep(.n-form-item) {
+  margin-bottom: 12px;
+  --n-feedback-height: 18px;
+  --n-feedback-font-size: 12px;
+}
+
+.auth-card__form :deep(.n-form-item-feedback-wrapper) {
+  min-height: var(--n-feedback-height);
+}
+
+.auth-card__form :deep(.n-button.n-button--primary-type) {
+  font-weight: 600;
+}
+
+.auth-card__form :deep(.n-tabs-nav) {
+  margin-bottom: 12px;
+}
+
+/* ---- 找回密码居中 ---- */
+.auth-center {
+  width: min(100%, 440px);
+  padding: 36px 36px 28px;
+  text-align: center;
+  background: var(--n-card-color, #fff);
+  border-radius: var(--auth-card-radius);
+  box-shadow: 0 12px 40px color-mix(in srgb, #0f172a 8%, transparent);
+}
+
+.auth-center__logo {
+  display: inline-flex;
+  margin-bottom: 16px;
+  text-decoration: none;
+}
+
+.auth-center__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--auth-card-radius);
+  background: var(--auth-primary);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.auth-center__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--auth-primary);
+}
+
+.auth-center__desc {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--n-text-color-2, #6b7280);
+}
+
+.auth-center__body {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.auth-center__body :deep(.n-form-item) {
+  margin-bottom: 12px;
+  --n-feedback-height: 18px;
+  --n-feedback-font-size: 12px;
+}
+
+.auth-center__body :deep(.n-form-item-feedback-wrapper) {
+  min-height: var(--n-feedback-height);
+}
+
+.auth-center__body :deep(.n-button.n-button--primary-type) {
+  font-weight: 600;
+}
+
+.auth-center__links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.auth-center__links a {
+  color: var(--auth-primary);
+  text-decoration: none;
+}
+
+@media (max-width: 860px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .auth-card__brand {
+    padding: 28px 24px 24px;
+  }
+
+  .auth-card__brand-inner {
+    min-height: auto;
+  }
+
+  .auth-card__brand-deco::before,
+  .auth-card__brand-deco::after {
+    display: none;
+  }
+
+  .auth-card__headline {
+    font-size: 22px;
+  }
+
+  .auth-card__form {
+    padding: 28px 24px;
+  }
+
+  .auth-center {
+    padding: 28px 22px 22px;
+  }
+}

@@ -1,0 +1,7 @@
+packages:
+  - '.'
+
+allowBuilds:
+  '@uni-helper/unocss-preset-uni': true
+  core-js: true
+  esbuild: true

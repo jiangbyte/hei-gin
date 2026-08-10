@@ -1,0 +1,50 @@
+package config
+
+import "hei-gin/framework/core/schema"
+
+// AddParam 创建配置入参。
+//
+// Author: Charlie
+type AddParam struct {
+	ConfigKey   string  `json:"config_key" binding:"required"`
+	ConfigValue *string `json:"config_value"`
+	Category    *string `json:"category"`
+	Remark      *string `json:"remark"`
+	SortCode    int     `json:"sort_code"`
+	ValueType   string  `json:"value_type"`
+	Label       *string `json:"label"`
+	Scope       *string `json:"scope"`
+	Scene       *string `json:"scene"`
+}
+
+// EditParam 更新配置入参。
+//
+// Author: Charlie
+type EditParam struct {
+	ID string `json:"id" binding:"required"`
+	AddParam
+}
+
+// PageParam 配置分页查询。
+//
+// Author: Charlie
+type PageParam struct {
+	schema.PageQuery
+	ConfigKey string `form:"config_key"`
+	Category  string `form:"category"`
+}
+
+// ListParam 配置列表查询。
+//
+// Author: Charlie
+type ListParam struct {
+	Category string `form:"category"`
+	Scope    string `form:"scope"`
+}
+
+// IDsParam 批量 ID 入参。
+//
+// Author: Charlie
+type IDsParam struct {
+	IDs []string `json:"ids" binding:"required"`
+}

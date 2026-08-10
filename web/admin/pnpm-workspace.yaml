@@ -1,0 +1,6 @@
+packages:
+  - '.'
+
+allowBuilds:
+  es5-ext: true
+  vue-demi: true

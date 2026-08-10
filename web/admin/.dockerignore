@@ -1,0 +1,8 @@
+.git
+node_modules/
+dist/
+.vite/
+.cache/
+.env.local
+.env.*.local
+Dockerfile

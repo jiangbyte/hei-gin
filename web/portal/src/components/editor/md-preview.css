@@ -1,0 +1,6 @@
+.md-preview,
+.md-preview .md-editor,
+.md-preview .md-editor-dark,
+.md-preview .md-editor-previewOnly {
+  --md-bk-color: transparent !important;
+}
