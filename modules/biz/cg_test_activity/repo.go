@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/framework/core/security"
+	"hei-gin/framework/core/security/datascope"
 )
 
 // Repo 活动持久化。
@@ -42,10 +45,13 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Activity, error) {
 	return &row, nil
 }
 
-// Page 分页查询。
-func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Activity, total int64, err error) {
+// Page 分页查询；sess 非空时按 owner_dept_id 数据范围过滤。
+func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Activity, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Activity{})
+	if sess != nil {
+		db = datascope.Apply(db, sess, "owner_dept_id")
+	}
 	if p.Code != "" {
 		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
 	}

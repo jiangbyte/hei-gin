@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// SyncStatusBySchedule 按 start_at/end_at 启用或停用 Banner（XXL-JOB: bannerStatusJob）。
+// SyncStatusBySchedule 按 start_at/end_at 启用或停用 Banner（SnailJob: bannerStatusJob）。
 func (s *Service) SyncStatusBySchedule(ctx context.Context) (expired, activated int64, err error) {
 	now := time.Now()
 	res := s.repo.DB().WithContext(ctx).Model(&Banner{}).
@@ -28,7 +28,7 @@ func (s *Service) SyncStatusBySchedule(ctx context.Context) (expired, activated 
 	return expired, activated, nil
 }
 
-// bannerStatusJobHandler XXL-JOB Handler。
+// bannerStatusJobHandler SnailJob Handler。
 func (s *Service) bannerStatusJobHandler(ctx context.Context, _ string) error {
 	expired, activated, err := s.SyncStatusBySchedule(ctx)
 	if err != nil {

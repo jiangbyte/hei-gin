@@ -64,14 +64,15 @@ cors:
     - X-HEI-CSRF
 
 
-xxl_job:
+snail_job:
   enabled: true
-  access_token: default_token
-  admin:
-    addresses: http://127.0.0.1:9004/xxl-job-admin
-  executor:
-    appname: hei-gin-api
-    port: 9999
+  server_host: 127.0.0.1
+  server_port: "17888"
+  host_ip: 127.0.0.1
+  host_port: "17889"
+  namespace: c8f1a2b3d4e5461789abcdef01234567
+  group_name: hei_gin_admin
+  token: SJ_heiGinAdminToken1234567890abcd
 
 storage:
   provider: local
@@ -96,3 +97,52 @@ modules:
 
 audit:
   operation_queue_size: 1000
+  stream_key: hei:audit:ops
+  consumer_group: hei-gin-audit
+  use_stream: true
+
+oauth:
+  github:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  gitee:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  wechat:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+
+metrics:
+  enabled: true
+  path: /metrics
+
+security:
+  hsts_enabled: false
+  hsts_max_age_seconds: 31536000
+
+notify:
+  mail:
+    enabled: false
+    host: ""
+    port: 587
+    username: ""
+    password: ""
+    from: ""
+    ssl: false
+  sms:
+    enabled: false
+    provider: log
+  push:
+    enabled: false
+
+otel:
+  enabled: false
+  endpoint: ""
+
+crypto:
+  fernet_key: ""
+  vault_addr: ""
+  vault_token: ""

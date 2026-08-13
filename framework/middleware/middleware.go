@@ -4,6 +4,7 @@ package middleware
 import (
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -98,12 +99,19 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 	}
 }
 
-// SecurityHeaders 写入基础安全响应头。
-func SecurityHeaders() gin.HandlerFunc {
+// SecurityHeaders 写入基础安全响应头；可选开启 HSTS。
+func SecurityHeaders(cfg config.SecurityConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "no-referrer")
+		if cfg.HSTSEnabled {
+			maxAge := cfg.HSTSMaxAgeSeconds
+			if maxAge <= 0 {
+				maxAge = 31536000
+			}
+			c.Header("Strict-Transport-Security", "max-age="+strconv.Itoa(maxAge)+"; includeSubDomains")
+		}
 		c.Next()
 	}
 }
@@ -144,14 +152,23 @@ func AuthContext(cfg config.AuthConfig, store *security.SessionStore) gin.Handle
 func AuthWhitelist(extra []string) gin.HandlerFunc {
 	builtin := []string{
 		"/",
+		"/metrics",
 		"/api/v1/internal/health/*",
 		"/api/v1/admin/login",
 		"/api/v1/admin/captcha",
 		"/api/v1/admin/password-key",
+		"/api/v1/admin/send-login-code",
+		"/api/v1/admin/forgot-password",
+		"/api/v1/admin/reset-password",
+		"/api/v1/admin/oauth/*",
 		"/api/v1/portal/login",
 		"/api/v1/portal/register",
 		"/api/v1/portal/captcha",
 		"/api/v1/portal/password-key",
+		"/api/v1/portal/send-login-code",
+		"/api/v1/portal/forgot-password",
+		"/api/v1/portal/reset-password",
+		"/api/v1/portal/oauth/*",
 		"/api/v1/files/*",
 	}
 	patterns := append(builtin, extra...)

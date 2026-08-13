@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/bind"
 	"hei-gin/framework/core/response"
 	"hei-gin/framework/core/schema"
@@ -81,7 +82,7 @@ func (s *Service) detail(c *gin.Context) {
 func (s *Service) page(c *gin.Context) {
 	var q PageParam
 	_ = c.ShouldBindQuery(&q)
-	records, total, cur, size, err := s.Page(c.Request.Context(), q)
+	records, total, cur, size, err := s.Page(c.Request.Context(), q, contextx.Session(c.Request.Context()))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return

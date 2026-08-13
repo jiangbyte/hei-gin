@@ -1,4 +1,4 @@
-// Package app 是应用装配根：基础设施、自注册模块、HTTP 与 XXL-JOB 执行器。
+// Package app 是应用装配根：基础设施、自注册模块、HTTP 与 SnailJob 执行器。
 //
 // 默认 blank import app/internal/modules/all；复杂场景可直接改 framework。
 package app
@@ -25,8 +25,10 @@ import (
 	"hei-gin/framework/platform/events"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
+	"hei-gin/framework/platform/notify"
+	"hei-gin/framework/platform/otel"
+	"hei-gin/framework/platform/snailjob"
 	"hei-gin/framework/platform/storage"
-	"hei-gin/framework/platform/xxljob"
 )
 
 // Deps 应用进程级依赖。
@@ -41,18 +43,19 @@ type Deps struct {
 	Storage  *storage.Manager
 	Events   *events.Bus
 	Audit    *audit.Queue
+	Notify   *notify.Facade
 	Modules  *module.Registry
 }
 
-// API 单体进程：HTTP + 模块钩子 + XXL-JOB 执行器。
+// API 单体进程：HTTP + 模块钩子 + SnailJob 执行器。
 //
 // Author: Charlie
 type API struct {
-	Deps   *Deps
-	Engine *gin.Engine
-	Server *http.Server
-	Audit  *audit.Queue
-	XxlJob *xxljob.Manager
+	Deps     *Deps
+	Engine   *gin.Engine
+	Server   *http.Server
+	Audit    *audit.Queue
+	SnailJob *snailjob.Manager
 }
 
 // OpenInfra 连接 DB/Redis/存储，准备空 Deps（随后 AttachRegisteredModules）。
@@ -75,6 +78,10 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := otel.Init(cfg.OTel); err != nil {
+		return nil, err
+	}
+	nf := notify.NewFacade(cfg.Notify, gdb)
 	return &Deps{
 		Cfg:      cfg,
 		DB:       gdb,
@@ -83,7 +90,8 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		Perms:    security.NewPermissionRegistry(rdb),
 		Storage:  store,
 		Events:   events.NewBus(),
-		Audit:    audit.NewQueue(gdb, cfg.Audit.OperationQueueSize),
+		Audit:    audit.NewQueue(gdb, rdb, cfg.Audit),
+		Notify:   nf,
 	}, nil
 }
 
@@ -96,7 +104,7 @@ func NewAPI(d *Deps) *API {
 	}
 	r := gin.New()
 	r.Use(middleware.Recovery())
-	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.SecurityHeaders(d.Cfg.Security))
 	r.Use(middleware.AccessLog())
 	r.Use(middleware.AuthContext(d.Cfg.Auth, d.Sessions))
 	r.Use(middleware.AuthWhitelist(d.Cfg.Auth.AuthWhitelist))
@@ -107,6 +115,13 @@ func NewAPI(d *Deps) *API {
 	r.GET("/", func(c *gin.Context) {
 		response.OK(c, gin.H{"name": d.Cfg.App.Name, "status": "ok"})
 	})
+	if d.Cfg.Metrics.Enabled {
+		path := d.Cfg.Metrics.Path
+		if path == "" {
+			path = "/metrics"
+		}
+		r.GET(path, middleware.PrometheusHandler())
+	}
 
 	api := r.Group("/api")
 	d.Modules.MountRoutes(api)
@@ -117,15 +132,15 @@ func NewAPI(d *Deps) *API {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	return &API{
-		Deps:   d,
-		Engine: r,
-		Server: srv,
-		Audit:  d.Audit,
-		XxlJob: xxljob.NewManager(d.Cfg.XxlJob, d.Modules),
+		Deps:     d,
+		Engine:   r,
+		Server:   srv,
+		Audit:    d.Audit,
+		SnailJob: snailjob.NewManager(d.Cfg.SnailJob, d.Modules),
 	}
 }
 
-// Start 启动审计队列、模块钩子、XXL-JOB 执行器与 HTTP 监听。
+// Start 启动审计队列、模块钩子、SnailJob 执行器与 HTTP 监听。
 func (a *API) Start(ctx context.Context) error {
 	a.Audit.Start(ctx)
 	if err := a.Deps.Modules.RunStart(ctx); err != nil {
@@ -139,8 +154,8 @@ func (a *API) Start(ctx context.Context) error {
 	} else {
 		_ = a.Deps.Events.Emit(ctx, events.OnPermissionsSynced, nil)
 	}
-	if a.Deps.Cfg.XxlJob.Enabled {
-		if err := a.XxlJob.Start(); err != nil {
+	if a.Deps.Cfg.SnailJob.Enabled {
+		if err := a.SnailJob.Start(); err != nil {
 			return err
 		}
 	}
@@ -167,8 +182,8 @@ func (a *API) Start(ctx context.Context) error {
 
 // Stop 优雅关闭。
 func (a *API) Stop(ctx context.Context) error {
-	if a.XxlJob != nil {
-		_ = a.XxlJob.Stop(ctx)
+	if a.SnailJob != nil {
+		_ = a.SnailJob.Stop(ctx)
 	}
 	_ = a.Deps.Modules.RunStop(ctx)
 	a.Audit.Stop()

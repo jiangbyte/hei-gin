@@ -1,0 +1,45 @@
+# SnailJob Server only — does NOT manage local postgres/redis (use existing dev-postgres).
+# Prerequisites: DB role admin/123456 and database snail_job; then run snailjob-flyway.sh once.
+#
+# Upstream opensnail/snail-job:2.0.0 ships Java-21 bytecode with a JDK-17 runtime and cannot start.
+# We still use that image as the sole source of app.jar, and run it with Temurin 21 (SWR mirror).
+
+services:
+  snail-job-jar:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/opensnail/snail-job:2.0.0
+    container_name: hei-snail-job-jar
+    entrypoint: ["sh", "-c", "cp -f /snailjob/server/app.jar /out/app.jar"]
+    volumes:
+      - snailjob-jar:/out
+    restart: "no"
+
+  snail-job:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/eclipse-temurin:21-jre
+    container_name: hei-snail-job
+    depends_on:
+      snail-job-jar:
+        condition: service_completed_successfully
+    ports:
+      - "9189:8080"
+      - "17888:17888"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/snail_job
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+    volumes:
+      - snailjob-jar:/jar:ro
+      - snailjob-data:/work/data
+    working_dir: /work
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        mkdir -p data/log/snail-job-server/info data/log/snail-job-server/warn data/log/snail-job-server/error data/log/snail-job-server/debug
+        exec java -jar /jar/app.jar
+    restart: unless-stopped
+
+volumes:
+  snailjob-jar:
+  snailjob-data:

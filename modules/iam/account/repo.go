@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/framework/core/security"
+	"hei-gin/framework/core/security/datascope"
 )
 
 // Repo 账号持久化（仅 sys_account / sys_account_identity；资料表归 user 模块）。
@@ -109,6 +110,11 @@ func (r *Repo) UpdateAccount(ctx context.Context, id string, updates map[string]
 	})
 }
 
+// UpdatePasswordHash 仅更新密码哈希。
+func (r *Repo) UpdatePasswordHash(ctx context.Context, id, passwordHash string) error {
+	return r.with(ctx).Model(&Account{}).Where("id = ?", id).Update("password_hash", passwordHash).Error
+}
+
 // DeleteByIDs 事务删除身份与账号（资料由 user 模块先删）。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
@@ -119,10 +125,13 @@ func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	})
 }
 
-// PageAccounts 分页查询账号。
-func (r *Repo) PageAccounts(ctx context.Context, p PageParam) (rows []Account, total int64, err error) {
+// PageAccounts 分页查询账号；sess 非空时按数据范围过滤（SELF→created_by）。
+func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Account, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Account{})
+	if sess != nil {
+		db = datascope.Apply(db, sess, "")
+	}
 	if p.AccountType != "" {
 		db = db.Where("account_type = ?", p.AccountType)
 	}

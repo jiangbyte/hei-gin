@@ -112,6 +112,23 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 	return keys, grants, nil
 }
 
+// GetEnabledAccount 返回已启用账号类型。
+func (s *Service) GetEnabledAccount(ctx context.Context, accountID string) (security.AccountType, error) {
+	acc, err := s.repo.GetByID(ctx, accountID)
+	if err != nil {
+		return "", err
+	}
+	if acc.AccountStatus != security.AccountStatusEnabled {
+		return "", gorm.ErrRecordNotFound
+	}
+	return security.AccountType(acc.AccountType), nil
+}
+
+// UpdatePasswordHash 更新密码哈希。
+func (s *Service) UpdatePasswordHash(ctx context.Context, accountID, passwordHash string) error {
+	return s.repo.UpdatePasswordHash(ctx, accountID, passwordHash)
+}
+
 // Create 创建账号并写入对应端资料。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	hash, err := security.HashPassword(req.Password)
@@ -188,10 +205,10 @@ func (s *Service) Detail(ctx context.Context, id string) (*AccountResult, error)
 	return s.loadDetail(ctx, id)
 }
 
-// Page 分页。
-func (s *Service) Page(ctx context.Context, p PageParam) (records []AccountResult, total int64, current, size int, err error) {
+// Page 分页；sess 可选，传入时按数据范围过滤。
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (records []AccountResult, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err := s.repo.PageAccounts(ctx, p)
+	rows, total, err := s.repo.PageAccounts(ctx, p, sess)
 	if err != nil {
 		return nil, 0, current, size, err
 	}

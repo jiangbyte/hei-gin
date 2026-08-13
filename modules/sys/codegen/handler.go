@@ -21,6 +21,9 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.POST("/v1/admin/sys/codegen/delete", admin, middleware.RequirePermission(d.Perms, "sys:codegen:delete", "代码生成删除"), s.delete)
 		api.GET("/v1/admin/sys/codegen/detail", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成详情"), s.detail)
 		api.GET("/v1/admin/sys/codegen/page", admin, middleware.RequirePermission(d.Perms, "sys:codegen:page", "代码生成分页"), s.page)
+		api.GET("/v1/admin/sys/codegen/tables", admin, middleware.RequirePermission(d.Perms, "sys:codegen:page", "代码生成表列表"), s.tables)
+		api.POST("/v1/admin/sys/codegen/preview", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成预览"), s.preview)
+		api.POST("/v1/admin/sys/codegen/download", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成下载"), s.download)
 	}
 }
 
@@ -73,4 +76,42 @@ func (s *Service) page(c *gin.Context) {
 		return
 	}
 	response.Page(c, int64(cur), int64(size), total, rows)
+}
+
+func (s *Service) tables(c *gin.Context) {
+	rows, err := s.ListTables(c.Request.Context())
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, rows)
+}
+
+func (s *Service) preview(c *gin.Context) {
+	var req EmitRequest
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	files, err := s.Preview(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, files)
+}
+
+func (s *Service) download(c *gin.Context) {
+	var req EmitRequest
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	raw, name, err := s.DownloadZip(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	c.Header("Content-Disposition", "attachment; filename="+name)
+	c.Data(http.StatusOK, "application/zip", raw)
 }

@@ -20,20 +20,58 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 
 > **请注意：** 生产仍需自行加固密钥、对象存储、Cookie Secure、TLS 后再上线。
 
+## 生产状态
+
+以下姊妹项目均已在本公司项目中投产：
+
+| 项目 | 说明 | 协议 |
+| :--- | :--- | :--- |
+| [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
+| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | MIT |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT |
+
+**统一说明：**
+
+- 以上均为个人维护的开源框架，起源是给自己攒一套通用、灵活、多账户体系的开发框架，不做强绑定，图个省事。在公司项目中直接用了，**非公司内部框架产物**。
+- 公司内部基于各框架有定制化修改，内部版本与公共仓库**存在差异**，公共仓库更新相对较慢（看鄙人是否有时间了，当然也在用 AI 积极迁移中......）。
+- **本项目不涉及任何公司机密信息，无版权争议！！**
+
+## 能力一览
+
+| 能力 | 说明 |
+|------|------|
+| 双端账号 | ADMIN / PORTAL；验证码、RSA 密码传输、登录失败锁定、会话绑定 |
+| IAM | 账号、角色、部门、用户组、岗位、资源、权限、客户端、关系 |
+| 系统 | 字典、配置、Banner、文件、弱口令、审计、代码生成 |
+| 消息 | 通知、公告、反馈 |
+| 认证扩展 | OAuth（GitHub 完整；Gitee / 微信为配置桩）、忘记/重置密码、登录验证码 |
+| 调度 | **SnailJob** 执行器嵌在 `api` 进程（`module.Job` 注册） |
+| 可观测 | Prometheus `/metrics`（可关）、访问日志、安全头 / 可选 HSTS |
+| 通知 | 邮件 / 短信 / 推送门面（默认关闭，见 `notify`） |
+| 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**` |
+| 前端同仓 | `web/admin`（Vue）、`web/portal`（React）、`web/admin-uniapp` |
+
+内置业务模块由 [`app/internal/modules/all`](app/internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
+
 ## 仓库结构
 
 ```text
 go.mod                     # 唯一 Go module：hei-gin
-framework/                 # 可改的运行时（包路径 hei-gin/framework/...）
+framework/                 # 可改的运行时（hei-gin/framework/...）
+  core/                    # config / bind / stringly / security / response …
+  middleware/              # 鉴权上下文、CORS、限流、metrics …
+  platform/                # db / cache / module / snailjob / storage / audit / notify …
 modules/                   # 业务包（hei-gin/modules/...），目录分层不是独立 go.mod
-  shared/ auth/ iam/ …
-app/                       # 组装与入口
+  auth/ iam/ user/ sys/ message/ dashboard/ health/ biz/ shared/
+app/
   cmd/{api,migrate}        # 唯一运行入口 api；migrate 为运维命令
-  internal/app/
+  internal/app/            # 装配：基础设施 + HTTP + SnailJob
   internal/modules/all/    # 汇总 blank import
-migrations/
-web/                       # 前端（admin / portal / admin-uniapp）
-config.yaml / scripts/
+migrations/                # goose SQL
+scripts/                   # migrate.sh / rollback.sh
+script/docker/             # 本地 SnailJob compose + flyway
+web/                       # admin / portal / admin-uniapp
+config.example.yaml
 ```
 
 目录上的 `modules/*` 只是包边界，**全部属于同一个 module**，本地改完即可被 `go run` 编进单体进程。
@@ -47,6 +85,7 @@ config.yaml / scripts/
 | 只加自有业务 | 新包 `init` 里 `module.Register`；在 **自己的** `cmd` 里再 `_` import（少改官方 `all`） |
 | 关掉某内置 | 配置 `modules.disabled`，不必删代码 |
 | 改框架行为 | **直接改本仓 `framework/`** |
+| 注册定时任务 | 在模块 `Jobs` 中挂 `module.Job{Name, Run}`，由 SnailJob 客户端注册同名执行器 |
 
 ## 快速启动
 
@@ -55,12 +94,15 @@ config.yaml / scripts/
 ```bash
 cp config.example.yaml config.yaml
 # CREATE DATABASE hei_gin;
+# CREATE DATABASE snail_job;  # 调度中心库（独立）
 
 ./scripts/migrate.sh
+# 可选：./script/docker/snailjob-flyway.sh && docker compose -f script/docker/docker-compose.snailjob.yml up -d
 go run ./app/cmd/api
 ```
 
-默认地址：`http://127.0.0.1:8000`
+默认地址：`http://127.0.0.1:8000`  
+指标（默认开启）：`http://127.0.0.1:8000/metrics`
 
 ### 默认账号
 
@@ -74,7 +116,11 @@ go run ./app/cmd/api
 2. `GET /api/v1/admin/password-key` — RSA-2048；`public_key` 为 SubjectPublicKeyInfo DER 的 base64；私钥在 Redis（`password:crypto:{id}`）
 3. `POST /api/v1/admin/login` — `password` 为 OAEP-SHA256 加密后的 Base64；必须带 `password_key_id`（用后删密钥）
 
-会话：HttpOnly Cookie `Authorization`（Path `/api/v1/{admin|portal}`）或不透明 Header（**非** `Bearer`）。
+门户同理，前缀换为 `/api/v1/portal/...`。
+
+会话：HttpOnly Cookie `Authorization`（可配 Path / SameSite / Secure）或不透明 Header（**非** `Bearer`）。
+
+OAuth（可选）：配置 `oauth.github` 等后，走 `/api/v1/{admin|portal}/oauth/{provider}/authorize` → `callback` → `exchange`。
 
 ## 业务包分层（同包分文件）
 
@@ -88,6 +134,7 @@ result.go     # 出参（需要时）
 repo.go       # 持久化；handler 禁止直接碰 DB
 service.go    # 业务规则
 handler.go    # Bind → Service → response；JSON 用 bind.JSON
+job.go        # 可选：module.Job 定时任务
 ```
 
 有写库就必须有 `repo`；无持久化（如部分 health）可不造空 repo。样板见 `iam/account`。
@@ -102,7 +149,33 @@ handler.go    # Bind → Service → response；JSON 用 bind.JSON
 import _ "hei-gin/app/internal/modules/all"
 ```
 
-定时任务使用 **XXL-JOB**（执行器嵌在 `api` 进程）。配置见 `xxl_job`；本地 Admin 见 [script/docker/README.md](script/docker/README.md)。迁移用 `./scripts/migrate.sh`。
+### 定时任务（SnailJob）
+
+API 进程内嵌 **SnailJob** Go 客户端（`framework/platform/snailjob`）。配置键为 `snail_job`（YAML 未写时用代码默认值）：
+
+```yaml
+snail_job:
+  enabled: true
+  server_host: 127.0.0.1
+  server_port: "17888"
+  host_ip: 127.0.0.1
+  host_port: "17889"
+  namespace: c8f1a2b3d4e5461789abcdef01234567
+  group_name: hei_gin_admin
+  token: SJ_heiGinAdminToken1234567890abcd
+```
+
+本地 Server：见 [script/docker/README.md](script/docker/README.md)（`docker-compose.snailjob.yml` + `snailjob-flyway.sh`）。
+
+内置 JobHandler 示例：
+
+| JobHandler | 模块 |
+|------------|------|
+| `accountPurgeCancelledJob` | iam/account |
+| `bannerStatusJob` | sys/banner |
+| `auditAlertJob` | sys/audit |
+
+数据库迁移用 `./scripts/migrate.sh`（goose，入口 `app/cmd/migrate`）。
 
 上游若新增官方模块，通常只改 `all` 包；合并上游后即可自动注册。
 
@@ -114,6 +187,7 @@ import _ "hei-gin/app/internal/modules/all"
 | `/api/v1/portal/**` | 门户端 |
 | `/api/v1/internal/**` | 内部/健康 |
 | `/api/v1/files/**` | 本地文件公开访问 |
+| `/metrics` | Prometheus（`metrics.enabled`） |
 
 响应信封：
 

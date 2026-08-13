@@ -14,6 +14,10 @@ type AccountFinder interface {
 	FindEnabledByIdentity(ctx context.Context, accountType security.AccountType, identityType, identifier string) (accountID, passwordHash string, err error)
 	// EnsureSuperPermissions 解析账号权限键与授权列表。
 	EnsureSuperPermissions(ctx context.Context, accountID string) (keys []string, grants []security.PermissionGrant, err error)
+	// GetEnabledAccount 按 ID 取已启用账号类型。
+	GetEnabledAccount(ctx context.Context, accountID string) (accountType security.AccountType, err error)
+	// UpdatePasswordHash 更新密码哈希。
+	UpdatePasswordHash(ctx context.Context, accountID, passwordHash string) error
 }
 
 // PortalRegistrar 可选门户注册能力；AccountFinder 同时实现时可用。

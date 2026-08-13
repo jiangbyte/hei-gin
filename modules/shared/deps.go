@@ -7,7 +7,9 @@ import (
 
 	"hei-gin/framework/core/config"
 	"hei-gin/framework/core/security"
+	"hei-gin/framework/platform/audit"
 	"hei-gin/framework/platform/module"
+	"hei-gin/framework/platform/notify"
 	"hei-gin/framework/platform/storage"
 )
 
@@ -21,6 +23,8 @@ type Deps struct {
 	Sessions *security.SessionStore
 	Perms    *security.PermissionRegistry
 	Storage  *storage.Manager
+	Audit    *audit.Queue
+	Notify   *notify.Facade
 }
 
 // FromModule 从 framework 注册表 Deps 转换。
@@ -32,6 +36,8 @@ func FromModule(d *module.Deps) *Deps {
 		Sessions: d.Sessions,
 		Perms:    d.Perms,
 		Storage:  d.Storage,
+		Audit:    d.Audit,
+		Notify:   d.Notify,
 	}
 }
 

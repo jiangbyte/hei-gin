@@ -13,6 +13,8 @@ func AttachRegisteredModules(d *Deps) {
 		Sessions: d.Sessions,
 		Perms:    d.Perms,
 		Storage:  d.Storage,
+		Notify:   d.Notify,
+		Audit:    d.Audit,
 	}
 	reg := module.BuildAll(md, d.Cfg.Modules.Disabled, d.Cfg.Modules.Enabled)
 	for _, m := range reg.Modules {

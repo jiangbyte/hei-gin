@@ -7,6 +7,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
 	"hei-gin/modules/shared"
@@ -65,9 +66,9 @@ func (s *Service) Detail(ctx context.Context, id string) (*Activity, error) {
 }
 
 // Page 分页。
-func (s *Service) Page(ctx context.Context, p PageParam) (rows []Activity, total int64, current, size int, err error) {
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Activity, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err = s.repo.Page(ctx, p)
+	rows, total, err = s.repo.Page(ctx, p, sess)
 	return rows, total, current, size, err
 }
 

@@ -46,3 +46,6 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*OperationLog, error) {
 	}
 	return &row, nil
 }
+
+// DB 返回底层 *gorm.DB（供 Job 直查）。
+func (r *Repo) DB() *gorm.DB { return r.db }

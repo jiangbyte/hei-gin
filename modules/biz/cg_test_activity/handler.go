@@ -81,7 +81,7 @@ func (s *Service) detail(c *gin.Context) {
 func (s *Service) page(c *gin.Context) {
 	var q PageParam
 	_ = c.ShouldBindQuery(&q)
-	rows, total, cur, size, err := s.Page(c.Request.Context(), q)
+	rows, total, cur, size, err := s.Page(c.Request.Context(), q, contextx.Session(c.Request.Context()))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return

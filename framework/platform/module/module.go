@@ -10,6 +10,8 @@ import (
 
 	"hei-gin/framework/core/config"
 	"hei-gin/framework/core/security"
+	"hei-gin/framework/platform/audit"
+	"hei-gin/framework/platform/notify"
 	"hei-gin/framework/platform/storage"
 )
 
@@ -18,7 +20,7 @@ import (
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Schedule 保留字段名兼容；新任务请用 Jobs（XXL-JOB Handler）。
+// Schedule 保留字段名兼容；新任务请用 Jobs（SnailJob Handler）。
 //
 // Deprecated: 使用 Jobs。
 //
@@ -29,7 +31,7 @@ type Schedule struct {
 	Run      func(ctx context.Context) error
 }
 
-// Job 是 XXL-JOB BEAN 模式 Handler（Name 须与 Admin 中 JobHandler 一致）。
+// Job 是 SnailJob 执行器 Handler（Name 须与控制台 executor_info 一致）。
 //
 // Author: Charlie
 type Job struct {
@@ -70,6 +72,8 @@ type Deps struct {
 	Sessions *security.SessionStore
 	Perms    *security.PermissionRegistry
 	Storage  *storage.Manager
+	Notify   *notify.Facade
+	Audit    *audit.Queue
 	services map[string]any
 }
 

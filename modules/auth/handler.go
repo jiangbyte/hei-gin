@@ -14,18 +14,32 @@ import (
 )
 
 func (s *Service) registerRoutes(api *gin.RouterGroup) {
-	api.GET("/v1/admin/captcha", s.captcha)
-	api.GET("/v1/portal/captcha", s.captcha)
+	rdb := s.repo.rdb
+
+	api.GET("/v1/admin/captcha", middleware.RateLimit(rdb, "admin:captcha", 30, 60), s.captcha)
+	api.GET("/v1/portal/captcha", middleware.RateLimit(rdb, "portal:captcha", 30, 60), s.captcha)
 	api.GET("/v1/admin/password-key", s.passwordKey)
 	api.GET("/v1/portal/password-key", s.passwordKey)
 
-	api.POST("/v1/admin/login", s.login(security.AccountAdmin))
-	api.POST("/v1/portal/login", s.login(security.AccountPortal))
+	api.POST("/v1/admin/login", middleware.RateLimit(rdb, "admin:login", 20, 60), s.login(security.AccountAdmin))
+	api.POST("/v1/portal/login", middleware.RateLimit(rdb, "portal:login", 20, 60), s.login(security.AccountPortal))
+
+	api.POST("/v1/admin/send-login-code", middleware.RateLimit(rdb, "admin:send-login-code", 10, 60), s.sendLoginCode(security.AccountAdmin))
+	api.POST("/v1/portal/send-login-code", middleware.RateLimit(rdb, "portal:send-login-code", 10, 60), s.sendLoginCode(security.AccountPortal))
+
+	api.POST("/v1/admin/forgot-password", middleware.RateLimit(rdb, "admin:forgot-password", 5, 60), s.forgotPassword(security.AccountAdmin))
+	api.POST("/v1/portal/forgot-password", middleware.RateLimit(rdb, "portal:forgot-password", 5, 60), s.forgotPassword(security.AccountPortal))
+	api.POST("/v1/admin/reset-password", middleware.RateLimit(rdb, "admin:reset-password", 10, 60), s.resetPassword(security.AccountAdmin))
+	api.POST("/v1/portal/reset-password", middleware.RateLimit(rdb, "portal:reset-password", 10, 60), s.resetPassword(security.AccountPortal))
 
 	api.POST("/v1/admin/logout", middleware.RequireAccountType(security.AccountAdmin), s.logout)
 	api.POST("/v1/portal/logout", middleware.RequireAccountType(security.AccountPortal), s.logout)
 
 	api.POST("/v1/portal/register", s.register)
+
+	if s.oauth != nil {
+		s.oauth.RegisterRoutes(api)
+	}
 }
 
 func (s *Service) captcha(c *gin.Context) {
@@ -56,7 +70,7 @@ func (s *Service) login(accountType security.AccountType) gin.HandlerFunc {
 		out, err := s.Login(c.Request.Context(), accountType, req, c.ClientIP(), c.Request.UserAgent())
 		if err != nil {
 			switch err {
-			case errInvalidCredentials:
+			case errInvalidCredentials, errInvalidOTP, errAccountLocked, errIPLocked:
 				response.Fail(c, http.StatusUnauthorized, 401, err.Error())
 			case errAccountFinder:
 				response.Fail(c, http.StatusInternalServerError, 500, err.Error())
@@ -79,7 +93,13 @@ func (s *Service) login(accountType security.AccountType) gin.HandlerFunc {
 
 func (s *Service) logout(c *gin.Context) {
 	token := s.ResolveLogoutToken(c)
-	_ = s.Logout(c.Request.Context(), token)
+	sess := contextx.Session(c.Request.Context())
+	accountID, accountType := "", ""
+	if sess != nil {
+		accountID = sess.AccountID
+		accountType = string(sess.AccountType)
+	}
+	_ = s.Logout(c.Request.Context(), token, accountID, accountType, c.ClientIP(), c.Request.UserAgent())
 	s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
 	response.OK(c, LogoutResult{Success: true})
 }
@@ -103,4 +123,49 @@ func (s *Service) register(c *gin.Context) {
 		return
 	}
 	response.OK(c, out)
+}
+
+func (s *Service) sendLoginCode(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req SendLoginCodeParam
+		if err := bind.JSON(c, &req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if err := s.SendLoginCode(c.Request.Context(), accountType, req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		response.OK(c, nil)
+	}
+}
+
+func (s *Service) forgotPassword(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req ForgotPasswordParam
+		if err := bind.JSON(c, &req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if err := s.ForgotPassword(c.Request.Context(), accountType, req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		response.OK(c, nil)
+	}
+}
+
+func (s *Service) resetPassword(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req ResetPasswordParam
+		if err := bind.JSON(c, &req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if err := s.ResetPassword(c.Request.Context(), accountType, req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		response.OK(c, nil)
+	}
 }

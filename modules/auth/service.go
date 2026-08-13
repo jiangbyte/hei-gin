@@ -11,7 +11,10 @@ import (
 	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/config"
 	"hei-gin/framework/core/security"
+	"hei-gin/framework/platform/audit"
 	"hei-gin/framework/platform/module"
+	"hei-gin/framework/platform/notify"
+	"hei-gin/modules/auth/oauth"
 	"hei-gin/modules/shared"
 )
 
@@ -23,24 +26,39 @@ type Service struct {
 	repo     *Repo
 	sessions *security.SessionStore
 	accounts AccountFinder
+	notify   *notify.Facade
+	audit    *audit.Queue
+	oauth    *oauth.Service
 }
 
 // NewService 构造认证服务。
 func NewService(d *shared.Deps, accounts AccountFinder) *Service {
-	return &Service{
+	s := &Service{
 		cfg:      d.Cfg,
 		repo:     NewRepo(d.Redis),
 		sessions: d.Sessions,
 		accounts: accounts,
+		notify:   d.Notify,
+		audit:    d.Audit,
 	}
+	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
+		out, err := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, rememberMe)
+		if err != nil {
+			return "", err
+		}
+		return out.Token, nil
+	})
+	return s
 }
 
 // New 构建认证模块。
 func New(d *shared.Deps, accounts AccountFinder) module.Module {
 	s := NewService(d, accounts)
+	models := []any{oauth.AccountOAuthBinding{}}
 	return module.Module{
 		Name:   "auth",
 		Order:  10,
+		Models: models,
 		Routes: []module.RouteRegistrar{s.registerRoutes},
 	}
 }
@@ -63,31 +81,105 @@ func (s *Service) PasswordKey(ctx context.Context) (*PasswordKeyResult, error) {
 	return s.repo.CreatePasswordKey(ctx, ttl)
 }
 
-// Login 登录。
+// Login 登录（密码或 OTP）。
 func (s *Service) Login(ctx context.Context, accountType security.AccountType, req LoginParam, clientIP, userAgent string) (*LoginResult, error) {
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return nil, err
+	}
+	if err := s.repo.EnsureLoginAllowed(ctx, accountType, req.Account, clientIP); err != nil {
 		return nil, err
 	}
 	identityType := strings.TrimSpace(req.IdentityType)
 	if identityType == "" {
 		identityType = "ACCOUNT"
 	}
-	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
-	if err != nil {
+	loginMode := strings.ToUpper(strings.TrimSpace(req.LoginMode))
+	if loginMode == "" {
+		if strings.TrimSpace(req.OTPCode) != "" {
+			loginMode = "OTP"
+		} else {
+			loginMode = "PASSWORD"
+		}
+	}
+	if loginMode == "OTP" || strings.TrimSpace(req.OTPCode) != "" {
+		switch strings.ToUpper(identityType) {
+		case "EMAIL", "PHONE":
+		default:
+			if strings.Contains(req.Account, "@") {
+				identityType = "EMAIL"
+			} else {
+				identityType = "PHONE"
+			}
+		}
+	}
+
+	var (
+		accountID string
+		err       error
+	)
+	defer func() {
+		if err != nil {
+			s.repo.RecordLoginFailure(ctx, s.protectCfg(), accountType, req.Account, clientIP)
+			s.publishAudit(ctx, "login", false, "", string(accountType), clientIP, userAgent, err.Error())
+		}
+	}()
+
+	if loginMode == "OTP" || strings.TrimSpace(req.OTPCode) != "" {
+		channel := identityChannel(identityType)
+		target := normalizeAccount(req.Account)
+		if !s.repo.ConsumeLoginOTP(ctx, string(accountType), channel, target, req.OTPCode) {
+			err = errInvalidOTP
+			return nil, err
+		}
+		if s.accounts == nil {
+			err = errAccountFinder
+			return nil, err
+		}
+		accountID, _, err = s.accounts.FindEnabledByIdentity(ctx, accountType, identityType, strings.TrimSpace(req.Account))
+		if err != nil || accountID == "" {
+			err = errInvalidCredentials
+			return nil, err
+		}
+	} else {
+		password, derr := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
+		if derr != nil {
+			err = derr
+			return nil, err
+		}
+		if password == "" {
+			err = errEmptyPassword
+			return nil, err
+		}
+		if s.accounts == nil {
+			err = errAccountFinder
+			return nil, err
+		}
+		var hash string
+		accountID, hash, err = s.accounts.FindEnabledByIdentity(ctx, accountType, identityType, strings.TrimSpace(req.Account))
+		if err != nil || accountID == "" {
+			err = errInvalidCredentials
+			return nil, err
+		}
+		if !security.CheckPassword(hash, password) {
+			err = errInvalidCredentials
+			return nil, err
+		}
+	}
+
+	out, serr := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, req.RememberMe)
+	if serr != nil {
+		err = serr
 		return nil, err
 	}
-	if password == "" {
-		return nil, errEmptyPassword
-	}
+	err = nil
+	s.repo.ClearLoginFailures(ctx, accountType, req.Account, clientIP)
+	s.publishAudit(ctx, "login", true, accountID, string(accountType), clientIP, userAgent, "")
+	return out, nil
+}
+
+func (s *Service) issueSession(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (*LoginResult, error) {
 	if s.accounts == nil {
 		return nil, errAccountFinder
-	}
-	accountID, hash, err := s.accounts.FindEnabledByIdentity(ctx, accountType, identityType, strings.TrimSpace(req.Account))
-	if err != nil || accountID == "" {
-		return nil, errInvalidCredentials
-	}
-	if !security.CheckPassword(hash, password) {
-		return nil, errInvalidCredentials
 	}
 	keys, grants, err := s.accounts.EnsureSuperPermissions(ctx, accountID)
 	if err != nil {
@@ -99,7 +191,7 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 	}
 	now := time.Now().UTC()
 	ttlSec := s.cfg.Auth.TokenTTLSeconds
-	if !req.RememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
+	if !rememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
 		ttlSec = s.cfg.Auth.TokenTTLShortSeconds
 	}
 	if ttlSec <= 0 {
@@ -114,7 +206,7 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 		PermissionGrants: grants,
 		ClientIP:         &clientIP,
 		UserAgent:        &userAgent,
-		RememberMe:       req.RememberMe,
+		RememberMe:       rememberMe,
 		PasswordExpired:  false,
 		LoginAt:          now,
 		LastActiveAt:     now,
@@ -132,11 +224,116 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 }
 
 // Logout 登出。
-func (s *Service) Logout(ctx context.Context, token string) error {
+func (s *Service) Logout(ctx context.Context, token, accountID, accountType, clientIP, userAgent string) error {
+	var err error
 	if token != "" {
-		return s.sessions.Delete(ctx, token)
+		err = s.sessions.Delete(ctx, token)
+	}
+	s.publishAudit(ctx, "logout", err == nil, accountID, accountType, clientIP, userAgent, errString(err))
+	return err
+}
+
+// SendLoginCode 发送登录 OTP。
+func (s *Service) SendLoginCode(ctx context.Context, accountType security.AccountType, req SendLoginCodeParam) error {
+	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return err
+	}
+	channel, target := resolveOTPTarget(req)
+	if target == "" {
+		return errOTPTargetRequired
+	}
+	identityType := "EMAIL"
+	if channel == "PHONE" {
+		identityType = "PHONE"
+	}
+	if s.accounts != nil {
+		_, _, err := s.accounts.FindEnabledByIdentity(ctx, accountType, identityType, target)
+		if err != nil {
+			// 静默返回，避免枚举账号
+			return nil
+		}
+	}
+	code, err := sixDigitCode()
+	if err != nil {
+		return err
+	}
+	ttl := 5 * time.Minute
+	if err := s.repo.StoreLoginOTP(ctx, string(accountType), channel, target, code, ttl); err != nil {
+		return err
+	}
+	if s.notify != nil {
+		vars := map[string]any{
+			"app_name":        s.cfg.App.Name,
+			"code":            code,
+			"expire_minutes":  "5",
+		}
+		_ = s.notify.SendTemplated(ctx, "LOGIN_CODE", target, vars)
 	}
 	return nil
+}
+
+// ForgotPassword 发送重置邮件。
+func (s *Service) ForgotPassword(ctx context.Context, accountType security.AccountType, req ForgotPasswordParam) error {
+	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return err
+	}
+	email := normalizeAccount(req.Email)
+	if s.accounts == nil {
+		return nil
+	}
+	accountID, _, err := s.accounts.FindEnabledByIdentity(ctx, accountType, "EMAIL", email)
+	if err != nil || accountID == "" {
+		return nil
+	}
+	token, err := newResetToken()
+	if err != nil {
+		return err
+	}
+	ttl := 10 * time.Minute
+	if err := s.repo.StoreResetToken(ctx, token, accountID, ttl); err != nil {
+		return err
+	}
+	if s.notify != nil {
+		vars := map[string]any{
+			"app_name":       s.cfg.App.Name,
+			"token":          token,
+			"email":          email,
+			"expire_minutes": "10",
+			"reset_link":     "",
+		}
+		_ = s.notify.SendTemplated(ctx, "RESET_PASSWORD_CODE", email, vars)
+	}
+	return nil
+}
+
+// ResetPassword 校验令牌并设置新密码。
+func (s *Service) ResetPassword(ctx context.Context, accountType security.AccountType, req ResetPasswordParam) error {
+	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return err
+	}
+	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
+	if err != nil {
+		return err
+	}
+	if password == "" {
+		return errEmptyPassword
+	}
+	accountID, err := s.repo.ConsumeResetToken(ctx, strings.TrimSpace(req.Token))
+	if err != nil {
+		return err
+	}
+	if s.accounts == nil {
+		return errAccountFinder
+	}
+	gotType, err := s.accounts.GetEnabledAccount(ctx, accountID)
+	if err != nil || gotType != accountType {
+		return errResetTokenInvalid
+	}
+	hash, err := security.HashPassword(password)
+	if err != nil {
+		return err
+	}
+	return s.accounts.UpdatePasswordHash(ctx, accountID, hash)
 }
 
 // Register 门户注册。
@@ -255,12 +452,88 @@ func (s *Service) sessionCookieName() string {
 	return name
 }
 
+func (s *Service) protectCfg() loginProtectCfg {
+	return loginProtectCfg{
+		WindowSeconds: s.cfg.Auth.LoginFailureWindowSeconds,
+		AccountMax:    s.cfg.Auth.LoginAccountMaxFailures,
+		IPMax:         s.cfg.Auth.LoginIPMaxFailures,
+		LockSeconds:   s.cfg.Auth.LoginLockSeconds,
+	}
+}
+
+func (s *Service) publishAudit(ctx context.Context, action string, success bool, accountID, accountType, ip, ua, errMsg string) {
+	if s.audit == nil {
+		return
+	}
+	s.audit.Publish(audit.Event{
+		Module:       "auth",
+		ResourceType: "auth",
+		Action:       action,
+		AccountID:    accountID,
+		AccountType:  accountType,
+		RequestID:    contextx.RequestID(ctx),
+		IP:           ip,
+		UserAgent:    ua,
+		Success:      success,
+		ErrorMessage: errMsg,
+	})
+}
+
+func resolveOTPTarget(req SendLoginCodeParam) (channel, target string) {
+	channel = strings.ToUpper(strings.TrimSpace(req.Channel))
+	target = strings.TrimSpace(req.Target)
+	if target == "" {
+		if e := strings.TrimSpace(req.Email); e != "" {
+			target, channel = e, "EMAIL"
+		} else if p := strings.TrimSpace(req.Phone); p != "" {
+			target, channel = p, "PHONE"
+		} else if a := strings.TrimSpace(req.Account); a != "" {
+			target = a
+			if strings.Contains(a, "@") {
+				channel = "EMAIL"
+			} else {
+				channel = "PHONE"
+			}
+		}
+	}
+	if channel == "" {
+		if strings.Contains(target, "@") {
+			channel = "EMAIL"
+		} else {
+			channel = "PHONE"
+		}
+	}
+	target = normalizeAccount(target)
+	return channel, target
+}
+
+func identityChannel(identityType string) string {
+	switch strings.ToUpper(strings.TrimSpace(identityType)) {
+	case "PHONE":
+		return "PHONE"
+	default:
+		return "EMAIL"
+	}
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
 var (
 	errEmptyPassword      = authErr{"密码不能为空"}
 	errAccountFinder      = authErr{"账号查找未配置"}
 	errInvalidCredentials = authErr{"账号或密码错误"}
+	errInvalidOTP         = authErr{"验证码无效或已过期"}
 	errRegisterDisabled   = authErr{"门户注册已关闭"}
 	errPortalRegistrar    = authErr{"portal registrar not configured"}
+	errAccountLocked      = authErr{"账号已临时锁定"}
+	errIPLocked           = authErr{"该 IP 登录失败次数过多"}
+	errOTPTargetRequired  = authErr{"请提供邮箱或手机号"}
+	errResetTokenInvalid  = authErr{"重置令牌无效"}
 )
 
 type authErr struct{ msg string }

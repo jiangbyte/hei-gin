@@ -62,12 +62,13 @@ func (m *Manager) Reconfigure(cfg config.StorageConfig) error {
 }
 
 func newProvider(cfg config.StorageConfig) (Provider, error) {
-	switch strings.ToLower(cfg.Provider) {
+	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
 	case "", "local":
 		return NewLocal(cfg.LocalRoot, cfg.PublicPath, cfg.BaseURL), nil
+	case "s3", "minio", "oss":
+		return NewS3(cfg)
 	default:
-		// 非 local 时暂回落本地存储，S3/MinIO/OSS 后续再接。
-		return NewLocal(cfg.LocalRoot, cfg.PublicPath, cfg.BaseURL), nil
+		return nil, fmt.Errorf("storage: unsupported provider %q (use local|s3|minio|oss)", cfg.Provider)
 	}
 }
 

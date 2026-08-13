@@ -22,6 +22,9 @@ type PermissionGrant struct {
 	SourceID           string    `json:"source_id"`
 }
 
+// Session 是会话载荷别名（API / datascope 常用简写）。
+type Session = SessionPayload
+
 // SessionPayload 存于 Redis（JSON）。
 //
 // Author: Charlie

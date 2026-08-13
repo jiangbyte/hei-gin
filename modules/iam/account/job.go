@@ -47,7 +47,7 @@ func (s *Service) accountPurgeCancelledJobHandler(ctx context.Context, param str
 	return nil
 }
 
-// withJobs 附加 XXL-JOB handlers。
+// withJobs 附加 SnailJob handlers。
 func (s *Service) withJobs(m module.Module) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "accountPurgeCancelledJob",

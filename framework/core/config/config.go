@@ -16,11 +16,17 @@ type Config struct {
 	Redis   RedisConfig   `mapstructure:"redis"`
 	Auth    AuthConfig    `mapstructure:"auth"`
 	CORS    CORSConfig    `mapstructure:"cors"`
-	XxlJob  XxlJobConfig  `mapstructure:"xxl_job"`
-	Storage StorageConfig `mapstructure:"storage"`
-	IDGen   IDGenConfig   `mapstructure:"id_generator"`
-	Modules ModulesConfig `mapstructure:"modules"`
-	Audit   AuditConfig   `mapstructure:"audit"`
+	SnailJob SnailJobConfig `mapstructure:"snail_job"`
+	Storage  StorageConfig  `mapstructure:"storage"`
+	IDGen    IDGenConfig    `mapstructure:"id_generator"`
+	Modules  ModulesConfig  `mapstructure:"modules"`
+	Audit    AuditConfig    `mapstructure:"audit"`
+	Notify   NotifyConfig   `mapstructure:"notify"`
+	Metrics  MetricsConfig  `mapstructure:"metrics"`
+	OTel     OTelConfig     `mapstructure:"otel"`
+	Crypto   CryptoConfig   `mapstructure:"crypto"`
+	Security SecurityConfig `mapstructure:"security"`
+	OAuth    OAuthConfig    `mapstructure:"oauth"`
 }
 
 // AppConfig 应用基础信息与监听地址。
@@ -89,29 +95,95 @@ type CORSConfig struct {
 	AllowHeaders     []string `mapstructure:"allow_headers"`
 }
 
-// XxlJobConfig XXL-JOB 执行器（嵌在 API 进程）。
+// SnailJobConfig SnailJob Go 客户端（嵌在 API 进程）。
 //
 // Author: Charlie
-type XxlJobConfig struct {
-	Enabled     bool               `mapstructure:"enabled"`
-	AccessToken string             `mapstructure:"access_token"`
-	Admin       XxlJobAdminConfig  `mapstructure:"admin"`
-	Executor    XxlJobExecutorConf `mapstructure:"executor"`
+type SnailJobConfig struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	ServerHost string `mapstructure:"server_host"`
+	ServerPort string `mapstructure:"server_port"`
+	HostIP     string `mapstructure:"host_ip"`
+	HostPort   string `mapstructure:"host_port"`
+	Namespace  string `mapstructure:"namespace"`
+	GroupName  string `mapstructure:"group_name"`
+	Token      string `mapstructure:"token"`
 }
 
-// XxlJobAdminConfig 调度中心地址。
+// NotifyConfig 邮件 / 短信 / 推送 / Webhook。
 //
 // Author: Charlie
-type XxlJobAdminConfig struct {
-	Addresses string `mapstructure:"addresses"`
+type NotifyConfig struct {
+	Mail MailNotifyConfig `mapstructure:"mail"`
+	SMS  SMSNotifyConfig  `mapstructure:"sms"`
+	Push PushNotifyConfig `mapstructure:"push"`
 }
 
-// XxlJobExecutorConf 执行器注册名与端口。
+// MailNotifyConfig SMTP 邮件。
+type MailNotifyConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	SSL      bool   `mapstructure:"ssl"`
+}
+
+// SMSNotifyConfig 短信（provider: log|aliyun|tencent）。
+type SMSNotifyConfig struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	Provider  string `mapstructure:"provider"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	SignName  string `mapstructure:"sign_name"`
+	Region    string `mapstructure:"region"`
+}
+
+// PushNotifyConfig 通用 HTTP 推送。
+type PushNotifyConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	URL     string `mapstructure:"url"`
+}
+
+// MetricsConfig Prometheus 指标。
+type MetricsConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"`
+}
+
+// OTelConfig OpenTelemetry（可选）。
+type OTelConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+// CryptoConfig 配置加解密（Fernet 兼容）与可选 Vault。
+type CryptoConfig struct {
+	FernetKey  string `mapstructure:"fernet_key"`
+	VaultAddr  string `mapstructure:"vault_addr"`
+	VaultToken string `mapstructure:"vault_token"`
+}
+
+// SecurityConfig HTTP 安全头等。
+type SecurityConfig struct {
+	HSTSEnabled       bool `mapstructure:"hsts_enabled"`
+	HSTSMaxAgeSeconds int  `mapstructure:"hsts_max_age_seconds"`
+}
+
+// OAuthConfig 三方登录凭据。
 //
 // Author: Charlie
-type XxlJobExecutorConf struct {
-	AppName string `mapstructure:"appname"`
-	Port    int    `mapstructure:"port"`
+type OAuthConfig struct {
+	GitHub OAuthProviderConfig `mapstructure:"github"`
+	Gitee  OAuthProviderConfig `mapstructure:"gitee"`
+	WeChat OAuthProviderConfig `mapstructure:"wechat"`
+}
+
+// OAuthProviderConfig 单个 OAuth 提供商。
+type OAuthProviderConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
 }
 
 // StorageConfig 对象存储（local / S3 兼容）参数。
@@ -147,11 +219,14 @@ type ModulesConfig struct {
 	Enabled  []string `mapstructure:"enabled"` // 非空时仅运行这些模块
 }
 
-// AuditConfig 操作审计队列容量。
+// AuditConfig 操作审计队列与 Redis Stream。
 //
 // Author: Charlie
 type AuditConfig struct {
-	OperationQueueSize int `mapstructure:"operation_queue_size"`
+	OperationQueueSize int    `mapstructure:"operation_queue_size"`
+	StreamKey          string `mapstructure:"stream_key"`
+	ConsumerGroup      string `mapstructure:"consumer_group"`
+	UseStream          bool   `mapstructure:"use_stream"`
 }
 
 // Load 从指定 YAML 路径加载配置，并叠加 HEI_ 环境变量。
@@ -209,11 +284,24 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cors.allow_credentials", true)
 	v.SetDefault("cors.allow_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
 	v.SetDefault("cors.allow_headers", []string{"Authorization", "Content-Type", "X-Request-Id", "Accept", "Origin", "X-Requested-With", "X-HEI-CSRF"})
-	v.SetDefault("xxl_job.enabled", true)
-	v.SetDefault("xxl_job.access_token", "default_token")
-	v.SetDefault("xxl_job.admin.addresses", "http://127.0.0.1:9004/xxl-job-admin")
-	v.SetDefault("xxl_job.executor.appname", "hei-gin-api")
-	v.SetDefault("xxl_job.executor.port", 9999)
+	v.SetDefault("snail_job.enabled", true)
+	v.SetDefault("snail_job.server_host", "127.0.0.1")
+	v.SetDefault("snail_job.server_port", "17888")
+	v.SetDefault("snail_job.host_ip", "127.0.0.1")
+	v.SetDefault("snail_job.host_port", "17889")
+	v.SetDefault("snail_job.namespace", "c8f1a2b3d4e5461789abcdef01234567")
+	v.SetDefault("snail_job.group_name", "hei_gin_admin")
+	v.SetDefault("snail_job.token", "SJ_heiGinAdminToken1234567890abcd")
+	v.SetDefault("notify.mail.enabled", false)
+	v.SetDefault("notify.mail.port", 587)
+	v.SetDefault("notify.sms.enabled", false)
+	v.SetDefault("notify.sms.provider", "log")
+	v.SetDefault("notify.push.enabled", false)
+	v.SetDefault("metrics.enabled", true)
+	v.SetDefault("metrics.path", "/metrics")
+	v.SetDefault("otel.enabled", false)
+	v.SetDefault("security.hsts_enabled", false)
+	v.SetDefault("security.hsts_max_age_seconds", 31536000)
 	v.SetDefault("storage.provider", "local")
 	v.SetDefault("storage.bucket", "hei-gin")
 	v.SetDefault("storage.public_path", "/api/v1/files")
@@ -222,6 +310,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("id_generator.worker_id", 1)
 	v.SetDefault("id_generator.datacenter_id", 1)
 	v.SetDefault("audit.operation_queue_size", 1000)
+	v.SetDefault("audit.stream_key", "hei:audit:ops")
+	v.SetDefault("audit.consumer_group", "hei-gin-audit")
+	v.SetDefault("audit.use_stream", true)
 }
 
 // Addr 返回 HTTP 监听地址 host:port。
