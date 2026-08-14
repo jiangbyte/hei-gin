@@ -20,21 +20,13 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 
 > **请注意：** 生产仍需自行加固密钥、对象存储、Cookie Secure、TLS 后再上线。
 
-## 生产状态
-
-以下姊妹项目均已在本公司项目中投产：
+## 姊妹项目
 
 | 项目 | 说明 | 协议 |
 | :--- | :--- | :--- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
 | [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | MIT |
 | [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT |
-
-**统一说明：**
-
-- 以上均为个人维护的开源框架，起源是给自己攒一套通用、灵活、多账户体系的开发框架，不做强绑定，图个省事。在公司项目中直接用了，**非公司内部框架产物**。
-- 公司内部基于各框架有定制化修改，内部版本与公共仓库**存在差异**，公共仓库更新相对较慢（看鄙人是否有时间了，当然也在用 AI 积极迁移中......）。
-- **本项目不涉及任何公司机密信息，无版权争议！！**
 
 ## 能力一览
 
