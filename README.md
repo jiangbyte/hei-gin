@@ -41,14 +41,14 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 | 能力 | 说明 |
 |------|------|
 | 双端账号 | ADMIN / PORTAL；验证码、RSA 密码传输、登录失败锁定、会话绑定 |
-| IAM | 账号、角色、部门、用户组、岗位、资源、权限、客户端、关系 |
-| 系统 | 字典、配置、Banner、文件、弱口令、审计、代码生成 |
+| IAM | 账号、角色、部门、用户组、岗位、资源、权限、客户端、关系；账号/角色/用户组授权（own-*/grant-*）、资源按钮、权限注册表 |
+| 系统 | 字典、配置（批量保存/测试推送）、Banner（门户互动）、文件（URL/预签名）、弱口令、审计、**Go 代码生成** |
 | 消息 | 通知、公告、反馈 |
-| 认证扩展 | OAuth（GitHub 完整；Gitee / 微信为配置桩）、忘记/重置密码、登录验证码 |
+| 认证扩展 | OAuth（GitHub 完整；Gitee / 微信为配置桩）、三方绑定/解绑、会话管理（在线会话统计/强退）、忘记/重置密码、登录验证码 |
 | 调度 | **SnailJob** 执行器嵌在 `api` 进程（`module.Job` 注册） |
 | 可观测 | Prometheus `/metrics`（可关）、访问日志、安全头 / 可选 HSTS |
 | 通知 | 邮件 / 短信 / 推送门面（默认关闭，见 `notify`） |
-| 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**` |
+| 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**`；Portal 端受限文件访问 |
 | 前端同仓 | `web/admin`（Vue）、`web/portal`（React）、`web/admin-uniapp` |
 
 内置业务模块由 [`app/internal/modules/all`](app/internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
@@ -138,6 +138,16 @@ job.go        # 可选：module.Job 定时任务
 ```
 
 有写库就必须有 `repo`；无持久化（如部分 health）可不造空 repo。样板见 `iam/account`。
+
+## 代码生成（Go）
+
+`sys/codegen` 管理端提供完整的 **Go 代码生成**（对齐 hei-boot 方案模型，输出 Go 而非 Java）：
+
+- 方案 CRUD（`sys_codegen_plan`）+ 字段配置（`sys_codegen_field`，表列反射同步、控件/字典/查询条件）
+- 数据库表 / 列元数据（`information_schema`）
+- 四种生成类型：单表 `TABLE`、树表 `TREE`、左树右表 `LEFT_TREE_TABLE`、主子表 `MASTER_DETAIL`
+- 预览 / ZIP 下载：Go 后端（`modules/<domain>/<pkg>` 的 model/param/result/repo/service/handler/register 同包分文件）+ Vue 前端（`web/admin`）+ 菜单权限 SQL
+- 模板在 `modules/sys/codegen/templates.go`，渲染逻辑在 `emit.go`；与 hei-boot 的 Java 模板一一对应但改为 Go 风格
 
 ## 模块装配
 
