@@ -267,6 +267,7 @@ async function removeBatch() {
 .mb-20px {
   margin-bottom: 20px;
 }
+
 .mb-12px {
   margin-bottom: 12px;
 }

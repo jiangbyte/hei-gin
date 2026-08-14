@@ -1,20 +1,20 @@
 /** Author: Charlie */
 
-import { API_PREFIX } from '@/constants/api'
+import {API_PREFIX} from '@/constants/api'
 import { http } from '@/utils/request'
 
 const prefix = API_PREFIX
 
 export function captcha(params?: any) {
-  return http.get<any>(`${prefix}/captcha`, params, { attachSession: false })
+    return http.get<any>(`${prefix}/captcha`, params, {attachSession: false})
 }
 
 export function passwordKey() {
-  return http.get<any>(`${prefix}/password-key`, undefined, { attachSession: false })
+    return http.get<any>(`${prefix}/password-key`, undefined, {attachSession: false})
 }
 
 export function login(data: any) {
-  return http.post<any>(`${prefix}/login`, data, { attachSession: false })
+    return http.post<any>(`${prefix}/login`, data, {attachSession: false})
 }
 
 export function logout() {
@@ -26,11 +26,11 @@ export function me() {
 }
 
 export function forgotPassword(data: any) {
-  return http.post<any>(`${prefix}/forgot-password`, data, { attachSession: false })
+    return http.post<any>(`${prefix}/forgot-password`, data, {attachSession: false})
 }
 
 export function resetPassword(data: any) {
-  return http.post<any>(`${prefix}/reset-password`, data, { attachSession: false })
+    return http.post<any>(`${prefix}/reset-password`, data, {attachSession: false})
 }
 
 export function updateProfile(data: any) {
@@ -54,5 +54,5 @@ export function orgInfo() {
 }
 
 export function uploadAvatar(filePath: string) {
-  return http.upload<any>(`${prefix}/user-center/avatar/upload`, filePath)
+    return http.upload<any>(`${prefix}/user-center/avatar/upload`, filePath)
 }

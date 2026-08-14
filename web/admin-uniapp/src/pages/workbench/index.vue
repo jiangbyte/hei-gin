@@ -33,8 +33,8 @@ import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 
 const gridItems = [
-  { name: '字典测试', icon: 'grid' },
-  { name: '请求测试', icon: 'reload' },
+  {name: '字典测试', icon: 'grid'},
+  {name: '请求测试', icon: 'reload'},
 ]
 
 onShow(() => {
@@ -46,9 +46,9 @@ onShow(() => {
 function onGridClick(index: number) {
   const item = gridItems[index].name
   if (item === '字典测试') {
-    uni.navigateTo({ url: '/pages/workbench/dict-test' })
+    uni.navigateTo({url: '/pages/workbench/dict-test'})
   } else if (item === '请求测试') {
-    uni.navigateTo({ url: '/pages/workbench/request-test' })
+    uni.navigateTo({url: '/pages/workbench/request-test'})
   }
 }
 </script>

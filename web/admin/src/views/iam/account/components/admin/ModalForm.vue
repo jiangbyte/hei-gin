@@ -11,6 +11,7 @@ import {
   buildBaseAccountPayload,
   createBaseFormRules,
 } from '../../composables/useAccountForm'
+import { wireBool } from '@/utils/wire'
 
 /** 对应后端 AccountType.ADMIN + AdminProfileUpsertPayload */
 const ACCOUNT_TYPE = 'ADMIN'
@@ -73,8 +74,8 @@ async function fetchDetail(id: string) {
       account: data.account ?? '',
       email: data.email ?? '',
       phone: data.phone ?? '',
-      email_login_enabled: Boolean(data.email_login_enabled),
-      phone_login_enabled: Boolean(data.phone_login_enabled),
+      email_login_enabled: wireBool(data.email_login_enabled ?? false),
+      phone_login_enabled: wireBool(data.phone_login_enabled ?? false),
       name: data.name ?? '',
       nickname: data.nickname ?? '',
       avatar: data.avatar ?? '',

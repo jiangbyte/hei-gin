@@ -116,7 +116,7 @@ async function save() {
 <template>
   <NSpin :show="state.loading">
     <ConfigSectionLayout
-      description="配置上传大小、预签名有效期与扩展名限制。"
+      description="配置上传大小、预签名有效期、分类名长度与扩展名限制。分类名长度作用于对象路径前缀。"
       :saving="state.saving"
       @save="save"
       @reset="reset"

@@ -40,6 +40,12 @@ export const routes: RouteRecordRaw[] = [
     meta: { name: '忘记密码' },
   },
   {
+    path: '/auth/oauth/callback',
+    name: 'auth-oauth-callback',
+    component: () => import('@/views/auth/OAuthCallback.vue'),
+    meta: { name: '三方登录回调' },
+  },
+  {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。
     path: '/:pathMatch(.*)*',
     name: 'not-found-catch',

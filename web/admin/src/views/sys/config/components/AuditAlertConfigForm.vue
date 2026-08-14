@@ -30,6 +30,7 @@ const state = reactive({
   testingPush: false,
   enabled: false,
   notifyEmail: true,
+  notifyEmailTo: '',
   notifyPush: true,
   notifyCustomWebhook: false,
   webhookUrl: '',
@@ -37,13 +38,7 @@ const state = reactive({
   analysisInterval: 60,
   cooldown: 1800,
   ruleBruteForce: true,
-  ruleUnusualHours: true,
-  ruleSensitiveOps: true,
-  ruleBulkDelete: true,
-  ruleIpAnomaly: true,
   bruteForceThreshold: 10,
-  bulkDeleteThreshold: 20,
-  ipAnomalyThreshold: 3,
   pushEngine: 'DINGTALK',
   pushConfigured: false,
   mailConfigured: false,
@@ -78,6 +73,7 @@ async function reload() {
     state.notifyEmail = hasKey(map, 'AUDIT_ALERT_NOTIFY_EMAIL')
       ? parseBool(map.AUDIT_ALERT_NOTIFY_EMAIL)
       : true
+    state.notifyEmailTo = map.AUDIT_ALERT_NOTIFY_EMAIL_TO || ''
     state.notifyPush = hasKey(map, 'AUDIT_ALERT_NOTIFY_PUSH')
       ? parseBool(map.AUDIT_ALERT_NOTIFY_PUSH)
       : true
@@ -88,14 +84,10 @@ async function reload() {
     state.webhookSecret = map.AUDIT_ALERT_WEBHOOK_SECRET || ''
     state.analysisInterval = parseNumber(map.AUDIT_ALERT_ANALYSIS_INTERVAL_SECONDS, 60)
     state.cooldown = parseNumber(map.AUDIT_ALERT_ALERT_COOLDOWN_SECONDS, 1800)
-    state.ruleBruteForce = parseBool(map.AUDIT_ALERT_RULE_BRUTE_FORCE)
-    state.ruleUnusualHours = parseBool(map.AUDIT_ALERT_RULE_UNUSUAL_HOURS)
-    state.ruleSensitiveOps = parseBool(map.AUDIT_ALERT_RULE_SENSITIVE_OPS)
-    state.ruleBulkDelete = parseBool(map.AUDIT_ALERT_RULE_BULK_DELETE)
-    state.ruleIpAnomaly = parseBool(map.AUDIT_ALERT_RULE_IP_ANOMALY)
+    state.ruleBruteForce = hasKey(map, 'AUDIT_ALERT_RULE_BRUTE_FORCE')
+      ? parseBool(map.AUDIT_ALERT_RULE_BRUTE_FORCE)
+      : true
     state.bruteForceThreshold = parseNumber(map.AUDIT_ALERT_BRUTE_FORCE_THRESHOLD, 10)
-    state.bulkDeleteThreshold = parseNumber(map.AUDIT_ALERT_BULK_DELETE_THRESHOLD, 20)
-    state.ipAnomalyThreshold = parseNumber(map.AUDIT_ALERT_IP_ANOMALY_THRESHOLD, 3)
 
     state.pushEngine = (
       pushMap.DEFAULT_MESSAGE_PUSH_ENGINE ||
@@ -104,8 +96,8 @@ async function reload() {
     ).toUpperCase()
     state.pushConfigured = Boolean(
       pushMap.PUSH_DINGTALK_WEBHOOK ||
-      pushMap.PUSH_LARK_WEBHOOK ||
-      pushMap.PUSH_WECHAT_WORK_WEBHOOK,
+        pushMap.PUSH_LARK_WEBHOOK ||
+        pushMap.PUSH_WECHAT_WORK_WEBHOOK,
     )
     state.mailConfigured = Boolean(mailMap.MAIL_LOCAL_HOST || mailMap.MAIL_LOCAL_FROM_EMAIL)
 
@@ -119,6 +111,7 @@ function snapshotOf() {
   return JSON.stringify({
     enabled: state.enabled,
     notifyEmail: state.notifyEmail,
+    notifyEmailTo: state.notifyEmailTo,
     notifyPush: state.notifyPush,
     notifyCustomWebhook: state.notifyCustomWebhook,
     webhookUrl: state.webhookUrl,
@@ -126,13 +119,7 @@ function snapshotOf() {
     analysisInterval: state.analysisInterval,
     cooldown: state.cooldown,
     ruleBruteForce: state.ruleBruteForce,
-    ruleUnusualHours: state.ruleUnusualHours,
-    ruleSensitiveOps: state.ruleSensitiveOps,
-    ruleBulkDelete: state.ruleBulkDelete,
-    ruleIpAnomaly: state.ruleIpAnomaly,
     bruteForceThreshold: state.bruteForceThreshold,
-    bulkDeleteThreshold: state.bulkDeleteThreshold,
-    ipAnomalyThreshold: state.ipAnomalyThreshold,
   })
 }
 
@@ -157,6 +144,11 @@ async function save() {
       {
         config_key: 'AUDIT_ALERT_NOTIFY_EMAIL',
         config_value: toBoolStr(state.notifyEmail),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_NOTIFY_EMAIL_TO',
+        config_value: state.notifyEmailTo.trim(),
         category: CATEGORY,
       },
       {
@@ -195,38 +187,8 @@ async function save() {
         category: CATEGORY,
       },
       {
-        config_key: 'AUDIT_ALERT_RULE_UNUSUAL_HOURS',
-        config_value: toBoolStr(state.ruleUnusualHours),
-        category: CATEGORY,
-      },
-      {
-        config_key: 'AUDIT_ALERT_RULE_SENSITIVE_OPS',
-        config_value: toBoolStr(state.ruleSensitiveOps),
-        category: CATEGORY,
-      },
-      {
-        config_key: 'AUDIT_ALERT_RULE_BULK_DELETE',
-        config_value: toBoolStr(state.ruleBulkDelete),
-        category: CATEGORY,
-      },
-      {
-        config_key: 'AUDIT_ALERT_RULE_IP_ANOMALY',
-        config_value: toBoolStr(state.ruleIpAnomaly),
-        category: CATEGORY,
-      },
-      {
         config_key: 'AUDIT_ALERT_BRUTE_FORCE_THRESHOLD',
         config_value: String(state.bruteForceThreshold),
-        category: CATEGORY,
-      },
-      {
-        config_key: 'AUDIT_ALERT_BULK_DELETE_THRESHOLD',
-        config_value: String(state.bulkDeleteThreshold),
-        category: CATEGORY,
-      },
-      {
-        config_key: 'AUDIT_ALERT_IP_ANOMALY_THRESHOLD',
-        config_value: String(state.ipAnomalyThreshold),
         category: CATEGORY,
       },
     ])
@@ -273,7 +235,7 @@ async function testWebhook() {
 <template>
   <NSpin :show="state.loading">
     <ConfigSectionLayout
-      description="配置审计告警开关、通知渠道与检测规则。邮件与消息推送复用对应系统配置。"
+      description="配置审计告警开关、通知渠道与已实现规则。保存后下次 SnailJob 执行即生效。"
       :saving="state.saving"
       @save="save"
       @reset="reset"
@@ -334,9 +296,7 @@ async function testWebhook() {
               <div class="alert-rule__meta">
                 <p class="sys-config__hint">
                   复用「邮件引擎」SMTP 配置
-                  <template v-if="!state.mailConfigured">
-                    （尚未配置）
-                  </template>
+                  <template v-if="!state.mailConfigured"> （尚未配置） </template>
                 </p>
                 <NButton
                   text
@@ -347,6 +307,17 @@ async function testWebhook() {
                 </NButton>
               </div>
             </div>
+
+            <NFormItem
+              v-if="state.notifyEmail"
+              label="告警收件邮箱"
+              class="mt-8px"
+            >
+              <NInput
+                v-model:value="state.notifyEmailTo"
+                placeholder="security@example.com"
+              />
+            </NFormItem>
 
             <div class="alert-rule__row alert-rule__row--channel">
               <div class="alert-rule__switch">
@@ -366,7 +337,7 @@ async function testWebhook() {
                     去配置
                   </NButton>
                   <NButton
-                    size="tiny"
+                    text
                     :loading="state.testingPush"
                     :disabled="!state.notifyPush"
                     @click="testPush"
@@ -382,9 +353,7 @@ async function testWebhook() {
                 <span class="alert-rule__label">自定义 Webhook</span>
                 <NSwitch v-model:value="state.notifyCustomWebhook" />
               </div>
-              <p class="sys-config__hint">
-                仅在需要独立接收地址时启用；一般优先用上方消息推送
-              </p>
+              <p class="sys-config__hint">仅在需要独立接收地址时启用；一般优先用上方消息推送</p>
             </div>
           </div>
 
@@ -429,6 +398,13 @@ async function testWebhook() {
           :bordered="false"
           class="mt-12px"
         >
+          <NAlert
+            type="info"
+            :bordered="false"
+            class="mb-12px"
+          >
+            当前已实现「暴力破解（审计日志量）」检测；其他规则待后续迭代，已从配置页移除以免假开关。
+          </NAlert>
           <div class="alert-rule">
             <div class="alert-rule__row">
               <div class="alert-rule__switch">
@@ -437,7 +413,7 @@ async function testWebhook() {
               </div>
               <NFormItem
                 v-if="state.ruleBruteForce"
-                label="失败次数阈值"
+                label="窗口内审计条数阈值"
                 class="alert-rule__extra"
                 :show-feedback="false"
               >
@@ -445,61 +421,7 @@ async function testWebhook() {
                   v-model:value="state.bruteForceThreshold"
                   class="w-full"
                   :min="1"
-                  :max="100"
-                />
-              </NFormItem>
-            </div>
-
-            <div class="alert-rule__row alert-rule__row--single">
-              <div class="alert-rule__switch">
-                <span class="alert-rule__label">异常时间操作</span>
-                <NSwitch v-model:value="state.ruleUnusualHours" />
-              </div>
-            </div>
-
-            <div class="alert-rule__row alert-rule__row--single">
-              <div class="alert-rule__switch">
-                <span class="alert-rule__label">敏感操作监控</span>
-                <NSwitch v-model:value="state.ruleSensitiveOps" />
-              </div>
-            </div>
-
-            <div class="alert-rule__row">
-              <div class="alert-rule__switch">
-                <span class="alert-rule__label">批量删除检测</span>
-                <NSwitch v-model:value="state.ruleBulkDelete" />
-              </div>
-              <NFormItem
-                v-if="state.ruleBulkDelete"
-                label="删除次数阈值"
-                class="alert-rule__extra"
-                :show-feedback="false"
-              >
-                <NInputNumber
-                  v-model:value="state.bulkDeleteThreshold"
-                  class="w-full"
-                  :min="1"
-                  :max="1000"
-                />
-              </NFormItem>
-            </div>
-
-            <div class="alert-rule__row">
-              <div class="alert-rule__switch">
-                <span class="alert-rule__label">IP 异常检测</span>
-                <NSwitch v-model:value="state.ruleIpAnomaly" />
-              </div>
-              <NFormItem
-                v-if="state.ruleIpAnomaly"
-                label="异常 IP 数阈值"
-                class="alert-rule__extra"
-                :show-feedback="false"
-              >
-                <NInputNumber
-                  v-model:value="state.ipAnomalyThreshold"
-                  class="w-full"
-                  :min="2"
-                  :max="50"
+                  :max="100000"
                 />
               </NFormItem>
             </div>
@@ -513,6 +435,14 @@ async function testWebhook() {
 <style scoped>
 .mt-12px {
   margin-top: 12px;
+}
+
+.mt-8px {
+  margin-top: 8px;
+}
+
+.mb-12px {
+  margin-bottom: 12px;
 }
 
 .flex {
@@ -547,10 +477,6 @@ async function testWebhook() {
   padding-bottom: 0;
 }
 
-.alert-rule__row--single {
-  grid-template-columns: 220px;
-}
-
 .alert-rule__row--channel {
   align-items: center;
 }
@@ -571,26 +497,16 @@ async function testWebhook() {
 .alert-rule__label {
   font-size: 14px;
   color: var(--text-color-1);
-  line-height: 1.4;
 }
 
 .alert-rule__meta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  min-height: 34px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .alert-rule__extra {
-  margin-bottom: 0 !important;
-}
-
-@media (max-width: 720px) {
-  .alert-rule__row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    align-items: stretch;
-  }
+  margin-bottom: 0;
 }
 </style>

@@ -40,10 +40,16 @@ export function displayValue(value?: string | number | null) {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_PATTERN = /^1\d{10}$/
 
 export function isValidEmail(value: unknown) {
   const text = String(value ?? '').trim()
   return EMAIL_PATTERN.test(text)
+}
+
+export function isValidPhone(value: unknown) {
+  const text = String(value ?? '').trim()
+  return PHONE_PATTERN.test(text)
 }
 
 export function createRequiredRule(field: string, trigger: 'input' | 'change') {

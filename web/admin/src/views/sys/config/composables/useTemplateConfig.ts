@@ -28,6 +28,34 @@ export const SMS_SCENE_LABELS: Record<string, string> = {
   ACCOUNT_PURGED: '账号彻底删除',
 }
 
+/** 后端当前会发送的邮件场景（可编辑；标注「已接线」）。 */
+export const MAIL_WIRED_SCENES = new Set([
+  'REGISTER_SUCCESS',
+  'LOGIN_CODE',
+  'CHANGE_PASSWORD_CODE',
+  'RESET_PASSWORD_CODE',
+  'BIND_EMAIL_CODE',
+  'ACCOUNT_CANCELLED',
+  'ACCOUNT_PURGED',
+])
+
+/** 后端当前会发送的短信场景。 */
+export const SMS_WIRED_SCENES = new Set([
+  'LOGIN_CODE',
+  'CHANGE_PASSWORD_CODE',
+  'BIND_PHONE_CODE',
+  'ACCOUNT_CANCELLED',
+  'ACCOUNT_PURGED',
+])
+
+export function isMailSceneWired(scene: string): boolean {
+  return MAIL_WIRED_SCENES.has(normalizeScene(scene))
+}
+
+export function isSmsSceneWired(scene: string): boolean {
+  return SMS_WIRED_SCENES.has(normalizeScene(scene))
+}
+
 export interface MailTemplateValue {
   subject: string
   body: string

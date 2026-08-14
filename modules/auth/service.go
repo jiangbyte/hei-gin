@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/config"
@@ -23,23 +24,27 @@ import (
 // Author: Charlie
 type Service struct {
 	cfg      *config.Config
+	db       *gorm.DB
 	repo     *Repo
 	sessions *security.SessionStore
 	accounts AccountFinder
 	notify   *notify.Facade
 	audit    *audit.Queue
 	oauth    *oauth.Service
+	perms    *security.PermissionRegistry
 }
 
 // NewService 构造认证服务。
 func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 	s := &Service{
 		cfg:      d.Cfg,
+		db:       d.DB,
 		repo:     NewRepo(d.Redis),
 		sessions: d.Sessions,
 		accounts: accounts,
 		notify:   d.Notify,
 		audit:    d.Audit,
+		perms:    d.Perms,
 	}
 	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
 		out, err := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, rememberMe)

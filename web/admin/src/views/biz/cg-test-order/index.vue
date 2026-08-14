@@ -1,7 +1,7 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-08 21:09:54
+  生成时间：2026-08-09 21:39:42
 -->
 
 <script setup lang="tsx">
@@ -10,8 +10,8 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { cgTestOrderApi } from '@/api'
 import { readPageMeta } from '@/utils/wire'
-import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
-import { NButton, NFlex, NIcon } from 'naive-ui'
+import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ChildModalDetail from './components/children/ChildModalDetail.vue'
@@ -61,9 +61,11 @@ const searchForm = createProSearchForm<any>({
 })
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
-  { title: '订单名称', path: 'name', field: 'input' },
-  { title: '状态', path: 'status', field: 'input' },
-  { title: '订单类型', path: 'type', field: 'input' },
+  { title: 'order_no', path: 'order_no', field: 'input' },
+  { title: 'name', path: 'name', field: 'input' },
+  { title: 'customer_name', path: 'customer_name', field: 'input' },
+  { title: 'status', path: 'status', field: 'input' },
+  { title: 'type', path: 'type', field: 'input' },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -99,10 +101,10 @@ const childSearchForm = createProSearchForm<any>({
 })
 
 const childSearchColumns = computed<ProSearchFormColumns<any>>(() => [
-  { title: '订单ID', path: 'order_id', field: 'input' },
-  { title: '商品名称', path: 'name', field: 'input' },
-  { title: '商品分类', path: 'category', field: 'input' },
-  { title: '状态', path: 'status', field: 'input' },
+  { title: 'order_id', path: 'order_id', field: 'input' },
+  { title: 'sku_code', path: 'sku_code', field: 'input' },
+  { title: 'name', path: 'name', field: 'input' },
+  { title: 'status', path: 'status', field: 'input' },
 ])
 
 const childPagination = computed<PaginationProps>(() => ({
@@ -125,31 +127,31 @@ const childPagination = computed<PaginationProps>(() => ({
 
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
-  { title: '主键', path: 'id', width: 150, ellipsis: { tooltip: true } },
-  { title: '订单号', path: 'order_no', width: 150, ellipsis: { tooltip: true } },
-  { title: '订单名称', path: 'name', width: 150, ellipsis: { tooltip: true } },
-  { title: '客户名称', path: 'customer_name', width: 150, ellipsis: { tooltip: true } },
-  { title: '客户手机号', path: 'customer_phone', width: 150, ellipsis: { tooltip: true } },
-  { title: '状态', path: 'status', width: 150, ellipsis: { tooltip: true } },
-  { title: '订单类型', path: 'type', width: 150, ellipsis: { tooltip: true } },
+  { title: 'order_no', path: 'order_no', width: 150, ellipsis: { tooltip: true } },
+  { title: 'name', path: 'name', width: 150, ellipsis: { tooltip: true } },
+  { title: 'customer_name', path: 'customer_name', width: 150, ellipsis: { tooltip: true } },
+  { title: 'customer_phone', path: 'customer_phone', width: 150, ellipsis: { tooltip: true } },
   {
-    title: '下单时间',
-    path: 'ordered_at',
-    width: 190,
-    render: (row) => formatDateTime(row.ordered_at),
+    title: 'status',
+    path: 'status',
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: row => (
+      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
+        {dictTypeData('COMMON_STATUS', row.status) || displayValue(row.status)}
+      </NTag>
+    ),
   },
-  {
-    title: '更新时间',
-    path: 'updated_at',
-    width: 190,
-    render: (row) => formatDateTime(row.updated_at),
-  },
+  { title: 'type', path: 'type', width: 150, ellipsis: { tooltip: true } },
+  { title: 'ordered_at', path: 'ordered_at', width: 190, render: row => formatDateTime(row.ordered_at) },
+  { title: 'paid_at', path: 'paid_at', width: 190, render: row => formatDateTime(row.paid_at) },
+  { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
   {
     title: '操作',
     key: 'actions',
     width: 170,
     fixed: 'right',
-    render: (row) => (
+    render: row => (
       <NFlex size={12}>
         {hasPermission('biz:cgtestorder:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
@@ -176,44 +178,39 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 
 const childColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
-  { title: '主键', path: 'id', width: 150, ellipsis: { tooltip: true } },
-  { title: '订单ID', path: 'order_id', width: 150, ellipsis: { tooltip: true } },
-  { title: 'SKU编码', path: 'sku_code', width: 150, ellipsis: { tooltip: true } },
-  { title: '商品名称', path: 'name', width: 150, ellipsis: { tooltip: true } },
-  { title: '商品分类', path: 'category', width: 150, ellipsis: { tooltip: true } },
-  { title: '状态', path: 'status', width: 150, ellipsis: { tooltip: true } },
-  { title: '数量', path: 'quantity', width: 150, ellipsis: { tooltip: true } },
-  { title: '单价', path: 'unit_price', width: 150, ellipsis: { tooltip: true } },
+  { title: 'order_id', path: 'order_id', width: 150, ellipsis: { tooltip: true } },
+  { title: 'sku_code', path: 'sku_code', width: 150, ellipsis: { tooltip: true } },
+  { title: 'name', path: 'name', width: 150, ellipsis: { tooltip: true } },
+  { title: 'category', path: 'category', width: 150, ellipsis: { tooltip: true } },
   {
-    title: '更新时间',
-    path: 'updated_at',
-    width: 190,
-    render: (row) => formatDateTime(row.updated_at),
+    title: 'status',
+    path: 'status',
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: row => (
+      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
+        {dictTypeData('COMMON_STATUS', row.status) || displayValue(row.status)}
+      </NTag>
+    ),
   },
+  { title: 'quantity', path: 'quantity', width: 150, ellipsis: { tooltip: true } },
+  { title: 'unit_price', path: 'unit_price', width: 150, ellipsis: { tooltip: true } },
+  { title: 'shipped_at', path: 'shipped_at', width: 190, render: row => formatDateTime(row.shipped_at) },
+  { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
   {
     title: '操作',
     key: 'actions',
     width: 130,
     fixed: 'right',
-    render: (row) => (
+    render: row => (
       <NFlex size={12}>
         {hasPermission('biz:cgtestorder:detail') ? (
-          <NButton
-            type="info"
-            size="small"
-            text={true}
-            onClick={() => openChildDetailModal(row.id)}
-          >
+          <NButton type="info" size="small" text={true} onClick={() => openChildDetailModal(row.id)}>
             {renderButtonIcon('icon-park-outline:preview-open')}
           </NButton>
         ) : null}
         {hasPermission('biz:cgtestorder:update') ? (
-          <NButton
-            type="primary"
-            size="small"
-            text={true}
-            onClick={() => openChildEditModal(row.id)}
-          >
+          <NButton type="primary" size="small" text={true} onClick={() => openChildEditModal(row.id)}>
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
         ) : null}
@@ -234,20 +231,14 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await cgTestOrderApi.page({
-      current: state.page,
-      size: state.pageSize,
-      ...state.searchValues,
-    })
+    const response = await cgTestOrderApi.page({ current: state.page, size: state.pageSize, ...state.searchValues })
     const data = response.data ?? {}
     state.rows = data.records ?? []
     const pageMeta = readPageMeta(data, { current: state.page, size: state.pageSize })
     state.total = pageMeta.total
     state.page = pageMeta.current
     state.pageSize = pageMeta.size
-    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
-      state.rows.some((item) => item.id === key),
-    )
+    state.checkedRowKeys = state.checkedRowKeys.filter(key => state.rows.some(item => item.id === key))
   } finally {
     state.loading = false
   }
@@ -272,16 +263,11 @@ async function fetchChildPage() {
     })
     const data = response.data ?? {}
     state.childRows = data.records ?? []
-    const childPageMeta = readPageMeta(data, {
-      current: state.childPage,
-      size: state.childPageSize,
-    })
+    const childPageMeta = readPageMeta(data, { current: state.childPage, size: state.childPageSize })
     state.childTotal = childPageMeta.total
     state.childPage = childPageMeta.current
     state.childPageSize = childPageMeta.size
-    state.childCheckedRowKeys = state.childCheckedRowKeys.filter((key) =>
-      state.childRows.some((item) => item.id === key),
-    )
+    state.childCheckedRowKeys = state.childCheckedRowKeys.filter(key => state.childRows.some(item => item.id === key))
   } finally {
     state.childLoading = false
   }
@@ -335,7 +321,7 @@ function confirmDelete(value: string | string[]) {
 
 async function deleteRows(ids: string[]) {
   await cgTestOrderApi.remove({ ids })
-  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
+  state.checkedRowKeys = state.checkedRowKeys.filter(key => !ids.includes(key))
   if (state.selectedMasterId && ids.includes(state.selectedMasterId)) {
     state.selectedMasterId = null
     state.childDrawerVisible = false
@@ -363,17 +349,14 @@ function confirmChildDelete(value: string | string[]) {
 
 async function deleteChildRows(ids: string[]) {
   await cgTestOrderApi.childRemove({ ids })
-  state.childCheckedRowKeys = state.childCheckedRowKeys.filter((key) => !ids.includes(key))
+  state.childCheckedRowKeys = state.childCheckedRowKeys.filter(key => !ids.includes(key))
   window.$message.success('删除成功')
   await fetchChildPage()
 }
 </script>
 
 <template>
-  <NFlex
-    class="h-full min-h-0"
-    vertical
-  >
+  <NFlex class="h-full min-h-0" vertical>
     <ProCard content-class="pb-0!">
       <ProSearchForm
         :form="searchForm"
@@ -398,53 +381,22 @@ async function deleteChildRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton
-            v-if="hasPermission('biz:cgtestorder:create')"
-            type="primary"
-            text
-            @click="openCreateModal"
-          >
-            <template #icon>
-              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
-            </template>
+          <NButton v-if="hasPermission('biz:cgtestorder:create')" type="primary" text @click="openCreateModal">
+            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
           </NButton>
-          <NButton
-            text
-            :loading="state.loading"
-            @click="fetchPage"
-          >
-            <template #icon>
-              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
-            </template>
+          <NButton text :loading="state.loading" @click="fetchPage">
+            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
           </NButton>
-          <NButton
-            v-if="hasPermission('biz:cgtestorder:delete')"
-            type="error"
-            text
-            :disabled="!hasCheckedRows"
-            @click="confirmDelete(state.checkedRowKeys)"
-          >
-            <template #icon>
-              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
-            </template>
+          <NButton v-if="hasPermission('biz:cgtestorder:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
+            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
           </NButton>
         </NFlex>
       </template>
     </ProDataTable>
 
-    <NDrawer
-      v-model:show="state.childDrawerVisible"
-      :width="960"
-      placement="right"
-    >
-      <NDrawerContent
-        title="CgTestOrderItem管理"
-        closable
-      >
-        <NFlex
-          style="height: calc(100vh - 110px)"
-          vertical
-        >
+    <NDrawer v-model:show="state.childDrawerVisible" :width="960" placement="right">
+      <NDrawerContent title="订单明细管理" closable>
+        <NFlex style="height: calc(100vh - 110px)" vertical>
           <ProCard content-class="pb-0!">
             <ProSearchForm
               :form="childSearchForm"
@@ -456,7 +408,7 @@ async function deleteChildRows(ids: string[]) {
           <ProDataTable
             class="min-h-0 flex-1"
             remote
-            title="CgTestOrderItem"
+            title="订单明细"
             row-key="id"
             :scroll-x="1300"
             :columns="childColumns"
@@ -468,36 +420,14 @@ async function deleteChildRows(ids: string[]) {
           >
             <template #toolbar>
               <NFlex>
-                <NButton
-                  v-if="hasPermission('biz:cgtestorder:create')"
-                  type="primary"
-                  text
-                  :disabled="!canCreateChild"
-                  @click="openChildCreateModal"
-                >
-                  <template #icon>
-                    <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
-                  </template>
+                <NButton v-if="hasPermission('biz:cgtestorder:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
                 </NButton>
-                <NButton
-                  text
-                  :loading="state.childLoading"
-                  @click="fetchChildPage"
-                >
-                  <template #icon>
-                    <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
-                  </template>
+                <NButton text :loading="state.childLoading" @click="fetchChildPage">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
                 </NButton>
-                <NButton
-                  v-if="hasPermission('biz:cgtestorder:delete')"
-                  type="error"
-                  text
-                  :disabled="!hasChildCheckedRows"
-                  @click="confirmChildDelete(state.childCheckedRowKeys)"
-                >
-                  <template #icon>
-                    <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
-                  </template>
+                <NButton v-if="hasPermission('biz:cgtestorder:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
                 </NButton>
               </NFlex>
             </template>
@@ -507,14 +437,8 @@ async function deleteChildRows(ids: string[]) {
     </NDrawer>
 
     <ModalDetail ref="detailModalRef" />
-    <ModalForm
-      ref="formModalRef"
-      @saved="fetchPage"
-    />
+    <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ChildModalDetail ref="childDetailModalRef" />
-    <ChildModalForm
-      ref="childFormModalRef"
-      @saved="fetchChildPage"
-    />
+    <ChildModalForm ref="childFormModalRef" @saved="fetchChildPage" />
   </NFlex>
 </template>

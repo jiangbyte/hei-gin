@@ -9,6 +9,7 @@ import { MonacoEditor } from '@/components/editor'
 import {
   MAIL_SCENE_LABELS,
   SCENE_PATTERN,
+  isMailSceneWired,
   normalizeScene,
   parseMailTemplate,
   stringifyMailTemplate,
@@ -91,6 +92,21 @@ const columns = computed<DataTableColumns<Row>>(() => [
   },
   { title: '名称', key: 'label', width: 160, ellipsis: { tooltip: true } },
   { title: '主题', key: 'subject', ellipsis: { tooltip: true } },
+  {
+    title: '状态',
+    key: 'wired',
+    width: 100,
+    render: (row) =>
+      h(
+        NTag,
+        {
+          size: 'small',
+          type: isMailSceneWired(row.scene) ? 'success' : 'warning',
+          bordered: false,
+        },
+        () => (isMailSceneWired(row.scene) ? '已接线' : '预留'),
+      ),
+  },
   {
     title: '是否内置',
     key: 'is_builtin',

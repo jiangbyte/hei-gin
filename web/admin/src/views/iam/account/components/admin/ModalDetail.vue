@@ -1,20 +1,76 @@
 <!-- Author: Charlie -->
 
-<script setup lang="ts">
-import { accountApi } from '@/api'
-import { createTagColor, displayValue, formatDateTime } from '@/utils'
+<script setup lang="tsx">
+import type { DataTableColumns } from 'naive-ui'
+import { accountApi, authApi } from '@/api'
+import { createTagColor, displayValue, formatDateTime, hasPermission } from '@/utils'
+import { wireBool } from '@/utils/wire'
+import { NButton } from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 
 const state = reactive({
   showModal: false,
   loading: false,
+  unbinding: '' as string,
   account: {} as any,
 })
 
 const avatarAlt = computed(() => state.account?.nickname || state.account?.name || '管理员头像')
 const avatarUrl = computed(() => state.account?.avatar || undefined)
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
+const oauthBindings = computed(() =>
+  Array.isArray(state.account?.oauth_bindings) ? state.account.oauth_bindings : [],
+)
+
+function maskOpenId(value?: string) {
+  const text = String(value || '')
+  if (text.length <= 8) return text ? '****' : '-'
+  return `${text.slice(0, 4)}****${text.slice(-4)}`
+}
+
+function providerLabel(provider?: string) {
+  return dictTypeData('OAUTH_PROVIDER', provider || '') || displayValue(provider)
+}
+
+const oauthColumns = computed<DataTableColumns<any>>(() => [
+  {
+    title: '提供商',
+    key: 'provider',
+    render: (row) => providerLabel(row.provider),
+  },
+  {
+    title: 'OpenID',
+    key: 'open_id',
+    render: (row) => maskOpenId(row.open_id),
+  },
+  {
+    title: '昵称',
+    key: 'nickname',
+    render: (row) => displayValue(row.nickname),
+  },
+  {
+    title: '绑定时间',
+    key: 'bound_at',
+    render: (row) => formatDateTime(row.bound_at),
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    render: (row) =>
+      hasPermission('iam:account:update') ? (
+        <NButton
+          text
+          type="error"
+          size="small"
+          loading={state.unbinding === row.provider}
+          onClick={() => void unbindOauth(row.provider)}
+        >
+          解绑
+        </NButton>
+      ) : null,
+  },
+])
 
 async function openModal(id: string) {
   state.account = {}
@@ -29,6 +85,21 @@ async function fetchDetail(id: string) {
     state.account = response.data ?? {}
   } finally {
     state.loading = false
+  }
+}
+
+async function unbindOauth(provider: string) {
+  if (!state.account?.id || state.unbinding) return
+  state.unbinding = provider
+  try {
+    await authApi.adminOauthUnbind({
+      account_id: String(state.account.id),
+      provider,
+    })
+    window.$message.success('已解绑')
+    await fetchDetail(String(state.account.id))
+  } finally {
+    state.unbinding = ''
   }
 }
 
@@ -130,10 +201,10 @@ defineExpose({ openModal })
                 {{ displayValue(state.account.email_identity) }}
               </NDescriptionsItem>
               <NDescriptionsItem label="启用邮箱登录">
-                {{ state.account.email_login_enabled ? '是' : '否' }}
+                {{ wireBool(state.account.email_login_enabled ?? false) ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem label="邮箱已验证">
-                {{ state.account.email_identity_verified ? '是' : '否' }}
+                {{ wireBool(state.account.email_identity_verified ?? false) ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem label="邮箱绑定状态">
                 {{
@@ -147,10 +218,10 @@ defineExpose({ openModal })
                 {{ displayValue(state.account.phone_identity) }}
               </NDescriptionsItem>
               <NDescriptionsItem label="启用手机号登录">
-                {{ state.account.phone_login_enabled ? '是' : '否' }}
+                {{ wireBool(state.account.phone_login_enabled ?? false) ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem label="手机号已验证">
-                {{ state.account.phone_identity_verified ? '是' : '否' }}
+                {{ wireBool(state.account.phone_identity_verified ?? false) ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem label="手机号绑定状态">
                 {{
@@ -161,6 +232,22 @@ defineExpose({ openModal })
                 }}
               </NDescriptionsItem>
             </NDescriptions>
+
+            <div class="mt-16px mb-8px font-600">
+              三方绑定
+            </div>
+            <NEmpty
+              v-if="!oauthBindings.length"
+              description="暂无三方绑定"
+            />
+            <NDataTable
+              v-else
+              size="small"
+              :bordered="false"
+              :single-line="false"
+              :columns="oauthColumns"
+              :data="oauthBindings"
+            />
           </NTabPane>
 
           <NTabPane
@@ -208,3 +295,17 @@ defineExpose({ openModal })
     </NScrollbar>
   </NModal>
 </template>
+
+<style scoped>
+.mt-16px {
+  margin-top: 16px;
+}
+
+.mb-8px {
+  margin-bottom: 8px;
+}
+
+.font-600 {
+  font-weight: 600;
+}
+</style>

@@ -1,0 +1,229 @@
+/* Portal 页脚：全宽铺开，无版心；上层链接区 + 底部备案条 */
+
+.app-footer {
+  margin-top: auto;
+  width: 100%;
+  color: var(--ant-color-text-secondary, #6b7280);
+  background: var(--ant-color-bg-container, #fff);
+  border-top: 1px solid var(--ant-color-border-secondary, #eef2f7);
+}
+
+.app-footer__inner {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@media (min-width: 768px) {
+  .app-footer__inner {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+.app-footer__main {
+  width: 100%;
+  padding: 48px 0 40px;
+  background: color-mix(in srgb, var(--ant-color-bg-layout, #f5f7fb) 70%, #fff);
+}
+
+/* 全宽横向铺开：品牌 | 三列占位 | 联系 */
+.app-footer__main .app-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px 48px;
+}
+
+.app-footer__brand {
+  flex: 0 1 240px;
+  min-width: 180px;
+}
+
+.app-footer__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ant-color-text, #1f2937);
+  text-decoration: none;
+}
+
+.app-footer__logo:hover {
+  color: var(--ant-color-primary, #1677ff);
+}
+
+.app-footer__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ant-border-radius, 5px);
+  background: var(--ant-color-primary, #1677ff);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-footer__logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.app-footer__tagline {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ant-color-text-tertiary, #8b95a5);
+}
+
+.app-footer__copy {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ant-color-text-tertiary, #8b95a5);
+}
+
+.app-footer__cols {
+  display: flex;
+  flex: 1 1 360px;
+  justify-content: space-between;
+  gap: 24px 40px;
+  min-width: 0;
+}
+
+.app-footer__col {
+  flex: 1 1 0;
+  min-width: 88px;
+}
+
+.app-footer__col-title {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ant-color-text, #1f2937);
+}
+
+.app-footer__list,
+.app-footer__contact-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-footer__list li + li,
+.app-footer__contact-list li + li {
+  margin-top: 10px;
+}
+
+.app-footer__placeholder,
+.app-footer__contact-list a,
+.app-footer__contact-list span {
+  color: var(--ant-color-text-secondary, #6b7280);
+  font-size: 13px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.app-footer__contact-list a:hover {
+  color: var(--ant-color-primary, #1677ff);
+}
+
+.app-footer__placeholder {
+  cursor: default;
+}
+
+.app-footer__contact {
+  flex: 0 1 220px;
+  min-width: 180px;
+}
+
+.app-footer__contact-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app-footer__contact-list .anticon {
+  color: var(--ant-color-primary, #1677ff);
+}
+
+.app-footer__bar {
+  width: 100%;
+  background: #1f2937;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.app-footer__bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  box-sizing: border-box;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.app-footer__bar-left,
+.app-footer__bar-center {
+  margin: 0;
+}
+
+.app-footer__bar-center {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+}
+
+.app-footer__dot {
+  margin: 0 8px;
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .app-footer__main {
+    padding: 36px 0 32px;
+  }
+
+  .app-footer__main .app-footer__inner {
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .app-footer__brand,
+  .app-footer__cols,
+  .app-footer__contact {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 16px;
+  }
+
+  .app-footer__bar-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-footer__cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,7 +1,7 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-08 21:09:55
+  生成时间：2026-08-09 21:39:43
 -->
 
 <script setup lang="ts">
@@ -40,41 +40,58 @@ const state = reactive({
   formModel: normalizeFormData(),
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑CgTestKnowledgeDoc' : '新增CgTestKnowledgeDoc',
-)
+const modalTitle = computed(() => state.dataId ? '编辑知识文档' : '新增知识文档')
 const rules = computed<FormRules>(() => ({
-  category_id: [createRequiredRule('分类ID', 'input')],
-  code: [createRequiredRule('文档编码', 'input')],
-  title: [createRequiredRule('文档标题', 'input')],
-  type: [createRequiredRule('文档类型', 'input')],
-  status: [createRequiredRule('状态', 'input')],
+  category_id: [
+    createRequiredRule('category_id', 'input'),
+  ],
+  code: [
+    createRequiredRule('code', 'input'),
+  ],
+  title: [
+    createRequiredRule('title', 'input'),
+  ],
+  type: [
+    createRequiredRule('type', 'input'),
+  ],
+  status: [
+    createRequiredRule('status', 'change'),
+  ],
+  summary: [
+    createRequiredRule('summary', 'input'),
+  ],
+  content: [
+    createRequiredRule('content', 'input'),
+  ],
+  author: [
+    createRequiredRule('author', 'input'),
+  ],
+  published_at: [
+    createRequiredRule('published_at', 'change'),
+  ],
   view_count: [
     {
-      validator: () =>
-        typeof state.formModel.view_count === 'number' &&
-        Number.isFinite(state.formModel.view_count),
-      message: '请输入浏览次数',
+      validator: () => typeof state.formModel.view_count === 'number' && Number.isFinite(state.formModel.view_count),
+      message: '请输入view_count',
       trigger: ['input', 'blur'],
     },
   ],
   sort: [
     {
-      validator: () =>
-        typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
-      message: '请输入排序',
+      validator: () => typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
+      message: '请输入sort',
       trigger: ['input', 'blur'],
     },
   ],
   is_top: [
     {
       validator: () => typeof state.formModel.is_top === 'boolean',
-      message: '请选择是否置顶',
+      message: '请选择is_top',
       trigger: 'change',
     },
   ],
   settings: [
-    createRequiredRule('展示设置', 'input'),
+    createRequiredRule('settings', 'input'),
     {
       validator: () => isValidJsonValue(state.formModel.settings),
       message: '请输入合法 JSON 对象',
@@ -82,6 +99,7 @@ const rules = computed<FormRules>(() => ({
     },
   ],
   extra: [
+    createRequiredRule('extra', 'input'),
     {
       validator: () => isValidJsonValue(state.formModel.extra),
       message: '请输入合法 JSON 对象',
@@ -113,14 +131,8 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
   return {
     ...defaultFormData,
     ...data,
-    is_top:
-      data.is_top == null || data.is_top === ''
-        ? defaultFormData.is_top
-        : wireBool(String(data.is_top)),
-    view_count:
-      data.view_count == null || data.view_count === ''
-        ? defaultFormData.view_count
-        : wireInt(String(data.view_count)),
+    is_top: data.is_top == null || data.is_top === '' ? defaultFormData.is_top : wireBool(String(data.is_top)),
+    view_count: data.view_count == null || data.view_count === '' ? defaultFormData.view_count : wireInt(String(data.view_count)),
     sort: data.sort == null || data.sort === '' ? defaultFormData.sort : wireInt(String(data.sort)),
     published_at: toFormDateTime(data.published_at),
     settings: stringifyJsonValue(data.settings),
@@ -213,121 +225,48 @@ defineExpose({
   >
     <NSpin :show="state.loading">
       <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
-        <NForm
-          ref="formRef"
-          :model="state.formModel"
-          :rules="rules"
-          label-placement="left"
-          label-width="110"
-          :disabled="state.loading || state.submitLoading"
-        >
-          <NFormItem
-            label="分类ID"
-            path="category_id"
-          >
+        <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading || state.submitLoading">
+          <NFormItem label="category_id" path="category_id">
             <NInput v-model:value="state.formModel.category_id" />
           </NFormItem>
-          <NFormItem
-            label="文档编码"
-            path="code"
-          >
+          <NFormItem label="code" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem
-            label="文档标题"
-            path="title"
-          >
+          <NFormItem label="title" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem
-            label="文档类型"
-            path="type"
-          >
+          <NFormItem label="type" path="type">
             <NInput v-model:value="state.formModel.type" />
           </NFormItem>
-          <NFormItem
-            label="状态"
-            path="status"
-          >
-            <NInput v-model:value="state.formModel.status" />
+          <NFormItem label="status" path="status">
+            <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" />
           </NFormItem>
-          <NFormItem
-            label="摘要"
-            path="summary"
-          >
-            <NInput v-model:value="state.formModel.summary" />
+          <NFormItem label="summary" path="summary">
+            <NInput v-model:value="state.formModel.summary" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
           </NFormItem>
-          <NFormItem
-            label="正文内容"
-            path="content"
-          >
-            <NInput
-              v-model:value="state.formModel.content"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 8 }"
-            />
+          <NFormItem label="content" path="content">
+            <NInput v-model:value="state.formModel.content" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
           </NFormItem>
-          <NFormItem
-            label="作者"
-            path="author"
-          >
+          <NFormItem label="author" path="author">
             <NInput v-model:value="state.formModel.author" />
           </NFormItem>
-          <NFormItem
-            label="发布时间"
-            path="published_at"
-          >
-            <NDatePicker
-              v-model:formatted-value="state.formModel.published_at"
-              type="datetime"
-              value-format="yyyy-MM-dd HH:mm:ss"
-              class="w-full"
-              clearable
-            />
+          <NFormItem label="published_at" path="published_at">
+            <NDatePicker v-model:formatted-value="state.formModel.published_at" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
           </NFormItem>
-          <NFormItem
-            label="浏览次数"
-            path="view_count"
-          >
-            <NInputNumber
-              v-model:value="state.formModel.view_count"
-              class="w-full"
-            />
+          <NFormItem label="view_count" path="view_count">
+            <NInputNumber v-model:value="state.formModel.view_count" class="w-full" />
           </NFormItem>
-          <NFormItem
-            label="排序"
-            path="sort"
-          >
-            <NInputNumber
-              v-model:value="state.formModel.sort"
-              class="w-full"
-            />
+          <NFormItem label="sort" path="sort">
+            <NInputNumber v-model:value="state.formModel.sort" class="w-full" />
           </NFormItem>
-          <NFormItem
-            label="是否置顶"
-            path="is_top"
-          >
+          <NFormItem label="is_top" path="is_top">
             <NSwitch v-model:value="state.formModel.is_top" />
           </NFormItem>
-          <NFormItem
-            label="展示设置"
-            path="settings"
-          >
-            <NInput
-              v-model:value="state.formModel.settings"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 8 }"
-            />
+          <NFormItem label="settings" path="settings">
+            <NInput v-model:value="state.formModel.settings" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
           </NFormItem>
-          <NFormItem
-            label="扩展信息"
-            path="extra"
-          >
-            <NInput
-              v-model:value="state.formModel.extra"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 8 }"
-            />
+          <NFormItem label="extra" path="extra">
+            <NInput v-model:value="state.formModel.extra" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -335,16 +274,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton
-          type="primary"
-          :loading="state.submitLoading"
-          @click="submitForm"
-        >
-          确认
-        </NButton>
+        <NButton @click="closeModal">取消</NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
       </NSpace>
     </template>
   </NModal>

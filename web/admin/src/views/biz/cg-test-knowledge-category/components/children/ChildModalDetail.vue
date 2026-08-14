@@ -1,12 +1,12 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-08 21:09:55
+  生成时间：2026-08-09 21:39:43
 -->
 
 <script setup lang="ts">
 import { cgTestKnowledgeCategoryApi } from '@/api'
-import { displayValue, formatDateTime } from '@/utils'
+import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime } from '@/utils'
 import { reactive } from 'vue'
 
 const state = reactive({
@@ -51,86 +51,61 @@ defineExpose({
 </script>
 
 <template>
-  <NModal
-    v-model:show="state.showModal"
-    preset="card"
-    draggable
-    :mask-closable="false"
-    title="CgTestKnowledgeDoc详情"
-    style="width: 680px"
-  >
+  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="知识文档详情" style="width: 680px">
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
-        <NDescriptions
-          label-placement="left"
-          bordered
-          :column="1"
-        >
-          <NDescriptionsItem label="主键">
+        <NDescriptions label-placement="left" bordered :column="1">
+          <NDescriptionsItem label="id">
             {{ displayValue(state.detail.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="分类ID">
+          <NDescriptionsItem label="category_id">
             {{ displayValue(state.detail.category_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="文档编码">
+          <NDescriptionsItem label="code">
             {{ displayValue(state.detail.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="文档标题">
+          <NDescriptionsItem label="title">
             {{ displayValue(state.detail.title) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="文档类型">
+          <NDescriptionsItem label="type">
             {{ displayValue(state.detail.type) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="状态">
-            {{ displayValue(state.detail.status) }}
+          <NDescriptionsItem label="status">
+            <NTag :color="createTagColor(dictTypeColor('COMMON_STATUS', state.detail.status))" :bordered="false">
+              {{ dictTypeData('COMMON_STATUS', state.detail.status) || displayValue(state.detail.status) }}
+            </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem label="摘要">
+          <NDescriptionsItem label="summary">
             {{ displayValue(state.detail.summary) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="正文内容">
+          <NDescriptionsItem label="content">
             {{ displayValue(state.detail.content) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="作者">
+          <NDescriptionsItem label="author">
             {{ displayValue(state.detail.author) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="发布时间">
+          <NDescriptionsItem label="published_at">
             {{ formatDateTime(state.detail.published_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="浏览次数">
+          <NDescriptionsItem label="view_count">
             {{ displayValue(state.detail.view_count) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="排序">
+          <NDescriptionsItem label="sort">
             {{ displayValue(state.detail.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="是否置顶">
+          <NDescriptionsItem label="is_top">
             {{ displayValue(state.detail.is_top) }}
           </NDescriptionsItem>
-          <NDescriptionsItem label="展示设置">
-            <NCode
-              :code="formatJsonValue(state.detail.settings)"
-              language="json"
-              word-wrap
-            />
+          <NDescriptionsItem label="settings">
+            <NCode :code="formatJsonValue(state.detail.settings)" language="json" word-wrap />
           </NDescriptionsItem>
-          <NDescriptionsItem label="扩展信息">
-            <NCode
-              :code="formatJsonValue(state.detail.extra)"
-              language="json"
-              word-wrap
-            />
+          <NDescriptionsItem label="extra">
+            <NCode :code="formatJsonValue(state.detail.extra)" language="json" word-wrap />
           </NDescriptionsItem>
-          <NDescriptionsItem label="创建时间">
-            {{ formatDateTime(state.detail.created_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem label="创建人">
-            {{ displayValue(state.detail.created_name || state.detail.created_by) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem label="更新时间">
-            {{ formatDateTime(state.detail.updated_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem label="更新人">
-            {{ displayValue(state.detail.updated_name || state.detail.updated_by) }}
-          </NDescriptionsItem>
+          <NDescriptionsItem label="创建时间">{{ formatDateTime(state.detail.created_at) }}</NDescriptionsItem>
+          <NDescriptionsItem label="创建人">{{ displayValue(state.detail.created_name || state.detail.created_by) }}</NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">{{ formatDateTime(state.detail.updated_at) }}</NDescriptionsItem>
+          <NDescriptionsItem label="更新人">{{ displayValue(state.detail.updated_name || state.detail.updated_by) }}</NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

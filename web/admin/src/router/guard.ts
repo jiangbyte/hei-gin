@@ -2,6 +2,7 @@
 
 import type { RouteLocationNormalized, Router } from 'vue-router'
 import { useAuthStore, useRouteStore, useTabStore } from '@/stores'
+import { isAllowedUnderSecurityWall, resolveSecurityWallPath } from '@/stores/auth'
 import { getRouteTitle } from '@/stores/route'
 import { isDictLoaded, refreshDict, syncDictTree } from '@/utils/dict'
 
@@ -43,9 +44,10 @@ export function setupRouterGuard(router: Router) {
       return { path: isLogin ? homePath : loginPath, replace: true }
     }
 
-    // 已登录用户访问认证页时，直接回到 redirect 或首页。
-    if (isAuthRoute(to) && isLogin) {
-      return { path: getRedirectPath(to) ?? homePath, replace: true }
+    // 已登录用户访问认证页时，直接回到 redirect 或首页（OAuth 回调需放行，含绑定场景）。
+    if (isAuthRoute(to) && isLogin && to.name !== 'auth-oauth-callback') {
+      const wall = resolveSecurityWallPath(authStore.userInfo)
+      return { path: wall ?? getRedirectPath(to) ?? homePath, replace: true }
     }
 
     // 认证页和显式 404 是公开路由，不触发登录态和授权路由初始化。
@@ -60,6 +62,14 @@ export function setupRouterGuard(router: Router) {
         query: {
           redirect: to.fullPath,
         },
+      }
+    }
+
+    const tab = typeof to.query.tab === 'string' ? to.query.tab : undefined
+    if (!isAllowedUnderSecurityWall(to.path, tab, authStore.userInfo)) {
+      const wall = resolveSecurityWallPath(authStore.userInfo)
+      if (wall) {
+        return wall
       }
     }
 

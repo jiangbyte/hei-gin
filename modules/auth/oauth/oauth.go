@@ -56,6 +56,46 @@ func NewService(d *shared.Deps, issue IssueSessionFunc) *Service {
 	}
 }
 
+// ProviderOption 三方登录入口选项（供登录页公开配置）。
+type ProviderOption struct {
+	Provider string `json:"provider"`
+	Label    string `json:"label"`
+	Enabled  bool   `json:"enabled"`
+	WebOAuth bool   `json:"web_oauth"`
+}
+
+// ProviderOptions 三方登录入口选项。
+func (s *Service) ProviderOptions() []ProviderOption {
+	out := []ProviderOption{}
+	for _, p := range []string{"github", "gitee", "wechat", "wechat_mp", "qq"} {
+		_, err := s.providerConfig(p)
+		out = append(out, ProviderOption{
+			Provider: p,
+			Label:    providerLabel(p),
+			Enabled:  err == nil,
+			WebOAuth: p == "github" || p == "gitee" || p == "qq",
+		})
+	}
+	return out
+}
+
+func providerLabel(provider string) string {
+	switch provider {
+	case "github":
+		return "GitHub"
+	case "gitee":
+		return "Gitee"
+	case "wechat":
+		return "微信"
+	case "wechat_mp":
+		return "微信公众号"
+	case "qq":
+		return "QQ"
+	default:
+		return provider
+	}
+}
+
 // RegisterRoutes 挂载 admin/portal OAuth 路由。
 func (s *Service) RegisterRoutes(api *gin.RouterGroup) {
 	rdb := s.rdb
@@ -110,6 +150,8 @@ func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
 			"account_type": string(accountType),
 			"provider":     provider,
 			"redirect":     c.Query("redirect"),
+			"intent":       c.Query("intent"),
+			"account_id":   c.Query("account_id"),
 		})
 		_ = s.rdb.Set(c.Request.Context(), stateKeyPrefix+state, string(payload), 10*time.Minute).Err()
 		u, err := buildAuthorizeURL(provider, pc, state)
@@ -152,10 +194,20 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 			response.Fail(c, http.StatusBadRequest, 400, err.Error())
 			return
 		}
-		accountID, err := s.resolveOrBindAccount(c.Request.Context(), accountType, provider, profile)
-		if err != nil {
-			response.Fail(c, http.StatusBadRequest, 400, err.Error())
-			return
+		var accountID string
+		if st["intent"] == "BIND" && st["account_id"] != "" {
+			// 绑定模式：写入绑定关系，不创建账号
+			if err := s.createBinding(c.Request.Context(), st["account_id"], provider, profile); err != nil {
+				response.Fail(c, http.StatusBadRequest, 400, err.Error())
+				return
+			}
+			accountID = st["account_id"]
+		} else {
+			accountID, err = s.resolveOrBindAccount(c.Request.Context(), accountType, provider, profile)
+			if err != nil {
+				response.Fail(c, http.StatusBadRequest, 400, err.Error())
+				return
+			}
 		}
 		exCode, err := randomHex(16)
 		if err != nil {

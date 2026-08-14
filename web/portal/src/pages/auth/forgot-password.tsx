@@ -6,10 +6,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi } from '@/api'
 import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
 import { PasswordStrength } from '@/components/common/PasswordStrength'
-import { useAuthModalStore } from '@/stores/authModal'
 import { encryptPasswords } from '@/utils/security'
 import { isValidEmail } from '@/utils/validate'
-import { AuthCenter } from './AuthSplit'
+import { PortalAuthShell } from './PortalAuthShell'
 
 type FormValues = {
   email: string
@@ -25,11 +24,8 @@ export function ForgotPasswordPage() {
   const captchaRef = useRef<CaptchaInputHandle>(null)
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const openAuthModal = useAuthModalStore((s) => s.open)
   const token = params.get('token') || ''
   const isResetMode = Boolean(token)
-  const captchaId = Form.useWatch('captcha_id', form) || ''
-  const captchaValue = Form.useWatch('captcha_value', form) || ''
   const password = Form.useWatch('password', form) || ''
 
   async function sendLink() {
@@ -78,8 +74,7 @@ export function ForgotPasswordPage() {
         captcha_value: values.captcha_value,
       })
       message.success('密码已重置，请重新登录')
-      navigate('/')
-      openAuthModal('login')
+      navigate('/auth/login')
     } catch {
       await captchaRef.current?.refresh()
     } finally {
@@ -88,12 +83,23 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthCenter
+    <PortalAuthShell
       title={isResetMode ? '重置密码' : '找回密码'}
       description={
         isResetMode
           ? '请设置新密码。重置链接在过期前仅可使用一次。'
           : '请输入已启用登录的邮箱，系统将发送密码重置链接。'
+      }
+      brandHeadline={isResetMode ? '设置新密码，继续使用门户' : '找回访问权限'}
+      brandLead={
+        isResetMode
+          ? '链接仅可使用一次，完成后请使用新密码登录。'
+          : '通过邮箱验证身份后即可重置密码。'
+      }
+      headerExtra={
+        <Link to="/auth/login" className="linkish">
+          返回登录
+        </Link>
       }
     >
       <ConfigProvider componentSize="large">
@@ -144,47 +150,25 @@ export function ForgotPasswordPage() {
             <CaptchaInput
               ref={captchaRef}
               size="large"
-              captchaId={captchaId}
-              captchaValue={captchaValue}
               onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
-              onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
             />
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading}>
+            <Button type="primary" htmlType="submit" block loading={loading} className="auth-submit">
               {isResetMode ? '重置密码' : '发送重置链接'}
             </Button>
           </Form.Item>
 
-          <div className="auth-center__links">
-            <Button
-              type="link"
-              className="!px-0"
-              onClick={() => {
-                navigate('/')
-                openAuthModal('login')
-              }}
-            >
-              返回登录
-            </Button>
+          <div className="auth-form-row" style={{ marginTop: 8 }}>
             {isResetMode ? (
               <Link to="/auth/forgot-password">重新申请链接</Link>
             ) : (
-              <Button
-                type="link"
-                className="!px-0"
-                onClick={() => {
-                  navigate('/')
-                  openAuthModal('register')
-                }}
-              >
-                去注册
-              </Button>
+              <Link to="/auth/register">去注册</Link>
             )}
           </div>
         </Form>
       </ConfigProvider>
-    </AuthCenter>
+    </PortalAuthShell>
   )
 }

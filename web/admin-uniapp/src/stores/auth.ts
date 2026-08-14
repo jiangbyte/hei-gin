@@ -60,9 +60,9 @@ export const useAuthStore = defineStore('auth', () => {
       captcha_id: payload.captcha_id,
       captcha_value: payload.captcha_value,
     })
-    if (!response?.token) {
-      throw new Error('登录失败：未返回会话令牌')
-    }
+      if (!response?.token) {
+          throw new Error('登录失败：未返回会话令牌')
+      }
     token.value = response.token
     setToken(response.token)
     await refreshUserInfo()
@@ -96,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
       return true
     }
     const keys = userInfo.value?.permissionKeys ?? []
-    return keys.includes('*:*:*') || keys.includes(permissionKey)
+      return keys.includes('*:*:*') || keys.includes(permissionKey)
   }
 
   function resetSession() {

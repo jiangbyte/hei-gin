@@ -6,6 +6,7 @@ import type { Component } from 'vue'
 import { renderIcon } from '@/utils/icon'
 import { computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores'
 import './usercenter.css'
 import BasicInfoPanel from './components/BasicInfoPanel.vue'
 import CancelAccountPanel from './components/CancelAccountPanel.vue'
@@ -13,9 +14,11 @@ import EmailPanel from './components/EmailPanel.vue'
 import MyMessagesPanel from './components/MyMessagesPanel.vue'
 import PasswordPanel from './components/PasswordPanel.vue'
 import PhonePanel from './components/PhonePanel.vue'
+import OauthPanel from './components/OauthPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const navItems: Array<{ key: string; label: string; icon: string }> = [
   { key: 'basic_info', label: '公开资料', icon: 'icon-park-outline:people' },
@@ -23,6 +26,7 @@ const navItems: Array<{ key: string; label: string; icon: string }> = [
   { key: 'password', label: '密码', icon: 'icon-park-outline:lock' },
   { key: 'phone', label: '手机号', icon: 'icon-park-outline:phone-telephone' },
   { key: 'email', label: '邮箱', icon: 'icon-park-outline:mail' },
+  { key: 'oauth', label: '三方账号', icon: 'icon-park-outline:people' },
   { key: 'cancel_account', label: '账号注销', icon: 'icon-park-outline:logout' },
 ]
 
@@ -32,6 +36,7 @@ const panelMap: Record<string, Component> = {
   password: PasswordPanel,
   phone: PhonePanel,
   email: EmailPanel,
+  oauth: OauthPanel,
   cancel_account: CancelAccountPanel,
 }
 
@@ -40,11 +45,21 @@ const state = reactive({
   activeTab: resolveInitialTab(),
 })
 
-const menuOptions: MenuOption[] = [
+const lockedTabs = computed(() => {
+  const user = authStore.userInfo
+  if (user?.passwordExpired) return new Set(['password'])
+  const allowed = new Set<string>()
+  if (user?.forceBindEmail) allowed.add('email')
+  if (user?.forceBindPhone) allowed.add('phone')
+  return allowed.size > 0 ? allowed : null
+})
+
+const menuOptions = computed<MenuOption[]>(() => [
   {
     key: 'basic_info',
     label: '公开资料',
     icon: renderIcon('icon-park-outline:people', 16),
+    disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('basic_info')),
   },
   {
     type: 'group',
@@ -55,6 +70,7 @@ const menuOptions: MenuOption[] = [
         key: 'my_messages',
         label: '我的消息',
         icon: renderIcon('icon-park-outline:message', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('my_messages')),
       },
     ],
   },
@@ -67,25 +83,35 @@ const menuOptions: MenuOption[] = [
         key: 'password',
         label: '密码',
         icon: renderIcon('icon-park-outline:lock', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('password')),
       },
       {
         key: 'phone',
         label: '手机号',
         icon: renderIcon('icon-park-outline:phone-telephone', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('phone')),
       },
       {
         key: 'email',
         label: '邮箱',
         icon: renderIcon('icon-park-outline:mail', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('email')),
+      },
+      {
+        key: 'oauth',
+        label: '三方账号',
+        icon: renderIcon('icon-park-outline:people', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('oauth')),
       },
       {
         key: 'cancel_account',
         label: '账号注销',
         icon: renderIcon('icon-park-outline:logout', 16),
+        disabled: Boolean(lockedTabs.value && !lockedTabs.value.has('cancel_account')),
       },
     ],
   },
-]
+])
 
 const activeNav = computed(
   () => navItems.find((item) => item.key === state.activeTab) ?? navItems[0],
@@ -105,6 +131,9 @@ function selectTab(key: string) {
     return
   }
   if (!navItems.some((item) => item.key === key)) {
+    return
+  }
+  if (lockedTabs.value && !lockedTabs.value.has(key)) {
     return
   }
   state.activeTab = key

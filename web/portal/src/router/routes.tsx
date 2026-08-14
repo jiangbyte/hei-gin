@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { RegisterPage } from '@/pages/auth/register'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
+import { OAuthCallbackPage } from '@/pages/auth/oauth-callback'
 import { NotFoundPage } from '@/pages/error/not-found'
 import { UserCenterPage } from '@/pages/usercenter'
 import { ProfilePage } from '@/pages/profile'
@@ -54,22 +55,26 @@ export const routes: RouteObject[] = [
         loader: requireAuth,
         element: <FeedbackDetailPage />,
       },
-      {
-        path: 'auth/login',
-        loader: guestOnly,
-        element: <LoginPage />,
-      },
-      {
-        path: 'auth/register',
-        loader: guestOnly,
-        element: <RegisterPage />,
-      },
-      {
-        path: 'auth/forgot-password',
-        loader: guestOnly,
-        element: <ForgotPasswordPage />,
-      },
     ],
+  },
+  {
+    path: '/auth/login',
+    loader: guestOnly,
+    element: <LoginPage />,
+  },
+  {
+    path: '/auth/register',
+    loader: guestOnly,
+    element: <RegisterPage />,
+  },
+  {
+    path: '/auth/forgot-password',
+    loader: guestOnly,
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/auth/oauth/callback',
+    element: <OAuthCallbackPage />,
   },
   { path: '/404', element: <NotFoundPage /> },
   { path: '*', element: <Navigate to="/404" replace /> },

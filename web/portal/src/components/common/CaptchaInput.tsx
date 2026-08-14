@@ -2,37 +2,40 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Input, Spin } from 'antd'
+import type { InputProps } from 'antd'
 import { authApi } from '@/api'
+import './captcha-input.css'
 
 export type CaptchaInputHandle = {
   refresh: () => Promise<void>
 }
 
 type Props = {
-  captchaId: string
-  captchaValue: string
-  onCaptchaIdChange: (value: string) => void
-  onCaptchaValueChange: (value: string) => void
+  /** Form.Item 注入 */
+  value?: string
+  onChange?: (value: string) => void
+  status?: InputProps['status']
+  onCaptchaIdChange?: (value: string) => void
   size?: 'middle' | 'large'
 }
 
 export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function CaptchaInput(
-  { captchaValue, onCaptchaIdChange, onCaptchaValueChange, size = 'middle' },
+  { value = '', onChange, status, onCaptchaIdChange, size = 'middle' },
   ref,
 ) {
   const [loading, setLoading] = useState(false)
   const [imageBase64, setImageBase64] = useState('')
   const idChangeRef = useRef(onCaptchaIdChange)
-  const valueChangeRef = useRef(onCaptchaValueChange)
+  const valueChangeRef = useRef(onChange)
   idChangeRef.current = onCaptchaIdChange
-  valueChangeRef.current = onCaptchaValueChange
+  valueChangeRef.current = onChange
 
   async function refresh() {
     setLoading(true)
     try {
       const response = await authApi.captcha('svg')
-      idChangeRef.current(response.data.captcha_id)
-      valueChangeRef.current('')
+      idChangeRef.current?.(response.data.captcha_id)
+      valueChangeRef.current?.('')
       setImageBase64(response.data.image_base64)
     } finally {
       setLoading(false)
@@ -46,27 +49,26 @@ export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function Captc
   }, [])
 
   const imageSrc = imageBase64 ? `data:image/svg+xml;base64,${imageBase64}` : ''
-  const imageHeight = size === 'large' ? 'h-10' : 'h-8'
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_140px] gap-2.5 items-center">
+    <div className={`captcha-input${size === 'large' ? ' captcha-input--large' : ''}`}>
       <Input
         size={size}
-        value={captchaValue}
+        status={status}
+        value={value}
         placeholder="请输入验证码"
         allowClear
-        onChange={(e) => onCaptchaValueChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
       />
       <button
         type="button"
-        className={`${imageHeight} w-140px overflow-hidden rounded-md bg-[var(--ant-color-fill-quaternary)] p-0 cursor-pointer disabled:cursor-wait`}
+        className="captcha-input__image"
         disabled={loading}
         onClick={() => void refresh()}
+        aria-label="刷新验证码"
       >
         <Spin spinning={loading}>
-          {imageSrc ? (
-            <img src={imageSrc} alt="验证码" className={`block ${imageHeight} w-140px`} />
-          ) : null}
+          {imageSrc ? <img src={imageSrc} alt="验证码" /> : null}
         </Spin>
       </button>
     </div>

@@ -9,6 +9,7 @@ import { MonacoEditor } from '@/components/editor'
 import {
   SCENE_PATTERN,
   SMS_SCENE_LABELS,
+  isSmsSceneWired,
   normalizeScene,
   parseSmsTemplate,
   stringifySmsTemplate,
@@ -92,6 +93,21 @@ const columns = computed<DataTableColumns<Row>>(() => [
   { title: '名称', key: 'label', width: 160, ellipsis: { tooltip: true } },
   { title: '模板编号', key: 'code', width: 180, ellipsis: { tooltip: true } },
   { title: '内容说明', key: 'content', ellipsis: { tooltip: true } },
+  {
+    title: '状态',
+    key: 'wired',
+    width: 100,
+    render: (row) =>
+      h(
+        NTag,
+        {
+          size: 'small',
+          type: isSmsSceneWired(row.scene) ? 'success' : 'warning',
+          bordered: false,
+        },
+        () => (isSmsSceneWired(row.scene) ? '已接线' : '预留'),
+      ),
+  },
   {
     title: '是否内置',
     key: 'is_builtin',

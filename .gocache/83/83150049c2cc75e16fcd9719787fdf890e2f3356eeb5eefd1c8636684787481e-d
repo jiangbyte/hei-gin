@@ -1,0 +1,5 @@
+./doc.go
+./enums.go
+./password.go
+./permission.go
+./session.go

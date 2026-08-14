@@ -131,6 +131,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: '手机号', path: 'phone', width: 150 },
   { title: '邮箱', path: 'email', width: 220, ellipsis: { tooltip: true } },
   {
+    title: '三方',
+    key: 'oauth_bindings',
+    width: 160,
+    render: (row) => {
+      const list = Array.isArray(row.oauth_bindings) ? row.oauth_bindings : []
+      if (!list.length) return '-'
+      return (
+        <NFlex size={4} wrap>
+          {list.map((item: any) => (
+            <NTag key={item.provider} size="small" bordered={false}>
+              {dictTypeData('OAUTH_PROVIDER', item.provider) || item.provider}
+            </NTag>
+          ))}
+        </NFlex>
+      )
+    },
+  },
+  {
     title: '最近登录时间',
     path: 'latest_login_time',
     width: 190,

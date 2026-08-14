@@ -14,7 +14,6 @@ export const portalSeedToken = {
   colorSplit: '#eef2f7',
   fontFamily:
     "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  zIndexPopupBase: 200000,
 } as const
 
 export const portalComponentToken: ThemeConfig['components'] = {

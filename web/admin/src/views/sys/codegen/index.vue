@@ -17,9 +17,59 @@ import {
   refreshDict,
   renderButtonIcon,
 } from '@/utils'
-import { NButton, NCheckbox, NFlex, NInput, NInputNumber, NSelect, NTreeSelect } from 'naive-ui'
+import { NAlert, NButton, NCheckbox, NFlex, NInput, NInputNumber, NSelect, NTag, NTreeSelect } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
+
+/** 与后端 DbTypeMapper.toGoType 对齐的语义类型 → Go 类型 */
+function toGoType(semanticType: string | null | undefined) {
+  switch (semanticType) {
+    case 'int':
+      return 'int64'
+    case 'float':
+      return 'float64'
+    case 'bool':
+      return 'bool'
+    case 'datetime':
+      return 'time.Time'
+    case 'dict':
+      return 'datatypes.JSON'
+    default:
+      return 'string'
+  }
+}
+
+/** 与后端 CodegenNaming 对齐：Go 模块路径 → import path / 目录 */
+function packagesFromModulePath(modulePath: string) {
+  const parts = modulePath
+    .trim()
+    .replaceAll('\\', '/')
+    .split('/')
+    .filter(part => part && part !== '.')
+    .map(part => part.replaceAll('-', '_').toLowerCase())
+  if (!parts.length) {
+    return {
+      basePackage: 'hei-gin/modules/biz',
+      paramPackage: 'hei-gin/modules/biz',
+      moduleRoot: 'modules/biz',
+    }
+  }
+  const module = parts[0]
+  const feature = parts.length === 1 ? module : parts.slice(1).join('.')
+  const basePackage = `hei-gin/modules/${module}/${feature}`
+  return {
+    basePackage,
+    paramPackage: basePackage,
+    moduleRoot: `modules/${module}`,
+  }
+}
+
+const genTypeHelp: Record<string, string> = {
+  TABLE: '生成 modules 单表 CRUD（model/param/repo/service/handler/register）+ Vue 列表页与菜单 SQL。',
+  TREE: '在单表基础上增加树形接口 /tree 与 list 权限，前端为树形维护页。',
+  LEFT_TREE_TABLE: '主表左树（含 /tree），子表挂在主 Handler 的 /children/*，前端左树右表。',
+  MASTER_DETAIL: '主表列表 + 子表 /children/*，无树接口；前端主从表联动。',
+}
 
 const defaultForm = {
   name: '',
@@ -50,10 +100,10 @@ const defaultForm = {
 }
 
 const genTypeOptions = [
-  { label: '普通表', value: 'TABLE' },
-  { label: '树表', value: 'TREE' },
-  { label: '左树右表', value: 'LEFT_TREE_TABLE' },
-  { label: '主子表', value: 'MASTER_DETAIL' },
+  { label: '普通表 — 单表 CRUD 列表', value: 'TABLE' },
+  { label: '树表 — 树形维护（含 /tree）', value: 'TREE' },
+  { label: '左树右表 — 左树筛选 + 右表明细', value: 'LEFT_TREE_TABLE' },
+  { label: '主子表 — 主表列表 + 子表明细', value: 'MASTER_DETAIL' },
 ]
 
 const widgetOptions = [
@@ -104,35 +154,89 @@ const state = reactive({
   showPreview: false,
   previewFiles: [] as any[],
   previewPath: '',
+  previewGroup: 'backend' as 'backend' | 'frontend' | 'sql',
   previewLoading: false,
   downloadingId: '',
 })
 
 const needsTree = computed(() => ['TREE', 'LEFT_TREE_TABLE'].includes(state.form.gen_type))
 const needsSub = computed(() => ['LEFT_TREE_TABLE', 'MASTER_DETAIL'].includes(state.form.gen_type))
+const packagePreview = computed(() => packagesFromModulePath(state.form.main_module_path || ''))
+const currentGenTypeHelp = computed(() => genTypeHelp[state.form.gen_type] ?? '')
 const previewEditorOptions = computed(() => ({
   minimap: { enabled: false },
   scrollBeyondLastLine: false,
   wordWrap: 'off' as const,
   automaticLayout: true,
 }))
+function previewGroupOf(path: string): 'backend' | 'frontend' | 'sql' {
+  if (path.endsWith('.sql') || path.startsWith('scripts/')) {
+    return 'sql'
+  }
+  if (path.startsWith('web/')) {
+    return 'frontend'
+  }
+  return 'backend'
+}
+function previewLanguageLabel(language: string | undefined, path: string) {
+  if (language) {
+    return language
+  }
+  if (path.endsWith('.go')) {
+    return 'go'
+  }
+  if (path.endsWith('.vue')) {
+    return 'vue'
+  }
+  if (path.endsWith('.ts') || path.endsWith('.append')) {
+    return 'typescript'
+  }
+  if (path.endsWith('.sql')) {
+    return 'sql'
+  }
+  return 'text'
+}
+const previewGroupedFiles = computed(() =>
+  state.previewFiles.filter((file) => previewGroupOf(file.path) === state.previewGroup),
+)
+const previewGroupCounts = computed(() => {
+  const counts = { backend: 0, frontend: 0, sql: 0 }
+  for (const file of state.previewFiles) {
+    counts[previewGroupOf(file.path)] += 1
+  }
+  return counts
+})
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 const dictCodeOptions = computed(() => toDictCodeTreeOptions(dictDataAll()))
-const formRules = computed<FormRules>(() => ({
-  name: createRequiredRule('方案名称', 'input'),
-  author: createRequiredRule('作者', 'input'),
-  gen_type: createRequiredRule('生成类型', 'change'),
-  main_table: createRequiredRule('主表', 'change'),
-  main_pk: createRequiredRule('主键', 'change'),
-  main_entity_name: createRequiredRule('主实体类', 'input'),
-  main_module_path: createRequiredRule('后端模块路径', 'input'),
-  main_business_name: createRequiredRule('业务名称', 'input'),
-  api_prefix: createRequiredRule('接口前缀', 'input'),
-  permission_prefix: createRequiredRule('权限前缀', 'input'),
-  menu_name: createRequiredRule('菜单名称', 'input'),
-  menu_path: createRequiredRule('菜单路径', 'input'),
-  component_path: createRequiredRule('组件路径', 'input'),
-}))
+const formRules = computed<FormRules>(() => {
+  const rules: FormRules = {
+    name: createRequiredRule('方案名称', 'input'),
+    author: createRequiredRule('作者', 'input'),
+    gen_type: createRequiredRule('生成类型', 'change'),
+    main_table: createRequiredRule('主表', 'change'),
+    main_pk: createRequiredRule('主键', 'change'),
+    main_entity_name: createRequiredRule('主实体类名', 'input'),
+    main_module_path: createRequiredRule('模块路径', 'input'),
+    main_business_name: createRequiredRule('业务名称', 'input'),
+    api_prefix: createRequiredRule('接口前缀', 'input'),
+    permission_prefix: createRequiredRule('权限前缀', 'input'),
+    menu_name: createRequiredRule('菜单名称', 'input'),
+    menu_path: createRequiredRule('菜单路径', 'input'),
+    component_path: createRequiredRule('组件路径', 'input'),
+  }
+  if (needsTree.value) {
+    rules.tree_parent_field = createRequiredRule('父级字段', 'change')
+    rules.tree_label_field = createRequiredRule('展示字段', 'change')
+  }
+  if (needsSub.value) {
+    rules.sub_table = createRequiredRule('子表', 'change')
+    rules.sub_pk = createRequiredRule('子表主键', 'change')
+    rules.sub_foreign_key = createRequiredRule('子表外键', 'change')
+    rules.sub_entity_name = createRequiredRule('子实体类名', 'input')
+    rules.sub_business_name = createRequiredRule('子业务名称', 'input')
+  }
+  return rules
+})
 
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
@@ -250,7 +354,13 @@ const fieldColumns = computed(() => [
       />
     ),
   },
-  { title: 'Python', key: 'python_type', width: 130 },
+  {
+    title: 'Go',
+    key: 'go_type',
+    width: 160,
+    ellipsis: { tooltip: true },
+    render: (row: any) => toGoType(row.python_type),
+  },
   { title: 'TS', key: 'typescript_type', width: 140 },
   {
     title: '控件',
@@ -471,7 +581,7 @@ async function handleMainTableUpdate(value: string) {
     state.form.permission_prefix = `biz:${routePath.replaceAll('-', '')}`
     state.form.menu_name = entity
     state.form.menu_path = `/biz/${routePath}`
-    state.form.component_path = `/biz/${routePath}/index.vue`
+    state.form.component_path = `biz/${routePath}/index.vue`
   }
 }
 
@@ -549,13 +659,25 @@ async function openPreview(id: string) {
   state.previewLoading = true
   state.previewFiles = []
   state.previewPath = ''
+  state.previewGroup = 'backend'
   try {
     const response = await codegenApi.preview({ id })
     state.previewFiles = response.data?.files ?? []
-    state.previewPath = state.previewFiles[0]?.path ?? ''
+    const first = state.previewFiles.find((file) => previewGroupOf(file.path) === state.previewGroup)
+      ?? state.previewFiles[0]
+    if (first) {
+      state.previewGroup = previewGroupOf(first.path)
+      state.previewPath = first.path
+    }
   } finally {
     state.previewLoading = false
   }
+}
+
+function selectPreviewGroup(group: 'backend' | 'frontend' | 'sql') {
+  state.previewGroup = group
+  const first = state.previewFiles.find((file) => previewGroupOf(file.path) === group)
+  state.previewPath = first?.path ?? ''
 }
 
 async function download(id: string) {
@@ -756,6 +878,24 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
             label-placement="left"
             label-width="116"
           >
+            <NAlert
+              type="info"
+              class="mb-16px"
+              :bordered="false"
+              title="Go 模块产物"
+            >
+              交付方式为预览 + ZIP（不写回仓库）。Go 生成
+              <code>modules/{模块}</code>（model/param/result/repo/service/handler/register），
+              前端落在 <code>web/admin</code>。
+            </NAlert>
+            <NAlert
+              v-if="currentGenTypeHelp"
+              type="default"
+              class="mb-16px"
+              :bordered="false"
+            >
+              {{ currentGenTypeHelp }}
+            </NAlert>
             <NGrid
               :cols="2"
               :x-gap="16"
@@ -814,10 +954,13 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
               </NGi>
               <NGi>
                 <NFormItem
-                  label="主实体类"
+                  label="主实体类名"
                   path="main_entity_name"
                 >
-                  <NInput v-model:value="state.form.main_entity_name" />
+                  <NInput
+                    v-model:value="state.form.main_entity_name"
+                    placeholder="如 CgTestOrder"
+                  />
                 </NFormItem>
               </NGi>
               <NGi>
@@ -828,12 +971,28 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                   <NInput v-model:value="state.form.main_business_name" />
                 </NFormItem>
               </NGi>
-              <NGi>
+              <NGi :span="2">
                 <NFormItem
-                  label="后端模块路径"
+                  label="模块路径"
                   path="main_module_path"
                 >
-                  <NInput v-model:value="state.form.main_module_path" />
+                  <NFlex
+                    vertical
+                    class="w-full"
+                    :size="8"
+                  >
+                    <NInput
+                      v-model:value="state.form.main_module_path"
+                      placeholder="biz/cg_test_order（首段=业务域，其后=功能包）"
+                    />
+                    <div
+                      v-if="state.form.main_module_path"
+                      class="codegen-package-preview"
+                    >
+                      <div>Go 包：{{ packagePreview.basePackage }}</div>
+                      <div>输出目录：{{ packagePreview.moduleRoot }}</div>
+                    </div>
+                  </NFlex>
                 </NFormItem>
               </NGi>
               <NGi>
@@ -914,7 +1073,10 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsTree">
-                <NFormItem label="父级字段">
+                <NFormItem
+                  label="父级字段"
+                  path="tree_parent_field"
+                >
                   <NSelect
                     v-model:value="state.form.tree_parent_field"
                     filterable
@@ -923,7 +1085,10 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsTree">
-                <NFormItem label="展示字段">
+                <NFormItem
+                  label="展示字段"
+                  path="tree_label_field"
+                >
                   <NSelect
                     v-model:value="state.form.tree_label_field"
                     filterable
@@ -932,7 +1097,10 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsSub">
-                <NFormItem label="子表">
+                <NFormItem
+                  label="子表"
+                  path="sub_table"
+                >
                   <NSelect
                     v-model:value="state.form.sub_table"
                     filterable
@@ -942,7 +1110,10 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsSub">
-                <NFormItem label="子表主键">
+                <NFormItem
+                  label="子表主键"
+                  path="sub_pk"
+                >
                   <NSelect
                     v-model:value="state.form.sub_pk"
                     filterable
@@ -951,7 +1122,10 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsSub">
-                <NFormItem label="子表外键">
+                <NFormItem
+                  label="子表外键"
+                  path="sub_foreign_key"
+                >
                   <NSelect
                     v-model:value="state.form.sub_foreign_key"
                     filterable
@@ -960,12 +1134,21 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                 </NFormItem>
               </NGi>
               <NGi v-if="needsSub">
-                <NFormItem label="子实体类">
-                  <NInput v-model:value="state.form.sub_entity_name" />
+                <NFormItem
+                  label="子实体类名"
+                  path="sub_entity_name"
+                >
+                  <NInput
+                    v-model:value="state.form.sub_entity_name"
+                    placeholder="如 CgTestOrderItem"
+                  />
                 </NFormItem>
               </NGi>
               <NGi v-if="needsSub">
-                <NFormItem label="子业务名称">
+                <NFormItem
+                  label="子业务名称"
+                  path="sub_business_name"
+                >
                   <NInput v-model:value="state.form.sub_business_name" />
                 </NFormItem>
               </NGi>
@@ -1000,6 +1183,13 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
       width="min(1280px, 96vw)"
     >
       <NDrawerContent title="字段配置">
+        <NAlert
+          type="info"
+          class="mb-12px"
+          :bordered="false"
+        >
+          Go 列由库类型映射而来（string / int64 / float64 / time.Time 等），控件与字典会进入预览中的 Param、表单与查询条件。
+        </NAlert>
         <NDataTable
           :columns="fieldColumns"
           :data="state.fieldRows"
@@ -1035,38 +1225,84 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
       >
         <NSpin :show="state.previewLoading">
           <div class="codegen-preview">
-            <NTabs
+            <NFlex
               v-if="state.previewFiles.length"
-              v-model:value="state.previewPath"
-              type="card"
-              size="small"
-              animated
+              vertical
+              :size="12"
             >
-              <NTabPane
-                v-for="file in state.previewFiles"
-                :key="file.path"
-                :name="file.path"
-                :tab="previewTabLabel(file.path)"
-              >
-                <div
-                  v-if="state.previewPath === file.path"
-                  class="codegen-preview__file"
+              <NFlex :size="8">
+                <NButton
+                  size="small"
+                  :type="state.previewGroup === 'backend' ? 'primary' : 'default'"
+                  @click="selectPreviewGroup('backend')"
                 >
+                  Go ({{ previewGroupCounts.backend }})
+                </NButton>
+                <NButton
+                  size="small"
+                  :type="state.previewGroup === 'frontend' ? 'primary' : 'default'"
+                  @click="selectPreviewGroup('frontend')"
+                >
+                  前端 ({{ previewGroupCounts.frontend }})
+                </NButton>
+                <NButton
+                  size="small"
+                  :type="state.previewGroup === 'sql' ? 'primary' : 'default'"
+                  @click="selectPreviewGroup('sql')"
+                >
+                  SQL ({{ previewGroupCounts.sql }})
+                </NButton>
+              </NFlex>
+              <NTabs
+                v-if="previewGroupedFiles.length"
+                v-model:value="state.previewPath"
+                type="card"
+                size="small"
+                animated
+              >
+                <NTabPane
+                  v-for="file in previewGroupedFiles"
+                  :key="file.path"
+                  :name="file.path"
+                >
+                  <template #tab>
+                    <NFlex
+                      :size="6"
+                      align="center"
+                    >
+                      <NTag
+                        size="tiny"
+                        :bordered="false"
+                      >
+                        {{ previewLanguageLabel(file.language, file.path) }}
+                      </NTag>
+                      <span>{{ previewTabLabel(file.path) }}</span>
+                    </NFlex>
+                  </template>
                   <div
-                    class="codegen-preview__path"
-                    :title="file.path"
+                    v-if="state.previewPath === file.path"
+                    class="codegen-preview__file"
                   >
-                    {{ file.path }}
+                    <div
+                      class="codegen-preview__path"
+                      :title="file.path"
+                    >
+                      {{ file.path }}
+                    </div>
+                    <MonacoPreview
+                      :value="file.content"
+                      :language="file.language"
+                      height="calc(100vh - 220px)"
+                      :options="previewEditorOptions"
+                    />
                   </div>
-                  <MonacoPreview
-                    :value="file.content"
-                    :language="file.language"
-                    height="calc(100vh - 176px)"
-                    :options="previewEditorOptions"
-                  />
-                </div>
-              </NTabPane>
-            </NTabs>
+                </NTabPane>
+              </NTabs>
+              <NEmpty
+                v-else
+                description="当前分组暂无文件"
+              />
+            </NFlex>
             <NEmpty
               v-else
               description="暂无预览文件"
@@ -1079,6 +1315,17 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
 </template>
 
 <style scoped>
+.codegen-package-preview {
+  padding: 8px 12px;
+  border: 1px solid var(--n-border-color);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--n-text-color-3);
+  font-family: var(--n-font-family-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .codegen-preview {
   min-height: calc(100vh - 120px);
 }

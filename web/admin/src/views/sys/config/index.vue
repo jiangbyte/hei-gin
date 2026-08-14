@@ -12,6 +12,7 @@ import AuthRegisterForm from './components/AuthRegisterForm.vue'
 import AuthLoginForm from './components/AuthLoginForm.vue'
 import AuthPasswordForm from './components/AuthPasswordForm.vue'
 import AuthTokenForm from './components/AuthTokenForm.vue'
+import AuthOauthForm from './components/AuthOauthForm.vue'
 import MailEngineForm from './components/MailEngineForm.vue'
 import MailTemplatePanel from './components/MailTemplatePanel.vue'
 import SmsEngineForm from './components/SmsEngineForm.vue'
@@ -31,6 +32,7 @@ const navItems: Array<{ key: string; label: string }> = [
   { key: 'AUTH_LOGIN', label: '登录配置' },
   { key: 'AUTH_PASSWORD', label: '密码配置' },
   { key: 'AUTH_TOKEN', label: '令牌配置' },
+  { key: 'AUTH_OAUTH', label: '三方登录' },
   { key: 'MAIL', label: '邮件引擎' },
   { key: 'MAIL_TEMPLATE', label: '邮件模板' },
   { key: 'SMS', label: '短信引擎' },
@@ -48,6 +50,7 @@ const panelMap: Record<string, Component> = {
   AUTH_LOGIN: AuthLoginForm,
   AUTH_PASSWORD: AuthPasswordForm,
   AUTH_TOKEN: AuthTokenForm,
+  AUTH_OAUTH: AuthOauthForm,
   MAIL: MailEngineForm,
   MAIL_TEMPLATE: MailTemplatePanel,
   SMS: SmsEngineForm,
@@ -88,6 +91,11 @@ const menuOptions: MenuOption[] = [
         key: 'AUTH_TOKEN',
         label: '令牌配置',
         icon: renderIcon('icon-park-outline:key', 16),
+      },
+      {
+        key: 'AUTH_OAUTH',
+        label: '三方登录',
+        icon: renderIcon('icon-park-outline:people', 16),
       },
     ],
   },

@@ -1,19 +1,39 @@
 /** Author: Charlie */
 
-import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuthModalStore } from '@/stores/authModal'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { authApi } from '@/api'
+import { wireBool } from '@/utils/wire'
+import { AuthLoginForm } from './AuthLoginForm'
+import { PortalAuthShell } from './PortalAuthShell'
 
-/** 兼容深链 / 守卫跳转：打开登录弹窗并回到首页作为背景。 */
 export function LoginPage() {
-  const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const open = useAuthModalStore((s) => s.open)
+  const [registerEnabled, setRegisterEnabled] = useState(false)
 
   useEffect(() => {
-    open('login', params.get('redirect'))
-    navigate('/', { replace: true })
-  }, [navigate, open, params])
+    void authApi
+      .authOptions()
+      .then((res) => {
+        setRegisterEnabled(wireBool(res?.data?.register_enabled ?? false))
+      })
+      .catch(() => undefined)
+  }, [])
 
-  return null
+  return (
+    <PortalAuthShell
+      title="欢迎登录"
+      brandHeadline="登录门户，继续你的工作"
+      brandLead="个人中心、公告与反馈，开箱即用。"
+      footerNote="登录即表示同意相关服务条款与隐私政策"
+      headerExtra={
+        registerEnabled ? (
+          <Link to="/auth/register" className="linkish">
+            没有账号？去注册
+          </Link>
+        ) : null
+      }
+    >
+      <AuthLoginForm />
+    </PortalAuthShell>
+  )
 }

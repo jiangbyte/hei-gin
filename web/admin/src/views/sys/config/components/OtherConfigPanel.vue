@@ -223,7 +223,9 @@ async function deleteData(ids: string[]) {
             @click="openCreateModal"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:plus" />
+              </NIcon>
             </template>
           </NButton>
           <NButton
@@ -234,7 +236,9 @@ async function deleteData(ids: string[]) {
             @click="fetchPage"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:reload" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:reload" />
+              </NIcon>
             </template>
           </NButton>
           <NButton
@@ -247,7 +251,9 @@ async function deleteData(ids: string[]) {
             @click="confirmDelete(state.checkedRowKeys)"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:delete" />
+              </NIcon>
             </template>
           </NButton>
         </NFlex>

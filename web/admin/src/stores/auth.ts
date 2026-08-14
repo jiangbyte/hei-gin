@@ -24,6 +24,9 @@ interface AuthUserInfo {
   groupIdNames?: { id: string; name: string }[]
   permissionKeys: string[]
   profile?: Record<string, unknown> | null
+  passwordExpired?: boolean
+  forceBindEmail?: boolean
+  forceBindPhone?: boolean
   loginAt: number
 }
 
@@ -35,6 +38,8 @@ interface AuthState {
 const userInfoKey = 'user_info'
 const loginPath = '/auth/login'
 const userCenterPasswordPath = '/usercenter?tab=password'
+const userCenterEmailPath = '/usercenter?tab=email'
+const userCenterPhonePath = '/usercenter?tab=phone'
 
 function getStoredUserInfo() {
   const raw = localStorage.getItem(userInfoKey)
@@ -55,6 +60,32 @@ function getSafeRedirect(redirect?: string) {
     return import.meta.env.VITE_HOME_PATH
   }
   return redirect
+}
+
+export function resolveSecurityWallPath(user: AuthUserInfo | null | undefined): string | null {
+  if (!user) return null
+  if (user.passwordExpired) return userCenterPasswordPath
+  if (user.forceBindEmail) return userCenterEmailPath
+  if (user.forceBindPhone) return userCenterPhonePath
+  return null
+}
+
+export function isAllowedUnderSecurityWall(
+  path: string,
+  queryTab: string | undefined | null,
+  user: AuthUserInfo | null | undefined,
+): boolean {
+  if (!user) return true
+  if (user.passwordExpired) {
+    return path.startsWith('/usercenter') && queryTab === 'password'
+  }
+  if (user.forceBindEmail || user.forceBindPhone) {
+    if (!path.startsWith('/usercenter')) return false
+    if (user.forceBindEmail && queryTab === 'email') return true
+    if (user.forceBindPhone && queryTab === 'phone') return true
+    return false
+  }
+  return true
 }
 
 export const useAuthStore = defineStore('auth-store', {
@@ -117,14 +148,21 @@ export const useAuthStore = defineStore('auth-store', {
 
       // WireBool 序列化为 "true"/"false" 字符串，不能直接当 JS 真值用
       const passwordExpired = wireBool(response.data.password_expired ?? false)
+      const forceBindEmail = wireBool(response.data.force_bind_email ?? false)
+      const forceBindPhone = wireBool(response.data.force_bind_phone ?? false)
       const warningDays = response.data.password_expiry_warning_days
-      if (typeof warningDays === 'number' && warningDays > 0 && !passwordExpired) {
-        window.$message?.warning?.(`密码将在 ${warningDays} 天后过期，请及时修改`)
-      }
       if (passwordExpired) {
         window.$message?.warning?.('密码已过期，请先修改密码')
         await this.finishLogin(userCenterPasswordPath)
         return
+      }
+      if (forceBindEmail || forceBindPhone) {
+        window.$message?.warning?.('请先完成账号安全绑定')
+        await this.finishLogin(forceBindEmail ? userCenterEmailPath : userCenterPhonePath)
+        return
+      }
+      if (typeof warningDays === 'number' && warningDays > 0) {
+        window.$message?.warning?.(`密码将在 ${warningDays} 天后过期，请及时修改`)
       }
 
       await this.finishLogin(redirect)
@@ -137,7 +175,8 @@ export const useAuthStore = defineStore('auth-store', {
       await routeStore.initAuthRoute()
       syncDictTree()
       await refreshDict()
-      await router.push(getSafeRedirect(redirect))
+      const wall = resolveSecurityWallPath(this.userInfo)
+      await router.push(getSafeRedirect(wall || redirect))
     },
 
     async refreshUserInfo() {
@@ -158,6 +197,9 @@ export const useAuthStore = defineStore('auth-store', {
         groupIdNames: meResponse.data.group_id_names ?? [],
         permissionKeys: meResponse.data.permission_keys ?? [],
         profile: meResponse.data.profile ?? null,
+        passwordExpired: wireBool(meResponse.data.password_expired ?? false),
+        forceBindEmail: wireBool(meResponse.data.force_bind_email ?? false),
+        forceBindPhone: wireBool(meResponse.data.force_bind_phone ?? false),
         loginAt: this.userInfo?.loginAt ?? Date.now(),
       }
 

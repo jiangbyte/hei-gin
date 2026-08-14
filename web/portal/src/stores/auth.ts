@@ -10,6 +10,8 @@ import { getSafeRedirect } from '@/utils/validate'
 import { wireBool } from '@/utils/wire'
 
 const userCenterPasswordPath = '/usercenter?tab=password'
+const userCenterEmailPath = '/usercenter?tab=email'
+const userCenterPhonePath = '/usercenter?tab=phone'
 
 export interface AuthUserInfo {
   accountId: string
@@ -25,6 +27,9 @@ export interface AuthUserInfo {
   deptIdNames?: { id: string; name: string }[]
   groupIdNames?: { id: string; name: string }[]
   profile?: Record<string, unknown> | null
+  passwordExpired?: boolean
+  forceBindEmail?: boolean
+  forceBindPhone?: boolean
   loginAt: number
 }
 
@@ -52,6 +57,7 @@ interface AuthState {
   refreshUserInfo: () => Promise<any>
   logout: (redirect?: string) => Promise<void>
   resetSession: () => void
+  resolveSecurityRedirect: (fallback?: string) => string
 }
 
 function mapMe(data: any, loginAt = Date.now()): AuthUserInfo {
@@ -69,8 +75,38 @@ function mapMe(data: any, loginAt = Date.now()): AuthUserInfo {
     deptIdNames: data.dept_id_names ?? [],
     groupIdNames: data.group_id_names ?? [],
     profile: data.profile ?? null,
+    passwordExpired: wireBool(data.password_expired ?? false),
+    forceBindEmail: wireBool(data.force_bind_email ?? false),
+    forceBindPhone: wireBool(data.force_bind_phone ?? false),
     loginAt,
   }
+}
+
+export function resolveSecurityWallPath(user: AuthUserInfo | null | undefined): string | null {
+  if (!user) return null
+  if (user.passwordExpired) return userCenterPasswordPath
+  if (user.forceBindEmail) return userCenterEmailPath
+  if (user.forceBindPhone) return userCenterPhonePath
+  return null
+}
+
+export function isAllowedUnderSecurityWall(
+  pathname: string,
+  search: string,
+  user: AuthUserInfo | null | undefined,
+): boolean {
+  if (!user) return true
+  if (user.passwordExpired) {
+    return pathname.startsWith('/usercenter') && new URLSearchParams(search).get('tab') === 'password'
+  }
+  if (user.forceBindEmail || user.forceBindPhone) {
+    if (!pathname.startsWith('/usercenter')) return false
+    const tab = new URLSearchParams(search).get('tab')
+    if (user.forceBindEmail && tab === 'email') return true
+    if (user.forceBindPhone && tab === 'phone') return true
+    return false
+  }
+  return true
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -79,6 +115,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loggingOut: false,
 
   isLogin: () => Boolean(get().userInfo?.accountId),
+
+  resolveSecurityRedirect: (fallback) => {
+    return resolveSecurityWallPath(get().userInfo) || getSafeRedirect(fallback)
+  },
 
   ensureSession: async () => {
     if (get().sessionChecked) {
@@ -130,9 +170,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // WireBool 序列化为 "true"/"false" 字符串，不能直接当 JS 真值用
     const passwordExpired = wireBool(response.data.password_expired ?? false)
+    const forceBindEmail = wireBool(response.data.force_bind_email ?? false)
+    const forceBindPhone = wireBool(response.data.force_bind_phone ?? false)
     const warningDays = response.data.password_expiry_warning_days
     if (passwordExpired) {
       message.warning('密码已过期，请先修改密码')
+    } else if (forceBindEmail || forceBindPhone) {
+      message.warning('请先完成账号安全绑定')
     } else if (typeof warningDays === 'number' && warningDays > 0) {
       message.warning(`密码将在 ${warningDays} 天后过期，请及时修改`)
     }
@@ -142,7 +186,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     syncDictTree()
     await refreshDict()
 
-    return getSafeRedirect(passwordExpired ? userCenterPasswordPath : redirect)
+    return get().resolveSecurityRedirect(redirect)
   },
 
   refreshUserInfo: async () => {
@@ -160,7 +204,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ userInfo: null, sessionChecked: true })
   },
 
-  logout: async (redirect) => {
+  logout: async (redirectTo) => {
     set({ loggingOut: true })
     try {
       await authApi.logout()
@@ -171,9 +215,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loggingOut: false })
     }
 
-    const { useAuthModalStore } = await import('@/stores/authModal')
-    useAuthModalStore
-      .getState()
-      .open('login', redirect && !redirect.startsWith('/auth') ? redirect : undefined)
+    const query =
+      redirectTo && !redirectTo.startsWith('/auth')
+        ? `?redirect=${encodeURIComponent(redirectTo)}`
+        : ''
+    window.location.assign(`/auth/login${query}`)
   },
 }))

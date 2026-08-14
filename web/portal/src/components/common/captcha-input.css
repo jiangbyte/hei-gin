@@ -1,0 +1,43 @@
+/* 图形验证码：高度对齐同 size 的 Ant Input */
+
+.captcha-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  --captcha-control-height: var(--ant-control-height, 32px);
+}
+
+.captcha-input--large {
+  --captcha-control-height: var(--ant-control-height-lg, 40px);
+}
+
+.captcha-input__image {
+  box-sizing: border-box;
+  width: 140px;
+  height: var(--captcha-control-height);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: var(--ant-border-radius, 6px);
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  line-height: 0;
+}
+
+.captcha-input__image:disabled {
+  cursor: wait;
+}
+
+.captcha-input__image .ant-spin-nested-loading,
+.captcha-input__image .ant-spin-container {
+  height: 100%;
+}
+
+.captcha-input__image img {
+  display: block;
+  width: 140px;
+  height: var(--captcha-control-height);
+  object-fit: cover;
+}

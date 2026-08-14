@@ -6,7 +6,6 @@ import { NotificationOutlined, RightOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { PromoCarousel } from '@/components/common/PromoCarousel'
 import { useBannerSlides } from '@/hooks/useBannerSlides'
-import { useAuthModalStore } from '@/stores/authModal'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
 import { noticeApi } from '@/api'
@@ -30,7 +29,6 @@ export function HomePage() {
   const userInfo = useAuthStore((s) => s.userInfo)
   const isLogin = useAuthStore((s) => s.isLogin)
   const ensureSession = useAuthStore((s) => s.ensureSession)
-  const openAuthModal = useAuthModalStore((s) => s.open)
   const loggedIn = isLogin()
 
   const [announcements, setAnnouncements] = useState<any[]>([])
@@ -130,13 +128,12 @@ export function HomePage() {
                 账号设置
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={() => openAuthModal('login')}
+              <Link
+                to="/auth/login"
                 className="inline-flex items-center rounded-lg bg-[var(--ant-color-fill-quaternary)] px-4 py-2 text-sm font-medium hover:bg-[var(--ant-color-fill-secondary)]"
               >
                 登录
-              </button>
+              </Link>
             )}
           </div>
         </section>

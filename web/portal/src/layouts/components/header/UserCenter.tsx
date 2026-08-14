@@ -11,7 +11,6 @@ import {
 } from '@ant-design/icons'
 import type { DropdownProps, MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAuthModalStore } from '@/stores/authModal'
 import { useAuthStore } from '@/stores/auth'
 
 type Props = {
@@ -25,7 +24,6 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
   const userInfo = useAuthStore((s) => s.userInfo)
   const ensureSession = useAuthStore((s) => s.ensureSession)
   const logout = useAuthStore((s) => s.logout)
-  const openAuthModal = useAuthModalStore((s) => s.open)
 
   const loggedIn = Boolean(userInfo?.accountId)
 
@@ -42,7 +40,7 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
             className="!h-10 !w-10 !px-0"
             icon={<UserOutlined />}
             aria-label="登录"
-            onClick={() => openAuthModal('login')}
+            onClick={() => navigate('/auth/login')}
           />
         </Tooltip>
       )
@@ -50,8 +48,8 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
 
     return (
       <Space size={8}>
-        <Button onClick={() => openAuthModal('register')}>注册</Button>
-        <Button type="primary" onClick={() => openAuthModal('login')}>
+        <Button onClick={() => navigate('/auth/register')}>注册</Button>
+        <Button type="primary" onClick={() => navigate('/auth/login')}>
           登录
         </Button>
       </Space>

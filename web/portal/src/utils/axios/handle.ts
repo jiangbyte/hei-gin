@@ -115,13 +115,13 @@ async function redirectToLogin(error: AxiosError) {
   }
 
   const { pathname, search } = window.location
-  const { useAuthModalStore } = await import('@/stores/authModal')
-  if (pathname.startsWith('/auth/forgot-password')) {
+  if (pathname.startsWith('/auth/forgot-password') || pathname.startsWith('/auth/login')) {
     return
   }
   const redirect =
     pathname.startsWith('/auth') || pathname === '/' ? undefined : `${pathname}${search}`
-  useAuthModalStore.getState().open('login', redirect)
+  const query = redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''
+  window.location.assign(`/auth/login${query}`)
 }
 
 function showErrorMessage(error: AxiosError) {

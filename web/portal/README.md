@@ -4,10 +4,10 @@ React 门户。账号体系为 **PORTAL**，接口前缀 `/api/v1/portal/*`。
 
 ## 功能
 
-- 登录 / 注册（弹窗）；忘记密码、重置密码（页面）
-- Cookie 会话
+- 全页认证：登录 / 注册 / 找回与重置密码（`/auth/*`）；支持三方登录入口
+- Cookie 会话（可关，仅 Header）
 - 首页、公告、反馈
-- 个人主页、账号中心（资料、密码、邮箱、手机、消息）
+- 个人主页、账号中心（资料、密码、邮箱、手机、消息、OAuth 绑定）
 
 ## 技术栈
 
@@ -47,11 +47,11 @@ pnpm format
 ```bash
 pnpm build
 
-docker build -t hei-fastapi-portal .
+docker build -t hei-boot-portal .
 docker run -d \
   -e BACKEND_URL="http://host.docker.internal:8000" \
   -p 8082:80 \
-  hei-fastapi-portal
+  hei-boot-portal
 ```
 
 或在仓库根目录：`docker compose --profile portal up -d`。

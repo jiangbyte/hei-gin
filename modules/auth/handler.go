@@ -35,11 +35,24 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 	api.POST("/v1/admin/logout", middleware.RequireAccountType(security.AccountAdmin), s.logout)
 	api.POST("/v1/portal/logout", middleware.RequireAccountType(security.AccountPortal), s.logout)
 
+	api.GET("/v1/admin/public/auth-options", s.authOptions(security.AccountAdmin))
+	api.GET("/v1/portal/public/auth-options", s.authOptions(security.AccountPortal))
+
+	api.POST("/v1/admin/auth/refresh", middleware.RequireAccountType(security.AccountAdmin), s.refresh(security.AccountAdmin))
+	api.POST("/v1/portal/auth/refresh", middleware.RequireAccountType(security.AccountPortal), s.refresh(security.AccountPortal))
+
+	api.POST("/v1/admin/cancel", middleware.RequireAccountType(security.AccountAdmin), s.cancel(security.AccountAdmin))
+	api.POST("/v1/portal/cancel", middleware.RequireAccountType(security.AccountPortal), s.cancel(security.AccountPortal))
+
+	api.POST("/v1/portal/register/send-code", middleware.RateLimit(rdb, "portal:register-send-code", 10, 60), s.registerSendCode)
+
 	api.POST("/v1/portal/register", s.register)
 
 	if s.oauth != nil {
 		s.oauth.RegisterRoutes(api)
+		s.oauth.RegisterBindingRoutes(api, s.perms)
 	}
+	s.registerSessionRoutes(api)
 }
 
 func (s *Service) captcha(c *gin.Context) {
@@ -168,4 +181,47 @@ func (s *Service) resetPassword(accountType security.AccountType) gin.HandlerFun
 		}
 		response.OK(c, nil)
 	}
+}
+
+func (s *Service) authOptions(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		response.OK(c, s.AuthOptions(c.Request.Context(), accountType))
+	}
+}
+
+func (s *Service) refresh(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		out, err := s.RefreshSession(c.Request.Context(), accountType, c.ClientIP(), c.Request.UserAgent())
+		if err != nil {
+			response.Fail(c, http.StatusUnauthorized, 401, err.Error())
+			return
+		}
+		response.OK(c, out)
+	}
+}
+
+func (s *Service) cancel(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req CancelParam
+		_ = bind.JSON(c, &req)
+		if err := s.CancelAccount(c.Request.Context(), accountType, c.ClientIP(), c.Request.UserAgent(), req.CancelReason); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
+		response.OK(c, LogoutResult{Success: true})
+	}
+}
+
+func (s *Service) registerSendCode(c *gin.Context) {
+	var req SendLoginCodeParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.sendRegisterCode(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
 }

@@ -1,0 +1,11 @@
+./accounts.go
+./captcha.go
+./ext.go
+./handler.go
+./param.go
+./protection.go
+./register.go
+./repo.go
+./result.go
+./service.go
+./session.go

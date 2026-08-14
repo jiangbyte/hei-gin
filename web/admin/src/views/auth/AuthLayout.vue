@@ -9,7 +9,6 @@ import './auth-page.css'
 
 const props = withDefaults(
   defineProps<{
-    /** split：登录分栏；center：找回/重置居中 */
     variant?: 'split' | 'center'
     title: string
     description?: string
@@ -45,47 +44,81 @@ const brandMark = computed(() => String(appTitle).slice(0, 1).toUpperCase())
 
 <template>
   <div
-    class="auth-page"
+    class="admin-auth"
     :class="{
-      'auth-page--center': variant === 'center',
-      'auth-page--dark': isDarkTheme,
+      'admin-auth--center': variant === 'center',
+      'admin-auth--dark': isDarkTheme,
     }"
   >
-    <div class="auth-page__tools">
+    <div class="admin-auth__tools">
       <DarkModeSwitch />
     </div>
 
     <template v-if="variant === 'split'">
-      <div class="auth-card">
-        <aside class="auth-card__brand">
-          <div
-            class="auth-card__brand-deco"
-            aria-hidden="true"
-          />
-          <div class="auth-card__brand-inner">
+      <div class="admin-auth__stage admin-auth__enter">
+        <section class="admin-auth__panel admin-auth__panel--form">
+          <div class="admin-auth__mobile-brand">
             <RouterLink
-              class="auth-card__logo"
+              class="admin-auth__brand-link"
               to="/auth/login"
             >
-              <span class="auth-card__logo-mark">{{ brandMark }}</span>
-              <span class="auth-card__logo-text">{{ appTitle }}</span>
+              <span class="admin-auth__mark">{{ brandMark }}</span>
+              <span class="admin-auth__name">{{ appTitle }}</span>
             </RouterLink>
-            <p class="auth-card__eyebrow">
-              Administration Console
-            </p>
-            <h2 class="auth-card__headline">
-              管理端控制台
-            </h2>
-            <p class="auth-card__lead">
-              统一管理组织、权限、消息与系统配置。
-            </p>
+          </div>
+          <header class="admin-auth__head">
+            <h1 class="admin-auth__title">
+              {{ title }}
+            </h1>
+            <div
+              v-if="$slots.headerExtra"
+              class="admin-auth__head-extra"
+            >
+              <slot name="headerExtra" />
+            </div>
+          </header>
+          <p
+            v-if="description"
+            class="admin-auth__desc"
+          >
+            {{ description }}
+          </p>
+          <div class="admin-auth__body">
+            <slot />
+          </div>
+        </section>
+
+        <aside class="admin-auth__panel admin-auth__panel--brand">
+          <div
+            class="admin-auth__scan"
+            aria-hidden="true"
+          />
+          <div class="admin-auth__brand-inner">
+            <RouterLink
+              class="admin-auth__brand-link admin-auth__brand-link--on-dark"
+              to="/auth/login"
+            >
+              <span class="admin-auth__mark">{{ brandMark }}</span>
+              <span class="admin-auth__name">{{ appTitle }}</span>
+            </RouterLink>
+            <div class="admin-auth__brand-copy">
+              <p class="admin-auth__eyebrow">
+                Administration
+              </p>
+              <h2 class="admin-auth__headline">
+                管理端控制台
+              </h2>
+              <p class="admin-auth__lead">
+                统一管理组织、权限、消息与系统配置。
+              </p>
+            </div>
             <div
               v-if="copyright"
-              class="auth-card__brand-foot"
+              class="admin-auth__foot"
             >
               <a
                 v-if="copyrightHref"
-                class="auth-card__copyright-link"
+                class="admin-auth__copyright"
                 :href="copyrightHref"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -94,44 +127,35 @@ const brandMark = computed(() => String(appTitle).slice(0, 1).toUpperCase())
                 {{ copyright }}
               </template>
             </div>
+            <div
+              v-else
+              class="admin-auth__foot admin-auth__foot--spacer"
+              aria-hidden="true"
+            />
           </div>
         </aside>
-
-        <div class="auth-card__form">
-          <div class="auth-card__form-head">
-            <h1 class="auth-card__title">
-              {{ title }}
-            </h1>
-            <div
-              v-if="$slots.headerExtra"
-              class="auth-card__form-extra"
-            >
-              <slot name="headerExtra" />
-            </div>
-          </div>
-          <slot />
-        </div>
       </div>
     </template>
 
     <template v-else>
-      <div class="auth-center">
+      <div class="admin-auth__center admin-auth__enter">
         <RouterLink
-          class="auth-center__logo"
+          class="admin-auth__brand-link"
           to="/auth/login"
         >
-          <span class="auth-center__logo-mark">{{ brandMark }}</span>
+          <span class="admin-auth__mark">{{ brandMark }}</span>
+          <span class="admin-auth__name">{{ appTitle }}</span>
         </RouterLink>
-        <h1 class="auth-center__title">
+        <h1 class="admin-auth__title">
           {{ title }}
         </h1>
         <p
           v-if="description"
-          class="auth-center__desc"
+          class="admin-auth__desc"
         >
           {{ description }}
         </p>
-        <div class="auth-center__body">
+        <div class="admin-auth__body">
           <slot />
         </div>
       </div>

@@ -324,7 +324,9 @@ async function deleteRows(ids: string[]) {
             @click="openCreatePage"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:plus" />
+              </NIcon>
             </template>
           </NButton>
           <NButton
@@ -333,7 +335,9 @@ async function deleteRows(ids: string[]) {
             @click="fetchPage"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:refresh" />
+              </NIcon>
             </template>
           </NButton>
           <NButton
@@ -344,7 +348,9 @@ async function deleteRows(ids: string[]) {
             @click="confirmDelete(state.checkedRowKeys)"
           >
             <template #icon>
-              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+              <NIcon>
+                <Icon icon="icon-park-outline:delete" />
+              </NIcon>
             </template>
           </NButton>
         </NFlex>

@@ -27,6 +27,14 @@ export function sendPasswordChangeCode() {
   return http.post<any>(`${authPrefix}/user-center/password/send-code`)
 }
 
+export function sendBindEmailCode(data: { target: string }) {
+  return http.post<any>(`${authPrefix}/user-center/email/send-code`, data)
+}
+
+export function sendBindPhoneCode(data: { target: string }) {
+  return http.post<any>(`${authPrefix}/user-center/phone/send-code`, data)
+}
+
 export function captcha() {
   return http.get<any>(`${authPrefix}/captcha`, {
     public: true,
@@ -84,4 +92,36 @@ export function updateUserCenterPhone(data: any) {
 
 export function updateUserCenterEmail(data: any) {
   return http.post<any>(`${authPrefix}/user-center/email/update`, data)
+}
+
+export function oauthAuthorize(provider: string, params?: { intent?: string; redirect?: string }) {
+  return http.get<any>(`${authPrefix}/oauth/${provider}/authorize`, {
+    public: true,
+    params: {
+      intent: params?.intent || 'LOGIN',
+      ...(params?.redirect ? { redirect: params.redirect } : {}),
+    },
+  })
+}
+
+export function oauthExchange(data: { code: string }) {
+  return http.post<any>(`${authPrefix}/oauth/exchange`, data, {
+    public: true,
+  })
+}
+
+export function oauthBindings() {
+  return http.get<any>(`${authPrefix}/oauth/bindings`)
+}
+
+export function oauthBindAuthorize(provider: string) {
+  return http.post<any>(`${authPrefix}/oauth/${provider}/bind/authorize`)
+}
+
+export function oauthUnbind(provider: string) {
+  return http.post<any>(`${authPrefix}/oauth/${provider}/unbind`)
+}
+
+export function adminOauthUnbind(data: { account_id: string; provider: string }) {
+  return http.post<any>(`${authPrefix}/sys/accounts/oauth/unbind`, data)
 }

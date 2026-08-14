@@ -1,0 +1,9 @@
+./emit.go
+./handler.go
+./model.go
+./param.go
+./register.go
+./repo.go
+./result.go
+./service.go
+./templates.go

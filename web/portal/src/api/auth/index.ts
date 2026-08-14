@@ -25,8 +25,20 @@ export function sendLoginCode(data: any) {
   return http.post<any>(`${prefix}/send-login-code`, data, { public: true })
 }
 
+export function sendRegisterCode(data: any) {
+  return http.post<any>(`${prefix}/register/send-code`, data, { public: true })
+}
+
 export function sendPasswordChangeCode() {
   return http.post<any>(`${prefix}/user-center/password/send-code`)
+}
+
+export function sendBindEmailCode(data: { target: string }) {
+  return http.post<any>(`${prefix}/user-center/email/send-code`, data)
+}
+
+export function sendBindPhoneCode(data: { target: string }) {
+  return http.post<any>(`${prefix}/user-center/phone/send-code`, data)
 }
 
 export function register(data: any) {
@@ -89,4 +101,32 @@ export function getPublicSpace(accountId: string) {
     public: true,
     params: { account_id: accountId },
   })
+}
+
+export function oauthAuthorize(provider: string, params?: { intent?: string; redirect?: string }) {
+  return http.get<any>(`${prefix}/oauth/${provider}/authorize`, {
+    public: true,
+    params: {
+      intent: params?.intent || 'LOGIN',
+      ...(params?.redirect ? { redirect: params.redirect } : {}),
+    },
+  })
+}
+
+export function oauthExchange(data: { code: string }) {
+  return http.post<any>(`${prefix}/oauth/exchange`, data, {
+    public: true,
+  })
+}
+
+export function oauthBindings() {
+  return http.get<any>(`${prefix}/oauth/bindings`)
+}
+
+export function oauthBindAuthorize(provider: string) {
+  return http.post<any>(`${prefix}/oauth/${provider}/bind/authorize`)
+}
+
+export function oauthUnbind(provider: string) {
+  return http.post<any>(`${prefix}/oauth/${provider}/unbind`)
 }

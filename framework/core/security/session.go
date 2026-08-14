@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"strings"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -148,6 +149,36 @@ func (s *SessionStore) Touch(ctx context.Context, p *SessionPayload, ttl time.Du
 // CountForAccount 返回账号当前会话数。
 func (s *SessionStore) CountForAccount(ctx context.Context, accountID string) (int64, error) {
 	return s.rdb.SCard(ctx, s.indexPref+accountID).Result()
+}
+
+// ListAccountIDs 列出全部有会话的账号 ID（按索引前缀 SCAN）。
+func (s *SessionStore) ListAccountIDs(ctx context.Context) ([]string, error) {
+	var out []string
+	var cursor uint64
+	for {
+		keys, next, err := s.rdb.Scan(ctx, cursor, s.indexPref+"*", 200).Result()
+		if err != nil {
+			return nil, err
+		}
+		for _, k := range keys {
+			out = append(out, strings.TrimPrefix(k, s.indexPref))
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return out, nil
+}
+
+// ListTokensForAccount 列出某账号全部 token。
+func (s *SessionStore) ListTokensForAccount(ctx context.Context, accountID string) ([]string, error) {
+	return s.rdb.SMembers(ctx, s.indexPref+accountID).Result()
+}
+
+// GetTokenSet 读取账号 token 索引集合（不存在返回空）。
+func (s *SessionStore) GetTokenSet(ctx context.Context, accountID string) ([]string, error) {
+	return s.ListTokensForAccount(ctx, accountID)
 }
 
 // SessionCookiePath 按账号类型返回隔离的 Cookie Path。
