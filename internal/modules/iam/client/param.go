@@ -1,3 +1,7 @@
+// internal/modules/iam/client/param.go 入参定义。
+//
+// Author: Charlie
+
 package client
 
 // ModuleAddParam 创建客户端模块入参。

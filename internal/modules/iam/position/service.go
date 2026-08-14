@@ -1,3 +1,7 @@
+// internal/modules/iam/position/service.go 业务服务。
+//
+// Author: Charlie
+
 package position
 
 import (

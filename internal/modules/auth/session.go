@@ -1,3 +1,7 @@
+// internal/modules/auth/session.go 会话管理。
+//
+// Author: Charlie
+
 package auth
 
 import (

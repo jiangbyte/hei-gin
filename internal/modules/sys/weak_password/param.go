@@ -1,3 +1,7 @@
+// internal/modules/sys/weak_password/param.go 入参定义。
+//
+// Author: Charlie
+
 package weakpassword
 
 import "hei-gin/internal/framework/core/schema"

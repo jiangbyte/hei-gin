@@ -1,3 +1,7 @@
+// internal/modules/iam/group/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package group
 
 import (

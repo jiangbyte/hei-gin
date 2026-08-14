@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_order/result.go 出参定义。
+//
+// Author: Charlie
+
 package cg_test_order
 
 // DetailResult 订单详情（与实体一致）。

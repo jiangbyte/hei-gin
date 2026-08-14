@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_order/register.go 模块自注册。
+//
+// Author: Charlie
+
 package cg_test_order
 
 import (

@@ -1,4 +1,6 @@
 // Package schema 提供通用查询 DTO（分页、单 ID）。
+//
+// Author: Charlie
 package schema
 
 // PageQuery 通用分页查询。

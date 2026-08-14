@@ -1,3 +1,7 @@
+// internal/framework/core/security/password.go 密码哈希。
+//
+// Author: Charlie
+
 package security
 
 import (

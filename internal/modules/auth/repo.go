@@ -1,3 +1,7 @@
+// internal/modules/auth/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package auth
 
 import (

@@ -1,4 +1,6 @@
 // Package cg_test_activity 为代码生成演示的活动业务模块。
+//
+// Author: Charlie
 package cg_test_activity
 
 import (

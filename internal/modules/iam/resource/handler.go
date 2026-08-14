@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package resource
 
 import (

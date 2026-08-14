@@ -1,3 +1,7 @@
+// internal/modules/user/portal/param.go 入参定义。
+//
+// Author: Charlie
+
 package portal
 
 // ProfileUpdateParam 资料更新入参。

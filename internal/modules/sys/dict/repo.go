@@ -1,3 +1,7 @@
+// internal/modules/sys/dict/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package dict
 
 import (

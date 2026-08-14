@@ -1,3 +1,7 @@
+// internal/modules/iam/account/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package account
 
 import (

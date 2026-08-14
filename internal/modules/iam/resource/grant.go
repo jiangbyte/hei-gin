@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/grant.go 授权逻辑。
+//
+// Author: Charlie
+
 package resource
 
 import (

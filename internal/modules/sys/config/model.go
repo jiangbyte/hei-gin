@@ -1,4 +1,6 @@
 // Package config 提供系统运行时配置项管理。
+//
+// Author: Charlie
 package config
 
 import (

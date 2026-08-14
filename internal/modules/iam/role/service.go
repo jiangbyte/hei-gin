@@ -1,3 +1,7 @@
+// internal/modules/iam/role/service.go 业务服务。
+//
+// Author: Charlie
+
 package role
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/dashboard/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package dashboard
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/dashboard/service.go 业务服务。
+//
+// Author: Charlie
+
 package dashboard
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/iam/client/result.go 出参定义。
+//
+// Author: Charlie
+
 package client
 
 // TreeNode 客户端资源树节点。

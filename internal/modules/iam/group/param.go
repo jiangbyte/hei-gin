@@ -1,3 +1,7 @@
+// internal/modules/iam/group/param.go 入参定义。
+//
+// Author: Charlie
+
 package group
 
 import "hei-gin/internal/modules/iam/relation"

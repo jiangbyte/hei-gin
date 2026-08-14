@@ -1,3 +1,7 @@
+// internal/modules/iam/dept/register.go 模块自注册。
+//
+// Author: Charlie
+
 package dept
 
 import (

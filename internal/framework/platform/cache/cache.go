@@ -1,4 +1,6 @@
 // Package cache å°è£… Redis å®¢æˆ·ç«¯æ‰“å¼€ä¸Žé…ç½®å˜æ›´é¢‘é“å¸¸é‡ã€‚
+//
+// Author: Charlie
 package cache
 
 import (

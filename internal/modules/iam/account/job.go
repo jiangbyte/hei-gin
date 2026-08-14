@@ -1,3 +1,7 @@
+// internal/modules/iam/account/job.go 定时任务。
+//
+// Author: Charlie
+
 package account
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_catalog/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package cg_test_catalog
 
 import (

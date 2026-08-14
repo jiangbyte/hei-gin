@@ -1,3 +1,7 @@
+// internal/modules/sys/banner/service.go 业务服务。
+//
+// Author: Charlie
+
 package banner
 
 import (

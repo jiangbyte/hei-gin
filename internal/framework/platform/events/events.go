@@ -1,4 +1,6 @@
 // Package events 提供进程内生命周期 / 领域事件总线。
+//
+// Author: Charlie
 package events
 
 import (

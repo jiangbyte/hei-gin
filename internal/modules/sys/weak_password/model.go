@@ -1,4 +1,6 @@
 // Package weakpassword 提供弱密码黑名单管理。
+//
+// Author: Charlie
 package weakpassword
 
 import "time"

@@ -1,3 +1,7 @@
+// internal/framework/core/config/config.go 启动配置。
+//
+// Author: Charlie
+
 package config
 
 import (

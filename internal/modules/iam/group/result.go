@@ -1,3 +1,7 @@
+// internal/modules/iam/group/result.go 出参定义。
+//
+// Author: Charlie
+
 package group
 
 import (

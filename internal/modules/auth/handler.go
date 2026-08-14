@@ -1,3 +1,7 @@
+// internal/modules/auth/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package auth
 
 import (

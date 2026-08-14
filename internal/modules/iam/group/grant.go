@@ -1,3 +1,7 @@
+// internal/modules/iam/group/grant.go 授权逻辑。
+//
+// Author: Charlie
+
 package group
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/iam/result/loader.go 账号视图加载。
+//
+// Author: Charlie
+
 package result
 
 import (

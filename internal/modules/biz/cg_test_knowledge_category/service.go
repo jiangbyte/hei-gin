@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_knowledge_category/service.go 业务服务。
+//
+// Author: Charlie
+
 package cg_test_knowledge_category
 
 import (

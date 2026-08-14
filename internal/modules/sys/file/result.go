@@ -1,3 +1,7 @@
+// internal/modules/sys/file/result.go 出参定义。
+//
+// Author: Charlie
+
 package file
 
 // ObjectNameParam 按对象名获取 URL 入参。

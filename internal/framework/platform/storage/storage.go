@@ -1,4 +1,6 @@
 // Package storage æŠ½è±¡å¯¹è±¡å­˜å‚¨ï¼ˆlocal é»˜è®¤ï¼›S3 å…¼å®¹å¯åŽç»­æŽ¥å…¥ï¼‰ã€‚
+//
+// Author: Charlie
 package storage
 
 import (

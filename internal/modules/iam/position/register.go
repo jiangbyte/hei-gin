@@ -1,3 +1,7 @@
+// internal/modules/iam/position/register.go 模块自注册。
+//
+// Author: Charlie
+
 package position
 
 import (

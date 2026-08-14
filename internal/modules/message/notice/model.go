@@ -1,4 +1,6 @@
 // Package notice 提供站内通知公告管理。
+//
+// Author: Charlie
 package notice
 
 import (

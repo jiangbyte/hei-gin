@@ -1,3 +1,7 @@
+// internal/framework/platform/module/module.go 模块注册表。
+//
+// Author: Charlie
+
 package module
 
 import (

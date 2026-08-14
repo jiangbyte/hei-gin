@@ -1,3 +1,7 @@
+// internal/framework/core/security/session.go 会话管理。
+//
+// Author: Charlie
+
 package security
 
 import (

@@ -1,4 +1,6 @@
 // Package audit 提供操作审计日志查询。
+//
+// Author: Charlie
 package audit
 
 import (

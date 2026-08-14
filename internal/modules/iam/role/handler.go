@@ -1,3 +1,7 @@
+// internal/modules/iam/role/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package role
 
 import (

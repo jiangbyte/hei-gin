@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/templates.go 代码生成模板。
+//
+// Author: Charlie
+
 package codegen
 
 // ç”Ÿæˆ model.goï¼ˆGORM å®žä½“ï¼‰ã€‚

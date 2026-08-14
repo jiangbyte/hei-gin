@@ -1,3 +1,7 @@
+// internal/modules/auth/ext.go 认证扩展。
+//
+// Author: Charlie
+
 package auth
 
 import (

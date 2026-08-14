@@ -1,3 +1,7 @@
+// internal/modules/user/portal/service.go 业务服务。
+//
+// Author: Charlie
+
 package portal
 
 import (

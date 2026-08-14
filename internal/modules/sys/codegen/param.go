@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/param.go 入参定义。
+//
+// Author: Charlie
+
 package codegen
 
 import "hei-gin/internal/framework/core/schema"

@@ -1,4 +1,6 @@
 // Package shared å‘ä¸šåŠ¡æ¨¡å—æ³¨å…¥çš„ä¾èµ–è§†å›¾ï¼ˆå­—æ®µåŒ framework/module.Depsï¼‰ã€‚
+//
+// Author: Charlie
 package shared
 
 import (

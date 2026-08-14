@@ -1,3 +1,7 @@
+// internal/modules/sys/file/param.go 入参定义。
+//
+// Author: Charlie
+
 package file
 
 import "hei-gin/internal/framework/core/schema"

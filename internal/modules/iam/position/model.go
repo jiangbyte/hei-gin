@@ -1,3 +1,7 @@
+// internal/modules/iam/position/model.go 数据模型。
+//
+// Author: Charlie
+
 package position
 
 import (

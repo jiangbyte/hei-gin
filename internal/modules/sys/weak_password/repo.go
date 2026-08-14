@@ -1,3 +1,7 @@
+// internal/modules/sys/weak_password/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package weakpassword
 
 import (

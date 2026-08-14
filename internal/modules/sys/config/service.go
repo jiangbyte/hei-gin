@@ -1,3 +1,7 @@
+// internal/modules/sys/config/service.go 业务服务。
+//
+// Author: Charlie
+
 package config
 
 import (

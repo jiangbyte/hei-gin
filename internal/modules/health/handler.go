@@ -1,3 +1,7 @@
+// internal/modules/health/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package health
 
 import (

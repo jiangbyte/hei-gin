@@ -1,3 +1,7 @@
+// internal/modules/sys/banner/param.go 入参定义。
+//
+// Author: Charlie
+
 package banner
 
 import (

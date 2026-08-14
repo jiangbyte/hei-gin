@@ -1,3 +1,7 @@
+// internal/modules/dashboard/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package dashboard
 
 import (

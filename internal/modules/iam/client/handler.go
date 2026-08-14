@@ -1,3 +1,7 @@
+// internal/modules/iam/client/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package client
 
 import (

@@ -1,4 +1,6 @@
 // Package cg_test_order 为代码生成演示的订单业务模块。
+//
+// Author: Charlie
 package cg_test_order
 
 import (

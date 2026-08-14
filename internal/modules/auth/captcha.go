@@ -1,3 +1,7 @@
+// internal/modules/auth/captcha.go 验证码。
+//
+// Author: Charlie
+
 package auth
 
 import (

@@ -1,3 +1,7 @@
+// internal/app/modules.go 模块装配。
+//
+// Author: Charlie
+
 package app
 
 import (

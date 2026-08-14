@@ -1,3 +1,7 @@
+// internal/modules/user/portal/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package portal
 
 import (

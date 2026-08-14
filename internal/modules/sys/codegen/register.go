@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/register.go 模块自注册。
+//
+// Author: Charlie
+
 package codegen
 
 import (

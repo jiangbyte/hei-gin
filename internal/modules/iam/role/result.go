@@ -1,3 +1,7 @@
+// internal/modules/iam/role/result.go 出参定义。
+//
+// Author: Charlie
+
 package role
 
 import (

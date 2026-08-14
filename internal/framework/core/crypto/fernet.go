@@ -2,6 +2,8 @@
 //
 // 若 Config.Crypto.VaultAddr 已设置，仍仅从环境变量 / 配置读取 FernetKey
 // （HEI_CRYPTO_FERNET_KEY 或 crypto.fernet_key），不实现完整 Vault 客户端。
+//
+// Author: Charlie
 package crypto
 
 import (

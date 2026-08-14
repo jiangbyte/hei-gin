@@ -1,3 +1,7 @@
+// internal/modules/user/admin/register.go 模块自注册。
+//
+// Author: Charlie
+
 package admin
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/sys/file/service.go 业务服务。
+//
+// Author: Charlie
+
 package file
 
 import (

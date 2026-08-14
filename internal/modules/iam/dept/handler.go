@@ -1,3 +1,7 @@
+// internal/modules/iam/dept/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package dept
 
 import (

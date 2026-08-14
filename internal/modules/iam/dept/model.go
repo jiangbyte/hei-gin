@@ -1,3 +1,7 @@
+// internal/modules/iam/dept/model.go 数据模型。
+//
+// Author: Charlie
+
 package dept
 
 import (

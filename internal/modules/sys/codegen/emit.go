@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/emit.go 代码生成渲染。
+//
+// Author: Charlie
+
 package codegen
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/service.go 业务服务。
+//
+// Author: Charlie
+
 package resource
 
 import (

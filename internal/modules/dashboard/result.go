@@ -1,3 +1,7 @@
+// internal/modules/dashboard/result.go 出参定义。
+//
+// Author: Charlie
+
 package dashboard
 
 // OverviewResult 仪表盘概览统计。

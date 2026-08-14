@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_knowledge_category/result.go 出参定义。
+//
+// Author: Charlie
+
 package cg_test_knowledge_category
 
 // TreeNode 分类树节点。

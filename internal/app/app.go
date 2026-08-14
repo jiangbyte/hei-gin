@@ -1,6 +1,8 @@
 // Package app æ˜¯åº”ç”¨è£…é…æ ¹ï¼šåŸºç¡€è®¾æ–½ã€è‡ªæ³¨å†Œæ¨¡å—ã€HTTP ä¸Ž SnailJob æ‰§è¡Œå™¨ã€‚
 //
 // é»˜è®¤ blank import internal/modules/allï¼›å¤æ‚åœºæ™¯å¯ç›´æŽ¥æ”¹ frameworkã€‚
+//
+// Author: Charlie
 package app
 
 import (

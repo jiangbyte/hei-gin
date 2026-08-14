@@ -1,3 +1,7 @@
+// internal/modules/iam/client/model.go 数据模型。
+//
+// Author: Charlie
+
 package client
 
 import (

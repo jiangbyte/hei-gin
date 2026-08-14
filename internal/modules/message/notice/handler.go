@@ -1,3 +1,7 @@
+// internal/modules/message/notice/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package notice
 
 import (

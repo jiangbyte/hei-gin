@@ -1,3 +1,7 @@
+// internal/modules/message/notice/register.go 模块自注册。
+//
+// Author: Charlie
+
 package notice
 
 import (

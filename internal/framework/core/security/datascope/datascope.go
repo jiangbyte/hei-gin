@@ -1,4 +1,6 @@
 // Package datascope æŒ‰ä¼šè¯æ•°æ®èŒƒå›´è¿‡æ»¤ GORM æŸ¥è¯¢ã€‚
+//
+// Author: Charlie
 package datascope
 
 import (

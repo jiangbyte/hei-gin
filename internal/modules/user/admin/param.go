@@ -1,3 +1,7 @@
+// internal/modules/user/admin/param.go 入参定义。
+//
+// Author: Charlie
+
 package admin
 
 // ProfileUpdateParam 资料更新入参。

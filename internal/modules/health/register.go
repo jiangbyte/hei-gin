@@ -1,3 +1,7 @@
+// internal/modules/health/register.go 模块自注册。
+//
+// Author: Charlie
+
 package health
 
 import (

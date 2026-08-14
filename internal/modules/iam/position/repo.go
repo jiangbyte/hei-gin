@@ -1,3 +1,7 @@
+// internal/modules/iam/position/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package position
 
 import (

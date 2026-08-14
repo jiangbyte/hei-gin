@@ -1,3 +1,7 @@
+// internal/modules/message/feedback/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package feedback
 
 import (

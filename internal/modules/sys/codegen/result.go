@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/result.go 出参定义。
+//
+// Author: Charlie
+
 package codegen
 
 // DatabaseTableResult 数据库表摘要（代码生成表列表）。

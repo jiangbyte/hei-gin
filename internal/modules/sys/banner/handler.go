@@ -1,3 +1,7 @@
+// internal/modules/sys/banner/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package banner
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/user/admin/service.go 业务服务。
+//
+// Author: Charlie
+
 package admin
 
 import (

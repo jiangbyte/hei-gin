@@ -1,3 +1,7 @@
+// internal/modules/auth/oauth/bindings.go 三方绑定。
+//
+// Author: Charlie
+
 package oauth
 
 import (

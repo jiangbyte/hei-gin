@@ -1,3 +1,7 @@
+// internal/modules/sys/dict/register.go 模块自注册。
+//
+// Author: Charlie
+
 package dict
 
 import (

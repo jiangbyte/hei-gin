@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package resource
 
 import (

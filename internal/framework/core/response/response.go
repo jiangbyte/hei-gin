@@ -1,3 +1,7 @@
+// internal/framework/core/response/response.go 响应信封。
+//
+// Author: Charlie
+
 package response
 
 import (

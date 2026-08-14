@@ -1,4 +1,6 @@
 // Package logger 提供基于 zap 的进程级全局日志。
+//
+// Author: Charlie
 package logger
 
 import (

@@ -1,3 +1,7 @@
+// internal/framework/core/security/permission.go 权限注册表。
+//
+// Author: Charlie
+
 package security
 
 import (

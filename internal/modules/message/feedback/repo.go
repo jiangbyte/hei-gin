@@ -1,3 +1,7 @@
+// internal/modules/message/feedback/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package feedback
 
 import (

@@ -1,4 +1,6 @@
 // Package db æä¾› GORM æ‰“å¼€ã€å®¡è®¡å­—æ®µæ··å…¥ä¸Žäº‹åŠ¡è¾…åŠ©ã€‚
+//
+// Author: Charlie
 package db
 
 import (

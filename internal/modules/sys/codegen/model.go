@@ -1,4 +1,6 @@
 // Package codegen 提供低代码/代码生成方案与字段配置。
+//
+// Author: Charlie
 package codegen
 
 import "time"

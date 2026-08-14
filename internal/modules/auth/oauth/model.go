@@ -1,3 +1,7 @@
+// internal/modules/auth/oauth/model.go 数据模型。
+//
+// Author: Charlie
+
 package oauth
 
 import "time"

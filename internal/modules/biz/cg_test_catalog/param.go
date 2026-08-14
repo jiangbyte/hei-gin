@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_catalog/param.go 入参定义。
+//
+// Author: Charlie
+
 package cg_test_catalog
 
 import (

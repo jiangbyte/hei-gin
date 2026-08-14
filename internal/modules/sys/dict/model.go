@@ -1,4 +1,6 @@
 // Package dict 提供系统数据字典管理（CRUD、分页与树查询）。
+//
+// Author: Charlie
 package dict
 
 import "time"

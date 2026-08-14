@@ -1,3 +1,7 @@
+// internal/modules/user/admin/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package admin
 
 import (

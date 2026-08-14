@@ -1,3 +1,7 @@
+// internal/modules/sys/file/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package file
 
 import (

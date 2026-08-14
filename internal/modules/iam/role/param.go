@@ -1,3 +1,7 @@
+// internal/modules/iam/role/param.go 入参定义。
+//
+// Author: Charlie
+
 package role
 
 import "hei-gin/internal/modules/iam/relation"

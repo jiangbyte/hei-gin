@@ -1,3 +1,7 @@
+// internal/modules/iam/account/service.go 业务服务。
+//
+// Author: Charlie
+
 package account
 
 import (

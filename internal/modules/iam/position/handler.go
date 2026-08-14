@@ -1,3 +1,7 @@
+// internal/modules/iam/position/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package position
 
 import (

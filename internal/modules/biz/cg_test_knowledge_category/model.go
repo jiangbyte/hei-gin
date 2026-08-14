@@ -1,4 +1,6 @@
 // Package cg_test_knowledge_category 为代码生成演示的知识分类业务模块。
+//
+// Author: Charlie
 package cg_test_knowledge_category
 
 import (

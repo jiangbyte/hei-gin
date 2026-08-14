@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_activity/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package cg_test_activity
 
 import (

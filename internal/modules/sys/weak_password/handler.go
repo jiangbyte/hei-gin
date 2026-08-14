@@ -1,3 +1,7 @@
+// internal/modules/sys/weak_password/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package weakpassword
 
 import (

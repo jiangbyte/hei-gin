@@ -1,3 +1,7 @@
+// internal/modules/message/notice/service.go 业务服务。
+//
+// Author: Charlie
+
 package notice
 
 import (

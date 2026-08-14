@@ -1,4 +1,6 @@
 // Package portal 提供门户端用户资料管理。
+//
+// Author: Charlie
 package portal
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/register.go 模块自注册。
+//
+// Author: Charlie
+
 package audit
 
 import (

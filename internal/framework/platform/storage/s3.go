@@ -1,3 +1,7 @@
+// internal/framework/platform/storage/s3.go S3 存储。
+//
+// Author: Charlie
+
 package storage
 
 import (

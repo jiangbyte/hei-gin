@@ -1,3 +1,7 @@
+// internal/modules/auth/param.go 入参定义。
+//
+// Author: Charlie
+
 package auth
 
 // LoginParam 登录入参。

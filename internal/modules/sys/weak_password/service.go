@@ -1,3 +1,7 @@
+// internal/modules/sys/weak_password/service.go 业务服务。
+//
+// Author: Charlie
+
 package weakpassword
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/auth/result.go 出参定义。
+//
+// Author: Charlie
+
 package auth
 
 import (

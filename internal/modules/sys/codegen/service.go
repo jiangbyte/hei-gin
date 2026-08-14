@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/service.go 业务服务。
+//
+// Author: Charlie
+
 package codegen
 
 import (

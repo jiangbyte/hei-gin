@@ -1,3 +1,7 @@
+// internal/modules/iam/role/grant.go 授权逻辑。
+//
+// Author: Charlie
+
 package role
 
 import (

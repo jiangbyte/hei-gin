@@ -1,3 +1,7 @@
+// internal/modules/user/admin/result.go 出参定义。
+//
+// Author: Charlie
+
 package admin
 
 import (

@@ -1,3 +1,7 @@
+// internal/modules/iam/relation/model.go 数据模型。
+//
+// Author: Charlie
+
 package relation
 
 import (

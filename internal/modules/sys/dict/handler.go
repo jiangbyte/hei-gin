@@ -1,3 +1,7 @@
+// internal/modules/sys/dict/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package dict
 
 import (

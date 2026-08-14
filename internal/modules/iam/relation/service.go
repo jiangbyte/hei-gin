@@ -1,3 +1,7 @@
+// internal/modules/iam/relation/service.go 业务服务。
+//
+// Author: Charlie
+
 package relation
 
 import (

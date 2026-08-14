@@ -1,3 +1,7 @@
+// internal/modules/iam/account/model.go 数据模型。
+//
+// Author: Charlie
+
 package account
 
 import (

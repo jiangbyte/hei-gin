@@ -1,3 +1,7 @@
+// internal/modules/sys/config/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package config
 
 import (

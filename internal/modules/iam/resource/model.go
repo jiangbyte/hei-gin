@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/model.go 数据模型。
+//
+// Author: Charlie
+
 package resource
 
 import (

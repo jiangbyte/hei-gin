@@ -1,3 +1,7 @@
+// internal/modules/sys/banner/job.go 定时任务。
+//
+// Author: Charlie
+
 package banner
 
 import (

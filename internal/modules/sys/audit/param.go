@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/param.go 入参定义。
+//
+// Author: Charlie
+
 package audit
 
 import "hei-gin/internal/framework/core/schema"

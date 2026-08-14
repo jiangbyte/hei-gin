@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/job.go 定时任务。
+//
+// Author: Charlie
+
 package audit
 
 import (

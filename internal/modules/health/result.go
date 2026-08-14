@@ -1,3 +1,7 @@
+// internal/modules/health/result.go 出参定义。
+//
+// Author: Charlie
+
 package health
 
 // CheckItem 单项探针结果。

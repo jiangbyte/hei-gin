@@ -1,3 +1,7 @@
+// internal/framework/core/security/enums.go 枚举常量。
+//
+// Author: Charlie
+
 package security
 
 // AccountType 划分 API 面（/admin|/portal）。

@@ -1,4 +1,6 @@
 // Package banner 提供系统 Banner 广告位管理。
+//
+// Author: Charlie
 package banner
 
 import (

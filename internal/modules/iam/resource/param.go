@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/param.go 入参定义。
+//
+// Author: Charlie
+
 package resource
 
 // ResourceAddParam 创建资源入参。

@@ -1,3 +1,7 @@
+// internal/modules/iam/relation/param.go 入参定义。
+//
+// Author: Charlie
+
 package relation
 
 // DeptGrantInfo 账号-部门授予明细（授权入参与已拥有结果共用）。

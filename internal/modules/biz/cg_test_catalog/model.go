@@ -1,4 +1,6 @@
 // Package cg_test_catalog 为代码生成演示的目录业务模块。
+//
+// Author: Charlie
 package cg_test_catalog
 
 import (

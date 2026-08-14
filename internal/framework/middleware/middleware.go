@@ -1,4 +1,6 @@
 // Package middleware æä¾› Gin é€šç”¨ä¸­é—´ä»¶ï¼šæ¢å¤ã€è¿½è¸ªã€CORSã€é‰´æƒä¸Žé”™è¯¯æ˜ å°„ã€‚
+//
+// Author: Charlie
 package middleware
 
 import (

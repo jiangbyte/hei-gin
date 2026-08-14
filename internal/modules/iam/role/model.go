@@ -1,3 +1,7 @@
+// internal/modules/iam/role/model.go 数据模型。
+//
+// Author: Charlie
+
 package role
 
 import (

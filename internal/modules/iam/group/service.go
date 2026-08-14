@@ -1,3 +1,7 @@
+// internal/modules/iam/group/service.go 业务服务。
+//
+// Author: Charlie
+
 package group
 
 import (

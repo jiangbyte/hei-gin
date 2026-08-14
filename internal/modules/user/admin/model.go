@@ -1,4 +1,6 @@
 // Package admin 提供管理端用户资料管理。
+//
+// Author: Charlie
 package admin
 
 import (

@@ -1,4 +1,6 @@
 // Package file 提供系统文件上传、下载与元数据管理。
+//
+// Author: Charlie
 package file
 
 import "time"

@@ -1,3 +1,7 @@
+// internal/modules/iam/relation/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package relation
 
 import (

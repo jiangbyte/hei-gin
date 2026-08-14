@@ -1,4 +1,6 @@
 // Package errors 定义 handler / 中间件使用的类型化 API 错误。
+//
+// Author: Charlie
 package errors
 
 import "fmt"

@@ -1,3 +1,7 @@
+// internal/modules/iam/permission/register.go 模块自注册。
+//
+// Author: Charlie
+
 package permission
 
 import (

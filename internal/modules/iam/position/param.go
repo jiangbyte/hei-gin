@@ -1,3 +1,7 @@
+// internal/modules/iam/position/param.go 入参定义。
+//
+// Author: Charlie
+
 package position
 
 // AddParam 创建职位入参。

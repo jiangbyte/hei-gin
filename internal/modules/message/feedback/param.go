@@ -1,3 +1,7 @@
+// internal/modules/message/feedback/param.go 入参定义。
+//
+// Author: Charlie
+
 package feedback
 
 import "hei-gin/internal/framework/core/schema"

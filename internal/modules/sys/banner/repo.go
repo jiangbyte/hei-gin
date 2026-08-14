@@ -1,3 +1,7 @@
+// internal/modules/sys/banner/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package banner
 
 import (

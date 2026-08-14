@@ -1,3 +1,7 @@
+// internal/modules/user/portal/result.go 出参定义。
+//
+// Author: Charlie
+
 package portal
 
 import (

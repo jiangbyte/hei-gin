@@ -1,3 +1,7 @@
+// internal/modules/biz/cg_test_knowledge_category/register.go 模块自注册。
+//
+// Author: Charlie
+
 package cg_test_knowledge_category
 
 import (

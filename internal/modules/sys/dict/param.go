@@ -1,3 +1,7 @@
+// internal/modules/sys/dict/param.go 入参定义。
+//
+// Author: Charlie
+
 package dict
 
 import "hei-gin/internal/framework/core/schema"

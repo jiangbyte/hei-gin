@@ -1,4 +1,6 @@
 // Package main æ˜¯æ•°æ®åº“è¿ç§»å…¥å£ï¼šåŸºäºŽ goose æ‰§è¡Œ up/down/statusã€‚
+//
+// Author: Charlie
 package main
 
 import (

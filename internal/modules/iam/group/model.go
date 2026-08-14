@@ -1,3 +1,7 @@
+// internal/modules/iam/group/model.go 数据模型。
+//
+// Author: Charlie
+
 package group
 
 import (

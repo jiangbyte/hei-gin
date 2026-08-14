@@ -1,3 +1,7 @@
+// internal/framework/middleware/metrics.go 指标。
+//
+// Author: Charlie
+
 package middleware
 
 import (

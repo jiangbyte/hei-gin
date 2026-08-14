@@ -1,3 +1,7 @@
+// internal/modules/auth/accounts.go 账号查找接口。
+//
+// Author: Charlie
+
 package auth
 
 import (

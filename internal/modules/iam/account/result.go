@@ -1,3 +1,7 @@
+// internal/modules/iam/account/result.go 出参定义。
+//
+// Author: Charlie
+
 package account
 
 import (

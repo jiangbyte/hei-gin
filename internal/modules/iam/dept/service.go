@@ -1,3 +1,7 @@
+// internal/modules/iam/dept/service.go 业务服务。
+//
+// Author: Charlie
+
 package dept
 
 import (

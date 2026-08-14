@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package audit
 
 import (

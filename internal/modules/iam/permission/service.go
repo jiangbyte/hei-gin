@@ -1,3 +1,7 @@
+// internal/modules/iam/permission/service.go 业务服务。
+//
+// Author: Charlie
+
 package permission
 
 import (

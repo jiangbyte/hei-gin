@@ -1,3 +1,7 @@
+// internal/modules/sys/codegen/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package codegen
 
 import (

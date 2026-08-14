@@ -1,3 +1,7 @@
+// internal/modules/iam/dept/param.go 入参定义。
+//
+// Author: Charlie
+
 package dept
 
 // AddParam 创建部门入参。

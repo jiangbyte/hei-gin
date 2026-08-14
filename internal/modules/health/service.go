@@ -1,3 +1,7 @@
+// internal/modules/health/service.go 业务服务。
+//
+// Author: Charlie
+
 package health
 
 import (

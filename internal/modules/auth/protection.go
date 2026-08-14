@@ -1,3 +1,7 @@
+// internal/modules/auth/protection.go 登录保护。
+//
+// Author: Charlie
+
 package auth
 
 import (

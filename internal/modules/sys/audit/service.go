@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/service.go 业务服务。
+//
+// Author: Charlie
+
 package audit
 
 import (

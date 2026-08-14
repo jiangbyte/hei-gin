@@ -1,3 +1,7 @@
+// internal/modules/iam/account/repo.go 持久化仓储。
+//
+// Author: Charlie
+
 package account
 
 import (

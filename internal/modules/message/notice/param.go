@@ -1,3 +1,7 @@
+// internal/modules/message/notice/param.go 入参定义。
+//
+// Author: Charlie
+
 package notice
 
 import (

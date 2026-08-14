@@ -1,3 +1,7 @@
+// internal/modules/message/feedback/service.go 业务服务。
+//
+// Author: Charlie
+
 package feedback
 
 import (

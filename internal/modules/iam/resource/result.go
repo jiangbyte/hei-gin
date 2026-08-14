@@ -1,3 +1,7 @@
+// internal/modules/iam/resource/result.go 出参定义。
+//
+// Author: Charlie
+
 package resource
 
 // TreeNode 资源树节点。

@@ -1,3 +1,7 @@
+// internal/modules/sys/audit/handler.go HTTP 处理器。
+//
+// Author: Charlie
+
 package audit
 
 import (

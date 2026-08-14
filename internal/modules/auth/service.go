@@ -1,3 +1,7 @@
+// internal/modules/auth/service.go 业务服务。
+//
+// Author: Charlie
+
 package auth
 
 import (

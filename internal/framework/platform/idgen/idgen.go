@@ -1,4 +1,6 @@
 // Package idgen 基于雪花算法生成分布式字符串 ID。
+//
+// Author: Charlie
 package idgen
 
 import (

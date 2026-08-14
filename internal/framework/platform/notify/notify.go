@@ -1,4 +1,6 @@
 // Package notify æä¾›é‚®ä»¶ / çŸ­ä¿¡ / æŽ¨é€é€šçŸ¥é—¨é¢ã€‚
+//
+// Author: Charlie
 package notify
 
 import (

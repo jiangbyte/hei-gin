@@ -1,3 +1,7 @@
+// internal/modules/sys/dict/service.go 业务服务。
+//
+// Author: Charlie
+
 package dict
 
 import (

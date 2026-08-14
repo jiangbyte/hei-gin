@@ -1,3 +1,7 @@
+// internal/modules/iam/account/param.go 入参定义。
+//
+// Author: Charlie
+
 package account
 
 import "hei-gin/internal/modules/iam/relation"
