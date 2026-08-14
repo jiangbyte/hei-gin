@@ -8,13 +8,13 @@
 
 HEI Gin 是 HEI 项目的 Go / Gin 后端模板：模块插件、ADMIN / PORTAL 双端、全局 stringly JSON、RBAC + 数据范围。
 
-**单模块单体**：仓根一个 `go.mod`，`go run ./app/cmd/api` 直接启动。
+**单模块单体**：仓根一个 `go.mod`，`go run ./cmd/api` 直接启动。
 
 1. **一般情况下**：整仓使用，改配置、加业务即可跑。
 2. **复杂场景**：**可以改 framework**（会话、中间件、注册表等），不是黑盒。
 3. **跟进上游**：用 **Git 合并本仓库代码**（merge / rebase）同步，**不是**把本项目当外部 `go get` 依赖来升级。
 
-HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串，对象与 list 保持结构（见 `framework/core/stringly`，由 `response` / `bind.JSON` 统一挂载）。业务 DTO 写普通 `bool`/`int`，**不要**再引入包裹类型。
+HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串，对象与 list 保持结构（见 `internal/framework/core/stringly`，由 `response` / `bind.JSON` 统一挂载）。业务 DTO 写普通 `bool`/`int`，**不要**再引入包裹类型。
 
 文档索引见 [docs/README.md](docs/README.md)。
 
@@ -51,40 +51,38 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 | 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**`；Portal 端受限文件访问 |
 | 前端同仓 | `web/admin`（Vue）、`web/portal`（React）、`web/admin-uniapp` |
 
-内置业务模块由 [`app/internal/modules/all`](app/internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
+内置业务模块由 [`internal/modules/all`](internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
 
 ## 仓库结构
 
 ```text
 go.mod                     # 唯一 Go module：hei-gin
-framework/                 # 可改的运行时（hei-gin/framework/...）
-  core/                    # config / bind / stringly / security / response …
-  middleware/              # 鉴权上下文、CORS、限流、metrics …
-  platform/                # db / cache / module / snailjob / storage / audit / notify …
-modules/                   # 业务包（hei-gin/modules/...），目录分层不是独立 go.mod
-  auth/ iam/ user/ sys/ message/ dashboard/ health/ biz/ shared/
-app/
-  cmd/{api,migrate}        # 唯一运行入口 api；migrate 为运维命令
-  internal/app/            # 装配：基础设施 + HTTP + SnailJob
-  internal/modules/all/    # 汇总 blank import
+cmd/                       # 可执行入口（main 包）
+  api/                     # 唯一运行入口：go run ./cmd/api
+  migrate/                 # goose 运维命令（up/down/status）
+internal/                  # 私有代码（外部不可导入）
+  app/                     # 装配：基础设施 + HTTP + SnailJob
+  framework/               # 可改的运行时（core/middleware/platform）
+  modules/                 # 业务包（auth/iam/user/sys/message/dashboard/health/biz/shared）
+    all/                   # 汇总 blank import
 migrations/                # goose SQL
-scripts/                   # migrate.sh / rollback.sh
-script/docker/             # 本地 SnailJob compose + flyway
+scripts/                   # migrate.sh / rollback.sh / docker / sql
+configs/                   # config.example.yaml
 web/                       # admin / portal / admin-uniapp
-config.example.yaml
+storage/                   # 本地文件存储（.gitignore）.yaml
 ```
 
-目录上的 `modules/*` 只是包边界，**全部属于同一个 module**，本地改完即可被 `go run` 编进单体进程。
+目录上的 `internal/modules/*` 只是包边界，**全部属于同一个 module**，本地改完即可被 `go run` 编进单体进程。
 
 ## 二次开发
 
 | 诉求 | 做法 |
 |------|------|
-| 跟进上游 bugfix / 新内置模块 | `git fetch` + **merge/rebase**；保留 `_ "hei-gin/app/internal/modules/all"`，合并 `all` 即可带上新官方模块 |
-| 默认使用 | 在仓根 `go run ./app/cmd/api`；业务写在 `modules/<name>` |
+| 跟进上游 bugfix / 新内置模块 | `git fetch` + **merge/rebase**；保留 `_ "hei-gin/internal/modules/all"`，合并 `all` 即可带上新官方模块 |
+| 默认使用 | 在仓根 `go run ./cmd/api`；业务写在 `internal/modules/<name>` |
 | 只加自有业务 | 新包 `init` 里 `module.Register`；在 **自己的** `cmd` 里再 `_` import（少改官方 `all`） |
 | 关掉某内置 | 配置 `modules.disabled`，不必删代码 |
-| 改框架行为 | **直接改本仓 `framework/`** |
+| 改框架行为 | **直接改本仓 `internal/framework/`** |
 | 注册定时任务 | 在模块 `Jobs` 中挂 `module.Job{Name, Run}`，由 SnailJob 客户端注册同名执行器 |
 
 ## 快速启动
@@ -92,13 +90,13 @@ config.example.yaml
 在**仓库根**（需本机 Postgres / Redis，库名见配置）：
 
 ```bash
-cp config.example.yaml config.yaml
+cp configs/config.example.yaml config.yaml
 # CREATE DATABASE hei_gin;
 # CREATE DATABASE snail_job;  # 调度中心库（独立）
 
 ./scripts/migrate.sh
-# 可选：./script/docker/snailjob-flyway.sh && docker compose -f script/docker/docker-compose.snailjob.yml up -d
-go run ./app/cmd/api
+# 可选：./scripts/docker/snailjob-flyway.sh && docker compose -f scripts/docker/docker-compose.snailjob.yml up -d
+go run ./cmd/api
 ```
 
 默认地址：`http://127.0.0.1:8000`  
@@ -146,22 +144,22 @@ job.go        # 可选：module.Job 定时任务
 - 方案 CRUD（`sys_codegen_plan`）+ 字段配置（`sys_codegen_field`，表列反射同步、控件/字典/查询条件）
 - 数据库表 / 列元数据（`information_schema`）
 - 四种生成类型：单表 `TABLE`、树表 `TREE`、左树右表 `LEFT_TREE_TABLE`、主子表 `MASTER_DETAIL`
-- 预览 / ZIP 下载：Go 后端（`modules/<domain>/<pkg>` 的 model/param/result/repo/service/handler/register 同包分文件）+ Vue 前端（`web/admin`）+ 菜单权限 SQL
-- 模板在 `modules/sys/codegen/templates.go`，渲染逻辑在 `emit.go`；与 hei-boot 的 Java 模板一一对应但改为 Go 风格
+- 预览 / ZIP 下载：Go 后端（`internal/modules/<domain>/<pkg>` 的 model/param/result/repo/service/handler/register 同包分文件）+ Vue 前端（`web/admin`）+ 菜单权限 SQL
+- 模板在 `internal/modules/sys/codegen/templates.go`，渲染逻辑在 `internal/modules/sys/codegen/emit.go`；与 hei-boot 的 Java 模板一一对应但改为 Go 风格
 
 ## 模块装配
 
-业务包在各自 `init` 中调用 `module.Register`；[`app/internal/modules/all`](app/internal/modules/all) 仅作汇总 import。
+业务包在各自 `init` 中调用 `module.Register`；[`internal/modules/all`](internal/modules/all) 仅作汇总 import。
 
-`app/cmd/api`：
+`cmd/api`：
 
 ```go
-import _ "hei-gin/app/internal/modules/all"
+import _ "hei-gin/internal/modules/all"
 ```
 
 ### 定时任务（SnailJob）
 
-API 进程内嵌 **SnailJob** Go 客户端（`framework/platform/snailjob`）。配置键为 `snail_job`（YAML 未写时用代码默认值）：
+API 进程内嵌 **SnailJob** Go 客户端（`internal/framework/platform/snailjob`）。配置键为 `snail_job`（YAML 未写时用代码默认值）：
 
 ```yaml
 snail_job:
@@ -175,7 +173,7 @@ snail_job:
   token: SJ_heiGinAdminToken1234567890abcd
 ```
 
-本地 Server：见 [script/docker/README.md](script/docker/README.md)（`docker-compose.snailjob.yml` + `snailjob-flyway.sh`）。
+本地 Server：见 [scripts/docker/README.md](scripts/docker/README.md)（`docker-compose.snailjob.yml` + `snailjob-flyway.sh`）。
 
 内置 JobHandler 示例：
 
@@ -185,7 +183,7 @@ snail_job:
 | `bannerStatusJob` | sys/banner |
 | `auditAlertJob` | sys/audit |
 
-数据库迁移用 `./scripts/migrate.sh`（goose，入口 `app/cmd/migrate`）。
+数据库迁移用 `./scripts/migrate.sh`（goose，入口 `cmd/migrate`）。
 
 上游若新增官方模块，通常只改 `all` 包；合并上游后即可自动注册。
 

@@ -1,4 +1,4 @@
-<!-- Author: Charlie -->
+﻿<!-- Author: Charlie -->
 
 <script setup lang="tsx">
 import type { FormRules, PaginationProps } from 'naive-ui'
@@ -49,14 +49,14 @@ function packagesFromModulePath(modulePath: string) {
     .map(part => part.replaceAll('-', '_').toLowerCase())
   if (!parts.length) {
     return {
-      basePackage: 'hei-gin/modules/biz',
-      paramPackage: 'hei-gin/modules/biz',
-      moduleRoot: 'modules/biz',
+      basePackage: 'hei-gin/internal/modules/biz',
+      paramPackage: 'hei-gin/internal/modules/biz',
+      moduleRoot: 'internal/modules/biz',
     }
   }
   const module = parts[0]
   const feature = parts.length === 1 ? module : parts.slice(1).join('.')
-  const basePackage = `hei-gin/modules/${module}/${feature}`
+  const basePackage = `hei-gin/internal/modules/${module}/${feature}`
   return {
     basePackage,
     paramPackage: basePackage,

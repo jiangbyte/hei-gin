@@ -1,0 +1,47 @@
+package middleware
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+
+	"hei-gin/internal/framework/core/response"
+)
+
+// RateLimit åŸºäºŽ Redis INCR + EXPIRE çš„å›ºå®šçª—å£é™æµã€‚
+//
+// Author: Charlie
+func RateLimit(rdb *redis.Client, keyPrefix string, permits int, windowSeconds int) gin.HandlerFunc {
+	if permits <= 0 {
+		permits = 60
+	}
+	if windowSeconds <= 0 {
+		windowSeconds = 60
+	}
+	return func(c *gin.Context) {
+		if rdb == nil {
+			c.Next()
+			return
+		}
+		ip := c.ClientIP()
+		key := fmt.Sprintf("ratelimit:%s:%s", keyPrefix, ip)
+		ctx := c.Request.Context()
+		n, err := rdb.Incr(ctx, key).Result()
+		if err != nil {
+			c.Next()
+			return
+		}
+		if n == 1 {
+			_ = rdb.Expire(ctx, key, time.Duration(windowSeconds)*time.Second).Err()
+		}
+		if n > int64(permits) {
+			response.Fail(c, http.StatusTooManyRequests, 429, "è¯·æ±‚è¿‡äºŽé¢‘ç¹ï¼Œè¯·ç¨åŽå†è¯•")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
