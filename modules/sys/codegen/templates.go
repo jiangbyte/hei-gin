@@ -25,6 +25,7 @@ type {{.Main.EntityName}} struct {
 // TableName 返回 {{.Main.EntityName}} 对应的数据库表名。
 func ({{.Main.EntityName}}) TableName() string { return "{{.Main.TableName}}" }
 `
+
 // 生成 param.go（Add/Edit/IDs/Page）。
 const goParamTmpl = `package {{.Main.Package}}
 
@@ -81,12 +82,14 @@ type PageParam struct {
 {{- end }}
 }
 `
+
 // 生成 result.go。
 const goResultTmpl = `package {{.Main.Package}}
 
 // DetailResult {{.Main.BusinessName}}详情（与实体一致）。
 type DetailResult = {{.Main.EntityName}}
 `
+
 // 生成 repo.go。
 const goRepoTmpl = `package {{.Main.Package}}
 
@@ -243,6 +246,7 @@ func mustJSON(v any) datatypes.JSON {
 	return b
 }
 `
+
 // 生成 handler.go。
 const goHandlerTmpl = `package {{.Main.Package}}
 
@@ -335,6 +339,7 @@ func (s *Service) page(c *gin.Context) {
 	response.Page(c, int64(cur), int64(size), total, rows)
 }
 `
+
 // 生成 register.go。
 const goRegisterTmpl = `package {{.Main.Package}}
 

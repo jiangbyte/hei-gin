@@ -203,26 +203,26 @@ func renderPlan(plan *Plan, mainFields, subFields []Field) ([]PreviewFileResult,
 //
 // Author: Charlie
 type emitCtx struct {
-	Author       string
-	GeneratedAt  string
-	GenType      string
-	HasTree      bool
-	HasSub       bool
+	Author            string
+	GeneratedAt       string
+	GenType           string
+	HasTree           bool
+	HasSub            bool
 	HasTreeParentForm bool
-	PermissionPrefix string
-	APIPrefix    string
-	ModulePath   string
-	ModuleRoot   string
-	BasePackage  string
-	ApiFile      string
-	ApiIndexAppend string
-	ApiExportName string
-	ViewPath     string
-	ViewComponentDir string
-	Main         *entityCtx
-	Sub          *entityCtx
-	Plan         *Plan
-	Menu         menuCtx
+	PermissionPrefix  string
+	APIPrefix         string
+	ModulePath        string
+	ModuleRoot        string
+	BasePackage       string
+	ApiFile           string
+	ApiIndexAppend    string
+	ApiExportName     string
+	ViewPath          string
+	ViewComponentDir  string
+	Main              *entityCtx
+	Sub               *entityCtx
+	Plan              *Plan
+	Menu              menuCtx
 }
 
 // entityCtx 主/子表上下文。
@@ -250,39 +250,39 @@ type entityCtx struct {
 
 // fieldCtx 单字段上下文。
 type fieldCtx struct {
-	Name          string // snake column
-	Property      string // camel
-	GoName        string // Pascal
-	Label         string
-	Comment       string
-	DBType        string
-	PythonType    string
+	Name           string // snake column
+	Property       string // camel
+	GoName         string // Pascal
+	Label          string
+	Comment        string
+	DBType         string
+	PythonType     string
 	TypescriptType string
-	GoType        string // *int64 等
-	GoTypeBase    string
-	IsPointer     bool
-	FormWidget    string
-	DictCode      string
-	QueryOperator string
-	ShowInTable   bool
-	ShowInForm    bool
-	ShowInDetail  bool
-	ShowInQuery   bool
-	IsPrimaryKey  bool
-	IsRequired    bool
-	IsNullable    bool
-	MaxLength     int
-	Sort          int
-	IsDatetime    bool
-	IsJSON        bool
-	IsBool        bool
-	VueDefault    string
+	GoType         string // *int64 等
+	GoTypeBase     string
+	IsPointer      bool
+	FormWidget     string
+	DictCode       string
+	QueryOperator  string
+	ShowInTable    bool
+	ShowInForm     bool
+	ShowInDetail   bool
+	ShowInQuery    bool
+	IsPrimaryKey   bool
+	IsRequired     bool
+	IsNullable     bool
+	MaxLength      int
+	Sort           int
+	IsDatetime     bool
+	IsJSON         bool
+	IsBool         bool
+	VueDefault     string
 }
 
 // menuCtx 菜单 SQL 上下文。
 type menuCtx struct {
-	MenuID    string
-	Actions   []menuAction
+	MenuID  string
+	Actions []menuAction
 }
 
 type menuAction struct {
@@ -440,33 +440,33 @@ func buildFieldCtx(f Field) fieldCtx {
 		label = f.ColumnName
 	}
 	return fieldCtx{
-		Name:          f.ColumnName,
-		Property:      snakeToCamel(f.ColumnName),
-		GoName:        toPascal(f.ColumnName),
-		Label:         label,
-		Comment:       label,
-		DBType:        f.DBType,
-		PythonType:    py,
+		Name:           f.ColumnName,
+		Property:       snakeToCamel(f.ColumnName),
+		GoName:         toPascal(f.ColumnName),
+		Label:          label,
+		Comment:        label,
+		DBType:         f.DBType,
+		PythonType:     py,
 		TypescriptType: def(f.TypescriptType, "string"),
-		GoType:        goType,
-		GoTypeBase:    base,
-		IsPointer:     ptr,
-		FormWidget:    def(f.FormWidget, "input"),
-		DictCode:      deref(f.DictCode),
-		QueryOperator: deref(f.QueryOperator),
-		ShowInTable:   f.ShowInTable,
-		ShowInForm:    f.ShowInForm,
-		ShowInDetail:  f.ShowInDetail,
-		ShowInQuery:   f.ShowInQuery,
-		IsPrimaryKey:  f.IsPrimaryKey,
-		IsRequired:    f.IsRequired,
-		IsNullable:    f.IsNullable,
-		MaxLength:     derefInt(f.MaxLength),
-		Sort:          f.Sort,
-		IsDatetime:    isDatetime,
-		IsJSON:        isJSON,
-		IsBool:        isBool,
-		VueDefault:    vueDefault(py, isDatetime, isJSON, isBool),
+		GoType:         goType,
+		GoTypeBase:     base,
+		IsPointer:      ptr,
+		FormWidget:     def(f.FormWidget, "input"),
+		DictCode:       deref(f.DictCode),
+		QueryOperator:  deref(f.QueryOperator),
+		ShowInTable:    f.ShowInTable,
+		ShowInForm:     f.ShowInForm,
+		ShowInDetail:   f.ShowInDetail,
+		ShowInQuery:    f.ShowInQuery,
+		IsPrimaryKey:   f.IsPrimaryKey,
+		IsRequired:     f.IsRequired,
+		IsNullable:     f.IsNullable,
+		MaxLength:      derefInt(f.MaxLength),
+		Sort:           f.Sort,
+		IsDatetime:     isDatetime,
+		IsJSON:         isJSON,
+		IsBool:         isBool,
+		VueDefault:     vueDefault(py, isDatetime, isJSON, isBool),
 	}
 }
 

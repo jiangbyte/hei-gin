@@ -19,8 +19,8 @@ import (
 //
 // Author: Charlie
 type S3 struct {
-	client *s3.Client
-	bucket string
+	client  *s3.Client
+	bucket  string
 	baseURL string
 }
 

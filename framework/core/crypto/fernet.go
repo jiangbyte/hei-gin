@@ -1,7 +1,7 @@
 // Package crypto 提供配置值 Fernet 兼容加解密。
 //
 // 若 Config.Crypto.VaultAddr 已设置，仍仅从环境变量 / 配置读取 FernetKey
-//（HEI_CRYPTO_FERNET_KEY 或 crypto.fernet_key），不实现完整 Vault 客户端。
+// （HEI_CRYPTO_FERNET_KEY 或 crypto.fernet_key），不实现完整 Vault 客户端。
 package crypto
 
 import (

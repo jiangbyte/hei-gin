@@ -40,10 +40,10 @@ type IssueSessionFunc func(ctx context.Context, accountType security.AccountType
 //
 // Author: Charlie
 type Service struct {
-	cfg    *config.Config
-	db     *gorm.DB
-	rdb    *redis.Client
-	issue  IssueSessionFunc
+	cfg   *config.Config
+	db    *gorm.DB
+	rdb   *redis.Client
+	issue IssueSessionFunc
 }
 
 // NewService 构造 OAuth 服务。
@@ -392,8 +392,8 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		First(&binding).Error
 	if err == nil {
 		var acc struct {
-			ID           string
-			AccountType  string
+			ID            string
+			AccountType   string
 			AccountStatus string
 		}
 		if err := s.db.WithContext(ctx).Table("sys_account").

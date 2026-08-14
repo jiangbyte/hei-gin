@@ -11,11 +11,11 @@ import (
 //
 // Author: Charlie
 type Config struct {
-	App     AppConfig     `mapstructure:"app"`
-	DB      DBConfig      `mapstructure:"db"`
-	Redis   RedisConfig   `mapstructure:"redis"`
-	Auth    AuthConfig    `mapstructure:"auth"`
-	CORS    CORSConfig    `mapstructure:"cors"`
+	App      AppConfig      `mapstructure:"app"`
+	DB       DBConfig       `mapstructure:"db"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	Auth     AuthConfig     `mapstructure:"auth"`
+	CORS     CORSConfig     `mapstructure:"cors"`
 	SnailJob SnailJobConfig `mapstructure:"snail_job"`
 	Storage  StorageConfig  `mapstructure:"storage"`
 	IDGen    IDGenConfig    `mapstructure:"id_generator"`

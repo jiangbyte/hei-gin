@@ -12,14 +12,14 @@ type DatabaseTableResult struct {
 //
 // Author: Charlie
 type DatabaseColumnResult struct {
-	ColumnName       string `json:"column_name"`
-	ColumnComment    string `json:"column_comment"`
-	DBType           string `json:"db_type"`
-	PythonType       string `json:"python_type"`
-	TypescriptType   string `json:"typescript_type"`
-	IsPrimaryKey     bool   `json:"is_primary_key"`
-	IsNullable       bool   `json:"is_nullable"`
-	MaxLength        *int   `json:"max_length"`
+	ColumnName     string `json:"column_name"`
+	ColumnComment  string `json:"column_comment"`
+	DBType         string `json:"db_type"`
+	PythonType     string `json:"python_type"`
+	TypescriptType string `json:"typescript_type"`
+	IsPrimaryKey   bool   `json:"is_primary_key"`
+	IsNullable     bool   `json:"is_nullable"`
+	MaxLength      *int   `json:"max_length"`
 }
 
 // PreviewFileResult 代码生成预览单文件结果。

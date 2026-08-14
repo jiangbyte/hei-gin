@@ -36,6 +36,7 @@ type EmailUpdateParam struct {
 	Password      string `json:"password"`
 	Email         string `json:"email" binding:"required"`
 }
+
 // SendCodeParam 绑定验证码发送入参。
 //
 // Author: Charlie

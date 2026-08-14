@@ -52,3 +52,24 @@ func TestRenderPlanSmoke(t *testing.T) {
 }
 
 func strptr(s string) *string { return &s }
+
+// TestRenderPlainTable 校验无 dict/json 字段的表也能渲染（不产生未使用 import）。
+func TestRenderPlainTable(t *testing.T) {
+	main := []Field{
+		{ColumnName: "id", DBType: "varchar", PythonType: "str", TypescriptType: "string", IsPrimaryKey: true, ShowInTable: true, ShowInForm: false, ShowInDetail: true, Sort: 1},
+		{ColumnName: "name", DBType: "varchar", PythonType: "str", TypescriptType: "string", ShowInTable: true, ShowInForm: true, ShowInDetail: true, Sort: 2},
+	}
+	plan := &Plan{
+		Name: "plain", GenType: "TABLE", Author: "Charlie", MainTable: "cg_test_plain",
+		MainPK: "id", MainEntityName: "Plain", MainModulePath: "biz/plain", MainBusinessName: "Plain",
+		APIPrefix: "/biz/plain", PermissionPrefix: "biz:plain", MenuName: "Plain",
+		MenuPath: "/biz/plain", ComponentPath: "biz/plain/index.vue", Sort: 99,
+	}
+	files, err := renderPlan(plan, main, nil)
+	if err != nil {
+		t.Fatalf("renderPlan failed: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("no files rendered")
+	}
+}

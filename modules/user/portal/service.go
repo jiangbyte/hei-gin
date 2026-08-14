@@ -6,13 +6,13 @@ import (
 	"path"
 	"strings"
 
+	"gorm.io/gorm"
 	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
 	"hei-gin/framework/platform/storage"
 	"hei-gin/modules/shared"
-	"gorm.io/gorm"
 )
 
 // Service 门户端用户中心服务。

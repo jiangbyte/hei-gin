@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"hei-gin/modules/auth/oauth"
 	"context"
 	"fmt"
+	"hei-gin/modules/auth/oauth"
 	"strings"
 	"time"
 
@@ -15,21 +15,21 @@ import (
 //
 // Author: Charlie
 type AuthOptions struct {
-	AccountType               string                `json:"account_type"`
-	AllowAccount              bool                  `json:"allow_account"`
-	AllowEmail                bool                  `json:"allow_email"`
-	AllowPhone                bool                  `json:"allow_phone"`
-	AllowOTP                  bool                  `json:"allow_otp"`
-	RegisterEnabled           bool                  `json:"register_enabled"`
-	RegisterAllowAccount      bool                  `json:"register_allow_account"`
-	RegisterAllowEmail        bool                  `json:"register_allow_email"`
-	RegisterAllowPhone        bool                  `json:"register_allow_phone"`
-	ForceBindEmail            bool                  `json:"force_bind_email"`
-	ForceBindPhone            bool                  `json:"force_bind_phone"`
-	OAuthProviders            []oauth.ProviderOption `json:"oauth_providers"`
-	PasswordChangeVerifyMethod string                `json:"password_change_verify_method"`
-	CopyrightText             string                `json:"copyright_text"`
-	CopyrightURL              string                `json:"copyright_url"`
+	AccountType                string                 `json:"account_type"`
+	AllowAccount               bool                   `json:"allow_account"`
+	AllowEmail                 bool                   `json:"allow_email"`
+	AllowPhone                 bool                   `json:"allow_phone"`
+	AllowOTP                   bool                   `json:"allow_otp"`
+	RegisterEnabled            bool                   `json:"register_enabled"`
+	RegisterAllowAccount       bool                   `json:"register_allow_account"`
+	RegisterAllowEmail         bool                   `json:"register_allow_email"`
+	RegisterAllowPhone         bool                   `json:"register_allow_phone"`
+	ForceBindEmail             bool                   `json:"force_bind_email"`
+	ForceBindPhone             bool                   `json:"force_bind_phone"`
+	OAuthProviders             []oauth.ProviderOption `json:"oauth_providers"`
+	PasswordChangeVerifyMethod string                 `json:"password_change_verify_method"`
+	CopyrightText              string                 `json:"copyright_text"`
+	CopyrightURL               string                 `json:"copyright_url"`
 }
 
 // OauthProviderOption 三方登录入口选项。
@@ -48,15 +48,15 @@ type CancelParam struct {
 // AuthOptions 读取登录页公开配置。
 func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountType) *AuthOptions {
 	o := &AuthOptions{
-		AccountType:               string(accountType),
-		AllowAccount:              true,
-		AllowEmail:                true,
-		AllowPhone:                true,
-		AllowOTP:                  true,
-		RegisterEnabled:           s.cfg.Auth.PortalRegisterEnabled && accountType == security.AccountPortal,
-		RegisterAllowAccount:      accountType == security.AccountPortal,
-		RegisterAllowEmail:        accountType == security.AccountPortal,
-		RegisterAllowPhone:        accountType == security.AccountPortal,
+		AccountType:                string(accountType),
+		AllowAccount:               true,
+		AllowEmail:                 true,
+		AllowPhone:                 true,
+		AllowOTP:                   true,
+		RegisterEnabled:            s.cfg.Auth.PortalRegisterEnabled && accountType == security.AccountPortal,
+		RegisterAllowAccount:       accountType == security.AccountPortal,
+		RegisterAllowEmail:         accountType == security.AccountPortal,
+		RegisterAllowPhone:         accountType == security.AccountPortal,
 		PasswordChangeVerifyMethod: "OLD_PASSWORD",
 	}
 	if s.oauth != nil {

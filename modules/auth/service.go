@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/config"
+	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/audit"
 	"hei-gin/framework/platform/module"
@@ -268,9 +268,9 @@ func (s *Service) SendLoginCode(ctx context.Context, accountType security.Accoun
 	}
 	if s.notify != nil {
 		vars := map[string]any{
-			"app_name":        s.cfg.App.Name,
-			"code":            code,
-			"expire_minutes":  "5",
+			"app_name":       s.cfg.App.Name,
+			"code":           code,
+			"expire_minutes": "5",
 		}
 		_ = s.notify.SendTemplated(ctx, "LOGIN_CODE", target, vars)
 	}
