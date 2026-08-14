@@ -45,3 +45,6 @@ lerna-debug.log*
 .vscode/
 .DS_Store
 *.sw?
+.gomodcache/
+.gocache/
+.gotmp/
