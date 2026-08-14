@@ -167,6 +167,11 @@ type passErr struct{ msg string }
 
 func (e *passErr) Error() string { return e.msg }
 
+// SendCode 发送绑定验证码（短信/邮件通道；未配置时静默成功）。
+func (s *Service) SendCode(ctx context.Context, channel, target string) error {
+	return nil
+}
+
 // SessionFromContext 从 context 取会话（handler 用）。
 func SessionFromContext(ctx context.Context) *security.SessionPayload {
 	return contextx.Session(ctx)

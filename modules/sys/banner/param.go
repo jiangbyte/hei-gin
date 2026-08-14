@@ -59,3 +59,19 @@ type ListParam struct {
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
+
+// InteractionParam Banner 互动上报入参。
+//
+// Author: Charlie
+type InteractionParam struct {
+	ID string `json:"id" binding:"required"`
+}
+
+// PortalListParam 门户端 Banner 列表查询。
+//
+// Author: Charlie
+type PortalListParam struct {
+	Position string `form:"position"`
+	Category string `form:"category"`
+	Type     string `form:"type"`
+}

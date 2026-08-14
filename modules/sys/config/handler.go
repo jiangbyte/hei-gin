@@ -23,6 +23,9 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/config/detail", admin, middleware.RequirePermission(d.Perms, "sys:config:detail", "配置详情"), s.detail)
 		api.GET("/v1/admin/sys/config/page", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置分页"), s.page)
 		api.GET("/v1/admin/sys/config/list", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置列表"), s.list)
+		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置批量保存"), s.batchSave)
+		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "Webhook测试"), s.testWebhook)
+		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "推送测试"), s.testPush)
 	}
 }
 
@@ -100,4 +103,42 @@ func (s *Service) list(c *gin.Context) {
 		return
 	}
 	response.OK(c, rows)
+}
+
+func (s *Service) batchSave(c *gin.Context) {
+	var req BatchSaveParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.BatchSave(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) testWebhook(c *gin.Context) {
+	var req TestWebhookParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if req.URL == "" {
+		response.Fail(c, http.StatusBadRequest, 400, "url required")
+		return
+	}
+	if err := s.TestWebhook(c.Request.Context(), req.URL, req.Secret); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
+}
+
+func (s *Service) testPush(c *gin.Context) {
+	if err := s.TestPush(c.Request.Context()); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
 }

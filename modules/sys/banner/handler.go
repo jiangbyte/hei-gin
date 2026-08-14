@@ -23,6 +23,10 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.POST("/v1/admin/sys/banners/delete", admin, middleware.RequirePermission(d.Perms, "sys:banner:delete", "Banner删除"), s.delete)
 		api.GET("/v1/admin/sys/banners/detail", admin, middleware.RequirePermission(d.Perms, "sys:banner:detail", "Banner详情"), s.detail)
 		api.GET("/v1/admin/sys/banners/page", admin, middleware.RequirePermission(d.Perms, "sys:banner:page", "Banner分页"), s.page)
+
+		portal := middleware.RequireAccountType(security.AccountPortal)
+		api.GET("/v1/portal/sys/banners/list", portal, s.portalList)
+		api.POST("/v1/portal/sys/banners/interaction", portal, s.interaction)
 	}
 }
 
@@ -99,4 +103,30 @@ func (s *Service) list(c *gin.Context) {
 		return
 	}
 	response.OK(c, rows)
+}
+
+func (s *Service) portalList(c *gin.Context) {
+	var q PortalListParam
+	q.Position = c.Query("position")
+	q.Category = c.Query("category")
+	q.Type = c.Query("type")
+	rows, err := s.PortalList(c.Request.Context(), q)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, rows)
+}
+
+func (s *Service) interaction(c *gin.Context) {
+	var req InteractionParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.Interaction(c.Request.Context(), req.ID); err != nil {
+		response.Fail(c, http.StatusNotFound, 404, "banner not found")
+		return
+	}
+	response.OK(c, nil)
 }

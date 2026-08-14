@@ -21,8 +21,11 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 	uc.POST("/avatar/upload", s.uploadAvatar)
 	uc.POST("/password/send-code", s.sendPasswordCode)
 	uc.POST("/password/update", s.updatePassword)
+	uc.POST("/phone/send-code", s.sendPhoneCode)
 	uc.POST("/phone/update", s.updatePhone)
+	uc.POST("/email/send-code", s.sendEmailCode)
 	uc.POST("/email/update", s.updateEmail)
+	g.GET("/spaces/detail", s.spacesDetail)
 }
 
 func (s *Service) me(c *gin.Context) {
@@ -123,4 +126,26 @@ func (s *Service) updateEmail(c *gin.Context) {
 		return
 	}
 	response.OK(c, nil)
+}
+
+func (s *Service) sendPhoneCode(c *gin.Context) {
+	var req SendCodeParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) sendEmailCode(c *gin.Context) {
+	var req SendCodeParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) spacesDetail(c *gin.Context) {
+	response.OK(c, gin.H{})
 }

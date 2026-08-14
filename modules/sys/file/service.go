@@ -123,6 +123,24 @@ func (s *Service) OpenByID(ctx context.Context, id string) (*File, io.ReadCloser
 	return row, rc, nil
 }
 
+// URL 获取对象访问 URL。
+func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error) {
+	row, err := s.repo.FindByObjectName(ctx, objectName)
+	if err != nil {
+		return nil, fmt.Errorf("file not found")
+	}
+	return &URLResult{ObjectName: objectName, URL: row.URL}, nil
+}
+
+// PresignedURL 获取对象预签名 URL（本地存储返回公开 URL）。
+func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResult, error) {
+	if _, err := s.repo.FindByObjectName(ctx, objectName); err != nil {
+		return nil, fmt.Errorf("file not found")
+	}
+	pub := s.sto.Provider().PublicURL(objectName)
+	return &URLResult{ObjectName: objectName, URL: pub}, nil
+}
+
 // OpenByObjectName 按对象名打开文件。
 func (s *Service) OpenByObjectName(ctx context.Context, objectName string) (contentType string, rc io.ReadCloser, err error) {
 	rc, err = s.sto.Provider().Get(ctx, objectName)

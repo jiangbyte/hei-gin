@@ -2,6 +2,7 @@ package banner
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -91,6 +92,23 @@ func (s *Service) Page(ctx context.Context, q PageParam) (rows []Banner, total i
 // List 启用 Banner 列表。
 func (s *Service) List(ctx context.Context, q ListParam) ([]Banner, error) {
 	return s.repo.List(ctx, q.Position, security.StatusEnabled)
+}
+
+// Interaction 互动上报：找到 Banner 行并将互动计数 +1。
+func (s *Service) Interaction(ctx context.Context, id string) error {
+	n, err := s.repo.IncrementInteraction(ctx, id)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return errors.New("banner not found")
+	}
+	return nil
+}
+
+// PortalList 门户端有效 Banner 列表。
+func (s *Service) PortalList(ctx context.Context, q PortalListParam) ([]Banner, error) {
+	return s.repo.ListPortal(ctx, q, security.StatusEnabled)
 }
 
 func statusOr(st string) string {

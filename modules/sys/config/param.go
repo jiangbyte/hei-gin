@@ -48,3 +48,28 @@ type ListParam struct {
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
+
+// BatchItemParam 批量保存单项入参。
+//
+// Author: Charlie
+type BatchItemParam struct {
+	ConfigKey   string  `json:"config_key" binding:"required"`
+	ConfigValue *string `json:"config_value"`
+	Description *string `json:"description"`
+	Category    *string `json:"category"`
+}
+
+// BatchSaveParam 批量保存入参。
+//
+// Author: Charlie
+type BatchSaveParam struct {
+	Items []BatchItemParam `json:"items" binding:"required"`
+}
+
+// TestWebhookParam 审计告警 Webhook 测试入参。
+//
+// Author: Charlie
+type TestWebhookParam struct {
+	URL    string `json:"url"`
+	Secret string `json:"secret"`
+}

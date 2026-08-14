@@ -59,6 +59,13 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Config, total int6
 	return rows, total, err
 }
 
+// ListByKeys 按配置键批量查询。
+func (r *Repo) ListByKeys(ctx context.Context, keys []string) ([]Config, error) {
+	var rows []Config
+	err := r.with(ctx).Where("config_key IN ?", keys).Find(&rows).Error
+	return rows, err
+}
+
 // List 按分类/范围列出配置。
 func (r *Repo) List(ctx context.Context, q ListParam) ([]Config, error) {
 	db := r.with(ctx).Model(&Config{})

@@ -21,7 +21,9 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 	uc.POST("/avatar/upload", s.uploadAvatar)
 	uc.POST("/password/send-code", s.sendPasswordCode)
 	uc.POST("/password/update", s.updatePassword)
+	uc.POST("/phone/send-code", s.sendPhoneCode)
 	uc.POST("/phone/update", s.updatePhone)
+	uc.POST("/email/send-code", s.sendEmailCode)
 	uc.POST("/email/update", s.updateEmail)
 	uc.GET("/org-info", s.orgInfo)
 }
@@ -129,4 +131,30 @@ func (s *Service) updateEmail(c *gin.Context) {
 func (s *Service) orgInfo(c *gin.Context) {
 	sess := SessionFromContext(c.Request.Context())
 	response.OK(c, s.OrgInfo(sess))
+}
+
+func (s *Service) sendPhoneCode(c *gin.Context) {
+	var req SendCodeParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.SendCode(c.Request.Context(), "PHONE", req.Target); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) sendEmailCode(c *gin.Context) {
+	var req SendCodeParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.SendCode(c.Request.Context(), "EMAIL", req.Target); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
 }

@@ -23,6 +23,9 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/dicts/detail", admin, middleware.RequirePermission(d.Perms, "sys:dict:detail", "字典详情"), s.detail)
 		api.GET("/v1/admin/sys/dicts/page", admin, middleware.RequirePermission(d.Perms, "sys:dict:page", "字典分页"), s.page)
 		api.GET("/v1/admin/sys/dicts/tree", admin, s.tree)
+
+		portal := middleware.RequireAccountType(security.AccountPortal)
+		api.GET("/v1/portal/sys/dicts/tree", portal, s.portalTree)
 	}
 }
 
@@ -93,6 +96,17 @@ func (s *Service) page(c *gin.Context) {
 func (s *Service) tree(c *gin.Context) {
 	var q TreeParam
 	q.Code = c.Query("code")
+	q.Category = c.Query("category")
+	nodes, err := s.Tree(c.Request.Context(), q)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nodes)
+}
+
+func (s *Service) portalTree(c *gin.Context) {
+	var q TreeParam
 	q.Category = c.Query("category")
 	nodes, err := s.Tree(c.Request.Context(), q)
 	if err != nil {

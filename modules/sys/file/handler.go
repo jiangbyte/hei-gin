@@ -26,7 +26,17 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/file/page", admin, middleware.RequirePermission(d.Perms, "sys:file:page", "文件分页"), s.page)
 		api.POST("/v1/admin/sys/file/list_by_ids", admin, middleware.RequirePermission(d.Perms, "sys:file:detail", "文件批量查询"), s.listByIDs)
 		api.GET("/v1/admin/sys/file/download", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件下载"), s.download)
+		api.POST("/v1/admin/sys/file/url", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件URL"), s.url)
+		api.POST("/v1/admin/sys/file/presigned_url", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件预签名URL"), s.presignedURL)
 		api.GET("/v1/files/*object_name", s.publicGet)
+
+		portal := middleware.RequireAccountType(security.AccountPortal)
+		api.POST("/v1/portal/sys/file/upload", portal, s.portalUpload)
+		api.GET("/v1/portal/sys/file/detail", portal, s.portalDetail)
+		api.POST("/v1/portal/sys/file/list_by_ids", portal, s.portalListByIDs)
+		api.GET("/v1/portal/sys/file/download", portal, s.portalDownload)
+		api.POST("/v1/portal/sys/file/url", portal, s.portalURL)
+		api.POST("/v1/portal/sys/file/presigned_url", portal, s.portalPresignedURL)
 	}
 }
 
@@ -139,4 +149,86 @@ func (s *Service) publicGet(c *gin.Context) {
 	defer rc.Close()
 	c.Header("Content-Type", ct)
 	_, _ = io.Copy(c.Writer, rc)
+}
+
+func (s *Service) url(c *gin.Context) {
+	var req ObjectNameParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	out, err := s.URL(c.Request.Context(), req.ObjectName)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+func (s *Service) presignedURL(c *gin.Context) {
+	var req ObjectNameParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	out, err := s.PresignedURL(c.Request.Context(), req.ObjectName)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+func (s *Service) portalUpload(c *gin.Context) {
+	fh, err := c.FormFile("file")
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, "file required")
+		return
+	}
+	row, err := s.Upload(c.Request.Context(), fh)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, row)
+}
+
+func (s *Service) portalDetail(c *gin.Context) {
+	var q schema.IDQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	row, err := s.Detail(c.Request.Context(), q.ID)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, "not found")
+		return
+	}
+	response.OK(c, row)
+}
+
+func (s *Service) portalListByIDs(c *gin.Context) {
+	var body IDsParam
+	if err := bind.JSON(c, &body); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	rows, err := s.ListByIDs(c.Request.Context(), body.IDs)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, rows)
+}
+
+func (s *Service) portalDownload(c *gin.Context) {
+	s.download(c)
+}
+
+func (s *Service) portalURL(c *gin.Context) {
+	s.url(c)
+}
+
+func (s *Service) portalPresignedURL(c *gin.Context) {
+	s.presignedURL(c)
 }

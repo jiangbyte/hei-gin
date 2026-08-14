@@ -2,6 +2,7 @@ package banner
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -71,6 +72,32 @@ func (r *Repo) List(ctx context.Context, position, status string) ([]Banner, err
 	if position != "" {
 		db = db.Where("position = ?", position)
 	}
+	var rows []Banner
+	err := db.Order("sort asc, id asc").Find(&rows).Error
+	return rows, err
+}
+
+// IncrementInteraction 互动计数 +1，返回受影响行数（0 表示 Banner 不存在）。
+func (r *Repo) IncrementInteraction(ctx context.Context, id string) (int64, error) {
+	res := r.with(ctx).Model(&Banner{}).Where("id = ?", id).
+		UpdateColumn("interaction_count", gorm.Expr("interaction_count + 1"))
+	return res.RowsAffected, res.Error
+}
+
+// ListPortal 门户端有效 Banner 列表：状态启用且在展示窗口内，按 sort 排序。
+func (r *Repo) ListPortal(ctx context.Context, q PortalListParam, status string) ([]Banner, error) {
+	now := time.Now()
+	db := r.with(ctx).Model(&Banner{}).Where("status = ?", status)
+	if q.Position != "" {
+		db = db.Where("position = ?", q.Position)
+	}
+	if q.Category != "" {
+		db = db.Where("category = ?", q.Category)
+	}
+	if q.Type != "" {
+		db = db.Where("type = ?", q.Type)
+	}
+	db = db.Where("(start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)", now, now)
 	var rows []Banner
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err

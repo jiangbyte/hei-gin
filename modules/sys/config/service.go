@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"gorm.io/datatypes"
@@ -10,26 +11,27 @@ import (
 	"hei-gin/framework/core/crypto"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
+	"hei-gin/framework/platform/notify"
 	"hei-gin/modules/shared"
 )
 
 // 敏感配置键（与 FastAPI SENSITIVE_CONFIG_KEYS 对齐的子集）。
 var sensitiveKeys = map[string]struct{}{
-	"AUTH_DEFAULT_PASSWORD":           {},
-	"AUDIT_ALERT_WEBHOOK_SECRET":      {},
-	"MAIL_LOCAL_PASSWORD":             {},
-	"MAIL_ALIYUN_ACCESS_KEY_SECRET":   {},
-	"MAIL_TENCENT_SECRET_KEY":         {},
-	"SMS_ALIYUN_ACCESS_KEY_SECRET":    {},
-	"SMS_TENCENT_SECRET_KEY":          {},
-	"PUSH_DINGTALK_SECRET":            {},
-	"PUSH_LARK_SECRET":                {},
-	"STORAGE_MINIO_ACCESS_KEY":        {},
-	"STORAGE_MINIO_SECRET_KEY":        {},
-	"STORAGE_ALIYUN_ACCESS_KEY":       {},
-	"STORAGE_ALIYUN_SECRET_KEY":       {},
-	"STORAGE_TENCENT_ACCESS_KEY":      {},
-	"STORAGE_TENCENT_SECRET_KEY":      {},
+	"AUTH_DEFAULT_PASSWORD":         {},
+	"AUDIT_ALERT_WEBHOOK_SECRET":    {},
+	"MAIL_LOCAL_PASSWORD":           {},
+	"MAIL_ALIYUN_ACCESS_KEY_SECRET": {},
+	"MAIL_TENCENT_SECRET_KEY":       {},
+	"SMS_ALIYUN_ACCESS_KEY_SECRET":  {},
+	"SMS_TENCENT_SECRET_KEY":        {},
+	"PUSH_DINGTALK_SECRET":          {},
+	"PUSH_LARK_SECRET":              {},
+	"STORAGE_MINIO_ACCESS_KEY":      {},
+	"STORAGE_MINIO_SECRET_KEY":      {},
+	"STORAGE_ALIYUN_ACCESS_KEY":     {},
+	"STORAGE_ALIYUN_SECRET_KEY":     {},
+	"STORAGE_TENCENT_ACCESS_KEY":    {},
+	"STORAGE_TENCENT_SECRET_KEY":    {},
 }
 
 // Service 系统配置业务服务。
@@ -38,11 +40,12 @@ var sensitiveKeys = map[string]struct{}{
 type Service struct {
 	repo   *Repo
 	fernet *crypto.Codec
+	notify *notify.Facade
 }
 
 // NewService 构造配置服务。
-func NewService(db *gorm.DB, fernet *crypto.Codec) *Service {
-	return &Service{repo: NewRepo(db), fernet: fernet}
+func NewService(db *gorm.DB, fernet *crypto.Codec, nf *notify.Facade) *Service {
+	return &Service{repo: NewRepo(db), fernet: fernet, notify: nf}
 }
 
 // New 构建 sys.config 模块。
@@ -51,7 +54,7 @@ func New(d *shared.Deps) module.Module {
 	if d.Cfg != nil {
 		codec, _ = crypto.NewFernetFromConfig(d.Cfg.Crypto.FernetKey, d.Cfg.Crypto.VaultAddr)
 	}
-	s := NewService(d.DB, codec)
+	s := NewService(d.DB, codec, d.Notify)
 	return module.Module{
 		Name:   "sys.config",
 		Models: []any{&Config{}},
@@ -170,4 +173,84 @@ func (s *Service) List(ctx context.Context, q ListParam) ([]Config, error) {
 		s.reveal(&rows[i])
 	}
 	return rows, err
+}
+
+// BatchSave 批量保存配置：按 config_key 存在则更新，不存在则新建。
+func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
+	items := make([]BatchItemParam, 0, len(req.Items))
+	for _, it := range req.Items {
+		if isSensitive(it.ConfigKey, it.Category) && (it.ConfigValue == nil || *it.ConfigValue == "") {
+			// 敏感配置空值跳过，避免覆盖已有密文
+			continue
+		}
+		items = append(items, it)
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, it := range items {
+		if _, ok := seen[it.ConfigKey]; ok {
+			continue
+		}
+		seen[it.ConfigKey] = struct{}{}
+		keys = append(keys, it.ConfigKey)
+	}
+	rows, err := s.repo.ListByKeys(ctx, keys)
+	if err != nil {
+		return err
+	}
+	existing := make(map[string]Config, len(rows))
+	for _, row := range rows {
+		existing[row.ConfigKey] = row
+	}
+	for _, it := range items {
+		row, ok := existing[it.ConfigKey]
+		if !ok {
+			nr := Config{
+				ID:          idgen.Next(),
+				ConfigKey:   it.ConfigKey,
+				ConfigValue: s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
+				Category:    it.Category,
+				Remark:      it.Description,
+				ValueType:   "STRING",
+				ExtJSON:     datatypes.JSON([]byte("{}")),
+			}
+			if err := s.repo.Create(ctx, &nr); err != nil {
+				return err
+			}
+			continue
+		}
+		updates := map[string]any{
+			"config_value": s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
+		}
+		if it.Category != nil {
+			updates["category"] = it.Category
+		}
+		if it.Description != nil {
+			updates["remark"] = it.Description
+		}
+		if err := s.repo.Update(ctx, row.ID, updates); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// TestWebhook 发送审计告警测试 Webhook。
+func (s *Service) TestWebhook(ctx context.Context, url, secret string) error {
+	if s.notify == nil {
+		return errors.New("notify facade unavailable")
+	}
+	payload := `{"msg_type":"text","content":{"text":"审计告警系统测试消息"}}`
+	return s.notify.SendWebhook(ctx, url, secret, payload)
+}
+
+// TestPush 发送审计告警测试推送。
+func (s *Service) TestPush(ctx context.Context) error {
+	if s.notify == nil {
+		return errors.New("notify facade unavailable")
+	}
+	return s.notify.SendPush(ctx, "审计告警", "审计告警系统测试消息")
 }
