@@ -113,3 +113,59 @@ func (q ModulePageParam) Normalize() (current, size int) {
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
+
+// ResourcePermissionBindParam 资源绑定权限入参（管理端/客户端）。
+//
+// Author: Charlie
+type ResourcePermissionBindParam struct {
+	ResourceID     string   `json:"resource_id" binding:"required"`
+	PermissionKeys []string `json:"permission_keys"`
+	AccountType    string   `json:"account_type"`
+}
+
+// ButtonAddParam 创建按钮资源入参。
+//
+// Author: Charlie
+type ButtonAddParam struct {
+	ResourceID  string  `json:"resource_id" binding:"required"`
+	Code        string  `json:"code" binding:"required"`
+	Name        string  `json:"name" binding:"required"`
+	Sort        int     `json:"sort"`
+	Status      string  `json:"status"`
+	Description *string `json:"description"`
+}
+
+// ButtonEditParam 更新按钮资源入参。
+//
+// Author: Charlie
+type ButtonEditParam struct {
+	ID string `json:"id" binding:"required"`
+	ButtonAddParam
+}
+
+// ButtonPageParam 按钮资源分页查询。
+//
+// Author: Charlie
+type ButtonPageParam struct {
+	Current    int    `form:"current" json:"current"`
+	Size       int    `form:"size" json:"size"`
+	ResourceID string `form:"resource_id" json:"resource_id"`
+	Code       string `form:"code" json:"code"`
+	Name       string `form:"name" json:"name"`
+	Status     string `form:"status" json:"status"`
+}
+
+// Normalize 分页规范化。
+func (q ButtonPageParam) Normalize() (current, size int) {
+	current, size = q.Current, q.Size
+	if current < 1 {
+		current = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+	return current, size
+}

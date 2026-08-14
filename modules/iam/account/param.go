@@ -1,5 +1,7 @@
 package account
 
+import "hei-gin/modules/iam/relation"
+
 // AddParam 管理端创建账号入参。
 //
 // Author: Charlie
@@ -67,4 +69,46 @@ func (q PageParam) Normalize() (current, size int) {
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
+}
+
+// OwnResourceQuery 账号资源授权查询入参（account_type 默认取账号自身类型）。
+//
+// Author: Charlie
+type OwnResourceQuery struct {
+	ID          string `form:"id" json:"id" binding:"required"`
+	AccountType string `form:"account_type" json:"account_type"`
+}
+
+// GrantRoleParam 账号授权角色入参。
+//
+// Author: Charlie
+type GrantRoleParam struct {
+	ID      string   `json:"id" binding:"required"`
+	RoleIDs []string `json:"role_ids"`
+}
+
+// GrantGroupParam 账号授权用户组入参。
+//
+// Author: Charlie
+type GrantGroupParam struct {
+	ID       string   `json:"id" binding:"required"`
+	GroupIDs []string `json:"group_ids"`
+}
+
+// GrantDeptParam 账号授权部门入参。
+//
+// Author: Charlie
+type GrantDeptParam struct {
+	ID            string                   `json:"id" binding:"required"`
+	AccountType   string                   `json:"account_type"`
+	GrantInfoList []relation.DeptGrantInfo `json:"grant_info_list"`
+}
+
+// GrantResourceParam 账号授权资源（管理端/客户端）入参。
+//
+// Author: Charlie
+type GrantResourceParam struct {
+	ID            string                       `json:"id" binding:"required"`
+	AccountType   string                       `json:"account_type"`
+	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }

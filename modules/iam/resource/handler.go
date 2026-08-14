@@ -31,6 +31,13 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/resource-modules/page", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:page", "资源模块分页"), s.pageModule)
 		api.GET("/v1/admin/sys/resource-modules/selector", admin, s.selectorModule)
 		api.GET("/v1/portal/sys/resources/current", s.currentPortal)
+		api.GET("/v1/admin/permission-registry", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), s.permissionRegistry)
+		api.POST("/v1/admin/resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), s.bindResourcePermissions)
+		api.POST("/v1/admin/client-resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), s.bindClientResourcePermissions)
+		api.POST("/v1/admin/sys/resource-buttons/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), s.createButton)
+		api.POST("/v1/admin/sys/resource-buttons/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), s.updateButton)
+		api.POST("/v1/admin/sys/resource-buttons/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), s.deleteButton)
+		api.GET("/v1/admin/sys/resource-buttons/page", admin, middleware.RequirePermission(d.Perms, "iam:resource:list", "资源分页"), s.pageButton)
 	}
 }
 
@@ -196,4 +203,83 @@ func (s *Service) selectorModule(c *gin.Context) {
 		return
 	}
 	response.OK(c, out)
+}
+func (s *Service) permissionRegistry(c *gin.Context) {
+	response.OK(c, s.ListPermissions())
+}
+
+func (s *Service) bindResourcePermissions(c *gin.Context) {
+	var req ResourcePermissionBindParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.BindResourcePermissions(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) bindClientResourcePermissions(c *gin.Context) {
+	var req ResourcePermissionBindParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.BindClientResourcePermissions(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) createButton(c *gin.Context) {
+	var req ButtonAddParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.CreateButton(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) updateButton(c *gin.Context) {
+	var req ButtonEditParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.UpdateButton(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) deleteButton(c *gin.Context) {
+	var body IDsParam
+	if err := bind.JSON(c, &body); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.DeleteButtons(c.Request.Context(), body.IDs); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) pageButton(c *gin.Context) {
+	var q ButtonPageParam
+	_ = c.ShouldBindQuery(&q)
+	rows, total, cur, size, err := s.PageButtons(c.Request.Context(), q)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.Page(c, int64(cur), int64(size), total, rows)
 }

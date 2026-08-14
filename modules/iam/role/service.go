@@ -9,16 +9,33 @@ import (
 	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
+	"hei-gin/modules/iam/client"
+	"hei-gin/modules/iam/relation"
+	"hei-gin/modules/iam/resource"
 	"hei-gin/modules/shared"
 )
 
-// Service 角色服务。
+// Service 角色服务（授权经 relation 模块，成员账号视图经 result 模块）。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	db        *gorm.DB
+	repo      *Repo
+	rel       *relation.Service
+	resources *resource.Service
+	clients   *client.Service
+}
 
 // NewService 构造角色服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB) *Service {
+	return &Service{
+		db:        db,
+		repo:      NewRepo(db),
+		rel:       relation.NewService(db),
+		resources: resource.NewService(db),
+		clients:   client.NewService(db),
+	}
+}
 
 // New 构建 iam.role 模块。
 func New(d *shared.Deps) module.Module {

@@ -16,3 +16,12 @@ type ModuleOption struct {
 	Name string `json:"name"`
 	Code string `json:"code"`
 }
+
+// GrantModule 客户端资源授权模块选项（含模块下启用资源）。
+//
+// Author: Charlie
+type GrantModule struct {
+	ModuleID  string           `json:"module_id"`
+	Name      string           `json:"name"`
+	Resources []ClientResource `json:"resources"`
+}

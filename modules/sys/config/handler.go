@@ -124,11 +124,19 @@ func (s *Service) testWebhook(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if req.URL == "" {
+	url := req.URL
+	if url == "" {
+		url = req.WebhookURL
+	}
+	if url == "" {
 		response.Fail(c, http.StatusBadRequest, 400, "url required")
 		return
 	}
-	if err := s.TestWebhook(c.Request.Context(), req.URL, req.Secret); err != nil {
+	secret := req.Secret
+	if secret == "" {
+		secret = req.WebhookSecret
+	}
+	if err := s.TestWebhook(c.Request.Context(), url, secret); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}

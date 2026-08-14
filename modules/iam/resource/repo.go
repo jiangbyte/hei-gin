@@ -77,6 +77,51 @@ func (r *Repo) ListResourcesByClient(ctx context.Context, client string) ([]Reso
 	return rows, err
 }
 
+// GetResourcesByIDs 按 ID 集合查询资源。
+func (r *Repo) GetResourcesByIDs(ctx context.Context, ids []string) ([]Resource, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []Resource
+	if err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+// PageButtons 按钮资源分页。
+func (r *Repo) PageButtons(ctx context.Context, p ButtonPageParam) (rows []Resource, total int64, err error) {
+	cur, size := p.Normalize()
+	db := r.with(ctx).Model(&Resource{}).Where("resource_type = ?", ResourceTypeButton)
+	if p.ResourceID != "" {
+		db = db.Where("parent_id = ?", p.ResourceID)
+	}
+	if p.Code != "" {
+		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
+	}
+	if p.Name != "" {
+		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+	}
+	if p.Status != "" {
+		db = db.Where("status = ?", p.Status)
+	}
+	if err = db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err = db.Order("sort asc, id desc").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
+	return rows, total, err
+}
+
+// ListGrantResources 列出指定客户端模块下的启用资源（授权树用）。
+func (r *Repo) ListGrantResources(ctx context.Context, client string) ([]Resource, error) {
+	var rows []Resource
+	err := r.with(ctx).
+		Where("status = ? AND module_id IN (SELECT id FROM sys_resource_module WHERE client = ? AND status = ?)",
+			security.StatusEnabled, client, security.StatusEnabled).
+		Order("sort asc, id asc").Find(&rows).Error
+	return rows, err
+}
+
 // ListResources 列出资源（可选模块过滤）。
 func (r *Repo) ListResources(ctx context.Context, moduleID string) ([]Resource, error) {
 	db := r.with(ctx).Model(&Resource{})

@@ -30,6 +30,35 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
+// ListGrantModules 客户端资源授权模块选项（含模块下启用资源，空模块过滤）。
+func (s *Service) ListGrantModules(ctx context.Context, accountType string) ([]GrantModule, error) {
+	at := accountType
+	if at == "" {
+		at = string(security.AccountAdmin)
+	}
+	modules, err := s.repo.ListEnabledModules(ctx, at)
+	if err != nil {
+		return nil, err
+	}
+	resources, err := s.repo.ListGrantResources(ctx, at)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]GrantModule, 0, len(modules))
+	for _, m := range modules {
+		gm := GrantModule{ModuleID: m.ID, Name: m.Name, Resources: []ClientResource{}}
+		for _, res := range resources {
+			if res.ModuleID != nil && *res.ModuleID == m.ID {
+				gm.Resources = append(gm.Resources, res)
+			}
+		}
+		if len(gm.Resources) > 0 {
+			out = append(out, gm)
+		}
+	}
+	return out, nil
+}
+
 // CreateModule 创建客户端模块。
 func (s *Service) CreateModule(ctx context.Context, req ModuleAddParam) error {
 	at := req.AccountType

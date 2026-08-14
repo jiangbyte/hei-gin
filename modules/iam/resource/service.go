@@ -9,20 +9,31 @@ import (
 	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
+	"hei-gin/modules/iam/relation"
 	"hei-gin/modules/shared"
 )
 
-// Service 资源服务。
+// Service 资源服务（权限绑定经 relation 模块，权限注册表经 Perms）。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	repo  *Repo
+	rel   *relation.Service
+	perms *security.PermissionRegistry
+}
 
 // NewService 构造资源服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB) *Service {
+	return &Service{
+		repo: NewRepo(db),
+		rel:  relation.NewService(db),
+	}
+}
 
 // New 构建 iam.resource 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
+	s.perms = d.Perms
 	return module.Module{
 		Name:   "iam.resource",
 		Models: []any{&Resource{}, &ResourceModule{}},
@@ -86,6 +97,35 @@ func (s *Service) CurrentAdmin(ctx context.Context) ([]Resource, error) {
 // CurrentPortal 门户当前资源。
 func (s *Service) CurrentPortal(ctx context.Context) ([]Resource, error) {
 	return s.repo.ListResourcesByClient(ctx, string(security.AccountPortal))
+}
+
+// ListGrantModules 资源授权模块选项（含模块下启用资源，空模块过滤）。
+func (s *Service) ListGrantModules(ctx context.Context, accountType string) ([]GrantModule, error) {
+	typ := accountType
+	if typ == "" {
+		typ = string(security.AccountAdmin)
+	}
+	modules, err := s.repo.ListEnabledModules(ctx, typ)
+	if err != nil {
+		return nil, err
+	}
+	resources, err := s.repo.ListGrantResources(ctx, typ)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]GrantModule, 0, len(modules))
+	for _, m := range modules {
+		gm := GrantModule{ModuleID: m.ID, Name: m.Name, Resources: []Resource{}}
+		for _, res := range resources {
+			if res.ModuleID != nil && *res.ModuleID == m.ID {
+				gm.Resources = append(gm.Resources, res)
+			}
+		}
+		if len(gm.Resources) > 0 {
+			out = append(out, gm)
+		}
+	}
+	return out, nil
 }
 
 // ResourceTree 资源树。

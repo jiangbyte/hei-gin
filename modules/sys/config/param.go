@@ -49,13 +49,14 @@ type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// BatchItemParam 批量保存单项入参。
+// BatchItemParam 批量保存单项入参（remark 与 description 兼容）。
 //
 // Author: Charlie
 type BatchItemParam struct {
 	ConfigKey   string  `json:"config_key" binding:"required"`
 	ConfigValue *string `json:"config_value"`
 	Description *string `json:"description"`
+	Remark      *string `json:"remark"`
 	Category    *string `json:"category"`
 }
 
@@ -66,10 +67,12 @@ type BatchSaveParam struct {
 	Items []BatchItemParam `json:"items" binding:"required"`
 }
 
-// TestWebhookParam 审计告警 Webhook 测试入参。
+// TestWebhookParam 审计告警 Webhook 测试入参（webhook_url/webhook_secret 与 url/secret 兼容）。
 //
 // Author: Charlie
 type TestWebhookParam struct {
-	URL    string `json:"url"`
-	Secret string `json:"secret"`
+	URL           string `json:"url"`
+	Secret        string `json:"secret"`
+	WebhookURL    string `json:"webhook_url"`
+	WebhookSecret string `json:"webhook_secret"`
 }

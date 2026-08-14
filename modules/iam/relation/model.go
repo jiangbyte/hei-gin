@@ -39,17 +39,45 @@ func (Relation) TableName() string { return "sys_iam_relation" }
 
 // 主体类型与关系类型常量。
 const (
-	SubjectAccount  = "ACCOUNT"
-	SubjectRole     = "ROLE"
-	SubjectGroup    = "GROUP"
-	SubjectDept     = "DEPT"
-	SubjectPosition = "POSITION"
+	SubjectAccount        = "ACCOUNT"
+	SubjectRole           = "ROLE"
+	SubjectGroup          = "GROUP"
+	SubjectDept           = "DEPT"
+	SubjectPosition       = "POSITION"
+	SubjectResource       = "RESOURCE"
+	SubjectClientResource = "CLIENT_RESOURCE"
 
-	RelAccountRole     = "ACCOUNT_ROLE"
-	RelAccountDept     = "ACCOUNT_DEPT"
-	RelAccountGroup    = "ACCOUNT_GROUP"
-	RelAccountPosition = "ACCOUNT_POSITION"
-	RelRolePermission  = "ROLE_PERMISSION"
-	RelRoleResource    = "ROLE_RESOURCE"
-	RelGroupRole       = "GROUP_ROLE"
+	RelAccountRole              = "ACCOUNT_ROLE"
+	RelAccountDept              = "ACCOUNT_DEPT"
+	RelAccountGroup             = "ACCOUNT_GROUP"
+	RelAccountPosition          = "ACCOUNT_POSITION"
+	RelAccountResource          = "ACCOUNT_RESOURCE"
+	RelAccountClientResource    = "ACCOUNT_CLIENT_RESOURCE"
+	RelGroupRole                = "GROUP_ROLE"
+	RelGroupUser                = "GROUP_USER"
+	RelGroupResource            = "GROUP_RESOURCE"
+	RelGroupClientResource      = "GROUP_CLIENT_RESOURCE"
+	RelRoleUser                 = "ROLE_USER"
+	RelRolePermission           = "ROLE_PERMISSION"
+	RelRoleResource             = "ROLE_RESOURCE"
+	RelRoleClientResource       = "ROLE_CLIENT_RESOURCE"
+	RelResourcePermission       = "RESOURCE_PERMISSION"
+	RelClientResourcePermission = "CLIENT_RESOURCE_PERMISSION"
+)
+
+// 目标类型常量。
+const (
+	TargetAccount        = "ACCOUNT"
+	TargetRole           = "ROLE"
+	TargetDept           = "DEPT"
+	TargetGroup          = "GROUP"
+	TargetResource       = "RESOURCE"
+	TargetClientResource = "CLIENT_RESOURCE"
+	TargetPermission     = "PERMISSION"
+)
+
+// 授予模式常量。
+const (
+	GrantDirect  = "DIRECT"
+	GrantCascade = "CASCADE"
 )

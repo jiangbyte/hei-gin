@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/bind"
+	contextx "hei-gin/framework/core/context"
 	"hei-gin/framework/core/response"
 	"hei-gin/framework/core/schema"
 	"hei-gin/framework/core/security"
@@ -23,6 +23,16 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.POST("/v1/admin/sys/accounts/delete", admin, middleware.RequirePermission(d.Perms, "iam:account:delete", "账户删除"), s.delete)
 		api.GET("/v1/admin/sys/accounts/detail", admin, middleware.RequirePermission(d.Perms, "iam:account:detail", "账户详情"), s.detail)
 		api.GET("/v1/admin/sys/accounts/page", admin, middleware.RequirePermission(d.Perms, "iam:account:page", "账户分页"), s.page)
+		api.GET("/v1/admin/sys/accounts/own-role", admin, middleware.RequirePermission(d.Perms, "iam:account:ownrole", "账号已拥有角色"), s.ownRole)
+		api.POST("/v1/admin/sys/accounts/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:account:grantrole", "账号角色授权"), s.grantRole)
+		api.GET("/v1/admin/sys/accounts/own-group", admin, middleware.RequirePermission(d.Perms, "iam:account:owngroup", "账号已拥有用户组"), s.ownGroup)
+		api.POST("/v1/admin/sys/accounts/grant-group", admin, middleware.RequirePermission(d.Perms, "iam:account:grantgroup", "账号用户组授权"), s.grantGroup)
+		api.GET("/v1/admin/sys/accounts/own-dept", admin, middleware.RequirePermission(d.Perms, "iam:account:owndept", "账号已拥有部门"), s.ownDept)
+		api.POST("/v1/admin/sys/accounts/grant-dept", admin, middleware.RequirePermission(d.Perms, "iam:account:grantdept", "账号部门授权"), s.grantDept)
+		api.GET("/v1/admin/sys/accounts/own-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:ownresource", "账号已拥有资源"), s.ownResource)
+		api.POST("/v1/admin/sys/accounts/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantresource", "账号资源授权"), s.grantResource)
+		api.GET("/v1/admin/sys/accounts/own-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:ownclientresource", "账号已拥有客户端资源"), s.ownClientResource)
+		api.POST("/v1/admin/sys/accounts/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantclientresource", "账号客户端资源授权"), s.grantClientResource)
 	}
 }
 
@@ -88,4 +98,138 @@ func (s *Service) page(c *gin.Context) {
 		return
 	}
 	response.Page(c, int64(cur), int64(size), total, records)
+}
+func (s *Service) ownRole(c *gin.Context) {
+	var q schema.IDQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	vo, err := s.OwnRoles(c.Request.Context(), q.ID)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, vo)
+}
+
+func (s *Service) grantRole(c *gin.Context) {
+	var req GrantRoleParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.GrantRoles(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) ownGroup(c *gin.Context) {
+	var q schema.IDQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	vo, err := s.OwnGroups(c.Request.Context(), q.ID)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, vo)
+}
+
+func (s *Service) grantGroup(c *gin.Context) {
+	var req GrantGroupParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.GrantGroups(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) ownDept(c *gin.Context) {
+	var q schema.IDQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	vo, err := s.OwnDepts(c.Request.Context(), q.ID)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, vo)
+}
+
+func (s *Service) grantDept(c *gin.Context) {
+	var req GrantDeptParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.GrantDepts(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) ownResource(c *gin.Context) {
+	var q OwnResourceQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	vo, err := s.OwnResources(c.Request.Context(), q.ID, q.AccountType)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, vo)
+}
+
+func (s *Service) grantResource(c *gin.Context) {
+	var req GrantResourceParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.GrantResources(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) ownClientResource(c *gin.Context) {
+	var q OwnResourceQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	vo, err := s.OwnClientResources(c.Request.Context(), q.ID, q.AccountType)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, vo)
+}
+
+func (s *Service) grantClientResource(c *gin.Context) {
+	var req GrantResourceParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.GrantClientResources(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
 }

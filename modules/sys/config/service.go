@@ -62,6 +62,13 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
+func pickRemark(description, remark *string) *string {
+	if remark != nil {
+		return remark
+	}
+	return description
+}
+
 func (s *Service) maybeEncrypt(key string, category *string, value *string) *string {
 	if value == nil || *value == "" || s.fernet == nil {
 		return value
@@ -213,7 +220,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 				ConfigKey:   it.ConfigKey,
 				ConfigValue: s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
 				Category:    it.Category,
-				Remark:      it.Description,
+				Remark:      pickRemark(it.Description, it.Remark),
 				ValueType:   "STRING",
 				ExtJSON:     datatypes.JSON([]byte("{}")),
 			}
@@ -229,7 +236,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 			updates["category"] = it.Category
 		}
 		if it.Description != nil {
-			updates["remark"] = it.Description
+			updates["remark"] = pickRemark(it.Description, it.Remark)
 		}
 		if err := s.repo.Update(ctx, row.ID, updates); err != nil {
 			return err

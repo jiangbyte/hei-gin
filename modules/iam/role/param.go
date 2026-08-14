@@ -1,5 +1,7 @@
 package role
 
+import "hei-gin/modules/iam/relation"
+
 // AddParam 创建角色入参。
 //
 // Author: Charlie
@@ -53,4 +55,29 @@ func (q PageParam) Normalize() (current, size int) {
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
+}
+
+// OwnResourceQuery 角色资源授权查询入参。
+//
+// Author: Charlie
+type OwnResourceQuery struct {
+	ID          string `form:"id" json:"id" binding:"required"`
+	AccountType string `form:"account_type" json:"account_type"`
+}
+
+// GrantUserParam 角色成员授权入参。
+//
+// Author: Charlie
+type GrantUserParam struct {
+	ID         string   `json:"id" binding:"required"`
+	AccountIDs []string `json:"account_ids"`
+}
+
+// GrantResourceParam 角色授权资源（管理端/客户端）入参。
+//
+// Author: Charlie
+type GrantResourceParam struct {
+	ID            string                       `json:"id" binding:"required"`
+	AccountType   string                       `json:"account_type"`
+	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }

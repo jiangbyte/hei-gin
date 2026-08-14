@@ -61,3 +61,6 @@ type ResourceModule struct {
 
 // TableName 返回表名。
 func (ResourceModule) TableName() string { return "sys_resource_module" }
+
+// 资源类型常量。
+const ResourceTypeButton = "BUTTON"

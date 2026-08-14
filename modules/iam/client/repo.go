@@ -119,6 +119,16 @@ func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []C
 	return rows, total, err
 }
 
+// ListGrantResources 列出指定账号类型模块下的启用客户端资源（授权树用）。
+func (r *Repo) ListGrantResources(ctx context.Context, accountType string) ([]ClientResource, error) {
+	var rows []ClientResource
+	err := r.with(ctx).
+		Where("status = ? AND module_id IN (SELECT id FROM sys_client_module WHERE account_type = ? AND status = ?)",
+			security.StatusEnabled, accountType, security.StatusEnabled).
+		Order("sort asc, id asc").Find(&rows).Error
+	return rows, err
+}
+
 // ListResources 列出客户端资源（可选模块过滤）。
 func (r *Repo) ListResources(ctx context.Context, moduleID string) ([]ClientResource, error) {
 	db := r.with(ctx).Model(&ClientResource{})

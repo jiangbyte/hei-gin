@@ -8,6 +8,11 @@ import (
 	"hei-gin/framework/core/security"
 	"hei-gin/framework/platform/idgen"
 	"hei-gin/framework/platform/module"
+	"hei-gin/modules/iam/client"
+	"hei-gin/modules/iam/group"
+	"hei-gin/modules/iam/relation"
+	"hei-gin/modules/iam/resource"
+	"hei-gin/modules/iam/role"
 	"hei-gin/modules/shared"
 	adminuser "hei-gin/modules/user/admin"
 	portaluser "hei-gin/modules/user/portal"
@@ -21,21 +26,31 @@ type Lookup interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
 }
 
-// Service 账号服务（资料经 user 模块 Repo）。
+// Service 账号服务（资料经 user 模块 Repo，授权经 relation 模块）。
 //
 // Author: Charlie
 type Service struct {
-	repo   *Repo
-	admin  *adminuser.Repo
-	portal *portaluser.Repo
+	repo      *Repo
+	admin     *adminuser.Repo
+	portal    *portaluser.Repo
+	rel       *relation.Service
+	roles     *role.Repo
+	groups    *group.Repo
+	resources *resource.Service
+	clients   *client.Service
 }
 
 // NewService 构造账号服务。
 func NewService(db *gorm.DB) *Service {
 	return &Service{
-		repo:   NewRepo(db),
-		admin:  adminuser.NewRepo(db),
-		portal: portaluser.NewRepo(db),
+		repo:      NewRepo(db),
+		admin:     adminuser.NewRepo(db),
+		portal:    portaluser.NewRepo(db),
+		rel:       relation.NewService(db),
+		roles:     role.NewRepo(db),
+		groups:    group.NewRepo(db),
+		resources: resource.NewService(db),
+		clients:   client.NewService(db),
 	}
 }
 

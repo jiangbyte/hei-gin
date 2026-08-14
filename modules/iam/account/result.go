@@ -1,6 +1,14 @@
 package account
 
-import "time"
+import (
+	"time"
+
+	"hei-gin/modules/iam/client"
+	"hei-gin/modules/iam/group"
+	"hei-gin/modules/iam/relation"
+	"hei-gin/modules/iam/resource"
+	"hei-gin/modules/iam/role"
+)
 
 // AccountResult 账号详情/分页行。
 //
@@ -32,4 +40,48 @@ type AccountResult struct {
 	CreatedBy          *string    `json:"created_by"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 	UpdatedBy          *string    `json:"updated_by"`
+}
+
+// OwnRoleResult 账号已拥有角色结果。
+//
+// Author: Charlie
+type OwnRoleResult struct {
+	ID      string      `json:"id"`
+	Roles   []role.Role `json:"roles"`
+	RoleIDs []string    `json:"role_ids"`
+}
+
+// OwnGroupResult 账号已拥有用户组结果。
+//
+// Author: Charlie
+type OwnGroupResult struct {
+	ID       string        `json:"id"`
+	Groups   []group.Group `json:"groups"`
+	GroupIDs []string      `json:"group_ids"`
+}
+
+// OwnDeptResult 账号已拥有部门授权结果。
+//
+// Author: Charlie
+type OwnDeptResult struct {
+	ID            string                   `json:"id"`
+	GrantInfoList []relation.DeptGrantInfo `json:"grant_info_list"`
+}
+
+// OwnResourceResult 账号已拥有管理端资源授权结果。
+//
+// Author: Charlie
+type OwnResourceResult struct {
+	ID            string                       `json:"id"`
+	Modules       []resource.GrantModule       `json:"modules"`
+	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
+}
+
+// OwnClientResourceResult 账号已拥有客户端资源授权结果。
+//
+// Author: Charlie
+type OwnClientResourceResult struct {
+	ID            string                       `json:"id"`
+	Modules       []client.GrantModule         `json:"modules"`
+	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }

@@ -42,6 +42,28 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Group, error) {
 	return &row, nil
 }
 
+// GetByIDs 按 ID 集合查询（保持入参顺序）。
+func (r *Repo) GetByIDs(ctx context.Context, ids []string) ([]Group, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []Group
+	if err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	byID := make(map[string]Group, len(rows))
+	for _, row := range rows {
+		byID[row.ID] = row
+	}
+	out := make([]Group, 0, len(ids))
+	for _, id := range ids {
+		if row, ok := byID[id]; ok {
+			out = append(out, row)
+		}
+	}
+	return out, nil
+}
+
 // Page 分页查询。
 func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Group, total int64, err error) {
 	cur, size := p.Normalize()
