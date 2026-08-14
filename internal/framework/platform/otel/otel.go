@@ -1,4 +1,4 @@
-// Package otel æä¾›å¯é€‰ OpenTelemetry åˆå§‹åŒ–æ¡©ã€‚
+// Package otel 提供可选 OpenTelemetry 初始化桩。
 //
 // Author: Charlie
 package otel
@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Init åœ¨ otel.enabled=false æ—¶ no-opï¼›å¯ç”¨æ—¶è®°å½• endpoint å¹¶è¿”å›ž nilï¼ˆé¿å…å¼ºä¾èµ– OTLP SDKï¼‰ã€‚
-// åŽç»­å¯åœ¨æ­¤æŽ¥å…¥ otlptracehttp exporterã€‚
+// Init 在 otel.enabled=false 时 no-op；启用时记录 endpoint 并返回 nil（避免强依赖 OTLP SDK）。
+// 后续可在此接入 otlptracehttp exporter。
 //
 // Author: Charlie
 func Init(cfg config.OTelConfig) error {

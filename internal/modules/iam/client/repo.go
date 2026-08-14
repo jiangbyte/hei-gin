@@ -12,34 +12,34 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// Repo å®¢æˆ·ç«¯èµ„æºæŒä¹…åŒ–ã€‚
+// Repo 客户端资源持久化。
 //
 // Author: Charlie
 type Repo struct{ db *gorm.DB }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-// CreateModule åˆ›å»ºå®¢æˆ·ç«¯æ¨¡å—ã€‚
+// CreateModule 创建客户端模块。
 func (r *Repo) CreateModule(ctx context.Context, row *ClientModule) error {
 	return r.with(ctx).Create(row).Error
 }
 
-// UpdateModule æ›´æ–°å®¢æˆ·ç«¯æ¨¡å—ã€‚
+// UpdateModule 更新客户端模块。
 func (r *Repo) UpdateModule(ctx context.Context, id string, updates map[string]any) error {
 	return r.with(ctx).Model(&ClientModule{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteModules æ‰¹é‡åˆ é™¤å®¢æˆ·ç«¯æ¨¡å—ã€‚
+// DeleteModules 批量删除客户端模块。
 func (r *Repo) DeleteModules(ctx context.Context, ids []string) error {
 	return r.with(ctx).Where("id IN ?", ids).Delete(&ClientModule{}).Error
 }
 
-// GetModuleByID æŒ‰ä¸»é”®æŸ¥è¯¢å®¢æˆ·ç«¯æ¨¡å—ã€‚
+// GetModuleByID 按主键查询客户端模块。
 func (r *Repo) GetModuleByID(ctx context.Context, id string) (*ClientModule, error) {
 	var row ClientModule
 	if err := r.with(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -48,7 +48,7 @@ func (r *Repo) GetModuleByID(ctx context.Context, id string) (*ClientModule, err
 	return &row, nil
 }
 
-// PageModules å®¢æˆ·ç«¯æ¨¡å—åˆ†é¡µã€‚
+// PageModules 客户端模块分页。
 func (r *Repo) PageModules(ctx context.Context, p ModulePageParam) (rows []ClientModule, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientModule{})
@@ -68,7 +68,7 @@ func (r *Repo) PageModules(ctx context.Context, p ModulePageParam) (rows []Clien
 	return rows, total, err
 }
 
-// ListEnabledModules åˆ—å‡ºå¯ç”¨æ¨¡å—ï¼ˆå¯é€‰è´¦å·ç±»åž‹è¿‡æ»¤ï¼‰ã€‚
+// ListEnabledModules 列出启用模块（可选账号类型过滤）。
 func (r *Repo) ListEnabledModules(ctx context.Context, accountType string) ([]ClientModule, error) {
 	db := r.with(ctx).Model(&ClientModule{}).Where("status = ?", security.StatusEnabled)
 	if accountType != "" {
@@ -79,22 +79,22 @@ func (r *Repo) ListEnabledModules(ctx context.Context, accountType string) ([]Cl
 	return rows, err
 }
 
-// CreateResource åˆ›å»ºå®¢æˆ·ç«¯èµ„æºã€‚
+// CreateResource 创建客户端资源。
 func (r *Repo) CreateResource(ctx context.Context, row *ClientResource) error {
 	return r.with(ctx).Create(row).Error
 }
 
-// UpdateResource æ›´æ–°å®¢æˆ·ç«¯èµ„æºã€‚
+// UpdateResource 更新客户端资源。
 func (r *Repo) UpdateResource(ctx context.Context, id string, updates map[string]any) error {
 	return r.with(ctx).Model(&ClientResource{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteResources æ‰¹é‡åˆ é™¤å®¢æˆ·ç«¯èµ„æºã€‚
+// DeleteResources 批量删除客户端资源。
 func (r *Repo) DeleteResources(ctx context.Context, ids []string) error {
 	return r.with(ctx).Where("id IN ?", ids).Delete(&ClientResource{}).Error
 }
 
-// GetResourceByID æŒ‰ä¸»é”®æŸ¥è¯¢å®¢æˆ·ç«¯èµ„æºã€‚
+// GetResourceByID 按主键查询客户端资源。
 func (r *Repo) GetResourceByID(ctx context.Context, id string) (*ClientResource, error) {
 	var row ClientResource
 	if err := r.with(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -103,7 +103,7 @@ func (r *Repo) GetResourceByID(ctx context.Context, id string) (*ClientResource,
 	return &row, nil
 }
 
-// PageResources å®¢æˆ·ç«¯èµ„æºåˆ†é¡µã€‚
+// PageResources 客户端资源分页。
 func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []ClientResource, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientResource{})
@@ -123,7 +123,7 @@ func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []C
 	return rows, total, err
 }
 
-// ListGrantResources åˆ—å‡ºæŒ‡å®šè´¦å·ç±»åž‹æ¨¡å—ä¸‹çš„å¯ç”¨å®¢æˆ·ç«¯èµ„æºï¼ˆæŽˆæƒæ ‘ç”¨ï¼‰ã€‚
+// ListGrantResources 列出指定账号类型模块下的启用客户端资源（授权树用）。
 func (r *Repo) ListGrantResources(ctx context.Context, accountType string) ([]ClientResource, error) {
 	var rows []ClientResource
 	err := r.with(ctx).
@@ -133,7 +133,7 @@ func (r *Repo) ListGrantResources(ctx context.Context, accountType string) ([]Cl
 	return rows, err
 }
 
-// ListResources åˆ—å‡ºå®¢æˆ·ç«¯èµ„æºï¼ˆå¯é€‰æ¨¡å—è¿‡æ»¤ï¼‰ã€‚
+// ListResources 列出客户端资源（可选模块过滤）。
 func (r *Repo) ListResources(ctx context.Context, moduleID string) ([]ClientResource, error) {
 	db := r.with(ctx).Model(&ClientResource{})
 	if moduleID != "" {

@@ -20,8 +20,8 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.GET("/v1/admin/sys/audit/page", admin, middleware.RequirePermission(d.Perms, "sys:audit:page", "å®¡è®¡åˆ†é¡µ"), s.page)
-		api.GET("/v1/admin/sys/audit/detail", admin, middleware.RequirePermission(d.Perms, "sys:audit:detail", "å®¡è®¡è¯¦æƒ…"), s.detail)
+		api.GET("/v1/admin/sys/audit/page", admin, middleware.RequirePermission(d.Perms, "sys:audit:page", "审计分页"), s.page)
+		api.GET("/v1/admin/sys/audit/detail", admin, middleware.RequirePermission(d.Perms, "sys:audit:detail", "审计详情"), s.detail)
 	}
 }
 

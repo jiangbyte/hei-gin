@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œæ¨¡å— iam.accountã€‚
+// init 自注册模块 iam.account。
 func init() {
 	module.Register("iam.account", 20, func(d *module.Deps) module.Module {
 		svc := NewService(d.DB)

@@ -21,7 +21,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// AlertLog å¯¹åº” sys_alert_logã€‚
+// AlertLog 对应 sys_alert_log。
 //
 // Author: Charlie
 type AlertLog struct {
@@ -34,10 +34,10 @@ type AlertLog struct {
 	CreatedAt   time.Time      `gorm:"column:created_at" json:"created_at"`
 }
 
-// TableName è¿”å›žå‘Šè­¦æ—¥å¿—è¡¨åã€‚
+// TableName 返回告警日志表名。
 func (AlertLog) TableName() string { return "sys_alert_log" }
 
-// withJobs é™„åŠ  SnailJob handlersã€‚
+// withJobs 附加 SnailJob handlers。
 func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "auditAlertJob",
@@ -117,14 +117,14 @@ func notifyAuditChannels(ctx context.Context, nf *notify.Facade, db *gorm.DB, su
 	}
 	var out []string
 	if runtimeBool(ctx, db, nf, "AUDIT_ALERT_NOTIFY_PUSH", true) {
-		if err := nf.SendPush(ctx, "å®¡è®¡å‘Šè­¦", summary); err == nil {
+		if err := nf.SendPush(ctx, "审计告警", summary); err == nil {
 			out = append(out, "push")
 		}
 	}
 	if runtimeBool(ctx, db, nf, "AUDIT_ALERT_NOTIFY_EMAIL", true) {
 		to := runtimeString(ctx, db, nf, "AUDIT_ALERT_NOTIFY_EMAIL_TO", "")
 		if to != "" {
-			if err := nf.SendMail(ctx, to, "å®¡è®¡å‘Šè­¦", summary); err == nil {
+			if err := nf.SendMail(ctx, to, "审计告警", summary); err == nil {
 				out = append(out, "email")
 			}
 		}
@@ -133,7 +133,7 @@ func notifyAuditChannels(ctx context.Context, nf *notify.Facade, db *gorm.DB, su
 		url := runtimeString(ctx, db, nf, "AUDIT_ALERT_WEBHOOK_URL", "")
 		secret := runtimeString(ctx, db, nf, "AUDIT_ALERT_WEBHOOK_SECRET", "")
 		if url != "" {
-			payload := fmt.Sprintf(`{"title":"å®¡è®¡å‘Šè­¦","body":%q}`, summary)
+			payload := fmt.Sprintf(`{"title":"审计告警","body":%q}`, summary)
 			if err := nf.SendWebhook(ctx, url, secret, payload); err == nil {
 				out = append(out, "webhook")
 			}
@@ -178,7 +178,7 @@ func runtimeInt(ctx context.Context, db *gorm.DB, nf *notify.Facade, key string,
 	return n
 }
 
-// New æž„å»º sys.audit æ¨¡å—ï¼ˆå« auditAlertJobï¼‰ã€‚
+// New 构建 sys.audit 模块（含 auditAlertJob）。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	m := module.Module{

@@ -19,7 +19,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service ç®¡ç†ç«¯ç”¨æˆ·ä¸­å¿ƒæœåŠ¡ã€‚
+// Service 管理端用户中心服务。
 //
 // Author: Charlie
 type Service struct {
@@ -27,12 +27,12 @@ type Service struct {
 	storage *storage.Manager
 }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB, storage *storage.Manager) *Service {
 	return &Service{repo: NewRepo(db), storage: storage}
 }
 
-// New æž„å»º user.admin æ¨¡å—ã€‚
+// New 构建 user.admin 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB, d.Storage)
 	return module.Module{
@@ -43,7 +43,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Me å½“å‰ç”¨æˆ·æ¦‚è§ˆã€‚
+// Me 当前用户概览。
 func (s *Service) Me(ctx context.Context, sess *security.SessionPayload) (*MeResult, error) {
 	if sess == nil {
 		return nil, errUnauthorized
@@ -63,7 +63,7 @@ func (s *Service) Me(ctx context.Context, sess *security.SessionPayload) (*MeRes
 	}, nil
 }
 
-// UpdateProfile æ›´æ–°èµ„æ–™ã€‚
+// UpdateProfile 更新资料。
 func (s *Service) UpdateProfile(ctx context.Context, accountID string, req ProfileUpdateParam) error {
 	_ = s.getOrCreate(ctx, accountID)
 	updates := map[string]any{"updated_by": accountID}
@@ -82,7 +82,7 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, req Profi
 	return s.repo.UpdateProfile(ctx, accountID, updates)
 }
 
-// UploadAvatar ä¸Šä¼ å¤´åƒå¹¶æ›´æ–°èµ„æ–™ã€‚
+// UploadAvatar 上传头像并更新资料。
 func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename string, r io.Reader, size int64, contentType string) (string, error) {
 	ext := path.Ext(filename)
 	object := storage.ObjectKey("avatar/admin", idgen.Next()+ext)
@@ -95,7 +95,7 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	return url, nil
 }
 
-// UpdatePassword æ›´æ–°å¯†ç ã€‚
+// UpdatePassword 更新密码。
 func (s *Service) UpdatePassword(ctx context.Context, accountID string, req PasswordUpdateParam) error {
 	acc, err := s.repo.GetAccountPassword(ctx, accountID)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Service) UpdatePassword(ctx context.Context, accountID string, req Pass
 	return s.repo.UpdateAccountPassword(ctx, accountID, hash)
 }
 
-// UpdatePhone æ›´æ–°æ‰‹æœºå·ã€‚
+// UpdatePhone 更新手机号。
 func (s *Service) UpdatePhone(ctx context.Context, accountID string, req PhoneUpdateParam) error {
 	if err := s.verifyAccountPassword(ctx, accountID, req.Password); err != nil {
 		return err
@@ -120,7 +120,7 @@ func (s *Service) UpdatePhone(ctx context.Context, accountID string, req PhoneUp
 	return s.repo.UpdateProfile(ctx, accountID, map[string]any{"phone": req.Phone, "updated_by": accountID})
 }
 
-// UpdateEmail æ›´æ–°é‚®ç®±ã€‚
+// UpdateEmail 更新邮箱。
 func (s *Service) UpdateEmail(ctx context.Context, accountID string, req EmailUpdateParam) error {
 	if err := s.verifyAccountPassword(ctx, accountID, req.Password); err != nil {
 		return err
@@ -131,7 +131,7 @@ func (s *Service) UpdateEmail(ctx context.Context, accountID string, req EmailUp
 	})
 }
 
-// OrgInfo ç»„ç»‡å…³è”ä¿¡æ¯ã€‚
+// OrgInfo 组织关联信息。
 func (s *Service) OrgInfo(sess *security.SessionPayload) OrgInfoResult {
 	return OrgInfoResult{
 		RoleIDs:  sess.RoleIDs,
@@ -171,17 +171,17 @@ type passErr struct{ msg string }
 
 func (e *passErr) Error() string { return e.msg }
 
-// SendCode å‘é€ç»‘å®šéªŒè¯ç ï¼ˆçŸ­ä¿¡/é‚®ä»¶é€šé“ï¼›æœªé…ç½®æ—¶é™é»˜æˆåŠŸï¼‰ã€‚
+// SendCode 发送绑定验证码（短信/邮件通道；未配置时静默成功）。
 func (s *Service) SendCode(ctx context.Context, channel, target string) error {
 	return nil
 }
 
-// SessionFromContext ä»Ž context å–ä¼šè¯ï¼ˆhandler ç”¨ï¼‰ã€‚
+// SessionFromContext 从 context 取会话（handler 用）。
 func SessionFromContext(ctx context.Context) *security.SessionPayload {
 	return contextx.Session(ctx)
 }
 
-// AccountIDFromContext ä»Ž context å–è´¦å· IDã€‚
+// AccountIDFromContext 从 context 取账号 ID。
 func AccountIDFromContext(ctx context.Context) string {
 	return contextx.AccountID(ctx)
 }

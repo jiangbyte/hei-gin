@@ -15,7 +15,7 @@ import (
 	portaluser "hei-gin/internal/modules/user/portal"
 )
 
-// accountRow sys_account è¡ŒæŠ•å½±ï¼ˆä»…å›žæ˜¾æ‰€éœ€å­—æ®µï¼‰ã€‚
+// accountRow sys_account 行投影（仅回显所需字段）。
 type accountRow struct {
 	ID                 string     `gorm:"column:id"`
 	AccountType        string     `gorm:"column:account_type"`
@@ -37,19 +37,19 @@ type accountRow struct {
 	UpdatedBy          *string    `gorm:"column:updated_by"`
 }
 
-// TableName è¿”å›žè¡¨åã€‚
+// TableName 返回表名。
 func (accountRow) TableName() string { return "sys_account" }
 
-// identityRow sys_account_identity è¡ŒæŠ•å½±ã€‚
+// identityRow sys_account_identity 行投影。
 type identityRow struct {
 	AccountID  string `gorm:"column:account_id"`
 	Identifier string `gorm:"column:identifier"`
 }
 
-// TableName è¿”å›žè¡¨åã€‚
+// TableName 返回表名。
 func (identityRow) TableName() string { return "sys_account_identity" }
 
-// LoadAccountViews æŒ‰ ID åˆ—è¡¨åŠ è½½è´¦å·ç»“æžœè¡Œï¼ˆä¿æŒå…¥å‚é¡ºåºï¼Œç¼ºçœè·³è¿‡ï¼‰ã€‚
+// LoadAccountViews 按 ID 列表加载账号结果行（保持入参顺序，缺省跳过）。
 func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]AccountView, error) {
 	out := make([]AccountView, 0, len(ids))
 	if len(ids) == 0 {
@@ -63,7 +63,7 @@ func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]Account
 	for _, r := range rows {
 		byID[r.ID] = r
 	}
-	// ä¸»ç™»å½•æ ‡è¯†
+	// 主登录标识
 	var idents []identityRow
 	if err := db.WithContext(ctx).Where("account_id IN ? AND identity_type = ?", ids, "ACCOUNT").Find(&idents).Error; err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]Account
 	return out, nil
 }
 
-// LoadAccountTypes æŒ‰ ID åˆ—è¡¨æŸ¥è´¦å·ç±»åž‹ï¼ˆä¾›æˆå‘˜æŽˆæƒæ—¶å›žå¡« account_typeï¼‰ã€‚
+// LoadAccountTypes 按 ID 列表查账号类型（供成员授权时回填 account_type）。
 func LoadAccountTypes(ctx context.Context, db *gorm.DB, ids []string) (map[string]string, error) {
 	out := make(map[string]string, len(ids))
 	if len(ids) == 0 {

@@ -23,7 +23,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service è®¤è¯æœåŠ¡ã€‚
+// Service 认证服务。
 //
 // Author: Charlie
 type Service struct {
@@ -38,7 +38,7 @@ type Service struct {
 	perms    *security.PermissionRegistry
 }
 
-// NewService æž„é€ è®¤è¯æœåŠ¡ã€‚
+// NewService 构造认证服务。
 func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 	s := &Service{
 		cfg:      d.Cfg,
@@ -60,7 +60,7 @@ func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 	return s
 }
 
-// New æž„å»ºè®¤è¯æ¨¡å—ã€‚
+// New 构建认证模块。
 func New(d *shared.Deps, accounts AccountFinder) module.Module {
 	s := NewService(d, accounts)
 	models := []any{oauth.AccountOAuthBinding{}}
@@ -72,7 +72,7 @@ func New(d *shared.Deps, accounts AccountFinder) module.Module {
 	}
 }
 
-// Captcha ç”ŸæˆéªŒè¯ç ã€‚
+// Captcha 生成验证码。
 func (s *Service) Captcha(ctx context.Context) (*CaptchaResult, error) {
 	ttl := time.Duration(s.cfg.Auth.CaptchaTTLSeconds) * time.Second
 	if ttl <= 0 {
@@ -81,7 +81,7 @@ func (s *Service) Captcha(ctx context.Context) (*CaptchaResult, error) {
 	return s.repo.CreateCaptcha(ctx, ttl)
 }
 
-// PasswordKey ç”Ÿæˆå¯†ç åŠ å¯†å¯†é’¥ã€‚
+// PasswordKey 生成密码加密密钥。
 func (s *Service) PasswordKey(ctx context.Context) (*PasswordKeyResult, error) {
 	ttl := time.Duration(s.cfg.Auth.PasswordCryptoKeyTTLSeconds) * time.Second
 	if ttl <= 0 {
@@ -90,7 +90,7 @@ func (s *Service) PasswordKey(ctx context.Context) (*PasswordKeyResult, error) {
 	return s.repo.CreatePasswordKey(ctx, ttl)
 }
 
-// Login ç™»å½•ï¼ˆå¯†ç æˆ– OTPï¼‰ã€‚
+// Login 登录（密码或 OTP）。
 func (s *Service) Login(ctx context.Context, accountType security.AccountType, req LoginParam, clientIP, userAgent string) (*LoginResult, error) {
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 	}, nil
 }
 
-// Logout ç™»å‡ºã€‚
+// Logout 登出。
 func (s *Service) Logout(ctx context.Context, token, accountID, accountType, clientIP, userAgent string) error {
 	var err error
 	if token != "" {
@@ -242,7 +242,7 @@ func (s *Service) Logout(ctx context.Context, token, accountID, accountType, cli
 	return err
 }
 
-// SendLoginCode å‘é€ç™»å½• OTPã€‚
+// SendLoginCode 发送登录 OTP。
 func (s *Service) SendLoginCode(ctx context.Context, accountType security.AccountType, req SendLoginCodeParam) error {
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return err
@@ -258,7 +258,7 @@ func (s *Service) SendLoginCode(ctx context.Context, accountType security.Accoun
 	if s.accounts != nil {
 		_, _, err := s.accounts.FindEnabledByIdentity(ctx, accountType, identityType, target)
 		if err != nil {
-			// é™é»˜è¿”å›žï¼Œé¿å…æžšä¸¾è´¦å·
+			// 静默返回，避免枚举账号
 			return nil
 		}
 	}
@@ -281,7 +281,7 @@ func (s *Service) SendLoginCode(ctx context.Context, accountType security.Accoun
 	return nil
 }
 
-// ForgotPassword å‘é€é‡ç½®é‚®ä»¶ã€‚
+// ForgotPassword 发送重置邮件。
 func (s *Service) ForgotPassword(ctx context.Context, accountType security.AccountType, req ForgotPasswordParam) error {
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return err
@@ -315,7 +315,7 @@ func (s *Service) ForgotPassword(ctx context.Context, accountType security.Accou
 	return nil
 }
 
-// ResetPassword æ ¡éªŒä»¤ç‰Œå¹¶è®¾ç½®æ–°å¯†ç ã€‚
+// ResetPassword 校验令牌并设置新密码。
 func (s *Service) ResetPassword(ctx context.Context, accountType security.AccountType, req ResetPasswordParam) error {
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return err
@@ -345,7 +345,7 @@ func (s *Service) ResetPassword(ctx context.Context, accountType security.Accoun
 	return s.accounts.UpdatePasswordHash(ctx, accountID, hash)
 }
 
-// Register é—¨æˆ·æ³¨å†Œã€‚
+// Register 门户注册。
 func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterResult, error) {
 	if !s.cfg.Auth.PortalRegisterEnabled {
 		return nil, errRegisterDisabled
@@ -389,7 +389,7 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	}, nil
 }
 
-// ResolveLogoutToken è§£æžç™»å‡º tokenã€‚
+// ResolveLogoutToken 解析登出 token。
 func (s *Service) ResolveLogoutToken(c *gin.Context) string {
 	sess := contextx.Session(c.Request.Context())
 	if sess != nil {
@@ -402,7 +402,7 @@ func (s *Service) ResolveLogoutToken(c *gin.Context) string {
 	return c.GetHeader(name)
 }
 
-// SetSessionCookie è®¾ç½®ä¼šè¯ Cookieã€‚
+// SetSessionCookie 设置会话 Cookie。
 func (s *Service) SetSessionCookie(c *gin.Context, token string, accountType security.AccountType, ttl time.Duration, remember bool) {
 	if !s.cfg.Auth.SessionCookieEnabled {
 		return
@@ -431,7 +431,7 @@ func (s *Service) SetSessionCookie(c *gin.Context, token string, accountType sec
 	})
 }
 
-// ClearSessionCookie æ¸…é™¤ä¼šè¯ Cookieã€‚
+// ClearSessionCookie 清除会话 Cookie。
 func (s *Service) ClearSessionCookie(c *gin.Context, accountType security.AccountType) {
 	if !s.cfg.Auth.SessionCookieEnabled {
 		return
@@ -533,16 +533,16 @@ func errString(err error) string {
 }
 
 var (
-	errEmptyPassword      = authErr{"å¯†ç ä¸èƒ½ä¸ºç©º"}
-	errAccountFinder      = authErr{"è´¦å·æŸ¥æ‰¾æœªé…ç½®"}
-	errInvalidCredentials = authErr{"è´¦å·æˆ–å¯†ç é”™è¯¯"}
-	errInvalidOTP         = authErr{"éªŒè¯ç æ— æ•ˆæˆ–å·²è¿‡æœŸ"}
-	errRegisterDisabled   = authErr{"é—¨æˆ·æ³¨å†Œå·²å…³é—­"}
+	errEmptyPassword      = authErr{"密码不能为空"}
+	errAccountFinder      = authErr{"账号查找未配置"}
+	errInvalidCredentials = authErr{"账号或密码错误"}
+	errInvalidOTP         = authErr{"验证码无效或已过期"}
+	errRegisterDisabled   = authErr{"门户注册已关闭"}
 	errPortalRegistrar    = authErr{"portal registrar not configured"}
-	errAccountLocked      = authErr{"è´¦å·å·²ä¸´æ—¶é”å®š"}
-	errIPLocked           = authErr{"è¯¥ IP ç™»å½•å¤±è´¥æ¬¡æ•°è¿‡å¤š"}
-	errOTPTargetRequired  = authErr{"è¯·æä¾›é‚®ç®±æˆ–æ‰‹æœºå·"}
-	errResetTokenInvalid  = authErr{"é‡ç½®ä»¤ç‰Œæ— æ•ˆ"}
+	errAccountLocked      = authErr{"账号已临时锁定"}
+	errIPLocked           = authErr{"该 IP 登录失败次数过多"}
+	errOTPTargetRequired  = authErr{"请提供邮箱或手机号"}
+	errResetTokenInvalid  = authErr{"重置令牌无效"}
 )
 
 type authErr struct{ msg string }

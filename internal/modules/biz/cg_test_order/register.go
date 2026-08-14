@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œ biz.cg_test_order æ¨¡å—ã€‚
+// init 自注册 biz.cg_test_order 模块。
 func init() {
 	module.Register("biz.cg_test_order", 90, func(d *module.Deps) module.Module {
 		return New(shared.FromModule(d))

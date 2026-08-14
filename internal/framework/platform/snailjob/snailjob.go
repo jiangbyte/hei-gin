@@ -1,4 +1,4 @@
-// Package snailjob åœ¨ API è¿›ç¨‹å†…åµŒå…¥ SnailJob Go å®¢æˆ·ç«¯æ‰§è¡Œå™¨ã€‚
+// Package snailjob 在 API 进程内嵌入 SnailJob Go 客户端执行器。
 //
 // Author: Charlie
 package snailjob
@@ -18,7 +18,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 )
 
-// Manager ç®¡ç† SnailJob å®¢æˆ·ç«¯ç”Ÿå‘½å‘¨æœŸã€‚
+// Manager 管理 SnailJob 客户端生命周期。
 //
 // Author: Charlie
 type Manager struct {
@@ -26,7 +26,7 @@ type Manager struct {
 	cfg config.SnailJobConfig
 }
 
-// NewManager ä»Žé…ç½®ä¸Žæ¨¡å— Jobs æž„å»ºå®¢æˆ·ç«¯ï¼ˆä¸å¯åŠ¨ï¼‰ã€‚
+// NewManager 从配置与模块 Jobs 构建客户端（不启动）。
 func NewManager(cfg config.SnailJobConfig, regs *module.Registry) *Manager {
 	m := &Manager{cfg: cfg}
 	if !cfg.Enabled {
@@ -58,7 +58,7 @@ func NewManager(cfg config.SnailJobConfig, regs *module.Registry) *Manager {
 	return m
 }
 
-// Start åˆå§‹åŒ–å¹¶åœ¨åŽå°è¿è¡Œ gRPC æ‰§è¡Œå™¨ä¸Žå¿ƒè·³ã€‚
+// Start 初始化并在后台运行 gRPC 执行器与心跳。
 func (m *Manager) Start() error {
 	if m == nil || !m.cfg.Enabled || m.mgr == nil {
 		return nil
@@ -66,7 +66,7 @@ func (m *Manager) Start() error {
 	if err := m.mgr.Init(); err != nil {
 		return fmt.Errorf("snailjob init: %w", err)
 	}
-	logger.L.Info("snailjob å®¢æˆ·ç«¯å¯åŠ¨",
+	logger.L.Info("snailjob 客户端启动",
 		zap.String("group", m.cfg.GroupName),
 		zap.String("namespace", m.cfg.Namespace),
 		zap.String("server", m.cfg.ServerHost+":"+m.cfg.ServerPort),
@@ -76,16 +76,16 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-// Stop å°è¯•åœæ­¢å®¢æˆ·ç«¯ï¼ˆä¸Šæ¸¸åº“æ— æ˜¾å¼ Shutdownï¼Œè¿›ç¨‹é€€å‡ºæ—¶éš gRPC ç»“æŸï¼‰ã€‚
+// Stop 尝试停止客户端（上游库无显式 Shutdown，进程退出时随 gRPC 结束）。
 func (m *Manager) Stop(_ context.Context) error {
 	if m == nil || m.mgr == nil {
 		return nil
 	}
-	logger.L.Info("snailjob å®¢æˆ·ç«¯åœæ­¢è¯·æ±‚å·²å‘å‡º")
+	logger.L.Info("snailjob 客户端停止请求已发出")
 	return nil
 }
 
-// adapterExecutor å°† module.Job.Run é€‚é…ä¸º SnailJob BaseJobExecutorã€‚
+// adapterExecutor 将 module.Job.Run 适配为 SnailJob BaseJobExecutor。
 type adapterExecutor struct {
 	job.BaseJobExecutor
 	run func(ctx context.Context, param string) error

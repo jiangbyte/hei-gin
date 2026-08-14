@@ -21,18 +21,18 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/codegen/create", admin, middleware.RequirePermission(d.Perms, "sys:codegen:create", "ä»£ç ç”Ÿæˆåˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/codegen/update", admin, middleware.RequirePermission(d.Perms, "sys:codegen:update", "ä»£ç ç”Ÿæˆæ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/codegen/delete", admin, middleware.RequirePermission(d.Perms, "sys:codegen:delete", "ä»£ç ç”Ÿæˆåˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/codegen/detail", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "ä»£ç ç”Ÿæˆè¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/codegen/page", admin, middleware.RequirePermission(d.Perms, "sys:codegen:page", "ä»£ç ç”Ÿæˆåˆ†é¡µ"), s.page)
-		api.GET("/v1/admin/sys/codegen/tables", admin, middleware.RequirePermission(d.Perms, "sys:codegen:tables", "ä»£ç ç”Ÿæˆè¡¨åˆ—è¡¨"), s.tables)
-		api.GET("/v1/admin/sys/codegen/table-columns", admin, middleware.RequirePermission(d.Perms, "sys:codegen:tables", "ä»£ç ç”Ÿæˆè¡¨åˆ—å…ƒæ•°æ®"), s.tableColumns)
-		api.GET("/v1/admin/sys/codegen/fields", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "ä»£ç ç”Ÿæˆå­—æ®µ"), s.fields)
-		api.POST("/v1/admin/sys/codegen/fields/update-batch", admin, middleware.RequirePermission(d.Perms, "sys:codegen:update", "ä»£ç ç”Ÿæˆå­—æ®µæ‰¹é‡æ›´æ–°"), s.updateFieldsBatch)
-		api.GET("/v1/admin/sys/codegen/parent-resources", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "ä»£ç ç”Ÿæˆçˆ¶çº§èµ„æº"), s.parentResources)
-		api.GET("/v1/admin/sys/codegen/preview", admin, middleware.RequirePermission(d.Perms, "sys:codegen:preview", "ä»£ç ç”Ÿæˆé¢„è§ˆ"), s.preview)
-		api.GET("/v1/admin/sys/codegen/download", admin, middleware.RequirePermission(d.Perms, "sys:codegen:download", "ä»£ç ç”Ÿæˆä¸‹è½½"), s.download)
+		api.POST("/v1/admin/sys/codegen/create", admin, middleware.RequirePermission(d.Perms, "sys:codegen:create", "代码生成创建"), s.create)
+		api.POST("/v1/admin/sys/codegen/update", admin, middleware.RequirePermission(d.Perms, "sys:codegen:update", "代码生成更新"), s.update)
+		api.POST("/v1/admin/sys/codegen/delete", admin, middleware.RequirePermission(d.Perms, "sys:codegen:delete", "代码生成删除"), s.delete)
+		api.GET("/v1/admin/sys/codegen/detail", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成详情"), s.detail)
+		api.GET("/v1/admin/sys/codegen/page", admin, middleware.RequirePermission(d.Perms, "sys:codegen:page", "代码生成分页"), s.page)
+		api.GET("/v1/admin/sys/codegen/tables", admin, middleware.RequirePermission(d.Perms, "sys:codegen:tables", "代码生成表列表"), s.tables)
+		api.GET("/v1/admin/sys/codegen/table-columns", admin, middleware.RequirePermission(d.Perms, "sys:codegen:tables", "代码生成表列元数据"), s.tableColumns)
+		api.GET("/v1/admin/sys/codegen/fields", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成字段"), s.fields)
+		api.POST("/v1/admin/sys/codegen/fields/update-batch", admin, middleware.RequirePermission(d.Perms, "sys:codegen:update", "代码生成字段批量更新"), s.updateFieldsBatch)
+		api.GET("/v1/admin/sys/codegen/parent-resources", admin, middleware.RequirePermission(d.Perms, "sys:codegen:detail", "代码生成父级资源"), s.parentResources)
+		api.GET("/v1/admin/sys/codegen/preview", admin, middleware.RequirePermission(d.Perms, "sys:codegen:preview", "代码生成预览"), s.preview)
+		api.GET("/v1/admin/sys/codegen/download", admin, middleware.RequirePermission(d.Perms, "sys:codegen:download", "代码生成下载"), s.download)
 	}
 }
 

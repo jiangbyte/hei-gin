@@ -10,7 +10,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// CreateParam åˆ›å»ºé€šçŸ¥å…¥å‚ã€‚
+// CreateParam 创建通知入参。
 //
 // Author: Charlie
 type CreateParam struct {
@@ -34,7 +34,7 @@ type CreateParam struct {
 	Extra              map[string]any `json:"extra"`
 }
 
-// UpdateParam æ›´æ–°é€šçŸ¥å…¥å‚ã€‚
+// UpdateParam 更新通知入参。
 //
 // Author: Charlie
 type UpdateParam struct {
@@ -42,21 +42,21 @@ type UpdateParam struct {
 	CreateParam
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// ReadParam æ ‡è®°å·²è¯»å…¥å‚ã€‚
+// ReadParam 标记已读入参。
 //
 // Author: Charlie
 type ReadParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// PinParam ç½®é¡¶å…¥å‚ã€‚
+// PinParam 置顶入参。
 //
 // Author: Charlie
 type PinParam struct {
@@ -65,7 +65,7 @@ type PinParam struct {
 	PinnedUntil *time.Time `json:"pinned_until"`
 }
 
-// PageParam é€šçŸ¥åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 通知分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -75,7 +75,7 @@ type PageParam struct {
 	Kind   string `form:"kind"`
 }
 
-// PublishParam å‘å¸ƒé€šçŸ¥æ›´æ–°å­—æ®µã€‚
+// PublishParam 发布通知更新字段。
 //
 // Author: Charlie
 type PublishParam struct {
@@ -86,7 +86,7 @@ type PublishParam struct {
 	UpdatedBy         string
 }
 
-// RevokeParam æ’¤å›žé€šçŸ¥æ›´æ–°å­—æ®µã€‚
+// RevokeParam 撤回通知更新字段。
 //
 // Author: Charlie
 type RevokeParam struct {
@@ -94,7 +94,7 @@ type RevokeParam struct {
 	RevokedAt time.Time
 }
 
-// ReadRecord å·²è¯»è®°å½•é”®ã€‚
+// ReadRecord 已读记录键。
 //
 // Author: Charlie
 type ReadRecord struct {

@@ -1,4 +1,4 @@
-// Package main æ˜¯æ•°æ®åº“è¿ç§»å…¥å£ï¼šåŸºäºŽ goose æ‰§è¡Œ up/down/statusã€‚
+// Package main 是数据库迁移入口：基于 goose 执行 up/down/status。
 //
 // Author: Charlie
 package main
@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 )
 
-// è¿›ç¨‹å…¥å£ã€‚
+// 进程入口。
 func main() {
 	cfgPath := flag.String("config", "config.yaml", "config file")
 	dir := flag.String("dir", "migrations", "migrations directory")
@@ -53,7 +53,7 @@ func main() {
 	}
 }
 
-// å‘æ ‡å‡†é”™è¯¯è¾“å‡ºåŽé€€å‡ºã€‚
+// 向标准错误输出后退出。
 func fatal(err error) {
 	fmt.Fprintf(os.Stderr, "migrate: %v\n", err)
 	os.Exit(1)

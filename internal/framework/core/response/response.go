@@ -12,7 +12,7 @@ import (
 	"hei-gin/internal/framework/core/stringly"
 )
 
-// ApiResponse æ ‡å‡†ä¿¡å°ï¼šcode/message/dataï¼ˆçº¿ä¸Š code ç» stringly ä¸ºå­—ç¬¦ä¸²ï¼‰ã€‚
+// ApiResponse 标准信封：code/message/data（线上 code 经 stringly 为字符串）。
 //
 // Author: Charlie
 type ApiResponse struct {
@@ -21,7 +21,7 @@ type ApiResponse struct {
 	Data    any    `json:"data"`
 }
 
-// PageData ä¸ºç»Ÿä¸€åˆ†é¡µç»“æž„ã€‚
+// PageData 为统一分页结构。
 //
 // Author: Charlie
 type PageData struct {
@@ -32,7 +32,7 @@ type PageData struct {
 	Records any   `json:"records"`
 }
 
-// writeJSON ä»¥ stringly JSON å†™å…¥å“åº”ã€‚
+// writeJSON 以 stringly JSON 写入响应。
 func writeJSON(c *gin.Context, httpStatus int, v any) {
 	b, err := stringly.Marshal(v)
 	if err != nil {
@@ -42,17 +42,17 @@ func writeJSON(c *gin.Context, httpStatus int, v any) {
 	c.Data(httpStatus, "application/json; charset=utf-8", b)
 }
 
-// OK å†™å…¥æˆåŠŸä¿¡å°ï¼ˆHTTP 200ï¼‰ã€‚
+// OK 写入成功信封（HTTP 200）。
 func OK(c *gin.Context, data any) {
 	writeJSON(c, http.StatusOK, ApiResponse{Code: 200, Message: "success", Data: data})
 }
 
-// Fail å†™å…¥å¤±è´¥ä¿¡å°ï¼ˆæŒ‡å®š HTTP çŠ¶æ€ä¸Žä¸šåŠ¡ç ï¼‰ã€‚
+// Fail 写入失败信封（指定 HTTP 状态与业务码）。
 func Fail(c *gin.Context, httpStatus int, code int, message string) {
 	writeJSON(c, httpStatus, ApiResponse{Code: code, Message: message, Data: nil})
 }
 
-// Page å†™å…¥åˆ†é¡µæˆåŠŸä¿¡å°ã€‚
+// Page 写入分页成功信封。
 func Page(c *gin.Context, current, size, total int64, records any) {
 	pages := int64(0)
 	if size > 0 {

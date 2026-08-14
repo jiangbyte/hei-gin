@@ -21,11 +21,11 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/dicts/create", admin, middleware.RequirePermission(d.Perms, "sys:dict:create", "å­—å…¸åˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/dicts/update", admin, middleware.RequirePermission(d.Perms, "sys:dict:update", "å­—å…¸æ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/dicts/delete", admin, middleware.RequirePermission(d.Perms, "sys:dict:delete", "å­—å…¸åˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/dicts/detail", admin, middleware.RequirePermission(d.Perms, "sys:dict:detail", "å­—å…¸è¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/dicts/page", admin, middleware.RequirePermission(d.Perms, "sys:dict:page", "å­—å…¸åˆ†é¡µ"), s.page)
+		api.POST("/v1/admin/sys/dicts/create", admin, middleware.RequirePermission(d.Perms, "sys:dict:create", "字典创建"), s.create)
+		api.POST("/v1/admin/sys/dicts/update", admin, middleware.RequirePermission(d.Perms, "sys:dict:update", "字典更新"), s.update)
+		api.POST("/v1/admin/sys/dicts/delete", admin, middleware.RequirePermission(d.Perms, "sys:dict:delete", "字典删除"), s.delete)
+		api.GET("/v1/admin/sys/dicts/detail", admin, middleware.RequirePermission(d.Perms, "sys:dict:detail", "字典详情"), s.detail)
+		api.GET("/v1/admin/sys/dicts/page", admin, middleware.RequirePermission(d.Perms, "sys:dict:page", "字典分页"), s.page)
 		api.GET("/v1/admin/sys/dicts/tree", admin, s.tree)
 
 		portal := middleware.RequireAccountType(security.AccountPortal)

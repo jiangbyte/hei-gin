@@ -6,7 +6,7 @@ package config
 
 import "hei-gin/internal/framework/core/schema"
 
-// AddParam åˆ›å»ºé…ç½®å…¥å‚ã€‚
+// AddParam 创建配置入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -21,7 +21,7 @@ type AddParam struct {
 	Scene       *string `json:"scene"`
 }
 
-// EditParam æ›´æ–°é…ç½®å…¥å‚ã€‚
+// EditParam 更新配置入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -29,7 +29,7 @@ type EditParam struct {
 	AddParam
 }
 
-// PageParam é…ç½®åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 配置分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -38,7 +38,7 @@ type PageParam struct {
 	Category  string `form:"category"`
 }
 
-// ListParam é…ç½®åˆ—è¡¨æŸ¥è¯¢ã€‚
+// ListParam 配置列表查询。
 //
 // Author: Charlie
 type ListParam struct {
@@ -46,14 +46,14 @@ type ListParam struct {
 	Scope    string `form:"scope"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// BatchItemParam æ‰¹é‡ä¿å­˜å•é¡¹å…¥å‚ï¼ˆremark ä¸Ž description å…¼å®¹ï¼‰ã€‚
+// BatchItemParam 批量保存单项入参（remark 与 description 兼容）。
 //
 // Author: Charlie
 type BatchItemParam struct {
@@ -64,14 +64,14 @@ type BatchItemParam struct {
 	Category    *string `json:"category"`
 }
 
-// BatchSaveParam æ‰¹é‡ä¿å­˜å…¥å‚ã€‚
+// BatchSaveParam 批量保存入参。
 //
 // Author: Charlie
 type BatchSaveParam struct {
 	Items []BatchItemParam `json:"items" binding:"required"`
 }
 
-// TestWebhookParam å®¡è®¡å‘Šè­¦ Webhook æµ‹è¯•å…¥å‚ï¼ˆwebhook_url/webhook_secret ä¸Ž url/secret å…¼å®¹ï¼‰ã€‚
+// TestWebhookParam 审计告警 Webhook 测试入参（webhook_url/webhook_secret 与 url/secret 兼容）。
 //
 // Author: Charlie
 type TestWebhookParam struct {

@@ -1,6 +1,6 @@
-// Package app æ˜¯åº”ç”¨è£…é…æ ¹ï¼šåŸºç¡€è®¾æ–½ã€è‡ªæ³¨å†Œæ¨¡å—ã€HTTP ä¸Ž SnailJob æ‰§è¡Œå™¨ã€‚
+// Package app 是应用装配根：基础设施、自注册模块、HTTP 与 SnailJob 执行器。
 //
-// é»˜è®¤ blank import internal/modules/allï¼›å¤æ‚åœºæ™¯å¯ç›´æŽ¥æ”¹ frameworkã€‚
+// 默认 blank import internal/modules/all；复杂场景可直接改 framework。
 //
 // Author: Charlie
 package app
@@ -33,7 +33,7 @@ import (
 	"hei-gin/internal/framework/platform/storage"
 )
 
-// Deps åº”ç”¨è¿›ç¨‹çº§ä¾èµ–ã€‚
+// Deps 应用进程级依赖。
 //
 // Author: Charlie
 type Deps struct {
@@ -49,7 +49,7 @@ type Deps struct {
 	Modules  *module.Registry
 }
 
-// API å•ä½“è¿›ç¨‹ï¼šHTTP + æ¨¡å—é’©å­ + SnailJob æ‰§è¡Œå™¨ã€‚
+// API 单体进程：HTTP + 模块钩子 + SnailJob 执行器。
 //
 // Author: Charlie
 type API struct {
@@ -60,7 +60,7 @@ type API struct {
 	SnailJob *snailjob.Manager
 }
 
-// OpenInfra è¿žæŽ¥ DB/Redis/å­˜å‚¨ï¼Œå‡†å¤‡ç©º Depsï¼ˆéšåŽ AttachRegisteredModulesï¼‰ã€‚
+// OpenInfra 连接 DB/Redis/存储，准备空 Deps（随后 AttachRegisteredModules）。
 func OpenInfra(cfg *config.Config) (*Deps, error) {
 	if err := logger.Setup(cfg.App.Debug); err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 	}, nil
 }
 
-// NewAPI æž„å»º Gin å¼•æ“Žä¸Ž HTTP Serverã€‚
+// NewAPI 构建 Gin 引擎与 HTTP Server。
 func NewAPI(d *Deps) *API {
 	if d.Cfg.App.Debug {
 		gin.SetMode(gin.DebugMode)
@@ -142,7 +142,7 @@ func NewAPI(d *Deps) *API {
 	}
 }
 
-// Start å¯åŠ¨å®¡è®¡é˜Ÿåˆ—ã€æ¨¡å—é’©å­ã€SnailJob æ‰§è¡Œå™¨ä¸Ž HTTP ç›‘å¬ã€‚
+// Start 启动审计队列、模块钩子、SnailJob 执行器与 HTTP 监听。
 func (a *API) Start(ctx context.Context) error {
 	a.Audit.Start(ctx)
 	if err := a.Deps.Modules.RunStart(ctx); err != nil {
@@ -152,7 +152,7 @@ func (a *API) Start(ctx context.Context) error {
 		return err
 	}
 	if err := a.Deps.Perms.Sync(ctx); err != nil {
-		logger.L.Warn("æƒé™æ³¨å†Œè¡¨åŒæ­¥å¤±è´¥", zap.Error(err))
+		logger.L.Warn("权限注册表同步失败", zap.Error(err))
 	} else {
 		_ = a.Deps.Events.Emit(ctx, events.OnPermissionsSynced, nil)
 	}
@@ -161,7 +161,7 @@ func (a *API) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	logger.L.Info("api æ­£åœ¨å¯åŠ¨", zap.String("addr", a.Server.Addr))
+	logger.L.Info("api 正在启动", zap.String("addr", a.Server.Addr))
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- a.Server.ListenAndServe()
@@ -172,17 +172,17 @@ func (a *API) Start(ctx context.Context) error {
 			return err
 		}
 	case <-time.After(200 * time.Millisecond):
-		logger.L.Info("api å·²ç›‘å¬", zap.String("addr", a.Server.Addr))
+		logger.L.Info("api 已监听", zap.String("addr", a.Server.Addr))
 	}
 	go func() {
 		if err := <-errCh; err != nil && err != http.ErrServerClosed {
-			logger.L.Fatal("ç›‘å¬å¤±è´¥", zap.Error(err))
+			logger.L.Fatal("监听失败", zap.Error(err))
 		}
 	}()
 	return nil
 }
 
-// Stop ä¼˜é›…å…³é—­ã€‚
+// Stop 优雅关闭。
 func (a *API) Stop(ctx context.Context) error {
 	if a.SnailJob != nil {
 		_ = a.SnailJob.Stop(ctx)
@@ -199,7 +199,7 @@ func (a *API) Stop(ctx context.Context) error {
 	return err
 }
 
-// CloseIdle å…³é—­ç©ºé—²è¿žæŽ¥ã€‚
+// CloseIdle 关闭空闲连接。
 func CloseIdle(d *Deps) error {
 	if d == nil {
 		return nil
@@ -219,7 +219,7 @@ func CloseIdle(d *Deps) error {
 	return err
 }
 
-// LoadOrDie åŠ è½½é…ç½®ï¼Œå¤±è´¥åˆ™ panicã€‚
+// LoadOrDie 加载配置，失败则 panic。
 func LoadOrDie(path string) *config.Config {
 	cfg, err := config.Load(path)
 	if err != nil {

@@ -23,7 +23,7 @@ import (
 	"hei-gin/internal/framework/middleware"
 )
 
-// BindingResult å½“å‰ç”¨æˆ·ä¸‰æ–¹ç»‘å®šåˆ—è¡¨é¡¹ã€‚
+// BindingResult 当前用户三方绑定列表项。
 //
 // Author: Charlie
 type BindingResult struct {
@@ -35,7 +35,7 @@ type BindingResult struct {
 	BoundAt      time.Time `json:"bound_at"`
 }
 
-// AdminUnbindParam ç®¡ç†ç«¯å¼ºåˆ¶è§£ç»‘å…¥å‚ã€‚
+// AdminUnbindParam 管理端强制解绑入参。
 //
 // Author: Charlie
 type AdminUnbindParam struct {
@@ -43,7 +43,7 @@ type AdminUnbindParam struct {
 	Provider  string `json:"provider" binding:"required"`
 }
 
-// RegisterBindingRoutes æŒ‚è½½ç»‘å®šç›¸å…³è·¯ç”±ï¼ˆadmin/portal OAuth å‰ç¼€ä¸‹ï¼‰ã€‚
+// RegisterBindingRoutes 挂载绑定相关路由（admin/portal OAuth 前缀下）。
 func (s *Service) RegisterBindingRoutes(api *gin.RouterGroup, perms *security.PermissionRegistry) {
 	for _, prefix := range []struct {
 		base string
@@ -58,10 +58,10 @@ func (s *Service) RegisterBindingRoutes(api *gin.RouterGroup, perms *security.Pe
 		g.POST("/:provider/bind/authorize", s.bindAuthorize(p.typ))
 		g.POST("/:provider/unbind", s.unbind(p.typ))
 	}
-	// ç®¡ç†ç«¯å¼ºåˆ¶è§£ç»‘
+	// 管理端强制解绑
 	api.POST("/v1/admin/sys/accounts/oauth/unbind",
 		middleware.RequireAccountType(security.AccountAdmin),
-		middleware.RequirePermission(perms, "iam:account:update", "è´¦æˆ·æ›´æ–°"),
+		middleware.RequirePermission(perms, "iam:account:update", "账户更新"),
 		s.adminUnbind)
 }
 
@@ -166,7 +166,7 @@ func (s *Service) listBindings(ctx context.Context, accountID string) ([]Binding
 	return out, nil
 }
 
-// createBinding å†™å…¥ä¸‰æ–¹ç»‘å®šå…³ç³»ï¼ˆå…ˆåˆ æ—§åŽæ’æ–°ï¼‰ã€‚
+// createBinding 写入三方绑定关系（先删旧后插新）。
 func (s *Service) createBinding(ctx context.Context, accountID, provider string, profile *oauthProfile) error {
 	now := time.Now().UTC()
 	row := AccountOAuthBinding{

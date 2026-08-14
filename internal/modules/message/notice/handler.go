@@ -23,7 +23,7 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := api.Group("/v1/admin/message/notices", middleware.RequireAccountType(security.AccountAdmin))
-		admin.POST("/create", middleware.RequirePermission(d.Perms, "message:notice:create", "åˆ›å»º notice"), s.create)
+		admin.POST("/create", middleware.RequirePermission(d.Perms, "message:notice:create", "创建 notice"), s.create)
 		admin.POST("/update", middleware.RequirePermission(d.Perms, "message:notice:update", "Update notice"), s.update)
 		admin.POST("/delete", middleware.RequirePermission(d.Perms, "message:notice:delete", "Delete notice"), s.delete)
 		admin.GET("/detail", middleware.RequirePermission(d.Perms, "message:notice:detail", "Notice detail"), s.detail)

@@ -19,7 +19,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// æ•æ„Ÿé…ç½®é”®ï¼ˆä¸Ž FastAPI SENSITIVE_CONFIG_KEYS å¯¹é½çš„å­é›†ï¼‰ã€‚
+// 敏感配置键（与 FastAPI SENSITIVE_CONFIG_KEYS 对齐的子集）。
 var sensitiveKeys = map[string]struct{}{
 	"AUTH_DEFAULT_PASSWORD":         {},
 	"AUDIT_ALERT_WEBHOOK_SECRET":    {},
@@ -38,7 +38,7 @@ var sensitiveKeys = map[string]struct{}{
 	"STORAGE_TENCENT_SECRET_KEY":    {},
 }
 
-// Service ç³»ç»Ÿé…ç½®ä¸šåŠ¡æœåŠ¡ã€‚
+// Service 系统配置业务服务。
 //
 // Author: Charlie
 type Service struct {
@@ -47,12 +47,12 @@ type Service struct {
 	notify *notify.Facade
 }
 
-// NewService æž„é€ é…ç½®æœåŠ¡ã€‚
+// NewService 构造配置服务。
 func NewService(db *gorm.DB, fernet *crypto.Codec, nf *notify.Facade) *Service {
 	return &Service{repo: NewRepo(db), fernet: fernet, notify: nf}
 }
 
-// New æž„å»º sys.config æ¨¡å—ã€‚
+// New 构建 sys.config 模块。
 func New(d *shared.Deps) module.Module {
 	var codec *crypto.Codec
 	if d.Cfg != nil {
@@ -122,7 +122,7 @@ func (s *Service) reveal(row *Config) {
 	row.ConfigValue = s.maybeDecrypt(row.ConfigKey, row.Category, row.ConfigValue)
 }
 
-// Create åˆ›å»ºé…ç½®ã€‚
+// Create 创建配置。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	vt := req.ValueType
 	if vt == "" {
@@ -137,7 +137,7 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°é…ç½®ã€‚
+// Update 更新配置。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
 	vt := req.ValueType
 	if vt == "" {
@@ -152,12 +152,12 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail è¯¦æƒ…ï¼ˆæ•æ„Ÿå€¼è§£å¯†åŽè¿”å›žï¼‰ã€‚
+// Detail 详情（敏感值解密后返回）。
 func (s *Service) Detail(ctx context.Context, id string) (*Config, error) {
 	row, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -167,7 +167,7 @@ func (s *Service) Detail(ctx context.Context, id string) (*Config, error) {
 	return row, nil
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []Config, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
@@ -177,7 +177,7 @@ func (s *Service) Page(ctx context.Context, q PageParam) (rows []Config, total i
 	return rows, total, current, size, err
 }
 
-// List åˆ—è¡¨ã€‚
+// List 列表。
 func (s *Service) List(ctx context.Context, q ListParam) ([]Config, error) {
 	rows, err := s.repo.List(ctx, q)
 	for i := range rows {
@@ -186,12 +186,12 @@ func (s *Service) List(ctx context.Context, q ListParam) ([]Config, error) {
 	return rows, err
 }
 
-// BatchSave æ‰¹é‡ä¿å­˜é…ç½®ï¼šæŒ‰ config_key å­˜åœ¨åˆ™æ›´æ–°ï¼Œä¸å­˜åœ¨åˆ™æ–°å»ºã€‚
+// BatchSave 批量保存配置：按 config_key 存在则更新，不存在则新建。
 func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 	items := make([]BatchItemParam, 0, len(req.Items))
 	for _, it := range req.Items {
 		if isSensitive(it.ConfigKey, it.Category) && (it.ConfigValue == nil || *it.ConfigValue == "") {
-			// æ•æ„Ÿé…ç½®ç©ºå€¼è·³è¿‡ï¼Œé¿å…è¦†ç›–å·²æœ‰å¯†æ–‡
+			// 敏感配置空值跳过，避免覆盖已有密文
 			continue
 		}
 		items = append(items, it)
@@ -249,19 +249,19 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 	return nil
 }
 
-// TestWebhook å‘é€å®¡è®¡å‘Šè­¦æµ‹è¯• Webhookã€‚
+// TestWebhook 发送审计告警测试 Webhook。
 func (s *Service) TestWebhook(ctx context.Context, url, secret string) error {
 	if s.notify == nil {
 		return errors.New("notify facade unavailable")
 	}
-	payload := `{"msg_type":"text","content":{"text":"å®¡è®¡å‘Šè­¦ç³»ç»Ÿæµ‹è¯•æ¶ˆæ¯"}}`
+	payload := `{"msg_type":"text","content":{"text":"审计告警系统测试消息"}}`
 	return s.notify.SendWebhook(ctx, url, secret, payload)
 }
 
-// TestPush å‘é€å®¡è®¡å‘Šè­¦æµ‹è¯•æŽ¨é€ã€‚
+// TestPush 发送审计告警测试推送。
 func (s *Service) TestPush(ctx context.Context) error {
 	if s.notify == nil {
 		return errors.New("notify facade unavailable")
 	}
-	return s.notify.SendPush(ctx, "å®¡è®¡å‘Šè­¦", "å®¡è®¡å‘Šè­¦ç³»ç»Ÿæµ‹è¯•æ¶ˆæ¯")
+	return s.notify.SendPush(ctx, "审计告警", "审计告警系统测试消息")
 }

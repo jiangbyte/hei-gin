@@ -1,4 +1,4 @@
-// Package oauth æä¾›ä¸‰æ–¹ç™»å½•ï¼ˆGitHub å®Œæ•´ï¼›Gitee/å¾®ä¿¡ç­‰æ¡©ï¼‰ã€‚
+// Package oauth 提供三方登录（GitHub 完整；Gitee/微信等桩）。
 //
 // Author: Charlie
 package oauth
@@ -33,12 +33,12 @@ const (
 	exchangeKeyPrefix = "oauth:exchange:"
 )
 
-// IssueSessionFunc ç”± auth æ³¨å…¥ï¼Œé¿å…å¾ªçŽ¯ä¾èµ–ã€‚
+// IssueSessionFunc 由 auth 注入，避免循环依赖。
 //
 // Author: Charlie
 type IssueSessionFunc func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (token string, err error)
 
-// Service OAuth æœåŠ¡ã€‚
+// Service OAuth 服务。
 //
 // Author: Charlie
 type Service struct {
@@ -48,7 +48,7 @@ type Service struct {
 	issue IssueSessionFunc
 }
 
-// NewService æž„é€  OAuth æœåŠ¡ã€‚
+// NewService 构造 OAuth 服务。
 func NewService(d *shared.Deps, issue IssueSessionFunc) *Service {
 	return &Service{
 		cfg:   d.Cfg,
@@ -58,7 +58,7 @@ func NewService(d *shared.Deps, issue IssueSessionFunc) *Service {
 	}
 }
 
-// ProviderOption ä¸‰æ–¹ç™»å½•å…¥å£é€‰é¡¹ï¼ˆä¾›ç™»å½•é¡µå…¬å¼€é…ç½®ï¼‰ã€‚
+// ProviderOption 三方登录入口选项（供登录页公开配置）。
 type ProviderOption struct {
 	Provider string `json:"provider"`
 	Label    string `json:"label"`
@@ -66,7 +66,7 @@ type ProviderOption struct {
 	WebOAuth bool   `json:"web_oauth"`
 }
 
-// ProviderOptions ä¸‰æ–¹ç™»å½•å…¥å£é€‰é¡¹ã€‚
+// ProviderOptions 三方登录入口选项。
 func (s *Service) ProviderOptions() []ProviderOption {
 	out := []ProviderOption{}
 	for _, p := range []string{"github", "gitee", "wechat", "wechat_mp", "qq"} {
@@ -88,9 +88,9 @@ func providerLabel(provider string) string {
 	case "gitee":
 		return "Gitee"
 	case "wechat":
-		return "å¾®ä¿¡"
+		return "微信"
 	case "wechat_mp":
-		return "å¾®ä¿¡å…¬ä¼—å·"
+		return "微信公众号"
 	case "qq":
 		return "QQ"
 	default:
@@ -98,7 +98,7 @@ func providerLabel(provider string) string {
 	}
 }
 
-// RegisterRoutes æŒ‚è½½ admin/portal OAuth è·¯ç”±ã€‚
+// RegisterRoutes 挂载 admin/portal OAuth 路由。
 func (s *Service) RegisterRoutes(api *gin.RouterGroup) {
 	rdb := s.rdb
 	for _, prefix := range []struct {
@@ -116,18 +116,18 @@ func (s *Service) RegisterRoutes(api *gin.RouterGroup) {
 	}
 }
 
-// AuthorizeResult æŽˆæƒè·³è½¬ç»“æžœã€‚
+// AuthorizeResult 授权跳转结果。
 type AuthorizeResult struct {
 	AuthorizeURL string `json:"authorize_url"`
 	State        string `json:"state"`
 }
 
-// ExchangeParam å…‘æ¢ç™»å½•ç ã€‚
+// ExchangeParam 兑换登录码。
 type ExchangeParam struct {
 	Code string `json:"code" binding:"required"`
 }
 
-// LoginResult OAuth ç™»å½•ç»“æžœï¼ˆå­—æ®µä¸Ž auth å¯¹é½ï¼‰ã€‚
+// LoginResult OAuth 登录结果（字段与 auth 对齐）。
 type LoginResult struct {
 	Token           string               `json:"token"`
 	AccountID       string               `json:"account_id"`
@@ -171,19 +171,19 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 		code := c.Query("code")
 		state := c.Query("state")
 		if code == "" || state == "" {
-			response.Fail(c, http.StatusBadRequest, 400, "ç¼ºå°‘ code æˆ– state")
+			response.Fail(c, http.StatusBadRequest, 400, "缺少 code 或 state")
 			return
 		}
 		raw, err := s.rdb.Get(c.Request.Context(), stateKeyPrefix+state).Result()
 		_ = s.rdb.Del(c.Request.Context(), stateKeyPrefix+state)
 		if err != nil || raw == "" {
-			response.Fail(c, http.StatusBadRequest, 400, "æ— æ•ˆæˆ–è¿‡æœŸçš„ state")
+			response.Fail(c, http.StatusBadRequest, 400, "无效或过期的 state")
 			return
 		}
 		var st map[string]string
 		_ = json.Unmarshal([]byte(raw), &st)
 		if st["account_type"] != "" && st["account_type"] != string(accountType) {
-			response.Fail(c, http.StatusBadRequest, 400, "è´¦å·ç±»åž‹ä¸åŒ¹é…")
+			response.Fail(c, http.StatusBadRequest, 400, "账号类型不匹配")
 			return
 		}
 		pc, err := s.providerConfig(provider)
@@ -198,7 +198,7 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 		}
 		var accountID string
 		if st["intent"] == "BIND" && st["account_id"] != "" {
-			// ç»‘å®šæ¨¡å¼ï¼šå†™å…¥ç»‘å®šå…³ç³»ï¼Œä¸åˆ›å»ºè´¦å·
+			// 绑定模式：写入绑定关系，不创建账号
 			if err := s.createBinding(c.Request.Context(), st["account_id"], provider, profile); err != nil {
 				response.Fail(c, http.StatusBadRequest, 400, err.Error())
 				return
@@ -244,13 +244,13 @@ func (s *Service) exchange(accountType security.AccountType) gin.HandlerFunc {
 		raw, err := s.rdb.Get(c.Request.Context(), exchangeKeyPrefix+req.Code).Result()
 		_ = s.rdb.Del(c.Request.Context(), exchangeKeyPrefix+req.Code)
 		if err != nil || raw == "" {
-			response.Fail(c, http.StatusBadRequest, 400, "å…‘æ¢ç æ— æ•ˆæˆ–å·²è¿‡æœŸ")
+			response.Fail(c, http.StatusBadRequest, 400, "兑换码无效或已过期")
 			return
 		}
 		var payload map[string]string
 		_ = json.Unmarshal([]byte(raw), &payload)
 		if payload["account_type"] != string(accountType) {
-			response.Fail(c, http.StatusBadRequest, 400, "è´¦å·ç±»åž‹ä¸åŒ¹é…")
+			response.Fail(c, http.StatusBadRequest, 400, "账号类型不匹配")
 			return
 		}
 		if s.issue == nil {
@@ -281,7 +281,7 @@ func (s *Service) providerConfig(provider string) (providerCfg, error) {
 	switch strings.ToLower(provider) {
 	case "github":
 		if o.GitHub.ClientID == "" || o.GitHub.ClientSecret == "" {
-			return providerCfg{}, fmt.Errorf("OAuth æä¾›å•† github æœªé…ç½®")
+			return providerCfg{}, fmt.Errorf("OAuth 提供商 github 未配置")
 		}
 		return providerCfg{
 			ClientID:     o.GitHub.ClientID,
@@ -289,9 +289,9 @@ func (s *Service) providerConfig(provider string) (providerCfg, error) {
 			RedirectURL:  o.GitHub.RedirectURL,
 		}, nil
 	case "gitee", "wechat", "wechat_open", "wechat_mp", "qq":
-		return providerCfg{}, fmt.Errorf("OAuth æä¾›å•† %s æœªé…ç½®", provider)
+		return providerCfg{}, fmt.Errorf("OAuth 提供商 %s 未配置", provider)
 	default:
-		return providerCfg{}, fmt.Errorf("ä¸æ”¯æŒçš„ OAuth æä¾›å•†: %s", provider)
+		return providerCfg{}, fmt.Errorf("不支持的 OAuth 提供商: %s", provider)
 	}
 }
 
@@ -305,7 +305,7 @@ func buildAuthorizeURL(provider string, pc providerCfg, state string) (string, e
 		q.Set("state", state)
 		return "https://github.com/login/oauth/authorize?" + q.Encode(), nil
 	default:
-		return "", fmt.Errorf("OAuth æä¾›å•† %s æœªé…ç½®", provider)
+		return "", fmt.Errorf("OAuth 提供商 %s 未配置", provider)
 	}
 }
 
@@ -319,7 +319,7 @@ type oauthProfile struct {
 
 func exchangeCode(ctx context.Context, provider string, pc providerCfg, code string) (*oauthProfile, error) {
 	if provider != "github" {
-		return nil, fmt.Errorf("OAuth æä¾›å•† %s æœªé…ç½®", provider)
+		return nil, fmt.Errorf("OAuth 提供商 %s 未配置", provider)
 	}
 	form := url.Values{}
 	form.Set("client_id", pc.ClientID)
@@ -349,7 +349,7 @@ func exchangeCode(ctx context.Context, provider string, pc providerCfg, code str
 		if tok.Error != "" {
 			return nil, fmt.Errorf("github token: %s", tok.Error)
 		}
-		return nil, fmt.Errorf("github token äº¤æ¢å¤±è´¥")
+		return nil, fmt.Errorf("github token 交换失败")
 	}
 	ureq, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {
@@ -373,7 +373,7 @@ func exchangeCode(ctx context.Context, provider string, pc providerCfg, code str
 		return nil, err
 	}
 	if user.ID == 0 {
-		return nil, fmt.Errorf("æ— æ³•èŽ·å– GitHub ç”¨æˆ·ä¿¡æ¯")
+		return nil, fmt.Errorf("无法获取 GitHub 用户信息")
 	}
 	nick := user.Name
 	if nick == "" {
@@ -401,19 +401,19 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		if err := s.db.WithContext(ctx).Table("sys_account").
 			Select("id, account_type, account_status").
 			Where("id = ?", binding.AccountID).First(&acc).Error; err != nil {
-			return "", fmt.Errorf("ç»‘å®šè´¦å·ä¸å­˜åœ¨")
+			return "", fmt.Errorf("绑定账号不存在")
 		}
 		if acc.AccountType != string(accountType) || acc.AccountStatus != security.AccountStatusEnabled {
-			return "", fmt.Errorf("è´¦å·ä¸å¯ç”¨")
+			return "", fmt.Errorf("账号不可用")
 		}
 		return acc.ID, nil
 	}
 	if err != gorm.ErrRecordNotFound {
 		return "", err
 	}
-	// é¦–æ¬¡ç»‘å®šï¼šè‡ªåŠ¨åˆ›å»ºå¯¹åº”ç±»åž‹è´¦å·ï¼ˆé—¨æˆ·ï¼‰ï¼›ç®¡ç†ç«¯è¦æ±‚å·²æœ‰ç»‘å®š
+	// 首次绑定：自动创建对应类型账号（门户）；管理端要求已有绑定
 	if accountType == security.AccountAdmin {
-		return "", fmt.Errorf("æœªç»‘å®šçš„ GitHub è´¦å·ï¼Œè¯·å…ˆåœ¨ç®¡ç†ç«¯ç»‘å®š")
+		return "", fmt.Errorf("未绑定的 GitHub 账号，请先在管理端绑定")
 	}
 	accountID := idgen.Next()
 	now := time.Now().UTC()

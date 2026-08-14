@@ -6,7 +6,7 @@ package group
 
 import "hei-gin/internal/modules/iam/relation"
 
-// AddParam åˆ›å»ºç”¨æˆ·ç»„å…¥å‚ã€‚
+// AddParam 创建用户组入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -16,7 +16,7 @@ type AddParam struct {
 	Status      string  `json:"status"`
 }
 
-// EditParam æ›´æ–°ç”¨æˆ·ç»„å…¥å‚ã€‚
+// EditParam 更新用户组入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -24,7 +24,7 @@ type EditParam struct {
 	AddParam
 }
 
-// PageParam ç”¨æˆ·ç»„åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 用户组分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -34,7 +34,7 @@ type PageParam struct {
 	Status  string `form:"status" json:"status"`
 }
 
-// Normalize åˆ†é¡µè§„èŒƒåŒ–ã€‚
+// Normalize 分页规范化。
 func (q PageParam) Normalize() (current, size int) {
 	current, size = q.Current, q.Size
 	if current < 1 {
@@ -49,14 +49,14 @@ func (q PageParam) Normalize() (current, size int) {
 	return current, size
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// OwnResourceQuery ç”¨æˆ·ç»„èµ„æºæŽˆæƒæŸ¥è¯¢å…¥å‚ã€‚
+// OwnResourceQuery 用户组资源授权查询入参。
 //
 // Author: Charlie
 type OwnResourceQuery struct {
@@ -64,7 +64,7 @@ type OwnResourceQuery struct {
 	AccountType string `form:"account_type" json:"account_type"`
 }
 
-// GrantUserParam ç”¨æˆ·ç»„æˆå‘˜æŽˆæƒå…¥å‚ã€‚
+// GrantUserParam 用户组成员授权入参。
 //
 // Author: Charlie
 type GrantUserParam struct {
@@ -72,7 +72,7 @@ type GrantUserParam struct {
 	AccountIDs []string `json:"account_ids"`
 }
 
-// GrantRoleParam ç”¨æˆ·ç»„æŽˆæƒè§’è‰²å…¥å‚ã€‚
+// GrantRoleParam 用户组授权角色入参。
 //
 // Author: Charlie
 type GrantRoleParam struct {
@@ -81,7 +81,7 @@ type GrantRoleParam struct {
 	RoleIDs     []string `json:"role_ids"`
 }
 
-// GrantResourceParam ç”¨æˆ·ç»„æŽˆæƒèµ„æºï¼ˆç®¡ç†ç«¯/å®¢æˆ·ç«¯ï¼‰å…¥å‚ã€‚
+// GrantResourceParam 用户组授权资源（管理端/客户端）入参。
 //
 // Author: Charlie
 type GrantResourceParam struct {

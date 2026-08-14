@@ -13,17 +13,17 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service ä»ªè¡¨ç›˜æœåŠ¡ã€‚
+// Service 仪表盘服务。
 //
 // Author: Charlie
 type Service struct {
 	repo *Repo
 }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º dashboard æ¨¡å—ã€‚
+// New 构建 dashboard 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -33,7 +33,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Overview æ¦‚è§ˆç»Ÿè®¡ã€‚
+// Overview 概览统计。
 func (s *Service) Overview(ctx context.Context) OverviewResult {
 	return OverviewResult{
 		AccountTotal:    s.repo.Count(ctx, "sys_account"),

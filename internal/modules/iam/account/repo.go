@@ -13,22 +13,22 @@ import (
 	"hei-gin/internal/framework/core/security/datascope"
 )
 
-// Repo è´¦å·æŒä¹…åŒ–ï¼ˆä»… sys_account / sys_account_identityï¼›èµ„æ–™è¡¨å½’ user æ¨¡å—ï¼‰ã€‚
+// Repo 账号持久化（仅 sys_account / sys_account_identity；资料表归 user 模块）。
 //
 // Author: Charlie
 type Repo struct{ db *gorm.DB }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-// DB è¿”å›žåº•å±‚ DBï¼ˆä¾›åŒäº‹åŠ¡æ‰©å±•ï¼›ä¸€èˆ¬ä¸šåŠ¡å‹¿ç”¨ï¼‰ã€‚
+// DB 返回底层 DB（供同事务扩展；一般业务勿用）。
 func (r *Repo) DB() *gorm.DB { return r.db }
 
-// FindIdentity æŒ‰ç±»åž‹ä¸Žæ ‡è¯†æŸ¥èº«ä»½ã€‚
+// FindIdentity 按类型与标识查身份。
 func (r *Repo) FindIdentity(ctx context.Context, identityType, identifier string) (*Identity, error) {
 	var ident Identity
 	if err := r.with(ctx).Where("identity_type = ? AND identifier = ?", identityType, identifier).First(&ident).Error; err != nil {
@@ -37,7 +37,7 @@ func (r *Repo) FindIdentity(ctx context.Context, identityType, identifier string
 	return &ident, nil
 }
 
-// GetByID æŒ‰ä¸»é”®æŸ¥è´¦å·ã€‚
+// GetByID 按主键查账号。
 func (r *Repo) GetByID(ctx context.Context, id string) (*Account, error) {
 	var acc Account
 	if err := r.with(ctx).First(&acc, "id = ?", id).Error; err != nil {
@@ -46,7 +46,7 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Account, error) {
 	return &acc, nil
 }
 
-// FindAccountIdentity æŸ¥è´¦å·ä¸»ç™»å½•èº«ä»½ã€‚
+// FindAccountIdentity 查账号主登录身份。
 func (r *Repo) FindAccountIdentity(ctx context.Context, accountID string) (*Identity, error) {
 	var ident Identity
 	if err := r.with(ctx).Where("account_id = ? AND identity_type = ?", accountID, IdentityAccount).First(&ident).Error; err != nil {
@@ -55,7 +55,7 @@ func (r *Repo) FindAccountIdentity(ctx context.Context, accountID string) (*Iden
 	return &ident, nil
 }
 
-// ListRoleIDs æŸ¥è´¦å·å·²å¯ç”¨è§’è‰² IDã€‚
+// ListRoleIDs 查账号已启用角色 ID。
 func (r *Repo) ListRoleIDs(ctx context.Context, accountID string) ([]string, error) {
 	var roleRels []struct {
 		TargetID string `gorm:"column:target_id"`
@@ -79,7 +79,7 @@ type permRow struct {
 	SourceID  string `gorm:"column:subject_id"`
 }
 
-// ListRolePermissions æŒ‰è§’è‰²åˆ—å‡ºæƒé™é”®ã€‚
+// ListRolePermissions 按角色列出权限键。
 func (r *Repo) ListRolePermissions(ctx context.Context, roleIDs []string) ([]permRow, error) {
 	if len(roleIDs) == 0 {
 		return nil, nil
@@ -93,7 +93,7 @@ func (r *Repo) ListRolePermissions(ctx context.Context, roleIDs []string) ([]per
 	return rows, err
 }
 
-// CreateAccount äº‹åŠ¡åˆ›å»ºè´¦å·ä¸Žä¸»èº«ä»½ã€‚
+// CreateAccount 事务创建账号与主身份。
 func (r *Repo) CreateAccount(ctx context.Context, acc Account, ident Identity) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&acc).Error; err != nil {
@@ -103,7 +103,7 @@ func (r *Repo) CreateAccount(ctx context.Context, acc Account, ident Identity) e
 	})
 }
 
-// UpdateAccount æ›´æ–°è´¦å·å­—æ®µä¸Žä¸»ç™»å½•æ ‡è¯†ã€‚
+// UpdateAccount 更新账号字段与主登录标识。
 func (r *Repo) UpdateAccount(ctx context.Context, id string, updates map[string]any, accountIdent string) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&Account{}).Where("id = ?", id).Updates(updates).Error; err != nil {
@@ -114,12 +114,12 @@ func (r *Repo) UpdateAccount(ctx context.Context, id string, updates map[string]
 	})
 }
 
-// UpdatePasswordHash ä»…æ›´æ–°å¯†ç å“ˆå¸Œã€‚
+// UpdatePasswordHash 仅更新密码哈希。
 func (r *Repo) UpdatePasswordHash(ctx context.Context, id, passwordHash string) error {
 	return r.with(ctx).Model(&Account{}).Where("id = ?", id).Update("password_hash", passwordHash).Error
 }
 
-// DeleteByIDs äº‹åŠ¡åˆ é™¤èº«ä»½ä¸Žè´¦å·ï¼ˆèµ„æ–™ç”± user æ¨¡å—å…ˆåˆ ï¼‰ã€‚
+// DeleteByIDs 事务删除身份与账号（资料由 user 模块先删）。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	return r.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("account_id IN ?", ids).Delete(&Identity{}).Error; err != nil {
@@ -129,7 +129,7 @@ func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	})
 }
 
-// PageAccounts åˆ†é¡µæŸ¥è¯¢è´¦å·ï¼›sess éžç©ºæ—¶æŒ‰æ•°æ®èŒƒå›´è¿‡æ»¤ï¼ˆSELFâ†’created_byï¼‰ã€‚
+// PageAccounts 分页查询账号；sess 非空时按数据范围过滤（SELF→created_by）。
 func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Account, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Account{})

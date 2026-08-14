@@ -22,12 +22,12 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// Repo è®¤è¯ Redis æŒä¹…åŒ–ï¼ˆéªŒè¯ç ã€å¯†ç å¯†é’¥ï¼‰ã€‚
+// Repo 认证 Redis 持久化（验证码、密码密钥）。
 //
 // Author: Charlie
 type Repo struct{ rdb *redis.Client }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(rdb *redis.Client) *Repo { return &Repo{rdb: rdb} }
 
 func newID() (string, error) {
@@ -38,7 +38,7 @@ func newID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// CreateCaptcha ç”ŸæˆéªŒè¯ç å¹¶å­˜å…¥ Redisã€‚
+// CreateCaptcha 生成验证码并存入 Redis。
 func (r *Repo) CreateCaptcha(ctx context.Context, ttl time.Duration) (*CaptchaResult, error) {
 	var b strings.Builder
 	for i := 0; i < 4; i++ {
@@ -67,24 +67,24 @@ func (r *Repo) CreateCaptcha(ctx context.Context, ttl time.Duration) (*CaptchaRe
 	}, nil
 }
 
-// VerifyCaptcha æ ¡éªŒéªŒè¯ç ã€‚
+// VerifyCaptcha 校验验证码。
 func (r *Repo) VerifyCaptcha(ctx context.Context, captchaID, value string) error {
 	key := captchaKeyPrefix + captchaID
 	stored, err := r.rdb.Get(ctx, key).Result()
 	_ = r.rdb.Del(ctx, key)
 	if err == redis.Nil || stored == "" {
-		return fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„éªŒè¯ç ")
+		return fmt.Errorf("无效或过期的验证码")
 	}
 	if err != nil {
 		return err
 	}
 	if !security.CheckPassword(stored, strings.ToLower(strings.TrimSpace(value))) {
-		return fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„éªŒè¯ç ")
+		return fmt.Errorf("无效或过期的验证码")
 	}
 	return nil
 }
 
-// CreatePasswordKey ç”Ÿæˆ RSA å¯†é’¥å¯¹ï¼Œç§é’¥å­˜ Redisã€‚
+// CreatePasswordKey 生成 RSA 密钥对，私钥存 Redis。
 func (r *Repo) CreatePasswordKey(ctx context.Context, ttl time.Duration) (*PasswordKeyResult, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -112,16 +112,16 @@ func (r *Repo) CreatePasswordKey(ctx context.Context, ttl time.Duration) (*Passw
 	}, nil
 }
 
-// DecryptPassword ç”¨ Redis ç§é’¥è§£å¯†å¯†ç ã€‚
+// DecryptPassword 用 Redis 私钥解密密码。
 func (r *Repo) DecryptPassword(ctx context.Context, keyID, encryptedValue string) (string, error) {
 	if keyID == "" {
-		return "", fmt.Errorf("ç¼ºå°‘ password_key_id")
+		return "", fmt.Errorf("缺少 password_key_id")
 	}
 	key := passwordKeyPrefix + keyID
 	raw, err := r.rdb.Get(ctx, key).Result()
 	_ = r.rdb.Del(ctx, key)
 	if err == redis.Nil || raw == "" {
-		return "", fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„å¯†ç åŠ å¯†å¯†é’¥")
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
 	}
 	if err != nil {
 		return "", err
@@ -131,23 +131,23 @@ func (r *Repo) DecryptPassword(ctx context.Context, keyID, encryptedValue string
 	}
 	block, _ := pem.Decode([]byte(raw))
 	if block == nil {
-		return "", fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„å¯†ç åŠ å¯†å¯†é’¥")
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
 	}
 	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return "", fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„å¯†ç åŠ å¯†å¯†é’¥")
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
 	}
 	rsaKey, ok := priv.(*rsa.PrivateKey)
 	if !ok {
-		return "", fmt.Errorf("æ— æ•ˆæˆ–è¿‡æœŸçš„å¯†ç åŠ å¯†å¯†é’¥")
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
 	}
 	ciphertext, err := base64.StdEncoding.DecodeString(encryptedValue)
 	if err != nil {
-		return "", fmt.Errorf("æ— æ•ˆçš„åŠ å¯†å¯†ç ")
+		return "", fmt.Errorf("无效的加密密码")
 	}
 	plain, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, ciphertext, nil)
 	if err != nil {
-		return "", fmt.Errorf("æ— æ•ˆçš„åŠ å¯†å¯†ç ")
+		return "", fmt.Errorf("无效的加密密码")
 	}
 	return string(plain), nil
 }

@@ -6,14 +6,14 @@ package weakpassword
 
 import "hei-gin/internal/framework/core/schema"
 
-// AddParam åˆ›å»ºå¼±å¯†ç å…¥å‚ã€‚
+// AddParam 创建弱密码入参。
 //
 // Author: Charlie
 type AddParam struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// EditParam æ›´æ–°å¼±å¯†ç å…¥å‚ã€‚
+// EditParam 更新弱密码入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -21,7 +21,7 @@ type EditParam struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// PageParam å¼±å¯†ç åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 弱密码分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -29,14 +29,14 @@ type PageParam struct {
 	Password string `form:"password"`
 }
 
-// ListParam å¼±å¯†ç åˆ—è¡¨æŸ¥è¯¢ã€‚
+// ListParam 弱密码列表查询。
 //
 // Author: Charlie
 type ListParam struct {
 	Password string `form:"password"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {

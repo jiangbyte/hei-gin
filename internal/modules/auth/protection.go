@@ -25,7 +25,7 @@ const (
 	resetTokPrefix = "password:reset:"
 )
 
-// EnsureLoginAllowed ç™»å½•å‰æ£€æŸ¥è´¦å·/IP æ˜¯å¦é”å®šã€‚
+// EnsureLoginAllowed 登录前检查账号/IP 是否锁定。
 func (r *Repo) EnsureLoginAllowed(ctx context.Context, accountType security.AccountType, account, clientIP string) error {
 	acct := normalizeAccount(account)
 	typeName := string(accountType)
@@ -40,7 +40,7 @@ func (r *Repo) EnsureLoginAllowed(ctx context.Context, accountType security.Acco
 	return nil
 }
 
-// RecordLoginFailure è®°å½•å¤±è´¥å¹¶åœ¨è¶…é™æ—¶é”å®šã€‚
+// RecordLoginFailure 记录失败并在超限时锁定。
 func (r *Repo) RecordLoginFailure(ctx context.Context, cfg loginProtectCfg, accountType security.AccountType, account, clientIP string) {
 	typeName := string(accountType)
 	acct := normalizeAccount(account)
@@ -58,7 +58,7 @@ func (r *Repo) RecordLoginFailure(ctx context.Context, cfg loginProtectCfg, acco
 	}
 }
 
-// ClearLoginFailures ç™»å½•æˆåŠŸåŽæ¸…é™¤å¤±è´¥è®¡æ•°ã€‚
+// ClearLoginFailures 登录成功后清除失败计数。
 func (r *Repo) ClearLoginFailures(ctx context.Context, accountType security.AccountType, account, clientIP string) {
 	typeName := string(accountType)
 	acct := normalizeAccount(account)
@@ -96,7 +96,7 @@ type loginProtectCfg struct {
 	LockSeconds   int
 }
 
-// StoreLoginOTP ç¼“å­˜ç™»å½• OTPï¼ˆ5 åˆ†é’Ÿï¼‰ã€‚
+// StoreLoginOTP 缓存登录 OTP（5 分钟）。
 func (r *Repo) StoreLoginOTP(ctx context.Context, accountType, channel, target, code string, ttl time.Duration) error {
 	if ttl <= 0 {
 		ttl = 5 * time.Minute
@@ -105,7 +105,7 @@ func (r *Repo) StoreLoginOTP(ctx context.Context, accountType, channel, target, 
 	return r.rdb.Set(ctx, key, code, ttl).Err()
 }
 
-// ConsumeLoginOTP æ ¡éªŒå¹¶æ¶ˆè´¹ç™»å½• OTPã€‚
+// ConsumeLoginOTP 校验并消费登录 OTP。
 func (r *Repo) ConsumeLoginOTP(ctx context.Context, accountType, channel, target, code string) bool {
 	key := otpLoginPrefix + accountType + ":" + channel + ":" + target
 	stored, err := r.rdb.Get(ctx, key).Result()
@@ -116,7 +116,7 @@ func (r *Repo) ConsumeLoginOTP(ctx context.Context, accountType, channel, target
 	return stored == strings.TrimSpace(code)
 }
 
-// StoreResetToken ç¼“å­˜å¯†ç é‡ç½®ä»¤ç‰Œã€‚
+// StoreResetToken 缓存密码重置令牌。
 func (r *Repo) StoreResetToken(ctx context.Context, token, accountID string, ttl time.Duration) error {
 	if ttl <= 0 {
 		ttl = 10 * time.Minute
@@ -124,13 +124,13 @@ func (r *Repo) StoreResetToken(ctx context.Context, token, accountID string, ttl
 	return r.rdb.Set(ctx, resetTokPrefix+token, accountID, ttl).Err()
 }
 
-// ConsumeResetToken æ¶ˆè´¹é‡ç½®ä»¤ç‰Œï¼Œè¿”å›žè´¦å· IDã€‚
+// ConsumeResetToken 消费重置令牌，返回账号 ID。
 func (r *Repo) ConsumeResetToken(ctx context.Context, token string) (string, error) {
 	key := resetTokPrefix + token
 	id, err := r.rdb.Get(ctx, key).Result()
 	_ = r.rdb.Del(ctx, key)
 	if err == redis.Nil || id == "" {
-		return "", fmt.Errorf("é‡ç½®ä»¤ç‰Œæ— æ•ˆæˆ–å·²è¿‡æœŸ")
+		return "", fmt.Errorf("重置令牌无效或已过期")
 	}
 	if err != nil {
 		return "", err

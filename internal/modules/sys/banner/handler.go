@@ -22,11 +22,11 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
 		api.GET("/v1/admin/sys/banners/list", admin, s.list)
-		api.POST("/v1/admin/sys/banners/create", admin, middleware.RequirePermission(d.Perms, "sys:banner:create", "Banneråˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/banners/update", admin, middleware.RequirePermission(d.Perms, "sys:banner:update", "Banneræ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/banners/delete", admin, middleware.RequirePermission(d.Perms, "sys:banner:delete", "Banneråˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/banners/detail", admin, middleware.RequirePermission(d.Perms, "sys:banner:detail", "Bannerè¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/banners/page", admin, middleware.RequirePermission(d.Perms, "sys:banner:page", "Banneråˆ†é¡µ"), s.page)
+		api.POST("/v1/admin/sys/banners/create", admin, middleware.RequirePermission(d.Perms, "sys:banner:create", "Banner创建"), s.create)
+		api.POST("/v1/admin/sys/banners/update", admin, middleware.RequirePermission(d.Perms, "sys:banner:update", "Banner更新"), s.update)
+		api.POST("/v1/admin/sys/banners/delete", admin, middleware.RequirePermission(d.Perms, "sys:banner:delete", "Banner删除"), s.delete)
+		api.GET("/v1/admin/sys/banners/detail", admin, middleware.RequirePermission(d.Perms, "sys:banner:detail", "Banner详情"), s.detail)
+		api.GET("/v1/admin/sys/banners/page", admin, middleware.RequirePermission(d.Perms, "sys:banner:page", "Banner分页"), s.page)
 
 		portal := middleware.RequireAccountType(security.AccountPortal)
 		api.GET("/v1/portal/sys/banners/list", portal, s.portalList)

@@ -12,7 +12,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// AddParam åˆ›å»º Banner å…¥å‚ã€‚
+// AddParam 创建 Banner 入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -32,7 +32,7 @@ type AddParam struct {
 	EndAt              *time.Time     `json:"end_at"`
 }
 
-// EditParam æ›´æ–° Banner å…¥å‚ã€‚
+// EditParam 更新 Banner 入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -40,7 +40,7 @@ type EditParam struct {
 	AddParam
 }
 
-// PageParam Banner åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam Banner 分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -50,28 +50,28 @@ type PageParam struct {
 	Status   string `form:"status"`
 }
 
-// ListParam Banner åˆ—è¡¨æŸ¥è¯¢ã€‚
+// ListParam Banner 列表查询。
 //
 // Author: Charlie
 type ListParam struct {
 	Position string `form:"position"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// InteractionParam Banner äº’åŠ¨ä¸ŠæŠ¥å…¥å‚ã€‚
+// InteractionParam Banner 互动上报入参。
 //
 // Author: Charlie
 type InteractionParam struct {
 	ID string `json:"id" binding:"required"`
 }
 
-// PortalListParam é—¨æˆ·ç«¯ Banner åˆ—è¡¨æŸ¥è¯¢ã€‚
+// PortalListParam 门户端 Banner 列表查询。
 //
 // Author: Charlie
 type PortalListParam struct {

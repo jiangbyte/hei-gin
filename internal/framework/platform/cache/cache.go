@@ -1,4 +1,4 @@
-// Package cache å°è£… Redis å®¢æˆ·ç«¯æ‰“å¼€ä¸Žé…ç½®å˜æ›´é¢‘é“å¸¸é‡ã€‚
+// Package cache 封装 Redis 客户端打开与配置变更频道常量。
 //
 // Author: Charlie
 package cache
@@ -12,7 +12,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 )
 
-// Open æŒ‰é…ç½®è§£æž URL å¹¶ Ping æ ¡éªŒåŽè¿”å›ž Redis å®¢æˆ·ç«¯ã€‚
+// Open 按配置解析 URL 并 Ping 校验后返回 Redis 客户端。
 func Open(cfg config.RedisConfig) (*redis.Client, error) {
 	opt, err := redis.ParseURL(cfg.URL)
 	if err != nil {
@@ -28,5 +28,5 @@ func Open(cfg config.RedisConfig) (*redis.Client, error) {
 	return rdb, nil
 }
 
-// ConfigChangedChannel ä¸ºä¸šåŠ¡é…ç½®å˜æ›´ Pub/Sub é¢‘é“ã€‚
+// ConfigChangedChannel 为业务配置变更 Pub/Sub 频道。
 const ConfigChangedChannel = "hei:config:changed"

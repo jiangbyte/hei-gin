@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œ message.feedback æ¨¡å—ã€‚
+// init 自注册 message.feedback 模块。
 func init() {
 	module.Register("message.feedback", 60, func(d *module.Deps) module.Module {
 		return New(shared.FromModule(d))

@@ -14,7 +14,7 @@ import (
 	"hei-gin/internal/modules/iam/role"
 )
 
-// AccountResult è´¦å·è¯¦æƒ…/åˆ†é¡µè¡Œã€‚
+// AccountResult 账号详情/分页行。
 //
 // Author: Charlie
 type AccountResult struct {
@@ -46,7 +46,7 @@ type AccountResult struct {
 	UpdatedBy          *string    `json:"updated_by"`
 }
 
-// OwnRoleResult è´¦å·å·²æ‹¥æœ‰è§’è‰²ç»“æžœã€‚
+// OwnRoleResult 账号已拥有角色结果。
 //
 // Author: Charlie
 type OwnRoleResult struct {
@@ -55,7 +55,7 @@ type OwnRoleResult struct {
 	RoleIDs []string    `json:"role_ids"`
 }
 
-// OwnGroupResult è´¦å·å·²æ‹¥æœ‰ç”¨æˆ·ç»„ç»“æžœã€‚
+// OwnGroupResult 账号已拥有用户组结果。
 //
 // Author: Charlie
 type OwnGroupResult struct {
@@ -64,7 +64,7 @@ type OwnGroupResult struct {
 	GroupIDs []string      `json:"group_ids"`
 }
 
-// OwnDeptResult è´¦å·å·²æ‹¥æœ‰éƒ¨é—¨æŽˆæƒç»“æžœã€‚
+// OwnDeptResult 账号已拥有部门授权结果。
 //
 // Author: Charlie
 type OwnDeptResult struct {
@@ -72,7 +72,7 @@ type OwnDeptResult struct {
 	GrantInfoList []relation.DeptGrantInfo `json:"grant_info_list"`
 }
 
-// OwnResourceResult è´¦å·å·²æ‹¥æœ‰ç®¡ç†ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnResourceResult 账号已拥有管理端资源授权结果。
 //
 // Author: Charlie
 type OwnResourceResult struct {
@@ -81,7 +81,7 @@ type OwnResourceResult struct {
 	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }
 
-// OwnClientResourceResult è´¦å·å·²æ‹¥æœ‰å®¢æˆ·ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnClientResourceResult 账号已拥有客户端资源授权结果。
 //
 // Author: Charlie
 type OwnClientResourceResult struct {

@@ -16,15 +16,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service ç›®å½•æœåŠ¡ã€‚
+// Service 目录服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º biz.cg_test_catalog æ¨¡å—ã€‚
+// New 构建 biz.cg_test_catalog 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -35,7 +35,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºç›®å½•ã€‚
+// Create 创建目录。
 func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
 	row := Catalog{
 		ID: idgen.Next(), ParentID: req.ParentID, Code: req.Code, Name: req.Name, Category: req.Category,
@@ -45,7 +45,7 @@ func (s *Service) Create(ctx context.Context, accountID string, req AddParam) er
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°ç›®å½•ã€‚
+// Update 更新目录。
 func (s *Service) Update(ctx context.Context, accountID string, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, map[string]any{
 		"parent_id": req.ParentID, "code": req.Code, "name": req.Name, "category": req.Category,
@@ -54,24 +54,24 @@ func (s *Service) Update(ctx context.Context, accountID string, req EditParam) e
 	})
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail ç›®å½•è¯¦æƒ…ã€‚
+// Detail 目录详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Catalog, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam) (rows []Catalog, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.Page(ctx, p)
 	return rows, total, current, size, err
 }
 
-// Tree ç›®å½•æ ‘ã€‚
+// Tree 目录树。
 func (s *Service) Tree(ctx context.Context) ([]TreeNode, error) {
 	rows, err := s.repo.ListAll(ctx)
 	if err != nil {

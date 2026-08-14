@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œæ¨¡å— iam.clientã€‚
+// init 自注册模块 iam.client。
 func init() {
 	module.Register("iam.client", 40, func(d *module.Deps) module.Module {
 		return New(shared.FromModule(d))

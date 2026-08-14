@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/core/response"
 )
 
-// RateLimit åŸºäºŽ Redis INCR + EXPIRE çš„å›ºå®šçª—å£é™æµã€‚
+// RateLimit 基于 Redis INCR + EXPIRE 的固定窗口限流。
 //
 // Author: Charlie
 func RateLimit(rdb *redis.Client, keyPrefix string, permits int, windowSeconds int) gin.HandlerFunc {
@@ -42,7 +42,7 @@ func RateLimit(rdb *redis.Client, keyPrefix string, permits int, windowSeconds i
 			_ = rdb.Expire(ctx, key, time.Duration(windowSeconds)*time.Second).Err()
 		}
 		if n > int64(permits) {
-			response.Fail(c, http.StatusTooManyRequests, 429, "è¯·æ±‚è¿‡äºŽé¢‘ç¹ï¼Œè¯·ç¨åŽå†è¯•")
+			response.Fail(c, http.StatusTooManyRequests, 429, "请求过于频繁，请稍后再试")
 			c.Abort()
 			return
 		}

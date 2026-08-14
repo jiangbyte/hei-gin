@@ -6,7 +6,7 @@ package file
 
 import "hei-gin/internal/framework/core/schema"
 
-// EditParam æ›´æ–°æ–‡ä»¶å…ƒæ•°æ®å…¥å‚ã€‚
+// EditParam 更新文件元数据入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -14,7 +14,7 @@ type EditParam struct {
 	OriginalName *string `json:"original_name"`
 }
 
-// PageParam æ–‡ä»¶åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 文件分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -22,7 +22,7 @@ type PageParam struct {
 	OriginalName string `form:"original_name"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {

@@ -17,17 +17,17 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service æ´»åŠ¨æœåŠ¡ã€‚
+// Service 活动服务。
 //
 // Author: Charlie
 type Service struct {
 	repo *Repo
 }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º biz.cg_test_activity æ¨¡å—ã€‚
+// New 构建 biz.cg_test_activity 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -38,7 +38,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºæ´»åŠ¨ã€‚
+// Create 创建活动。
 func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
 	row := fromAddParam(req)
 	row.ID = idgen.Next()
@@ -47,7 +47,7 @@ func (s *Service) Create(ctx context.Context, accountID string, req AddParam) er
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°æ´»åŠ¨ã€‚
+// Update 更新活动。
 func (s *Service) Update(ctx context.Context, accountID string, req EditParam) error {
 	row := fromAddParam(req.AddParam)
 	return s.repo.Update(ctx, req.ID, map[string]any{
@@ -59,17 +59,17 @@ func (s *Service) Update(ctx context.Context, accountID string, req EditParam) e
 	})
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail æ´»åŠ¨è¯¦æƒ…ã€‚
+// Detail 活动详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Activity, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Activity, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.Page(ctx, p, sess)

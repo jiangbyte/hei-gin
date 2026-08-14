@@ -6,7 +6,7 @@ package feedback
 
 import "hei-gin/internal/framework/core/schema"
 
-// CreateParam æäº¤åé¦ˆå…¥å‚ã€‚
+// CreateParam 提交反馈入参。
 //
 // Author: Charlie
 type CreateParam struct {
@@ -17,7 +17,7 @@ type CreateParam struct {
 	AttachObjectNames []string `json:"attach_object_names"`
 }
 
-// UpdateParam å›žå¤/æ›´æ–°åé¦ˆå…¥å‚ã€‚
+// UpdateParam 回复/更新反馈入参。
 //
 // Author: Charlie
 type UpdateParam struct {
@@ -26,14 +26,14 @@ type UpdateParam struct {
 	Reply  *string `json:"reply"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// PageParam ç®¡ç†ç«¯åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 管理端分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -44,7 +44,7 @@ type PageParam struct {
 	SubmitterAccountType string `form:"submitter_account_type"`
 }
 
-// SubmitMeta æäº¤è€…ä¿¡æ¯ã€‚
+// SubmitMeta 提交者信息。
 //
 // Author: Charlie
 type SubmitMeta struct {
@@ -53,7 +53,7 @@ type SubmitMeta struct {
 	CreatedBy   string
 }
 
-// ReplyMeta å›žå¤è€…ä¿¡æ¯ã€‚
+// ReplyMeta 回复者信息。
 //
 // Author: Charlie
 type ReplyMeta struct {

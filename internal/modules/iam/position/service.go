@@ -16,15 +16,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service èŒä½æœåŠ¡ã€‚
+// Service 职位服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ èŒä½æœåŠ¡ã€‚
+// NewService 构造职位服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º iam.position æ¨¡å—ã€‚
+// New 构建 iam.position 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -34,7 +34,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºèŒä½ã€‚
+// Create 创建职位。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	row := Position{
 		ID: idgen.Next(), Name: req.Name, Category: req.Category, OwnerDeptID: req.OwnerDeptID,
@@ -44,7 +44,7 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°èŒä½ã€‚
+// Update 更新职位。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
 	updates := map[string]any{
 		"name": req.Name, "category": req.Category, "owner_dept_id": req.OwnerDeptID,
@@ -54,17 +54,17 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail èŒä½è¯¦æƒ…ã€‚
+// Detail 职位详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Position, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam) (rows []Position, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.Page(ctx, p)

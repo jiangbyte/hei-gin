@@ -6,7 +6,7 @@ package codegen
 
 import "hei-gin/internal/framework/core/schema"
 
-// AddParam åˆ›å»ºä»£ç ç”Ÿæˆæ–¹æ¡ˆå…¥å‚ã€‚
+// AddParam 创建代码生成方案入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -37,7 +37,7 @@ type AddParam struct {
 	SubBusinessName  *string `json:"sub_business_name"`
 }
 
-// EditParam æ›´æ–°ä»£ç ç”Ÿæˆæ–¹æ¡ˆå…¥å‚ï¼ˆID + AddParamï¼‰ã€‚
+// EditParam 更新代码生成方案入参（ID + AddParam）。
 //
 // Author: Charlie
 type EditParam struct {
@@ -45,7 +45,7 @@ type EditParam struct {
 	AddParam
 }
 
-// PageParam ä»£ç ç”Ÿæˆæ–¹æ¡ˆåˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 代码生成方案分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -55,14 +55,14 @@ type PageParam struct {
 	MainTable string `form:"main_table"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// FieldUpdateItemParam å•æ¡ä»£ç ç”Ÿæˆå­—æ®µæ›´æ–°é¡¹ã€‚
+// FieldUpdateItemParam 单条代码生成字段更新项。
 //
 // Author: Charlie
 type FieldUpdateItemParam struct {
@@ -88,7 +88,7 @@ type FieldUpdateItemParam struct {
 	Sort           int     `json:"sort"`
 }
 
-// FieldsUpdateBatchParam æ‰¹é‡æ›´æ–°ä»£ç ç”Ÿæˆå­—æ®µé…ç½®ã€‚
+// FieldsUpdateBatchParam 批量更新代码生成字段配置。
 //
 // Author: Charlie
 type FieldsUpdateBatchParam struct {
@@ -96,7 +96,7 @@ type FieldsUpdateBatchParam struct {
 	Fields []FieldUpdateItemParam `json:"fields" binding:"required"`
 }
 
-// FieldQuery å­—æ®µæŸ¥è¯¢å…¥å‚ã€‚
+// FieldQuery 字段查询入参。
 //
 // Author: Charlie
 type FieldQuery struct {

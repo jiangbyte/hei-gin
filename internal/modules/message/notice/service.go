@@ -15,15 +15,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service é€šçŸ¥ä¸šåŠ¡æœåŠ¡ã€‚
+// Service 通知业务服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ é€šçŸ¥æœåŠ¡ã€‚
+// NewService 构造通知服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º message.notice æ¨¡å—ã€‚
+// New 构建 message.notice 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -34,7 +34,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºé€šçŸ¥ã€‚
+// Create 创建通知。
 func (s *Service) Create(ctx context.Context, req CreateParam, createdBy, updatedBy *string) error {
 	row := fromCreate(req)
 	row.ID = idgen.Next()
@@ -43,7 +43,7 @@ func (s *Service) Create(ctx context.Context, req CreateParam, createdBy, update
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°é€šçŸ¥ã€‚
+// Update 更新通知。
 func (s *Service) Update(ctx context.Context, req UpdateParam, updatedBy *string) error {
 	row := fromCreate(req.CreateParam)
 	updates := map[string]any{
@@ -60,7 +60,7 @@ func (s *Service) Update(ctx context.Context, req UpdateParam, updatedBy *string
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	if err := s.repo.DeleteByIDs(ctx, ids); err != nil {
 		return err
@@ -69,19 +69,19 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return nil
 }
 
-// Detail è¯¦æƒ…ã€‚
+// Detail 详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Notice, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// PageAdmin ç®¡ç†ç«¯åˆ†é¡µã€‚
+// PageAdmin 管理端分页。
 func (s *Service) PageAdmin(ctx context.Context, q PageParam) (rows []Notice, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.PageAdmin(ctx, q)
 	return rows, total, current, size, err
 }
 
-// Publish å‘å¸ƒé€šçŸ¥ã€‚
+// Publish 发布通知。
 func (s *Service) Publish(ctx context.Context, ids []string, p PublishParam) error {
 	return s.repo.UpdateByIDs(ctx, ids, map[string]any{
 		"status": p.Status, "publish_at": p.PublishAt,
@@ -90,28 +90,28 @@ func (s *Service) Publish(ctx context.Context, ids []string, p PublishParam) err
 	})
 }
 
-// Revoke æ’¤å›žé€šçŸ¥ã€‚
+// Revoke 撤回通知。
 func (s *Service) Revoke(ctx context.Context, ids []string, p RevokeParam) error {
 	return s.repo.UpdateByIDs(ctx, ids, map[string]any{
 		"status": p.Status, "revoked_at": p.RevokedAt,
 	})
 }
 
-// Pin ç½®é¡¶/å–æ¶ˆç½®é¡¶ã€‚
+// Pin 置顶/取消置顶。
 func (s *Service) Pin(ctx context.Context, req PinParam) error {
 	return s.repo.Update(ctx, req.ID, map[string]any{
 		"is_pinned": req.IsPinned, "pinned_until": req.PinnedUntil,
 	})
 }
 
-// PagePublished å·²å‘å¸ƒé€šçŸ¥åˆ†é¡µã€‚
+// PagePublished 已发布通知分页。
 func (s *Service) PagePublished(ctx context.Context, q PageParam) (rows []Notice, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.PagePublished(ctx, q)
 	return rows, total, current, size, err
 }
 
-// MyDetail ç”¨æˆ·ç«¯è¯¦æƒ…ï¼ˆå¢žåŠ æµè§ˆé‡ï¼‰ã€‚
+// MyDetail 用户端详情（增加浏览量）。
 func (s *Service) MyDetail(ctx context.Context, id string) (*Notice, error) {
 	row, err := s.repo.GetPublishedByID(ctx, id)
 	if err != nil {
@@ -121,12 +121,12 @@ func (s *Service) MyDetail(ctx context.Context, id string) (*Notice, error) {
 	return row, nil
 }
 
-// UnreadCount æœªè¯»æ•°ã€‚
+// UnreadCount 未读数。
 func (s *Service) UnreadCount(ctx context.Context, accountType, accountID string) (int64, error) {
 	return s.repo.CountUnread(ctx, accountType, accountID)
 }
 
-// MarkRead æ ‡è®°å·²è¯»ã€‚
+// MarkRead 标记已读。
 func (s *Service) MarkRead(ctx context.Context, rec ReadRecord) error {
 	row := NoticeRead{
 		ID: idgen.Next(), NoticeID: rec.NoticeID, AccountType: rec.AccountType,
@@ -135,7 +135,7 @@ func (s *Service) MarkRead(ctx context.Context, rec ReadRecord) error {
 	return s.repo.FirstOrCreateRead(ctx, row)
 }
 
-// MarkAllRead å…¨éƒ¨æ ‡è®°å·²è¯»ã€‚
+// MarkAllRead 全部标记已读。
 func (s *Service) MarkAllRead(ctx context.Context, accountType, accountID string, readAt time.Time) error {
 	ids, err := s.repo.ListUnreadIDs(ctx, accountType, accountID)
 	if err != nil {

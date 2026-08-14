@@ -21,19 +21,19 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/groups/create", admin, middleware.RequirePermission(d.Perms, "iam:group:create", "ç”¨æˆ·ç»„åˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/groups/update", admin, middleware.RequirePermission(d.Perms, "iam:group:update", "ç”¨æˆ·ç»„æ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/groups/delete", admin, middleware.RequirePermission(d.Perms, "iam:group:delete", "ç”¨æˆ·ç»„åˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/groups/detail", admin, middleware.RequirePermission(d.Perms, "iam:group:detail", "ç”¨æˆ·ç»„è¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/groups/page", admin, middleware.RequirePermission(d.Perms, "iam:group:page", "ç”¨æˆ·ç»„åˆ†é¡µ"), s.page)
-		api.GET("/v1/admin/sys/groups/own-user", admin, middleware.RequirePermission(d.Perms, "iam:group:ownuser", "ç”¨æˆ·ç»„æˆå‘˜æŸ¥è¯¢"), s.ownUser)
-		api.POST("/v1/admin/sys/groups/grant-user", admin, middleware.RequirePermission(d.Perms, "iam:group:grantuser", "ç”¨æˆ·ç»„æˆå‘˜æŽˆæƒ"), s.grantUser)
-		api.GET("/v1/admin/sys/groups/own-role", admin, middleware.RequirePermission(d.Perms, "iam:group:ownrole", "ç”¨æˆ·ç»„å·²æ‹¥æœ‰è§’è‰²"), s.ownRole)
-		api.POST("/v1/admin/sys/groups/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:group:grantrole", "ç”¨æˆ·ç»„è§’è‰²æŽˆæƒ"), s.grantRole)
-		api.GET("/v1/admin/sys/groups/own-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownresource", "ç”¨æˆ·ç»„å·²æ‹¥æœ‰èµ„æº"), s.ownResource)
-		api.POST("/v1/admin/sys/groups/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantresource", "ç”¨æˆ·ç»„èµ„æºæŽˆæƒ"), s.grantResource)
-		api.GET("/v1/admin/sys/groups/own-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownclientresource", "ç”¨æˆ·ç»„å·²æ‹¥æœ‰å®¢æˆ·ç«¯èµ„æº"), s.ownClientResource)
-		api.POST("/v1/admin/sys/groups/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantclientresource", "ç”¨æˆ·ç»„å®¢æˆ·ç«¯èµ„æºæŽˆæƒ"), s.grantClientResource)
+		api.POST("/v1/admin/sys/groups/create", admin, middleware.RequirePermission(d.Perms, "iam:group:create", "用户组创建"), s.create)
+		api.POST("/v1/admin/sys/groups/update", admin, middleware.RequirePermission(d.Perms, "iam:group:update", "用户组更新"), s.update)
+		api.POST("/v1/admin/sys/groups/delete", admin, middleware.RequirePermission(d.Perms, "iam:group:delete", "用户组删除"), s.delete)
+		api.GET("/v1/admin/sys/groups/detail", admin, middleware.RequirePermission(d.Perms, "iam:group:detail", "用户组详情"), s.detail)
+		api.GET("/v1/admin/sys/groups/page", admin, middleware.RequirePermission(d.Perms, "iam:group:page", "用户组分页"), s.page)
+		api.GET("/v1/admin/sys/groups/own-user", admin, middleware.RequirePermission(d.Perms, "iam:group:ownuser", "用户组成员查询"), s.ownUser)
+		api.POST("/v1/admin/sys/groups/grant-user", admin, middleware.RequirePermission(d.Perms, "iam:group:grantuser", "用户组成员授权"), s.grantUser)
+		api.GET("/v1/admin/sys/groups/own-role", admin, middleware.RequirePermission(d.Perms, "iam:group:ownrole", "用户组已拥有角色"), s.ownRole)
+		api.POST("/v1/admin/sys/groups/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:group:grantrole", "用户组角色授权"), s.grantRole)
+		api.GET("/v1/admin/sys/groups/own-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownresource", "用户组已拥有资源"), s.ownResource)
+		api.POST("/v1/admin/sys/groups/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantresource", "用户组资源授权"), s.grantResource)
+		api.GET("/v1/admin/sys/groups/own-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownclientresource", "用户组已拥有客户端资源"), s.ownClientResource)
+		api.POST("/v1/admin/sys/groups/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantclientresource", "用户组客户端资源授权"), s.grantClientResource)
 	}
 }
 

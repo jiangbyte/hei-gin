@@ -1,4 +1,4 @@
-// Package storage æŠ½è±¡å¯¹è±¡å­˜å‚¨ï¼ˆlocal é»˜è®¤ï¼›S3 å…¼å®¹å¯åŽç»­æŽ¥å…¥ï¼‰ã€‚
+// Package storage 抽象对象存储（local 默认；S3 兼容可后续接入）。
 //
 // Author: Charlie
 package storage
@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 )
 
-// Provider æŠ½è±¡å¯¹è±¡å­˜å‚¨ï¼ˆlocal / S3 å…¼å®¹ï¼‰ã€‚
+// Provider 抽象对象存储（local / S3 兼容）。
 //
 // Author: Charlie
 type Provider interface {
@@ -25,7 +25,7 @@ type Provider interface {
 	PublicURL(objectName string) string
 }
 
-// Manager æŒæœ‰å¯çƒ­åˆ‡æ¢çš„å­˜å‚¨ Providerã€‚
+// Manager 持有可热切换的存储 Provider。
 //
 // Author: Charlie
 type Manager struct {
@@ -34,7 +34,7 @@ type Manager struct {
 	cfg      config.StorageConfig
 }
 
-// NewManager æŒ‰é…ç½®åˆ›å»ºå­˜å‚¨ç®¡ç†å™¨ã€‚
+// NewManager 按配置创建存储管理器。
 func NewManager(cfg config.StorageConfig) (*Manager, error) {
 	p, err := newProvider(cfg)
 	if err != nil {
@@ -43,14 +43,14 @@ func NewManager(cfg config.StorageConfig) (*Manager, error) {
 	return &Manager{provider: p, cfg: cfg}, nil
 }
 
-// Provider è¿”å›žå½“å‰ Providerã€‚
+// Provider 返回当前 Provider。
 func (m *Manager) Provider() Provider {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.provider
 }
 
-// Reconfigure ç”¨æ–°é…ç½®é‡å»ºå¹¶æ›¿æ¢ Providerã€‚
+// Reconfigure 用新配置重建并替换 Provider。
 func (m *Manager) Reconfigure(cfg config.StorageConfig) error {
 	p, err := newProvider(cfg)
 	if err != nil {
@@ -74,7 +74,7 @@ func newProvider(cfg config.StorageConfig) (Provider, error) {
 	}
 }
 
-// Local åŸºäºŽæœ¬åœ°ç›®å½•çš„å¯¹è±¡å­˜å‚¨å®žçŽ°ã€‚
+// Local 基于本地目录的对象存储实现。
 //
 // Author: Charlie
 type Local struct {
@@ -83,13 +83,13 @@ type Local struct {
 	baseURL    string
 }
 
-// NewLocal åˆ›å»ºæœ¬åœ°å­˜å‚¨å¹¶ç¡®ä¿æ ¹ç›®å½•å­˜åœ¨ã€‚
+// NewLocal 创建本地存储并确保根目录存在。
 func NewLocal(root, publicPath, baseURL string) *Local {
 	_ = os.MkdirAll(root, 0o755)
 	return &Local{root: root, publicPath: publicPath, baseURL: strings.TrimRight(baseURL, "/")}
 }
 
-// Put å†™å…¥å¯¹è±¡å¹¶è¿”å›žå…¬å¼€ URLã€‚
+// Put 写入对象并返回公开 URL。
 func (l *Local) Put(_ context.Context, objectName string, r io.Reader, _ int64, _ string) (string, error) {
 	path := filepath.Join(l.root, filepath.FromSlash(objectName))
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -106,17 +106,17 @@ func (l *Local) Put(_ context.Context, objectName string, r io.Reader, _ int64, 
 	return l.PublicURL(objectName), nil
 }
 
-// Get æ‰“å¼€å¯¹è±¡åªè¯»æµã€‚
+// Get 打开对象只读流。
 func (l *Local) Get(_ context.Context, objectName string) (io.ReadCloser, error) {
 	return os.Open(filepath.Join(l.root, filepath.FromSlash(objectName)))
 }
 
-// Delete åˆ é™¤æœ¬åœ°å¯¹è±¡æ–‡ä»¶ã€‚
+// Delete 删除本地对象文件。
 func (l *Local) Delete(_ context.Context, objectName string) error {
 	return os.Remove(filepath.Join(l.root, filepath.FromSlash(objectName)))
 }
 
-// PublicURL æ‹¼å‡ºå¯¹è±¡å…¬å¼€è®¿é—®è·¯å¾„ï¼ˆå¯å¸¦ baseURLï¼‰ã€‚
+// PublicURL 拼出对象公开访问路径（可带 baseURL）。
 func (l *Local) PublicURL(objectName string) string {
 	p := strings.TrimRight(l.publicPath, "/") + "/" + strings.TrimLeft(objectName, "/")
 	if l.baseURL != "" {
@@ -125,7 +125,7 @@ func (l *Local) PublicURL(objectName string) string {
 	return p
 }
 
-// ObjectKey ç”¨å‰ç¼€ä¸Žæ–‡ä»¶åæ‹¼å¯¹è±¡é”®ã€‚
+// ObjectKey 用前缀与文件名拼对象键。
 func ObjectKey(prefix, name string) string {
 	return fmt.Sprintf("%s/%s", strings.Trim(prefix, "/"), name)
 }

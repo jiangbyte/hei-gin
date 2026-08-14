@@ -13,34 +13,34 @@ import (
 	"hei-gin/internal/framework/core/security/datascope"
 )
 
-// Repo æ´»åŠ¨æŒä¹…åŒ–ã€‚
+// Repo 活动持久化。
 //
 // Author: Charlie
 type Repo struct{ db *gorm.DB }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-// Create åˆ›å»ºæ´»åŠ¨ã€‚
+// Create 创建活动。
 func (r *Repo) Create(ctx context.Context, row *Activity) error {
 	return r.with(ctx).Create(row).Error
 }
 
-// Update æ›´æ–°æ´»åŠ¨ã€‚
+// Update 更新活动。
 func (r *Repo) Update(ctx context.Context, id string, updates map[string]any) error {
 	return r.with(ctx).Model(&Activity{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteByIDs æ‰¹é‡åˆ é™¤ã€‚
+// DeleteByIDs 批量删除。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	return r.with(ctx).Where("id IN ?", ids).Delete(&Activity{}).Error
 }
 
-// GetByID æŒ‰ä¸»é”®æŸ¥è¯¢ã€‚
+// GetByID 按主键查询。
 func (r *Repo) GetByID(ctx context.Context, id string) (*Activity, error) {
 	var row Activity
 	if err := r.with(ctx).First(&row, "id = ?", id).Error; err != nil {
@@ -49,7 +49,7 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Activity, error) {
 	return &row, nil
 }
 
-// Page åˆ†é¡µæŸ¥è¯¢ï¼›sess éžç©ºæ—¶æŒ‰ owner_dept_id æ•°æ®èŒƒå›´è¿‡æ»¤ã€‚
+// Page 分页查询；sess 非空时按 owner_dept_id 数据范围过滤。
 func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Activity, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Activity{})

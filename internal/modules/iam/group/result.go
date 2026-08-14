@@ -11,7 +11,7 @@ import (
 	"hei-gin/internal/modules/iam/role"
 )
 
-// OwnRoleResult ç”¨æˆ·ç»„å·²æ‹¥æœ‰è§’è‰²ç»“æžœã€‚
+// OwnRoleResult 用户组已拥有角色结果。
 //
 // Author: Charlie
 type OwnRoleResult struct {
@@ -20,7 +20,7 @@ type OwnRoleResult struct {
 	RoleIDs []string    `json:"role_ids"`
 }
 
-// OwnResourceResult ç”¨æˆ·ç»„å·²æ‹¥æœ‰ç®¡ç†ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnResourceResult 用户组已拥有管理端资源授权结果。
 //
 // Author: Charlie
 type OwnResourceResult struct {
@@ -29,7 +29,7 @@ type OwnResourceResult struct {
 	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }
 
-// OwnClientResourceResult ç”¨æˆ·ç»„å·²æ‹¥æœ‰å®¢æˆ·ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnClientResourceResult 用户组已拥有客户端资源授权结果。
 //
 // Author: Charlie
 type OwnClientResourceResult struct {

@@ -1,4 +1,4 @@
-// Package middleware æä¾› Gin é€šç”¨ä¸­é—´ä»¶ï¼šæ¢å¤ã€è¿½è¸ªã€CORSã€é‰´æƒä¸Žé”™è¯¯æ˜ å°„ã€‚
+// Package middleware 提供 Gin 通用中间件：恢复、追踪、CORS、鉴权与错误映射。
 //
 // Author: Charlie
 package middleware
@@ -22,7 +22,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// Recovery æ•èŽ· panic å¹¶è¿”å›ž 500 ä¿¡å°ã€‚
+// Recovery 捕获 panic 并返回 500 信封。
 func Recovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -36,7 +36,7 @@ func Recovery() gin.HandlerFunc {
 	}
 }
 
-// Trace æ³¨å…¥ X-Request-Id ä¸Žå®¢æˆ·ç«¯ IP åˆ°è¯·æ±‚ä¸Šä¸‹æ–‡ã€‚
+// Trace 注入 X-Request-Id 与客户端 IP 到请求上下文。
 func Trace() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rid := c.GetHeader("X-Request-Id")
@@ -51,7 +51,7 @@ func Trace() gin.HandlerFunc {
 	}
 }
 
-// AccessLog è®°å½•è®¿é—®æ—¥å¿—ï¼ˆæ–¹æ³•ã€è·¯å¾„ã€çŠ¶æ€ã€è€—æ—¶ã€request_idï¼‰ã€‚
+// AccessLog 记录访问日志（方法、路径、状态、耗时、request_id）。
 func AccessLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -66,7 +66,7 @@ func AccessLog() gin.HandlerFunc {
 	}
 }
 
-// CORS æŒ‰é…ç½®å†™å…¥è·¨åŸŸå“åº”å¤´å¹¶å¤„ç† OPTIONS é¢„æ£€ã€‚
+// CORS 按配置写入跨域响应头并处理 OPTIONS 预检。
 func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 	origins := map[string]struct{}{}
 	for _, o := range cfg.AllowOrigins {
@@ -101,7 +101,7 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 	}
 }
 
-// SecurityHeaders å†™å…¥åŸºç¡€å®‰å…¨å“åº”å¤´ï¼›å¯é€‰å¼€å¯ HSTSã€‚
+// SecurityHeaders 写入基础安全响应头；可选开启 HSTS。
 func SecurityHeaders(cfg config.SecurityConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("X-Content-Type-Options", "nosniff")
@@ -118,7 +118,7 @@ func SecurityHeaders(cfg config.SecurityConfig) gin.HandlerFunc {
 	}
 }
 
-// AuthContext ä»Ž Cookie/Header å¯é€‰åŠ è½½ä¼šè¯ï¼ˆä¸é€æ˜Ž tokenï¼Œéž Bearerï¼‰ã€‚
+// AuthContext 从 Cookie/Header 可选加载会话（不透明 token，非 Bearer）。
 func AuthContext(cfg config.AuthConfig, store *security.SessionStore) gin.HandlerFunc {
 	name := cfg.TokenName
 	if name == "" {
@@ -150,7 +150,7 @@ func AuthContext(cfg config.AuthConfig, store *security.SessionStore) gin.Handle
 	}
 }
 
-// AuthWhitelist å¯¹éžç™½åå•æœªç™»å½•è¯·æ±‚ç›´æŽ¥æ‹’ç»ã€‚
+// AuthWhitelist 对非白名单未登录请求直接拒绝。
 func AuthWhitelist(extra []string) gin.HandlerFunc {
 	builtin := []string{
 		"/",
@@ -210,7 +210,7 @@ func matchAny(p string, patterns []string) bool {
 	return false
 }
 
-// RequireAccountType è¦æ±‚ä¼šè¯è´¦å·ç±»åž‹åŒ¹é…ã€‚
+// RequireAccountType 要求会话账号类型匹配。
 func RequireAccountType(t security.AccountType) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sess := contextx.Session(c.Request.Context())
@@ -223,7 +223,7 @@ func RequireAccountType(t security.AccountType) gin.HandlerFunc {
 	}
 }
 
-// RequirePermission ç™»è®°æƒé™é”®å¹¶è¦æ±‚ä¼šè¯æŒæœ‰è¯¥æƒé™ã€‚
+// RequirePermission 登记权限键并要求会话持有该权限。
 func RequirePermission(reg *security.PermissionRegistry, key, name string) gin.HandlerFunc {
 	reg.Register(key, name)
 	return func(c *gin.Context) {
@@ -237,7 +237,7 @@ func RequirePermission(reg *security.PermissionRegistry, key, name string) gin.H
 	}
 }
 
-// ErrorHandler å°† gin.Context é”™è¯¯æ˜ å°„ä¸ºç»Ÿä¸€å¤±è´¥ä¿¡å°ã€‚
+// ErrorHandler 将 gin.Context 错误映射为统一失败信封。
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()

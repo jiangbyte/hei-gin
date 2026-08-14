@@ -1,4 +1,4 @@
-// Package main æ˜¯å•ä½“ API è¿›ç¨‹å…¥å£ï¼šåŠ è½½é…ç½®ã€è£…é…æ¨¡å—ã€HTTP ä¸Žè¿›ç¨‹å†…å®šæ—¶ä»»åŠ¡ã€‚
+// Package main 是单体 API 进程入口：加载配置、装配模块、HTTP 与进程内定时任务。
 //
 // Author: Charlie
 package main
@@ -14,7 +14,7 @@ import (
 	_ "hei-gin/internal/modules/all"
 )
 
-// è¿›ç¨‹å…¥å£ã€‚
+// 进程入口。
 func main() {
 	cfgPath := "config.yaml"
 	if len(os.Args) > 1 {

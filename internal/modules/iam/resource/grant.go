@@ -17,7 +17,7 @@ import (
 	"hei-gin/internal/modules/iam/relation"
 )
 
-// ListPermissions è¿”å›žå·²æ³¨å†Œæƒé™æ¸…å•ï¼ˆæŒ‰æƒé™é”®æŽ’åºï¼‰ã€‚
+// ListPermissions 返回已注册权限清单（按权限键排序）。
 func (s *Service) ListPermissions() []PermissionItem {
 	all := s.perms.All()
 	out := make([]PermissionItem, 0, len(all))
@@ -28,7 +28,7 @@ func (s *Service) ListPermissions() []PermissionItem {
 	return out
 }
 
-// BindResourcePermissions ä¸ºç®¡ç†ç«¯èµ„æºç»‘å®šæƒé™ï¼ˆå…ˆåˆ åŽæ’ï¼Œäº‹åŠ¡ï¼‰ã€‚
+// BindResourcePermissions 为管理端资源绑定权限（先删后插，事务）。
 func (s *Service) BindResourcePermissions(ctx context.Context, req ResourcePermissionBindParam) error {
 	if _, err := s.repo.GetResourceByID(ctx, req.ResourceID); err != nil {
 		return err
@@ -36,12 +36,12 @@ func (s *Service) BindResourcePermissions(ctx context.Context, req ResourcePermi
 	return s.rel.BindResourcePermissions(ctx, relation.SubjectResource, req.ResourceID, relation.RelResourcePermission, orAdmin(req.AccountType), req.PermissionKeys)
 }
 
-// BindClientResourcePermissions ä¸ºå®¢æˆ·ç«¯èµ„æºç»‘å®šæƒé™ï¼ˆå…ˆåˆ åŽæ’ï¼Œäº‹åŠ¡ï¼‰ã€‚
+// BindClientResourcePermissions 为客户端资源绑定权限（先删后插，事务）。
 func (s *Service) BindClientResourcePermissions(ctx context.Context, req ResourcePermissionBindParam) error {
 	return s.rel.BindResourcePermissions(ctx, relation.SubjectClientResource, req.ResourceID, relation.RelClientResourcePermission, orAdmin(req.AccountType), req.PermissionKeys)
 }
 
-// CreateButton åˆ›å»ºæŒ‰é’®èµ„æºï¼ˆresource_type=BUTTONï¼ŒæŒ‚åœ¨èœå•ä¸‹å¹¶ç»§æ‰¿æ¨¡å—ï¼‰ã€‚
+// CreateButton 创建按钮资源（resource_type=BUTTON，挂在菜单下并继承模块）。
 func (s *Service) CreateButton(ctx context.Context, req ButtonAddParam) error {
 	parent, err := s.repo.GetResourceByID(ctx, req.ResourceID)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *Service) CreateButton(ctx context.Context, req ButtonAddParam) error {
 	return s.repo.CreateResource(ctx, &row)
 }
 
-// UpdateButton æ›´æ–°æŒ‰é’®èµ„æºã€‚
+// UpdateButton 更新按钮资源。
 func (s *Service) UpdateButton(ctx context.Context, req ButtonEditParam) error {
 	row, err := s.repo.GetResourceByID(ctx, req.ID)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *Service) UpdateButton(ctx context.Context, req ButtonEditParam) error {
 	return s.repo.UpdateResource(ctx, req.ID, updates)
 }
 
-// DeleteButtons æ‰¹é‡åˆ é™¤æŒ‰é’®èµ„æºï¼ˆå…ˆæ¸…æŒ‰é’®æƒé™ç»‘å®šï¼Œå†åˆ èµ„æºï¼‰ã€‚
+// DeleteButtons 批量删除按钮资源（先清按钮权限绑定，再删资源）。
 func (s *Service) DeleteButtons(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {
 		return nil
@@ -100,7 +100,7 @@ func (s *Service) DeleteButtons(ctx context.Context, ids []string) error {
 	return s.repo.DeleteResources(ctx, ids)
 }
 
-// PageButtons æŒ‰é’®èµ„æºåˆ†é¡µã€‚
+// PageButtons 按钮资源分页。
 func (s *Service) PageButtons(ctx context.Context, p ButtonPageParam) (rows []Resource, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageButtons(ctx, p)

@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// New æž„å»º iam.permission æ¨¡å—ã€‚
+// New 构建 iam.permission 模块。
 func New(_ *shared.Deps) module.Module {
 	return module.Module{
 		Name:   "iam.permission",

@@ -21,18 +21,18 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/client-modules/create", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:create", "å®¢æˆ·ç«¯æ¨¡å—åˆ›å»º"), s.createModule)
-		api.POST("/v1/admin/sys/client-modules/update", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:update", "å®¢æˆ·ç«¯æ¨¡å—æ›´æ–°"), s.updateModule)
-		api.POST("/v1/admin/sys/client-modules/delete", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:delete", "å®¢æˆ·ç«¯æ¨¡å—åˆ é™¤"), s.deleteModule)
-		api.GET("/v1/admin/sys/client-modules/detail", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:detail", "å®¢æˆ·ç«¯æ¨¡å—è¯¦æƒ…"), s.detailModule)
-		api.GET("/v1/admin/sys/client-modules/page", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:page", "å®¢æˆ·ç«¯æ¨¡å—åˆ†é¡µ"), s.pageModule)
-		api.GET("/v1/admin/sys/client-modules/selector", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:page", "å®¢æˆ·ç«¯æ¨¡å—é€‰æ‹©"), s.selectorModule)
-		api.POST("/v1/admin/sys/client-resources/create", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:create", "å®¢æˆ·ç«¯èµ„æºåˆ›å»º"), s.createResource)
-		api.POST("/v1/admin/sys/client-resources/update", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:update", "å®¢æˆ·ç«¯èµ„æºæ›´æ–°"), s.updateResource)
-		api.POST("/v1/admin/sys/client-resources/delete", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:delete", "å®¢æˆ·ç«¯èµ„æºåˆ é™¤"), s.deleteResource)
-		api.GET("/v1/admin/sys/client-resources/detail", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:detail", "å®¢æˆ·ç«¯èµ„æºè¯¦æƒ…"), s.detailResource)
-		api.GET("/v1/admin/sys/client-resources/page", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:page", "å®¢æˆ·ç«¯èµ„æºåˆ†é¡µ"), s.pageResource)
-		api.GET("/v1/admin/sys/client-resources/tree", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:list", "å®¢æˆ·ç«¯èµ„æºæ ‘"), s.treeResource)
+		api.POST("/v1/admin/sys/client-modules/create", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:create", "客户端模块创建"), s.createModule)
+		api.POST("/v1/admin/sys/client-modules/update", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:update", "客户端模块更新"), s.updateModule)
+		api.POST("/v1/admin/sys/client-modules/delete", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:delete", "客户端模块删除"), s.deleteModule)
+		api.GET("/v1/admin/sys/client-modules/detail", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:detail", "客户端模块详情"), s.detailModule)
+		api.GET("/v1/admin/sys/client-modules/page", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:page", "客户端模块分页"), s.pageModule)
+		api.GET("/v1/admin/sys/client-modules/selector", admin, middleware.RequirePermission(d.Perms, "iam:clientmodule:page", "客户端模块选择"), s.selectorModule)
+		api.POST("/v1/admin/sys/client-resources/create", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:create", "客户端资源创建"), s.createResource)
+		api.POST("/v1/admin/sys/client-resources/update", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:update", "客户端资源更新"), s.updateResource)
+		api.POST("/v1/admin/sys/client-resources/delete", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:delete", "客户端资源删除"), s.deleteResource)
+		api.GET("/v1/admin/sys/client-resources/detail", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:detail", "客户端资源详情"), s.detailResource)
+		api.GET("/v1/admin/sys/client-resources/page", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:page", "客户端资源分页"), s.pageResource)
+		api.GET("/v1/admin/sys/client-resources/tree", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:list", "客户端资源树"), s.treeResource)
 	}
 }
 

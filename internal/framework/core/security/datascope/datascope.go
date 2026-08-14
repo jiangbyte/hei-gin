@@ -1,4 +1,4 @@
-// Package datascope æŒ‰ä¼šè¯æ•°æ®èŒƒå›´è¿‡æ»¤ GORM æŸ¥è¯¢ã€‚
+// Package datascope 按会话数据范围过滤 GORM 查询。
 //
 // Author: Charlie
 package datascope
@@ -13,12 +13,12 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// ErrDenied è¡¨ç¤ºå½“å‰ä¼šè¯æ— æƒè®¿é—®ç›®æ ‡æ•°æ®ã€‚
+// ErrDenied 表示当前会话无权访问目标数据。
 //
 // Author: Charlie
 var ErrDenied = errors.New("datascope: access denied")
 
-// Scope ä¸Ž security.DataScope å¯¹é½çš„åˆ«åï¼Œä¾¿äºŽæœ¬åŒ…å¼•ç”¨ã€‚
+// Scope 与 security.DataScope 对齐的别名，便于本包引用。
 type Scope = security.DataScope
 
 const (
@@ -29,8 +29,8 @@ const (
 	ScopeCustom       = security.DataScopeCustom
 )
 
-// Effective ä»Žä¼šè¯æƒé™æŽˆæƒè§£æžæœ‰æ•ˆæ•°æ®èŒƒå›´ä¸Žéƒ¨é—¨ ID åˆ—è¡¨ã€‚
-// *:*:* æˆ–ä»»ä¸€ ALL æŽˆæƒè§†ä¸ºå…¨éƒ¨æ•°æ®ï¼›å¦åˆ™å–æŽˆæƒä¸­æœ€å®½èŒƒå›´ã€‚
+// Effective 从会话权限授权解析有效数据范围与部门 ID 列表。
+// *:*:* 或任一 ALL 授权视为全部数据；否则取授权中最宽范围。
 //
 // Author: Charlie
 func Effective(db *gorm.DB, sess *security.Session) (Scope, []string) {
@@ -75,8 +75,8 @@ func Effective(db *gorm.DB, sess *security.Session) (Scope, []string) {
 	}
 }
 
-// Apply æŒ‰ä¼šè¯æ•°æ®èŒƒå›´è¿‡æ»¤æŸ¥è¯¢ã€‚
-// SELF ä½¿ç”¨ created_by = account_idï¼›éƒ¨é—¨ç±»èŒƒå›´ä½¿ç”¨ ownerDeptColumn IN (...)ã€‚
+// Apply 按会话数据范围过滤查询。
+// SELF 使用 created_by = account_id；部门类范围使用 ownerDeptColumn IN (...)。
 //
 // Author: Charlie
 func Apply(db *gorm.DB, sess *security.Session, ownerDeptColumn string) *gorm.DB {
@@ -103,7 +103,7 @@ func Apply(db *gorm.DB, sess *security.Session, ownerDeptColumn string) *gorm.DB
 	}
 }
 
-// Assert å†™æ“ä½œæ•°æ®èŒƒå›´æ ¡éªŒï¼šALL æ”¾è¡Œï¼›SELF æ¯” ownerAccountIDï¼›éƒ¨é—¨èŒƒå›´è¦æ±‚ ownerDeptID è½åœ¨å¯è§éƒ¨é—¨å†…ã€‚
+// Assert 写操作数据范围校验：ALL 放行；SELF 比 ownerAccountID；部门范围要求 ownerDeptID 落在可见部门内。
 //
 // Author: Charlie
 func Assert(sess *security.Session, ownerDeptID, ownerAccountID string) error {
@@ -128,8 +128,8 @@ func Assert(sess *security.Session, ownerDeptID, ownerAccountID string) error {
 				return nil
 			}
 		}
-		// DEPT_AND_CHILD åœ¨ Assert æ—¶ db ä¸º nilï¼Œæœªå±•å¼€å­éƒ¨é—¨ï¼šå›žé€€åˆ°ä¼šè¯ DeptIDs ç²¾ç¡®åŒ¹é…å·²åœ¨ä¸Šé¢å®Œæˆï¼›
-		// è‹¥éœ€è¦å­éƒ¨é—¨æ ¡éªŒï¼Œè°ƒç”¨æ–¹åº”åœ¨æŸ¥è¯¢è·¯å¾„ç”¨ Applyã€‚
+		// DEPT_AND_CHILD 在 Assert 时 db 为 nil，未展开子部门：回退到会话 DeptIDs 精确匹配已在上面完成；
+		// 若需要子部门校验，调用方应在查询路径用 Apply。
 		return ErrDenied
 	default:
 		return ErrDenied
@@ -172,7 +172,7 @@ func expandDeptAndChildren(db *gorm.DB, roots []string) []string {
 		return roots
 	}
 	var ids []string
-	// PostgreSQL recursive CTEï¼šæœ¬éƒ¨é—¨åŠå…¨éƒ¨å­éƒ¨é—¨ã€‚
+	// PostgreSQL recursive CTE：本部门及全部子部门。
 	q := `
 WITH RECURSIVE tree AS (
   SELECT id FROM sys_dept WHERE id IN ?
@@ -189,7 +189,7 @@ SELECT DISTINCT id FROM tree`
 	return unique(ids)
 }
 
-// FormatDeny è¿”å›žå¸¦ä¸Šä¸‹æ–‡çš„æ‹’ç»é”™è¯¯ï¼ˆå¯é€‰ï¼‰ã€‚
+// FormatDeny 返回带上下文的拒绝错误（可选）。
 func FormatDeny(detail string) error {
 	if detail == "" {
 		return ErrDenied

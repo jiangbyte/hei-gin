@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 )
 
-// PurgeExpiredCancelled ç‰©ç†æ¸…ç†è¶…æœŸå·²æ³¨é”€è´¦å·ï¼ˆJobHandler: accountPurgeCancelledJobï¼‰ã€‚
+// PurgeExpiredCancelled 物理清理超期已注销账号（JobHandler: accountPurgeCancelledJob）。
 func (s *Service) PurgeExpiredCancelled(ctx context.Context, retentionDays int) (int64, error) {
 	if retentionDays <= 0 {
 		retentionDays = 15
@@ -51,7 +51,7 @@ func (s *Service) accountPurgeCancelledJobHandler(ctx context.Context, param str
 	return nil
 }
 
-// withJobs é™„åŠ  SnailJob handlersã€‚
+// withJobs 附加 SnailJob handlers。
 func (s *Service) withJobs(m module.Module) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "accountPurgeCancelledJob",

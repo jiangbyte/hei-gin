@@ -18,15 +18,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service ä»£ç ç”Ÿæˆä¸šåŠ¡æœåŠ¡ã€‚
+// Service 代码生成业务服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ ä»£ç ç”ŸæˆæœåŠ¡ã€‚
+// NewService 构造代码生成服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º sys.codegen æ¨¡å—ã€‚
+// New 构建 sys.codegen 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -36,7 +36,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºæ–¹æ¡ˆå¹¶åå°„åŒæ­¥å­—æ®µã€‚
+// Create 创建方案并反射同步字段。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	plan := fromAddParam(req)
 	if plan.MainPK == "" {
@@ -58,7 +58,7 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.syncReflectedFields(ctx, plan)
 }
 
-// Update æ›´æ–°æ–¹æ¡ˆå¹¶é‡æ–°åŒæ­¥å­—æ®µã€‚
+// Update 更新方案并重新同步字段。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
 	plan := fromAddParam(req.AddParam)
 	plan.ID = req.ID
@@ -90,24 +90,24 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.syncReflectedFields(ctx, plan)
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail è¯¦æƒ…ã€‚
+// Detail 详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Plan, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []Plan, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
 	return rows, total, current, size, err
 }
 
-// Tables æ•°æ®åº“è¡¨åˆ—è¡¨ã€‚
+// Tables 数据库表列表。
 func (s *Service) Tables(ctx context.Context) ([]DatabaseTableResult, error) {
 	rows, err := s.repo.ListTables(ctx)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *Service) Tables(ctx context.Context) ([]DatabaseTableResult, error) {
 	return out, nil
 }
 
-// TableColumns è¡¨åˆ—å…ƒæ•°æ®ã€‚
+// TableColumns 表列元数据。
 func (s *Service) TableColumns(ctx context.Context, tableName string) ([]DatabaseColumnResult, error) {
 	rows, err := s.repo.ListColumns(ctx, tableName)
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *Service) TableColumns(ctx context.Context, tableName string) ([]Databas
 	return out, nil
 }
 
-// Fields æŸ¥è¯¢æ–¹æ¡ˆå­—æ®µã€‚
+// Fields 查询方案字段。
 func (s *Service) Fields(ctx context.Context, q FieldQuery) ([]Field, error) {
 	if _, err := s.repo.GetByID(ctx, q.PlanID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -157,7 +157,7 @@ func (s *Service) Fields(ctx context.Context, q FieldQuery) ([]Field, error) {
 	return s.repo.ListFields(ctx, q.PlanID, q.TableRole)
 }
 
-// UpdateFieldsBatch æ‰¹é‡æ›´æ–°æ–¹æ¡ˆå­—æ®µã€‚
+// UpdateFieldsBatch 批量更新方案字段。
 func (s *Service) UpdateFieldsBatch(ctx context.Context, req FieldsUpdateBatchParam) error {
 	if _, err := s.repo.GetByID(ctx, req.PlanID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -197,7 +197,7 @@ func (s *Service) UpdateFieldsBatch(ctx context.Context, req FieldsUpdateBatchPa
 	return s.repo.ReplaceFields(ctx, req.PlanID, fields)
 }
 
-// ParentResources çˆ¶çº§èµ„æºæ ‘ï¼ˆCATALOG ç±»åž‹ï¼Œå¯é€‰æ¨¡å—è¿‡æ»¤ï¼‰ã€‚
+// ParentResources 父级资源树（CATALOG 类型，可选模块过滤）。
 func (s *Service) ParentResources(ctx context.Context, moduleID string) ([]ResourceNode, error) {
 	db := s.repo.db.WithContext(ctx)
 	q := db.Table("sys_resource").
@@ -213,7 +213,7 @@ func (s *Service) ParentResources(ctx context.Context, moduleID string) ([]Resou
 	return buildResourceTree(rows, nil), nil
 }
 
-// syncReflectedFields æŒ‰è¡¨ç»“æž„åå°„åŒæ­¥ MAIN/SUB å­—æ®µã€‚
+// syncReflectedFields 按表结构反射同步 MAIN/SUB 字段。
 func (s *Service) syncReflectedFields(ctx context.Context, plan *Plan) error {
 	if err := s.upsertReflected(ctx, plan.ID, "MAIN", plan.MainTable); err != nil {
 		return err
@@ -292,7 +292,7 @@ func (s *Service) upsertReflected(ctx context.Context, planID, tableRole, tableN
 	return nil
 }
 
-// fromAddParam å…¥å‚ â†’ Plan å®žä½“ã€‚
+// fromAddParam 入参 → Plan 实体。
 func fromAddParam(req AddParam) *Plan {
 	return &Plan{
 		ID: idgen.Next(), Name: req.Name, GenType: req.GenType, Author: req.Author, Description: req.Description,
@@ -323,7 +323,7 @@ func planUpdates(p *Plan) map[string]any {
 	}
 }
 
-// ResourceNode çˆ¶çº§èµ„æºæ ‘èŠ‚ç‚¹ã€‚
+// ResourceNode 父级资源树节点。
 //
 // Author: Charlie
 type ResourceNode struct {
@@ -348,7 +348,7 @@ func buildResourceTree(rows []ResourceNode, parent *string) []ResourceNode {
 	return out
 }
 
-// dbTypeToPythonAndTs æ•°æ®åº“ç±»åž‹ â†’ Python/TS è¯­ä¹‰ç±»åž‹ã€‚
+// dbTypeToPythonAndTs 数据库类型 → Python/TS 语义类型。
 func dbTypeToPythonAndTs(dataType, udtName string) (string, string) {
 	t := strings.ToLower(udtName)
 	if t == "" {

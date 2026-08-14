@@ -14,7 +14,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service å¥åº·æ£€æŸ¥æœåŠ¡ã€‚
+// Service 健康检查服务。
 //
 // Author: Charlie
 type Service struct {
@@ -22,12 +22,12 @@ type Service struct {
 	redis *redis.Client
 }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB, rdb *redis.Client) *Service {
 	return &Service{db: db, redis: rdb}
 }
 
-// New æž„å»º internal.health æ¨¡å—ã€‚
+// New 构建 internal.health 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB, d.Redis)
 	return module.Module{
@@ -37,12 +37,12 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Live å­˜æ´»æ£€æŸ¥ã€‚
+// Live 存活检查。
 func (s *Service) Live() LiveResult {
 	return LiveResult{Status: "live"}
 }
 
-// Ready å°±ç»ªæ£€æŸ¥ã€‚
+// Ready 就绪检查。
 func (s *Service) Ready(ctx context.Context) (ReadyResult, bool) {
 	out := ReadyResult{Status: "ready"}
 	out.Checks.Database = CheckItem{Enabled: true}

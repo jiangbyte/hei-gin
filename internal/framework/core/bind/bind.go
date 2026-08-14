@@ -1,4 +1,4 @@
-// Package bind æä¾› Gin è¯·æ±‚ç»‘å®šï¼›JSON èµ°å…¨å±€ stringly ç¼–è§£ç ã€‚
+// Package bind 提供 Gin 请求绑定；JSON 走全局 stringly 编解码。
 //
 // Author: Charlie
 package bind
@@ -12,7 +12,7 @@ import (
 	"hei-gin/internal/framework/core/stringly"
 )
 
-// JSON è¯»å–è¯·æ±‚ä½“å¹¶ç”¨ stringly è§£ç ï¼Œå†æŒ‰ binding tag æ ¡éªŒã€‚
+// JSON 读取请求体并用 stringly 解码，再按 binding tag 校验。
 func JSON(c *gin.Context, obj any) error {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {

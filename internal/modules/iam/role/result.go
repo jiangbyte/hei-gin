@@ -10,7 +10,7 @@ import (
 	"hei-gin/internal/modules/iam/resource"
 )
 
-// OwnResourceResult è§’è‰²å·²æ‹¥æœ‰ç®¡ç†ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnResourceResult 角色已拥有管理端资源授权结果。
 //
 // Author: Charlie
 type OwnResourceResult struct {
@@ -19,7 +19,7 @@ type OwnResourceResult struct {
 	GrantInfoList []relation.ResourceGrantInfo `json:"grant_info_list"`
 }
 
-// OwnClientResourceResult è§’è‰²å·²æ‹¥æœ‰å®¢æˆ·ç«¯èµ„æºæŽˆæƒç»“æžœã€‚
+// OwnClientResourceResult 角色已拥有客户端资源授权结果。
 //
 // Author: Charlie
 type OwnClientResourceResult struct {

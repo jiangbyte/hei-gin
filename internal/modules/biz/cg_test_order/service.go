@@ -16,15 +16,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service è®¢å•æœåŠ¡ã€‚
+// Service 订单服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º biz.cg_test_order æ¨¡å—ã€‚
+// New 构建 biz.cg_test_order 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -35,7 +35,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºè®¢å•ã€‚
+// Create 创建订单。
 func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
 	row := Order{
 		ID: idgen.Next(), OrderNo: req.OrderNo, Name: req.Name, CustomerName: req.CustomerName,
@@ -47,7 +47,7 @@ func (s *Service) Create(ctx context.Context, accountID string, req AddParam) er
 	return s.repo.CreateOrder(ctx, &row)
 }
 
-// Update æ›´æ–°è®¢å•ã€‚
+// Update 更新订单。
 func (s *Service) Update(ctx context.Context, accountID string, req EditParam) error {
 	return s.repo.UpdateOrder(ctx, req.ID, map[string]any{
 		"order_no": req.OrderNo, "name": req.Name, "customer_name": req.CustomerName, "customer_phone": req.CustomerPhone,
@@ -57,24 +57,24 @@ func (s *Service) Update(ctx context.Context, accountID string, req EditParam) e
 	})
 }
 
-// Delete æ‰¹é‡åˆ é™¤è®¢å•ã€‚
+// Delete 批量删除订单。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteOrdersByIDs(ctx, ids)
 }
 
-// Detail è®¢å•è¯¦æƒ…ã€‚
+// Detail 订单详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Order, error) {
 	return s.repo.GetOrderByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam) (rows []Order, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageOrders(ctx, p)
 	return rows, total, current, size, err
 }
 
-// CreateItem åˆ›å»ºæ˜Žç»†ã€‚
+// CreateItem 创建明细。
 func (s *Service) CreateItem(ctx context.Context, accountID string, req ItemAddParam) error {
 	row := OrderItem{
 		ID: idgen.Next(), OrderID: req.OrderID, SKUCode: req.SKUCode, Name: req.Name, Category: req.Category,
@@ -85,7 +85,7 @@ func (s *Service) CreateItem(ctx context.Context, accountID string, req ItemAddP
 	return s.repo.CreateItem(ctx, &row)
 }
 
-// UpdateItem æ›´æ–°æ˜Žç»†ã€‚
+// UpdateItem 更新明细。
 func (s *Service) UpdateItem(ctx context.Context, accountID string, req ItemEditParam) error {
 	return s.repo.UpdateItem(ctx, req.ID, map[string]any{
 		"order_id": req.OrderID, "sku_code": req.SKUCode, "name": req.Name, "category": req.Category,
@@ -95,17 +95,17 @@ func (s *Service) UpdateItem(ctx context.Context, accountID string, req ItemEdit
 	})
 }
 
-// DeleteItems æ‰¹é‡åˆ é™¤æ˜Žç»†ã€‚
+// DeleteItems 批量删除明细。
 func (s *Service) DeleteItems(ctx context.Context, ids []string) error {
 	return s.repo.DeleteItemsByIDs(ctx, ids)
 }
 
-// DetailItem æ˜Žç»†è¯¦æƒ…ã€‚
+// DetailItem 明细详情。
 func (s *Service) DetailItem(ctx context.Context, id string) (*OrderItem, error) {
 	return s.repo.GetItemByID(ctx, id)
 }
 
-// PageItems æ˜Žç»†åˆ†é¡µã€‚
+// PageItems 明细分页。
 func (s *Service) PageItems(ctx context.Context, p ItemPageParam) (rows []OrderItem, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageItems(ctx, p)

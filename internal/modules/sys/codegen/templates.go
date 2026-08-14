@@ -4,8 +4,8 @@
 
 package codegen
 
-// ç”Ÿæˆ model.goï¼ˆGORM å®žä½“ï¼‰ã€‚
-const goModelTmpl = `// Package {{.Main.Package}} ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+// 生成 model.go（GORM 实体）。
+const goModelTmpl = `// Package {{.Main.Package}} 由 HEI 代码生成器生成。
 package {{.Main.Package}}
 
 import (
@@ -17,7 +17,7 @@ import (
 {{- end }}
 )
 
-// {{.Main.EntityName}} å¯¹åº”è¡¨ {{.Main.TableName}}ã€‚
+// {{.Main.EntityName}} 对应表 {{.Main.TableName}}。
 //
 // Author: {{.Author}}
 type {{.Main.EntityName}} struct {
@@ -26,11 +26,11 @@ type {{.Main.EntityName}} struct {
 {{- end }}
 }
 
-// TableName è¿”å›ž {{.Main.EntityName}} å¯¹åº”çš„æ•°æ®åº“è¡¨åã€‚
+// TableName 返回 {{.Main.EntityName}} 对应的数据库表名。
 func ({{.Main.EntityName}}) TableName() string { return "{{.Main.TableName}}" }
 `
 
-// ç”Ÿæˆ param.goï¼ˆAdd/Edit/IDs/Pageï¼‰ã€‚
+// 生成 param.go（Add/Edit/IDs/Page）。
 const goParamTmpl = `package {{.Main.Package}}
 
 import (
@@ -40,7 +40,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// AddParam åˆ›å»º{{.Main.BusinessName}}å…¥å‚ã€‚
+// AddParam 创建{{.Main.BusinessName}}入参。
 //
 // Author: {{.Author}}
 type AddParam struct {
@@ -61,7 +61,7 @@ type AddParam struct {
 {{- end }}
 }
 
-// EditParam æ›´æ–°{{.Main.BusinessName}}å…¥å‚ã€‚
+// EditParam 更新{{.Main.BusinessName}}入参。
 //
 // Author: {{.Author}}
 type EditParam struct {
@@ -69,14 +69,14 @@ type EditParam struct {
 	AddParam
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: {{.Author}}
 type IDsParam struct {
 	IDs []string ` + "`" + ` + "` + "`" + `" + ` + "`" + `json:"ids" binding:"required"` + "`" + ` + "` + "`" + `" + ` + "`" + `
 }
 
-// PageParam {{.Main.BusinessName}}åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam {{.Main.BusinessName}}分页查询。
 //
 // Author: {{.Author}}
 type PageParam struct {
@@ -87,14 +87,14 @@ type PageParam struct {
 }
 `
 
-// ç”Ÿæˆ result.goã€‚
+// 生成 result.go。
 const goResultTmpl = `package {{.Main.Package}}
 
-// DetailResult {{.Main.BusinessName}}è¯¦æƒ…ï¼ˆä¸Žå®žä½“ä¸€è‡´ï¼‰ã€‚
+// DetailResult {{.Main.BusinessName}}详情（与实体一致）。
 type DetailResult = {{.Main.EntityName}}
 `
 
-// ç”Ÿæˆ repo.goã€‚
+// 生成 repo.go。
 const goRepoTmpl = `package {{.Main.Package}}
 
 import (
@@ -103,34 +103,34 @@ import (
 	"gorm.io/gorm"
 )
 
-// Repo {{.Main.BusinessName}}æŒä¹…åŒ–ã€‚
+// Repo {{.Main.BusinessName}}持久化。
 //
 // Author: {{.Author}}
 type Repo struct{ db *gorm.DB }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-// Create åˆ›å»º{{.Main.BusinessName}}ã€‚
+// Create 创建{{.Main.BusinessName}}。
 func (r *Repo) Create(ctx context.Context, row *{{.Main.EntityName}}) error {
 	return r.with(ctx).Create(row).Error
 }
 
-// Update æ›´æ–°{{.Main.BusinessName}}ã€‚
+// Update 更新{{.Main.BusinessName}}。
 func (r *Repo) Update(ctx context.Context, id string, updates map[string]any) error {
 	return r.with(ctx).Model(&{{.Main.EntityName}}{}).Where("{{.Main.PKName}} = ?", id).Updates(updates).Error
 }
 
-// DeleteByIDs æ‰¹é‡åˆ é™¤ã€‚
+// DeleteByIDs 批量删除。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
 	return r.with(ctx).Where("{{.Main.PKName}} IN ?", ids).Delete(&{{.Main.EntityName}}{}).Error
 }
 
-// GetByID æŒ‰ä¸»é”®æŸ¥è¯¢ã€‚
+// GetByID 按主键查询。
 func (r *Repo) GetByID(ctx context.Context, id string) (*{{.Main.EntityName}}, error) {
 	var row {{.Main.EntityName}}
 	if err := r.with(ctx).First(&row, "{{.Main.PKName}} = ?", id).Error; err != nil {
@@ -139,7 +139,7 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*{{.Main.EntityName}}, e
 	return &row, nil
 }
 
-// Page åˆ†é¡µæŸ¥è¯¢ã€‚
+// Page 分页查询。
 func (r *Repo) Page(ctx context.Context, p PageParam) (rows []{{.Main.EntityName}}, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&{{.Main.EntityName}}{})
@@ -158,7 +158,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam) (rows []{{.Main.EntityName
 }
 `
 
-// ç”Ÿæˆ service.goã€‚
+// 生成 service.go。
 const goServiceTmpl = `package {{.Main.Package}}
 
 import (
@@ -174,17 +174,17 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service {{.Main.BusinessName}}æœåŠ¡ã€‚
+// Service {{.Main.BusinessName}}服务。
 //
 // Author: {{.Author}}
 type Service struct {
 	repo *Repo
 }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º biz.{{.Main.Package}} æ¨¡å—ã€‚
+// New 构建 biz.{{.Main.Package}} 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -194,7 +194,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»º{{.Main.BusinessName}}ã€‚
+// Create 创建{{.Main.BusinessName}}。
 func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
 	row := fromAddParam(req)
 	row.ID = idgen.Next()
@@ -203,7 +203,7 @@ func (s *Service) Create(ctx context.Context, accountID string, req AddParam) er
 	return s.repo.Create(ctx, &row)
 }
 
-// Update æ›´æ–°{{.Main.BusinessName}}ã€‚
+// Update 更新{{.Main.BusinessName}}。
 func (s *Service) Update(ctx context.Context, accountID string, req EditParam) error {
 	row := fromAddParam(req.AddParam)
 	return s.repo.Update(ctx, req.ID, map[string]any{
@@ -214,17 +214,17 @@ func (s *Service) Update(ctx context.Context, accountID string, req EditParam) e
 	})
 }
 
-// Delete æ‰¹é‡åˆ é™¤ã€‚
+// Delete 批量删除。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail {{.Main.BusinessName}}è¯¦æƒ…ã€‚
+// Detail {{.Main.BusinessName}}详情。
 func (s *Service) Detail(ctx context.Context, id string) (*{{.Main.EntityName}}, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []{{.Main.EntityName}}, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.Page(ctx, p)
@@ -251,7 +251,7 @@ func mustJSON(v any) datatypes.JSON {
 }
 `
 
-// ç”Ÿæˆ handler.goã€‚
+// 生成 handler.go。
 const goHandlerTmpl = `package {{.Main.Package}}
 
 import (
@@ -271,11 +271,11 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
 		g := api.Group("{{.APIPrefix}}", middleware.RequireAccountType(security.AccountAdmin))
-		g.POST("/create", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:create", "åˆ›å»º{{.Main.BusinessName}}"), s.create)
-		g.POST("/update", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:update", "æ›´æ–°{{.Main.BusinessName}}"), s.update)
-		g.POST("/delete", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:delete", "åˆ é™¤{{.Main.BusinessName}}"), s.delete)
-		g.GET("/detail", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:detail", "{{.Main.BusinessName}}è¯¦æƒ…"), s.detail)
-		g.GET("/page", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:page", "{{.Main.BusinessName}}åˆ†é¡µ"), s.page)
+		g.POST("/create", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:create", "创建{{.Main.BusinessName}}"), s.create)
+		g.POST("/update", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:update", "更新{{.Main.BusinessName}}"), s.update)
+		g.POST("/delete", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:delete", "删除{{.Main.BusinessName}}"), s.delete)
+		g.GET("/detail", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:detail", "{{.Main.BusinessName}}详情"), s.detail)
+		g.GET("/page", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:page", "{{.Main.BusinessName}}分页"), s.page)
 	}
 }
 
@@ -344,7 +344,7 @@ func (s *Service) page(c *gin.Context) {
 }
 `
 
-// ç”Ÿæˆ register.goã€‚
+// 生成 register.go。
 const goRegisterTmpl = `package {{.Main.Package}}
 
 import (
@@ -352,7 +352,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œ {{.ModulePath}} æ¨¡å—ã€‚
+// init 自注册 {{.ModulePath}} 模块。
 func init() {
 	module.Register("{{.ModulePath}}", 90, func(d *module.Deps) module.Module {
 		return New(shared.FromModule(d))
@@ -360,11 +360,11 @@ func init() {
 }
 `
 
-// ç”Ÿæˆå‰ç«¯ api.tsã€‚
+// 生成前端 api.ts。
 const apiTsTmpl = `/**
- * ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+ * 由 HEI 代码生成器生成。
  * Author: {{.Author}}
- * ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+ * 生成时间：{{.GeneratedAt}}
  */
 import { API_PREFIX } from '@/constants/api'
 import { http } from '@/utils'
@@ -419,15 +419,15 @@ export function childRemove(data: any) {
 }
 {{- end }}`
 
-// ç”Ÿæˆ api/index.ts.append è¿½åŠ è¡Œã€‚
+// 生成 api/index.ts.append 追加行。
 const apiIndexAppendTmpl = `{{.ApiExportName}}
 `
 
-// ç”Ÿæˆèœå•æƒé™ SQLã€‚
-const menuPermissionSqlTmpl = `-- ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+// 生成菜单权限 SQL。
+const menuPermissionSqlTmpl = `-- 由 HEI 代码生成器生成。
 -- Author: {{.Author}}
--- ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
--- æ‰§è¡Œå‰è¯·æŒ‰éœ€è°ƒæ•´ module_id/parent_idã€‚
+-- 生成时间：{{.GeneratedAt}}
+-- 执行前请按需调整 module_id/parent_id。
 BEGIN;
 
 INSERT INTO sys_resource (id, parent_id, code, name, resource_type, module_id, path, component, icon, sort, is_visible, is_cache, is_affix, status, description, extra)
@@ -516,11 +516,11 @@ DO UPDATE SET description = EXCLUDED.description, updated_at = now();
 COMMIT;
 `
 
-// ç”Ÿæˆæ–°å¢ž/ç¼–è¾‘å¼¹çª—ã€‚
+// 生成新增/编辑弹窗。
 const modalFormTmpl = `<!--
-  ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+  由 HEI 代码生成器生成。
   Author: {{.Author}}
-  ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+  生成时间：{{.GeneratedAt}}
 -->
 
 <script setup lang="ts">
@@ -556,7 +556,7 @@ const state = reactive({
   formModel: normalizeFormData(),
 })
 
-const modalTitle = computed(() => state.dataId ? 'ç¼–è¾‘{{.Main.BusinessName}}' : 'æ–°å¢ž{{.Main.BusinessName}}')
+const modalTitle = computed(() => state.dataId ? '编辑{{.Main.BusinessName}}' : '新增{{.Main.BusinessName}}')
 const rules = computed<FormRules>(() => ({
 {{- range .Main.FormFields }}
 {{- if .IsRequired }}
@@ -564,13 +564,13 @@ const rules = computed<FormRules>(() => ({
 {{- if .IsBool }}
     {
       validator: () => typeof state.formModel.{{.Name}} === 'boolean',
-      message: 'è¯·é€‰æ‹©{{.Label}}',
+      message: '请选择{{.Label}}',
       trigger: 'change',
     },
 {{- else if or (eq .PythonType "int") (eq .PythonType "float") }}
     {
       validator: () => typeof state.formModel.{{.Name}} === 'number' && Number.isFinite(state.formModel.{{.Name}}),
-      message: 'è¯·è¾“å…¥{{.Label}}',
+      message: '请输入{{.Label}}',
       trigger: ['input', 'blur'],
     },
 {{- else }}
@@ -703,10 +703,10 @@ async function submitForm() {
 {{- end }}
     if (state.dataId) {
       await {{.ApiExportName}}.update({ ...payload, id: state.dataId })
-      window.$message.success('æ›´æ–°æˆåŠŸ')
+      window.$message.success('更新成功')
     } else {
       await {{.ApiExportName}}.create(payload)
-      window.$message.success('åˆ›å»ºæˆåŠŸ')
+      window.$message.success('创建成功')
     }
     emit('saved')
     closeModal()
@@ -760,18 +760,18 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">å–æ¶ˆ</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">ç¡®è®¤</NButton>
+        <NButton @click="closeModal">取消</NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
       </NSpace>
     </template>
   </NModal>
 </template>`
 
-// ç”Ÿæˆå‰ç«¯åˆ—è¡¨é¡µ index.vueã€‚
+// 生成前端列表页 index.vue。
 const indexVueTmpl = `<!--
-  ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+  由 HEI 代码生成器生成。
   Author: {{.Author}}
-  ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+  生成时间：{{.GeneratedAt}}
 -->
 
 <script setup lang="tsx">
@@ -826,7 +826,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => ` + "`" + `${itemCount} æ¡` + "`" + `,
+  prefix: ({ itemCount }) => ` + "`" + `${itemCount} 条` + "`" + `,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -858,13 +858,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 {{- end }}
 {{- end }}
   {
-    title: 'åˆ›å»ºæ—¶é—´',
+    title: '创建时间',
     path: 'created_at',
     width: 190,
     render: (row) => formatDateTime(row.created_at),
   },
   {
-    title: 'æ“ä½œ',
+    title: '操作',
     key: 'actions',
     width: 180,
     fixed: 'right',
@@ -919,10 +919,10 @@ function confirmDelete(value: string | string[]) {
     return
   }
   window.$dialog.warning({
-    title: ids.length > 1 ? 'æ‰¹é‡åˆ é™¤' : 'åˆ é™¤',
-    content: ids.length > 1 ? ` + "`" + `${ids.length} æ¡è®°å½•?` + "`" + ` : 'åˆ é™¤è¯¥è®°å½•?',
-    positiveText: 'ç¡®è®¤',
-    negativeText: 'å–æ¶ˆ',
+    title: ids.length > 1 ? '批量删除' : '删除',
+    content: ids.length > 1 ? ` + "`" + `${ids.length} 条记录?` + "`" + ` : '删除该记录?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteRows(ids),
   })
 }
@@ -930,7 +930,7 @@ function confirmDelete(value: string | string[]) {
 async function deleteRows(ids: string[]) {
   await {{.ApiExportName}}.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-  window.$message.success('åˆ é™¤æˆåŠŸ')
+  window.$message.success('删除成功')
   await fetchPage()
 }
 </script>
@@ -941,9 +941,9 @@ async function deleteRows(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'é‡ç½®' }"
-        :search-button-props="{ content: 'æœç´¢' }"
-        :collapse-button-props="{ content: searchForm.collapsed.value ? 'å±•å¼€' : 'æ”¶èµ·' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
+        :collapse-button-props="{ content: searchForm.collapsed.value ? '展开' : '收起' }"
       />
     </ProCard>
 
@@ -962,13 +962,13 @@ async function deleteRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('{{.PermissionPrefix}}:create')" type="primary" text title="æ–°å¢ž" @click="formModalRef.value?.openModal()">
+          <NButton v-if="hasPermission('{{.PermissionPrefix}}:create')" type="primary" text title="新增" @click="formModalRef.value?.openModal()">
             <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
           </NButton>
-          <NButton text title="åˆ·æ–°" :loading="state.loading" @click="fetchPage">
+          <NButton text title="刷新" :loading="state.loading" @click="fetchPage">
             <template #icon><NIcon><Icon icon="icon-park-outline:reload" /></NIcon></template>
           </NButton>
-          <NButton v-if="hasPermission('{{.PermissionPrefix}}:delete')" type="error" text title="æ‰¹é‡åˆ é™¤" :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
+          <NButton v-if="hasPermission('{{.PermissionPrefix}}:delete')" type="error" text title="批量删除" :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
             <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
           </NButton>
         </NFlex>
@@ -980,11 +980,11 @@ async function deleteRows(ids: string[]) {
   </NFlex>
 </template>`
 
-// ç”Ÿæˆè¯¦æƒ…å¼¹çª—ã€‚
+// 生成详情弹窗。
 const modalDetailTmpl = `<!--
-  ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+  由 HEI 代码生成器生成。
   Author: {{.Author}}
-  ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+  生成时间：{{.GeneratedAt}}
 -->
 
 <script setup lang="ts">
@@ -1036,7 +1036,7 @@ defineExpose({
 </script>
 
 <template>
-  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="{{.Main.BusinessName}}è¯¦æƒ…" style="width: 680px">
+  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="{{.Main.BusinessName}}详情" style="width: 680px">
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
@@ -1051,21 +1051,21 @@ defineExpose({
 {{- end }}
           </NDescriptionsItem>
 {{- end }}
-          <NDescriptionsItem label="åˆ›å»ºæ—¶é—´">{{"{{ formatDateTime(state.detail.created_at) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="åˆ›å»ºäºº">{{"{{ displayValue(state.detail.created_by) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="æ›´æ–°æ—¶é—´">{{"{{ formatDateTime(state.detail.updated_at) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="æ›´æ–°äºº">{{"{{ displayValue(state.detail.updated_by) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="创建时间">{{"{{ formatDateTime(state.detail.created_at) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="创建人">{{"{{ displayValue(state.detail.created_by) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">{{"{{ formatDateTime(state.detail.updated_at) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="更新人">{{"{{ displayValue(state.detail.updated_by) }}"}}</NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>
   </NModal>
 </template>`
 
-// ç”Ÿæˆå­è¡¨æ–°å¢ž/ç¼–è¾‘å¼¹çª—ã€‚
+// 生成子表新增/编辑弹窗。
 const childModalFormTmpl = `<!--
-  ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+  由 HEI 代码生成器生成。
   Author: {{.Author}}
-  ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+  生成时间：{{.GeneratedAt}}
 -->
 
 <script setup lang="ts">
@@ -1104,7 +1104,7 @@ const state = reactive({
   formModel: normalizeFormData(),
 })
 
-const modalTitle = computed(() => state.dataId ? 'ç¼–è¾‘{{.Sub.BusinessName}}' : 'æ–°å¢ž{{.Sub.BusinessName}}')
+const modalTitle = computed(() => state.dataId ? '编辑{{.Sub.BusinessName}}' : '新增{{.Sub.BusinessName}}')
 const rules = computed<FormRules>(() => ({
 {{- range .Sub.FormFields }}
 {{- if .IsRequired }}
@@ -1112,13 +1112,13 @@ const rules = computed<FormRules>(() => ({
 {{- if .IsBool }}
     {
       validator: () => typeof state.formModel.{{.Name}} === 'boolean',
-      message: 'è¯·é€‰æ‹©{{.Label}}',
+      message: '请选择{{.Label}}',
       trigger: 'change',
     },
 {{- else if or (eq .PythonType "int") (eq .PythonType "float") }}
     {
       validator: () => typeof state.formModel.{{.Name}} === 'number' && Number.isFinite(state.formModel.{{.Name}}),
-      message: 'è¯·è¾“å…¥{{.Label}}',
+      message: '请输入{{.Label}}',
       trigger: ['input', 'blur'],
     },
 {{- else }}
@@ -1197,10 +1197,10 @@ async function submitForm() {
     }
     if (state.dataId) {
       await {{.ApiExportName}}.childUpdate({ ...payload, id: state.dataId })
-      window.$message.success('æ›´æ–°æˆåŠŸ')
+      window.$message.success('更新成功')
     } else {
       await {{.ApiExportName}}.childCreate(payload)
-      window.$message.success('åˆ›å»ºæˆåŠŸ')
+      window.$message.success('创建成功')
     }
     emit('saved')
     closeModal()
@@ -1254,18 +1254,18 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">å–æ¶ˆ</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">ç¡®è®¤</NButton>
+        <NButton @click="closeModal">取消</NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
       </NSpace>
     </template>
   </NModal>
 </template>`
 
-// ç”Ÿæˆå­è¡¨è¯¦æƒ…å¼¹çª—ã€‚
+// 生成子表详情弹窗。
 const childModalDetailTmpl = `<!--
-  ç”± HEI ä»£ç ç”Ÿæˆå™¨ç”Ÿæˆã€‚
+  由 HEI 代码生成器生成。
   Author: {{.Author}}
-  ç”Ÿæˆæ—¶é—´ï¼š{{.GeneratedAt}}
+  生成时间：{{.GeneratedAt}}
 -->
 
 <script setup lang="ts">
@@ -1317,7 +1317,7 @@ defineExpose({
 </script>
 
 <template>
-  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="{{.Sub.BusinessName}}è¯¦æƒ…" style="width: 680px">
+  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="{{.Sub.BusinessName}}详情" style="width: 680px">
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
@@ -1332,10 +1332,10 @@ defineExpose({
 {{- end }}
           </NDescriptionsItem>
 {{- end }}
-          <NDescriptionsItem label="åˆ›å»ºæ—¶é—´">{{"{{ formatDateTime(state.detail.created_at) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="åˆ›å»ºäºº">{{"{{ displayValue(state.detail.created_by) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="æ›´æ–°æ—¶é—´">{{"{{ formatDateTime(state.detail.updated_at) }}"}}</NDescriptionsItem>
-          <NDescriptionsItem label="æ›´æ–°äºº">{{"{{ displayValue(state.detail.updated_by) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="创建时间">{{"{{ formatDateTime(state.detail.created_at) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="创建人">{{"{{ displayValue(state.detail.created_by) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">{{"{{ formatDateTime(state.detail.updated_at) }}"}}</NDescriptionsItem>
+          <NDescriptionsItem label="更新人">{{"{{ displayValue(state.detail.updated_by) }}"}}</NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

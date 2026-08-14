@@ -19,14 +19,14 @@ import (
 	"hei-gin/internal/framework/platform/storage"
 )
 
-// RouteRegistrar åœ¨ /api ä¸‹æŒ‚è½½è·¯ç”±ï¼ˆå®Œæ•´è·¯å¾„å†™åœ¨ handler ä¸Šï¼Œå¦‚ /v1/admin/...ï¼‰ã€‚
+// RouteRegistrar 在 /api 下挂载路由（完整路径写在 handler 上，如 /v1/admin/...）。
 //
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Schedule ä¿ç•™å­—æ®µåå…¼å®¹ï¼›æ–°ä»»åŠ¡è¯·ç”¨ Jobsï¼ˆSnailJob Handlerï¼‰ã€‚
+// Schedule 保留字段名兼容；新任务请用 Jobs（SnailJob Handler）。
 //
-// Deprecated: ä½¿ç”¨ Jobsã€‚
+// Deprecated: 使用 Jobs。
 //
 // Author: Charlie
 type Schedule struct {
@@ -35,7 +35,7 @@ type Schedule struct {
 	Run      func(ctx context.Context) error
 }
 
-// Job æ˜¯ SnailJob æ‰§è¡Œå™¨ Handlerï¼ˆName é¡»ä¸ŽæŽ§åˆ¶å° executor_info ä¸€è‡´ï¼‰ã€‚
+// Job 是 SnailJob 执行器 Handler（Name 须与控制台 executor_info 一致）。
 //
 // Author: Charlie
 type Job struct {
@@ -43,7 +43,7 @@ type Job struct {
 	Run  func(ctx context.Context, param string) error
 }
 
-// EventHandler è®¢é˜…å¹³å°ç”Ÿå‘½å‘¨æœŸ / é¢†åŸŸäº‹ä»¶ã€‚
+// EventHandler 订阅平台生命周期 / 领域事件。
 //
 // Author: Charlie
 type EventHandler struct {
@@ -51,7 +51,7 @@ type EventHandler struct {
 	Handler func(ctx context.Context, payload any) error
 }
 
-// Module ä¸ºæ’ä»¶å¥‘çº¦ã€‚å®˜æ–¹æ¨¡å—ç» Register æ³¨å†Œï¼›å‹¿åšæ‰«ç›˜å‘çŽ°ã€‚
+// Module 为插件契约。官方模块经 Register 注册；勿做扫盘发现。
 //
 // Author: Charlie
 type Module struct {
@@ -60,13 +60,13 @@ type Module struct {
 	Routes        []RouteRegistrar
 	Models        []any
 	Jobs          []Job
-	Schedules     []Schedule // Deprecated: è¯·ç”¨ Jobs
+	Schedules     []Schedule // Deprecated: 请用 Jobs
 	OnStart       []func(ctx context.Context) error
 	OnStop        []func(ctx context.Context) error
 	EventHandlers []EventHandler
 }
 
-// Deps æ˜¯ä¼ ç»™å„æ¨¡å—æž„é€ å™¨çš„è¿è¡Œæ—¶ä¾èµ–å›¾ã€‚
+// Deps 是传给各模块构造器的运行时依赖图。
 //
 // Author: Charlie
 type Deps struct {
@@ -81,7 +81,7 @@ type Deps struct {
 	services map[string]any
 }
 
-// Provide å‘ä¾èµ–è¢‹æ”¾å…¥å‘½åæœåŠ¡ï¼ˆä¾›è·¨æ¨¡å—æŽ¥çº¿ï¼Œå¦‚ account_finderï¼‰ã€‚
+// Provide 向依赖袋放入命名服务（供跨模块接线，如 account_finder）。
 func (d *Deps) Provide(name string, v any) {
 	if d.services == nil {
 		d.services = make(map[string]any)
@@ -89,7 +89,7 @@ func (d *Deps) Provide(name string, v any) {
 	d.services[name] = v
 }
 
-// Service å–å‡ºå‘½åæœåŠ¡ã€‚
+// Service 取出命名服务。
 func (d *Deps) Service(name string) (any, bool) {
 	if d.services == nil {
 		return nil, false
@@ -98,7 +98,7 @@ func (d *Deps) Service(name string) (any, bool) {
 	return v, ok
 }
 
-// Builder æ ¹æ® Deps æž„é€  Moduleã€‚
+// Builder 根据 Deps 构造 Module。
 //
 // Author: Charlie
 type Builder func(d *Deps) Module
@@ -114,20 +114,20 @@ var (
 	regList []registration
 )
 
-// Register åœ¨ä¸šåŠ¡åŒ… init ä¸­è°ƒç”¨ï¼Œç™»è®°æ¨¡å—æž„é€ å™¨ã€‚
+// Register 在业务包 init 中调用，登记模块构造器。
 func Register(name string, order int, build Builder) {
 	regMu.Lock()
 	defer regMu.Unlock()
 	regList = append(regList, registration{name: name, order: order, build: build})
 }
 
-// BuildAll æŒ‰ order è°ƒç”¨å…¨éƒ¨å·²æ³¨å†Œæž„é€ å™¨ï¼Œå†æŒ‰ disabled/enabled è¿‡æ»¤ã€‚
+// BuildAll 按 order 调用全部已注册构造器，再按 disabled/enabled 过滤。
 func BuildAll(d *Deps, disabled, enabledOnly []string) *Registry {
 	regMu.Lock()
 	list := append([]registration{}, regList...)
 	regMu.Unlock()
 
-	// æŒ‰ orderã€name æŽ’åºåŽä¾æ¬¡ Buildï¼ˆä¿è¯ account å…ˆäºŽ auth æä¾›æœåŠ¡ï¼‰
+	// 按 order、name 排序后依次 Build（保证 account 先于 auth 提供服务）
 	for i := 1; i < len(list); i++ {
 		j := i
 		for j > 0 && (list[j].order < list[j-1].order || (list[j].order == list[j-1].order && list[j].name < list[j-1].name)) {
@@ -150,14 +150,14 @@ func BuildAll(d *Deps, disabled, enabledOnly []string) *Registry {
 	return NewRegistry(mods, disabled, enabledOnly)
 }
 
-// Registry æ˜¯è¿‡æ»¤æŽ’åºåŽçš„æ¨¡å—åˆ—è¡¨ã€‚
+// Registry 是过滤排序后的模块列表。
 //
 // Author: Charlie
 type Registry struct {
 	Modules []Module
 }
 
-// NewRegistry æŒ‰åç§°è¿‡æ»¤å¹¶æŽ’åºã€‚
+// NewRegistry 按名称过滤并排序。
 func NewRegistry(mods []Module, disabled, enabledOnly []string) *Registry {
 	dis := map[string]struct{}{}
 	for _, n := range disabled {
@@ -189,7 +189,7 @@ func NewRegistry(mods []Module, disabled, enabledOnly []string) *Registry {
 	return &Registry{Modules: out}
 }
 
-// AllModels æ±‡æ€»å…¨éƒ¨æ¨¡å—çš„ GORM æ¨¡åž‹ã€‚
+// AllModels 汇总全部模块的 GORM 模型。
 func (r *Registry) AllModels() []any {
 	var models []any
 	for _, m := range r.Modules {
@@ -198,7 +198,7 @@ func (r *Registry) AllModels() []any {
 	return models
 }
 
-// MountRoutes ä¾æ¬¡æŒ‚è½½å„æ¨¡å—è·¯ç”±ã€‚
+// MountRoutes 依次挂载各模块路由。
 func (r *Registry) MountRoutes(api *gin.RouterGroup) {
 	for _, m := range r.Modules {
 		for _, reg := range m.Routes {
@@ -207,7 +207,7 @@ func (r *Registry) MountRoutes(api *gin.RouterGroup) {
 	}
 }
 
-// RunStart æŒ‰æ¨¡å—é¡ºåºæ‰§è¡Œ OnStart é’©å­ã€‚
+// RunStart 按模块顺序执行 OnStart 钩子。
 func (r *Registry) RunStart(ctx context.Context) error {
 	for _, m := range r.Modules {
 		for _, h := range m.OnStart {
@@ -219,7 +219,7 @@ func (r *Registry) RunStart(ctx context.Context) error {
 	return nil
 }
 
-// RunStop é€†åºæ‰§è¡Œ OnStop é’©å­ã€‚
+// RunStop 逆序执行 OnStop 钩子。
 func (r *Registry) RunStop(ctx context.Context) error {
 	for i := len(r.Modules) - 1; i >= 0; i-- {
 		m := r.Modules[i]

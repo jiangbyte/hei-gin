@@ -12,19 +12,19 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// Repo å…³ç³»æŒä¹…åŒ–ï¼ˆsys_iam_relationï¼‰ã€‚
+// Repo 关系持久化（sys_iam_relation）。
 //
 // Author: Charlie
 type Repo struct{ db *gorm.DB }
 
-// NewRepo æž„é€  Repoã€‚
+// NewRepo 构造 Repo。
 func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-// ListRelations åˆ—å‡ºä¸»ä½“æŒ‡å®šå…³ç³»ç±»åž‹çš„å…³ç³»è¡Œï¼ˆaccountType ä¸ºç©ºä¸è¿‡æ»¤ï¼‰ã€‚
+// ListRelations 列出主体指定关系类型的关系行（accountType 为空不过滤）。
 func (r *Repo) ListRelations(ctx context.Context, subjectType, subjectID, relationType, accountType string) ([]Relation, error) {
 	db := r.with(ctx).Where("subject_type = ? AND subject_id = ? AND relation_type = ? AND status = ?",
 		subjectType, subjectID, relationType, security.StatusEnabled)
@@ -38,7 +38,7 @@ func (r *Repo) ListRelations(ctx context.Context, subjectType, subjectID, relati
 	return rows, nil
 }
 
-// deleteSubjectRelations åˆ é™¤ä¸»ä½“æŒ‡å®šå…³ç³»ç±»åž‹çš„å…³ç³»ï¼ˆaccountType ä¸ºç©ºåˆ å…¨éƒ¨ç±»åž‹ï¼Œä¾›äº‹åŠ¡å†…è°ƒç”¨ï¼‰ã€‚
+// deleteSubjectRelations 删除主体指定关系类型的关系（accountType 为空删全部类型，供事务内调用）。
 func (r *Repo) deleteSubjectRelations(db *gorm.DB, subjectType, subjectID, relationType, accountType string) error {
 	q := db.Where("subject_type = ? AND subject_id = ? AND relation_type = ?", subjectType, subjectID, relationType)
 	if accountType != "" {
@@ -47,7 +47,7 @@ func (r *Repo) deleteSubjectRelations(db *gorm.DB, subjectType, subjectID, relat
 	return q.Delete(&Relation{}).Error
 }
 
-// DeleteBySubjectIDs æŒ‰ä¸»ä½“ id é›†åˆåˆ é™¤æŒ‡å®šå…³ç³»ç±»åž‹çš„å…³ç³»ï¼ˆæ‰¹é‡æ¸…æŒ‰é’®æƒé™ç»‘å®šç”¨ï¼‰ã€‚
+// DeleteBySubjectIDs 按主体 id 集合删除指定关系类型的关系（批量清按钮权限绑定用）。
 func (r *Repo) DeleteBySubjectIDs(ctx context.Context, subjectType string, subjectIDs []string, relationType string) error {
 	if len(subjectIDs) == 0 {
 		return nil
@@ -56,7 +56,7 @@ func (r *Repo) DeleteBySubjectIDs(ctx context.Context, subjectType string, subje
 		subjectType, subjectIDs, relationType).Delete(&Relation{}).Error
 }
 
-// CreateInBatches æ‰¹é‡æ’å…¥å…³ç³»è¡Œï¼ˆä¾›äº‹åŠ¡å†…è°ƒç”¨ï¼‰ã€‚
+// CreateInBatches 批量插入关系行（供事务内调用）。
 func (r *Repo) CreateInBatches(db *gorm.DB, rows []Relation) error {
 	return db.CreateInBatches(rows, 200).Error
 }

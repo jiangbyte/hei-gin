@@ -1,4 +1,4 @@
-// Package shared å‘ä¸šåŠ¡æ¨¡å—æ³¨å…¥çš„ä¾èµ–è§†å›¾ï¼ˆå­—æ®µåŒ framework/module.Depsï¼‰ã€‚
+// Package shared 向业务模块注入的依赖视图（字段同 framework/module.Deps）。
 //
 // Author: Charlie
 package shared
@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/platform/storage"
 )
 
-// Deps ä¸šåŠ¡æ¨¡å—æž„é€ æ—¶ä½¿ç”¨çš„è¿è¡Œæ—¶ä¾èµ–ã€‚
+// Deps 业务模块构造时使用的运行时依赖。
 //
 // Author: Charlie
 type Deps struct {
@@ -29,7 +29,7 @@ type Deps struct {
 	Notify   *notify.Facade
 }
 
-// FromModule ä»Ž framework æ³¨å†Œè¡¨ Deps è½¬æ¢ã€‚
+// FromModule 从 framework 注册表 Deps 转换。
 func FromModule(d *module.Deps) *Deps {
 	return &Deps{
 		Cfg:      d.Cfg,
@@ -43,5 +43,5 @@ func FromModule(d *module.Deps) *Deps {
 	}
 }
 
-// AccountFinderKey ä¾› auth ä»Ž Deps æœåŠ¡è¢‹å–å‡ºè´¦å·æŸ¥æ‰¾å®žçŽ°ã€‚
+// AccountFinderKey 供 auth 从 Deps 服务袋取出账号查找实现。
 const AccountFinderKey = "account_finder"

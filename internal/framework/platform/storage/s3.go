@@ -19,7 +19,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 )
 
-// S3 å…¼å®¹å¯¹è±¡å­˜å‚¨ï¼ˆAWS S3 / MinIO / OSSï¼‰ã€‚
+// S3 兼容对象存储（AWS S3 / MinIO / OSS）。
 //
 // Author: Charlie
 type S3 struct {
@@ -28,7 +28,7 @@ type S3 struct {
 	baseURL string
 }
 
-// NewS3 åˆ›å»º S3 å…¼å®¹ Providerï¼›endpoint éžç©ºæ—¶ä½¿ç”¨ path-styleï¼ˆMinIOï¼‰ã€‚
+// NewS3 创建 S3 兼容 Provider；endpoint 非空时使用 path-style（MinIO）。
 func NewS3(cfg config.StorageConfig) (*S3, error) {
 	if cfg.Bucket == "" {
 		return nil, fmt.Errorf("storage: bucket is required for provider %q", cfg.Provider)
@@ -83,7 +83,7 @@ func NewS3(cfg config.StorageConfig) (*S3, error) {
 	return &S3{client: client, bucket: cfg.Bucket, baseURL: base}, nil
 }
 
-// Put ä¸Šä¼ å¯¹è±¡å¹¶è¿”å›žå…¬å¼€ URLã€‚
+// Put 上传对象并返回公开 URL。
 func (s *S3) Put(ctx context.Context, objectName string, r io.Reader, size int64, contentType string) (string, error) {
 	key := strings.TrimLeft(objectName, "/")
 	in := &s3.PutObjectInput{
@@ -103,7 +103,7 @@ func (s *S3) Put(ctx context.Context, objectName string, r io.Reader, size int64
 	return s.PublicURL(key), nil
 }
 
-// Get ä¸‹è½½å¯¹è±¡æµã€‚
+// Get 下载对象流。
 func (s *S3) Get(ctx context.Context, objectName string) (io.ReadCloser, error) {
 	key := strings.TrimLeft(objectName, "/")
 	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
@@ -116,7 +116,7 @@ func (s *S3) Get(ctx context.Context, objectName string) (io.ReadCloser, error) 
 	return out.Body, nil
 }
 
-// Delete åˆ é™¤å¯¹è±¡ã€‚
+// Delete 删除对象。
 func (s *S3) Delete(ctx context.Context, objectName string) error {
 	key := strings.TrimLeft(objectName, "/")
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
@@ -126,7 +126,7 @@ func (s *S3) Delete(ctx context.Context, objectName string) error {
 	return err
 }
 
-// PublicURL æ‹¼å‡ºå¯¹è±¡å…¬å¼€è®¿é—® URLã€‚
+// PublicURL 拼出对象公开访问 URL。
 func (s *S3) PublicURL(objectName string) string {
 	key := strings.TrimLeft(objectName, "/")
 	if s.baseURL != "" {

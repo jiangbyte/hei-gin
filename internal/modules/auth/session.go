@@ -19,7 +19,7 @@ import (
 	"hei-gin/internal/framework/middleware"
 )
 
-// SessionAnalysis åœ¨çº¿ä¼šè¯åˆ†æžç»Ÿè®¡ã€‚
+// SessionAnalysis 在线会话分析统计。
 //
 // Author: Charlie
 type SessionAnalysis struct {
@@ -31,7 +31,7 @@ type SessionAnalysis struct {
 	MaxTokenCount      int `json:"max_token_count"`
 }
 
-// SessionAccount å•ä¸ªåœ¨çº¿è´¦å·çš„ä¼šè¯æ±‡æ€»ã€‚
+// SessionAccount 单个在线账号的会话汇总。
 //
 // Author: Charlie
 type SessionAccount struct {
@@ -51,7 +51,7 @@ type SessionAccount struct {
 	Tokens          []SessionTokenInfo `json:"tokens"`
 }
 
-// SessionTokenInfo å•ä¸ª Token ä¼šè¯è¯¦æƒ…ã€‚
+// SessionTokenInfo 单个 Token 会话详情。
 //
 // Author: Charlie
 type SessionTokenInfo struct {
@@ -67,7 +67,7 @@ type SessionTokenInfo struct {
 	RememberMe   bool       `json:"remember_me"`
 }
 
-// SessionPageParam åœ¨çº¿ä¼šè¯åˆ†é¡µæŸ¥è¯¢å‚æ•°ã€‚
+// SessionPageParam 在线会话分页查询参数。
 //
 // Author: Charlie
 type SessionPageParam struct {
@@ -79,7 +79,7 @@ type SessionPageParam struct {
 	Keyword     string `form:"keyword"`
 }
 
-// SessionExitTarget å¼ºåˆ¶ä¸‹çº¿ç›®æ ‡ã€‚
+// SessionExitTarget 强制下线目标。
 //
 // Author: Charlie
 type SessionExitTarget struct {
@@ -87,28 +87,28 @@ type SessionExitTarget struct {
 	AccountType string `json:"account_type"`
 }
 
-// SessionExitParam æ‰¹é‡å¼ºåˆ¶ä¸‹çº¿è¯·æ±‚ã€‚
+// SessionExitParam 批量强制下线请求。
 //
 // Author: Charlie
 type SessionExitParam struct {
 	Targets []SessionExitTarget `json:"targets" binding:"required"`
 }
 
-// SessionTokenExitParam æŒ‰ Token å¼ºåˆ¶ä¸‹çº¿è¯·æ±‚ã€‚
+// SessionTokenExitParam 按 Token 强制下线请求。
 //
 // Author: Charlie
 type SessionTokenExitParam struct {
 	Tokens []string `json:"tokens" binding:"required"`
 }
 
-// registerSessionRoutes æŒ‚è½½ç®¡ç†ç«¯åœ¨çº¿ä¼šè¯ APIã€‚
+// registerSessionRoutes 挂载管理端在线会话 API。
 func (s *Service) registerSessionRoutes(api *gin.RouterGroup) {
 	g := api.Group("/v1/admin/auth/sessions", middleware.RequireAccountType(security.AccountAdmin))
-	g.GET("/analysis", middleware.RequirePermission(s.perms, "auth:session:analysis", "ä¼šè¯åˆ†æž"), s.sessionAnalysis)
-	g.GET("/page", middleware.RequirePermission(s.perms, "auth:session:page", "ä¼šè¯åˆ†é¡µ"), s.sessionPage)
-	g.GET("/tokens", middleware.RequirePermission(s.perms, "auth:session:tokenlist", "ä¼šè¯ Token åˆ—è¡¨"), s.sessionTokens)
-	g.POST("/exit", middleware.RequirePermission(s.perms, "auth:session:exit", "ä¼šè¯å¼ºåˆ¶ä¸‹çº¿"), s.sessionExit)
-	g.POST("/token/exit", middleware.RequirePermission(s.perms, "auth:session:tokenexit", "Token å¼ºåˆ¶ä¸‹çº¿"), s.sessionTokenExit)
+	g.GET("/analysis", middleware.RequirePermission(s.perms, "auth:session:analysis", "会话分析"), s.sessionAnalysis)
+	g.GET("/page", middleware.RequirePermission(s.perms, "auth:session:page", "会话分页"), s.sessionPage)
+	g.GET("/tokens", middleware.RequirePermission(s.perms, "auth:session:tokenlist", "会话 Token 列表"), s.sessionTokens)
+	g.POST("/exit", middleware.RequirePermission(s.perms, "auth:session:exit", "会话强制下线"), s.sessionExit)
+	g.POST("/token/exit", middleware.RequirePermission(s.perms, "auth:session:tokenexit", "Token 强制下线"), s.sessionTokenExit)
 }
 
 func (s *Service) sessionAnalysis(c *gin.Context) {
@@ -146,7 +146,7 @@ func (s *Service) analyzeSessions(c *gin.Context, accountType security.AccountTy
 		if len(tokens) == 0 {
 			continue
 		}
-		// æ ¡éªŒè¯¥è´¦å·å­˜åœ¨å¯¹åº”ç±»åž‹çš„ä¼šè¯
+		// 校验该账号存在对应类型的会话
 		matched := 0
 		for _, tok := range tokens {
 			one, _ := s.sessions.Get(c.Request.Context(), tok)
@@ -413,7 +413,7 @@ func maxInt(a, b int) int {
 	return b
 }
 
-// SessionFromAuthContext å¤ç”¨ auth åŒ… handler ç”¨çš„ä¼šè¯è¯»å–ã€‚
+// SessionFromAuthContext 复用 auth 包 handler 用的会话读取。
 func SessionFromAuthContext(c *gin.Context) *security.SessionPayload {
 	return contextx.Session(c.Request.Context())
 }

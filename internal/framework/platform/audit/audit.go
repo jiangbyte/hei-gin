@@ -1,4 +1,4 @@
-// Package audit æä¾›æ“ä½œå®¡è®¡å…¥é˜Ÿä¸Žå¼‚æ­¥è½åº“ï¼ˆoutbox + Redis Stream / è¿›ç¨‹å†…é˜Ÿåˆ—ï¼‰ã€‚
+// Package audit 提供操作审计入队与异步落库（outbox + Redis Stream / 进程内队列）。
 //
 // Author: Charlie
 package audit
@@ -19,7 +19,7 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 )
 
-// Event ä¸ºæ“ä½œå®¡è®¡è½½è·ï¼ˆå…¥é˜ŸåŽè½åº“ï¼‰ã€‚
+// Event 为操作审计载荷（入队后落库）。
 //
 // Author: Charlie
 type Event struct {
@@ -41,7 +41,7 @@ type Event struct {
 	OutboxID     string         `json:"outbox_id,omitempty"`
 }
 
-// LogRow å¯¹åº” sys_operation_audit_log è¡¨ã€‚
+// LogRow 对应 sys_operation_audit_log 表。
 //
 // Author: Charlie
 type LogRow struct {
@@ -63,10 +63,10 @@ type LogRow struct {
 	CreatedAt    time.Time       `gorm:"column:created_at;autoCreateTime"`
 }
 
-// TableName è¿”å›žå®¡è®¡æ—¥å¿—è¡¨åã€‚
+// TableName 返回审计日志表名。
 func (LogRow) TableName() string { return "sys_operation_audit_log" }
 
-// OutboxRow å¯¹åº” sys_operation_audit_outbox è¡¨ã€‚
+// OutboxRow 对应 sys_operation_audit_outbox 表。
 //
 // Author: Charlie
 type OutboxRow struct {
@@ -78,10 +78,10 @@ type OutboxRow struct {
 	ClaimedAt *time.Time `gorm:"column:claimed_at"`
 }
 
-// TableName è¿”å›ž outbox è¡¨åã€‚
+// TableName 返回 outbox 表名。
 func (OutboxRow) TableName() string { return "sys_operation_audit_outbox" }
 
-// Queue ä¸ºå®¡è®¡é˜Ÿåˆ—ï¼ˆoutbox + Redis Streamï¼Œæˆ–è¿›ç¨‹å†… channel å›žé€€ï¼‰ã€‚
+// Queue 为审计队列（outbox + Redis Stream，或进程内 channel 回退）。
 //
 // Author: Charlie
 type Queue struct {
@@ -94,7 +94,7 @@ type Queue struct {
 	consumerName string
 }
 
-// NewQueue åˆ›å»ºå®¡è®¡é˜Ÿåˆ—ï¼ˆæ”¯æŒ Redis Stream ä¸Žè¿›ç¨‹å†…å›žé€€ï¼‰ã€‚
+// NewQueue 创建审计队列（支持 Redis Stream 与进程内回退）。
 //
 // Author: Charlie
 func NewQueue(db *gorm.DB, rdb *redis.Client, cfg config.AuditConfig) *Queue {
@@ -121,7 +121,7 @@ func NewQueue(db *gorm.DB, rdb *redis.Client, cfg config.AuditConfig) *Queue {
 	}
 }
 
-// Start å¯åŠ¨å¼‚æ­¥è½åº“æ¶ˆè´¹è€…ã€‚
+// Start 启动异步落库消费者。
 //
 // Author: Charlie
 func (q *Queue) Start(parent context.Context) {
@@ -138,7 +138,7 @@ func (q *Queue) Start(parent context.Context) {
 	}()
 }
 
-// Stop åœæ­¢æ¶ˆè´¹è€…å¹¶ç­‰å¾…é€€å‡ºã€‚
+// Stop 停止消费者并等待退出。
 //
 // Author: Charlie
 func (q *Queue) Stop() {
@@ -148,7 +148,7 @@ func (q *Queue) Stop() {
 	q.wg.Wait()
 }
 
-// Publish å†™å…¥ outboxï¼Œå† XADD æˆ–è¿›ç¨‹å†…å…¥é˜Ÿã€‚
+// Publish 写入 outbox，再 XADD 或进程内入队。
 //
 // Author: Charlie
 func (q *Queue) Publish(ev Event) {
@@ -182,7 +182,7 @@ func (q *Queue) Publish(ev Event) {
 			Stream: q.cfg.StreamKey,
 			Values: fields,
 		}).Err(); err != nil {
-			// Stream å¤±è´¥æ—¶åŒæ­¥è½åº“ï¼Œé¿å…ä»…å…¥ channel å´æ— æ¶ˆè´¹è€…
+			// Stream 失败时同步落库，避免仅入 channel 却无消费者
 			if perr := q.persist(context.Background(), ev); perr == nil {
 				q.markOutboxDone(context.Background(), outboxID)
 			}
@@ -200,7 +200,7 @@ func (q *Queue) enqueue(ev Event) {
 	select {
 	case q.ch <- ev:
 	default:
-		// åŽ‹åŠ›ä¸‹ä¸¢å¼ƒï¼Œé¿å…é˜»å¡žä¸šåŠ¡è¯·æ±‚
+		// 压力下丢弃，避免阻塞业务请求
 	}
 }
 
@@ -258,7 +258,7 @@ func (q *Queue) consumeStream(ctx context.Context) {
 func (q *Queue) ensureGroup(ctx context.Context) {
 	err := q.rdb.XGroupCreateMkStream(ctx, q.cfg.StreamKey, q.cfg.ConsumerGroup, "0").Err()
 	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
-		// ç»„å·²å­˜åœ¨æˆ–å…¶å®ƒçž¬æ—¶é”™è¯¯ï¼šå¯åŠ¨åŽä»å¯ XREADGROUP
+		// 组已存在或其它瞬时错误：启动后仍可 XREADGROUP
 		_ = err
 	}
 }

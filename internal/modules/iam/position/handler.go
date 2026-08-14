@@ -21,11 +21,11 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/positions/create", admin, middleware.RequirePermission(d.Perms, "iam:position:create", "èŒä½åˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/positions/update", admin, middleware.RequirePermission(d.Perms, "iam:position:update", "èŒä½æ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/positions/delete", admin, middleware.RequirePermission(d.Perms, "iam:position:delete", "èŒä½åˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/positions/detail", admin, middleware.RequirePermission(d.Perms, "iam:position:detail", "èŒä½è¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/positions/page", admin, middleware.RequirePermission(d.Perms, "iam:position:page", "èŒä½åˆ†é¡µ"), s.page)
+		api.POST("/v1/admin/sys/positions/create", admin, middleware.RequirePermission(d.Perms, "iam:position:create", "职位创建"), s.create)
+		api.POST("/v1/admin/sys/positions/update", admin, middleware.RequirePermission(d.Perms, "iam:position:update", "职位更新"), s.update)
+		api.POST("/v1/admin/sys/positions/delete", admin, middleware.RequirePermission(d.Perms, "iam:position:delete", "职位删除"), s.delete)
+		api.GET("/v1/admin/sys/positions/detail", admin, middleware.RequirePermission(d.Perms, "iam:position:detail", "职位详情"), s.detail)
+		api.GET("/v1/admin/sys/positions/page", admin, middleware.RequirePermission(d.Perms, "iam:position:page", "职位分页"), s.page)
 	}
 }
 

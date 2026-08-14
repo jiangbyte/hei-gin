@@ -1,4 +1,4 @@
-// Package contextx åœ¨ context.Context ä¸ŠæŒ‚è½½è¯·æ±‚ IDã€ä¼šè¯ä¸Žè´¦å·ç­‰è¯·æ±‚çº§é”®ã€‚
+// Package contextx 在 context.Context 上挂载请求 ID、会话与账号等请求级键。
 //
 // Author: Charlie
 package contextx
@@ -19,52 +19,52 @@ const (
 	keyClientIP
 )
 
-// WithRequestID å†™å…¥è¯·æ±‚è¿½è¸ª IDã€‚
+// WithRequestID 写入请求追踪 ID。
 func WithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, keyRequestID, id)
 }
 
-// RequestID è¯»å–è¯·æ±‚è¿½è¸ª IDã€‚
+// RequestID 读取请求追踪 ID。
 func RequestID(ctx context.Context) string {
 	v, _ := ctx.Value(keyRequestID).(string)
 	return v
 }
 
-// WithSession å†™å…¥ä¼šè¯è½½è·ã€‚
+// WithSession 写入会话载荷。
 func WithSession(ctx context.Context, s *security.SessionPayload) context.Context {
 	return context.WithValue(ctx, keySession, s)
 }
 
-// Session è¯»å–ä¼šè¯è½½è·ï¼Œæœªç™»å½•æ—¶è¿”å›ž nilã€‚
+// Session 读取会话载荷，未登录时返回 nil。
 func Session(ctx context.Context) *security.SessionPayload {
 	v, _ := ctx.Value(keySession).(*security.SessionPayload)
 	return v
 }
 
-// WithAccount å†™å…¥è´¦å· ID ä¸Žè´¦å·ç±»åž‹ã€‚
+// WithAccount 写入账号 ID 与账号类型。
 func WithAccount(ctx context.Context, id string, t security.AccountType) context.Context {
 	ctx = context.WithValue(ctx, keyAccountID, id)
 	return context.WithValue(ctx, keyAccountType, t)
 }
 
-// AccountID è¯»å–å½“å‰è´¦å· IDã€‚
+// AccountID 读取当前账号 ID。
 func AccountID(ctx context.Context) string {
 	v, _ := ctx.Value(keyAccountID).(string)
 	return v
 }
 
-// AccountType è¯»å–å½“å‰è´¦å·ç±»åž‹ã€‚
+// AccountType 读取当前账号类型。
 func AccountType(ctx context.Context) security.AccountType {
 	v, _ := ctx.Value(keyAccountType).(security.AccountType)
 	return v
 }
 
-// WithClientIP å†™å…¥å®¢æˆ·ç«¯ IPã€‚
+// WithClientIP 写入客户端 IP。
 func WithClientIP(ctx context.Context, ip string) context.Context {
 	return context.WithValue(ctx, keyClientIP, ip)
 }
 
-// ClientIP è¯»å–å®¢æˆ·ç«¯ IPã€‚
+// ClientIP 读取客户端 IP。
 func ClientIP(ctx context.Context) string {
 	v, _ := ctx.Value(keyClientIP).(string)
 	return v

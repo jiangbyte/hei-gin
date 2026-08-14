@@ -10,7 +10,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// AddParam åˆ›å»ºåˆ†ç±»å…¥å‚ã€‚
+// AddParam 创建分类入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -24,7 +24,7 @@ type AddParam struct {
 	Extra       map[string]any `json:"extra"`
 }
 
-// EditParam æ›´æ–°åˆ†ç±»å…¥å‚ã€‚
+// EditParam 更新分类入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -32,14 +32,14 @@ type EditParam struct {
 	AddParam
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// PageParam åˆ†ç±»åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 分类分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -50,7 +50,7 @@ type PageParam struct {
 	ParentID string `form:"parent_id"`
 }
 
-// DocAddParam åˆ›å»ºæ–‡æ¡£å…¥å‚ã€‚
+// DocAddParam 创建文档入参。
 //
 // Author: Charlie
 type DocAddParam struct {
@@ -70,7 +70,7 @@ type DocAddParam struct {
 	Extra       map[string]any `json:"extra"`
 }
 
-// DocEditParam æ›´æ–°æ–‡æ¡£å…¥å‚ã€‚
+// DocEditParam 更新文档入参。
 //
 // Author: Charlie
 type DocEditParam struct {
@@ -78,7 +78,7 @@ type DocEditParam struct {
 	DocAddParam
 }
 
-// DocPageParam æ–‡æ¡£åˆ†é¡µæŸ¥è¯¢ã€‚
+// DocPageParam 文档分页查询。
 //
 // Author: Charlie
 type DocPageParam struct {

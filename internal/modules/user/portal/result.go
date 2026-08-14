@@ -8,7 +8,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// MeResult å½“å‰ç™»å½•ç”¨æˆ·æ¦‚è§ˆã€‚
+// MeResult 当前登录用户概览。
 //
 // Author: Charlie
 type MeResult struct {
@@ -24,7 +24,7 @@ type MeResult struct {
 	Profile        *Profile             `json:"profile"`
 }
 
-// AvatarResult å¤´åƒä¸Šä¼ ç»“æžœã€‚
+// AvatarResult 头像上传结果。
 //
 // Author: Charlie
 type AvatarResult struct {

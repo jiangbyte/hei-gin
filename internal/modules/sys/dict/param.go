@@ -6,7 +6,7 @@ package dict
 
 import "hei-gin/internal/framework/core/schema"
 
-// AddParam åˆ›å»ºå­—å…¸å…¥å‚ã€‚
+// AddParam 创建字典入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -20,7 +20,7 @@ type AddParam struct {
 	Sort     int     `json:"sort"`
 }
 
-// EditParam æ›´æ–°å­—å…¸å…¥å‚ã€‚
+// EditParam 更新字典入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -28,7 +28,7 @@ type EditParam struct {
 	AddParam
 }
 
-// PageParam å­—å…¸åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 字典分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -38,7 +38,7 @@ type PageParam struct {
 	Status   string `form:"status"`
 }
 
-// TreeParam å­—å…¸æ ‘æŸ¥è¯¢ã€‚
+// TreeParam 字典树查询。
 //
 // Author: Charlie
 type TreeParam struct {
@@ -46,7 +46,7 @@ type TreeParam struct {
 	Category string `form:"category"`
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {

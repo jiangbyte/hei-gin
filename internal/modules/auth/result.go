@@ -8,7 +8,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// LoginResult ç™»å½•ç»“æžœã€‚
+// LoginResult 登录结果。
 //
 // Author: Charlie
 type LoginResult struct {
@@ -18,7 +18,7 @@ type LoginResult struct {
 	PasswordExpired bool                 `json:"password_expired"`
 }
 
-// RegisterResult æ³¨å†Œç»“æžœã€‚
+// RegisterResult 注册结果。
 //
 // Author: Charlie
 type RegisterResult struct {
@@ -27,7 +27,7 @@ type RegisterResult struct {
 	AccountType security.AccountType `json:"account_type"`
 }
 
-// CaptchaResult éªŒè¯ç ç»“æžœã€‚
+// CaptchaResult 验证码结果。
 //
 // Author: Charlie
 type CaptchaResult struct {
@@ -36,7 +36,7 @@ type CaptchaResult struct {
 	ImageType   string `json:"image_type"`
 }
 
-// PasswordKeyResult å¯†ç åŠ å¯†å…¬é’¥ç»“æžœã€‚
+// PasswordKeyResult 密码加密公钥结果。
 //
 // Author: Charlie
 type PasswordKeyResult struct {
@@ -44,7 +44,7 @@ type PasswordKeyResult struct {
 	PublicKey string `json:"public_key"`
 }
 
-// LogoutResult ç™»å‡ºç»“æžœã€‚
+// LogoutResult 登出结果。
 //
 // Author: Charlie
 type LogoutResult struct {

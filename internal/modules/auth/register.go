@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œæ¨¡å— authã€‚
+// init 自注册模块 auth。
 func init() {
 	module.Register("auth", 30, func(d *module.Deps) module.Module {
 		var finder AccountFinder

@@ -22,7 +22,7 @@ import (
 	portaluser "hei-gin/internal/modules/user/portal"
 )
 
-// Lookup ä¾› auth æŒ‰èº«ä»½æˆ– ID è§£æžè´¦å·ã€‚
+// Lookup 供 auth 按身份或 ID 解析账号。
 //
 // Author: Charlie
 type Lookup interface {
@@ -30,7 +30,7 @@ type Lookup interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
 }
 
-// Service è´¦å·æœåŠ¡ï¼ˆèµ„æ–™ç» user æ¨¡å— Repoï¼ŒæŽˆæƒç» relation æ¨¡å—ï¼‰ã€‚
+// Service 账号服务（资料经 user 模块 Repo，授权经 relation 模块）。
 //
 // Author: Charlie
 type Service struct {
@@ -44,7 +44,7 @@ type Service struct {
 	clients   *client.Service
 }
 
-// NewService æž„é€ è´¦å·æœåŠ¡ã€‚
+// NewService 构造账号服务。
 func NewService(db *gorm.DB) *Service {
 	return &Service{
 		repo:      NewRepo(db),
@@ -58,7 +58,7 @@ func NewService(db *gorm.DB) *Service {
 	}
 }
 
-// New æž„å»º iam.account æ¨¡å—ã€‚
+// New 构建 iam.account 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return s.withJobs(module.Module{
@@ -68,10 +68,10 @@ func New(d *shared.Deps) module.Module {
 	})
 }
 
-// AsLookup è¿”å›ž auth æŸ¥æ‰¾æŽ¥å£ã€‚
+// AsLookup 返回 auth 查找接口。
 func (s *Service) AsLookup() Lookup { return s }
 
-// FindByIdentity æŒ‰èº«ä»½ç±»åž‹ä¸Žæ ‡è¯†æŸ¥æ‰¾è´¦å·ã€‚
+// FindByIdentity 按身份类型与标识查找账号。
 func (s *Service) FindByIdentity(ctx context.Context, identityType, identifier string) (*Account, *Identity, error) {
 	ident, err := s.repo.FindIdentity(ctx, identityType, identifier)
 	if err != nil {
@@ -84,12 +84,12 @@ func (s *Service) FindByIdentity(ctx context.Context, identityType, identifier s
 	return acc, ident, nil
 }
 
-// GetByID æŒ‰ä¸»é”®æŸ¥è¯¢è´¦å·ã€‚
+// GetByID 按主键查询账号。
 func (s *Service) GetByID(ctx context.Context, id string) (*Account, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// FindEnabledByIdentity è§£æžå·²å¯ç”¨è´¦å·çš„ç™»å½•èº«ä»½ï¼ˆå®žçŽ° AccountFinderï¼‰ã€‚
+// FindEnabledByIdentity 解析已启用账号的登录身份（实现 AccountFinder）。
 func (s *Service) FindEnabledByIdentity(ctx context.Context, accountType security.AccountType, identityType, identifier string) (accountID, passwordHash string, err error) {
 	acc, _, err := s.FindByIdentity(ctx, identityType, identifier)
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *Service) FindEnabledByIdentity(ctx context.Context, accountType securit
 	return acc.ID, acc.PasswordHash, nil
 }
 
-// EnsureSuperPermissions ä»Ž sys_iam_relation è§£æžè§’è‰²æƒé™é”®ä¸ŽæŽˆæƒã€‚
+// EnsureSuperPermissions 从 sys_iam_relation 解析角色权限键与授权。
 func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) (keys []string, grants []security.PermissionGrant, err error) {
 	roleIDs, err := s.repo.ListRoleIDs(ctx, accountID)
 	if err != nil {
@@ -131,7 +131,7 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 	return keys, grants, nil
 }
 
-// GetEnabledAccount è¿”å›žå·²å¯ç”¨è´¦å·ç±»åž‹ã€‚
+// GetEnabledAccount 返回已启用账号类型。
 func (s *Service) GetEnabledAccount(ctx context.Context, accountID string) (security.AccountType, error) {
 	acc, err := s.repo.GetByID(ctx, accountID)
 	if err != nil {
@@ -143,12 +143,12 @@ func (s *Service) GetEnabledAccount(ctx context.Context, accountID string) (secu
 	return security.AccountType(acc.AccountType), nil
 }
 
-// UpdatePasswordHash æ›´æ–°å¯†ç å“ˆå¸Œã€‚
+// UpdatePasswordHash 更新密码哈希。
 func (s *Service) UpdatePasswordHash(ctx context.Context, accountID, passwordHash string) error {
 	return s.repo.UpdatePasswordHash(ctx, accountID, passwordHash)
 }
 
-// Create åˆ›å»ºè´¦å·å¹¶å†™å…¥å¯¹åº”ç«¯èµ„æ–™ã€‚
+// Create 创建账号并写入对应端资料。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	hash, err := security.HashPassword(req.Password)
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	})
 }
 
-// Update æ›´æ–°è´¦å·ä¸Žèµ„æ–™ã€‚
+// Update 更新账号与资料。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
 	st := req.AccountStatus
 	if st == "" {
@@ -208,7 +208,7 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	})
 }
 
-// Delete å…ˆåˆ åŒç«¯èµ„æ–™ï¼Œå†åˆ èº«ä»½ä¸Žè´¦å·ã€‚
+// Delete 先删双端资料，再删身份与账号。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	if err := s.admin.DeleteByAccountIDs(ctx, ids); err != nil {
 		return err
@@ -219,12 +219,12 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail è´¦å·è¯¦æƒ…ã€‚
+// Detail 账号详情。
 func (s *Service) Detail(ctx context.Context, id string) (*AccountResult, error) {
 	return s.loadDetail(ctx, id)
 }
 
-// Page åˆ†é¡µï¼›sess å¯é€‰ï¼Œä¼ å…¥æ—¶æŒ‰æ•°æ®èŒƒå›´è¿‡æ»¤ã€‚
+// Page 分页；sess 可选，传入时按数据范围过滤。
 func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (records []AccountResult, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err := s.repo.PageAccounts(ctx, p, sess)

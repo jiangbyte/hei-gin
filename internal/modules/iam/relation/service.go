@@ -17,7 +17,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// New æž„å»º iam.relation æ¨¡å—ã€‚
+// New 构建 iam.relation 模块。
 func New(_ *shared.Deps) module.Module {
 	return module.Module{
 		Name:   "iam.relation",
@@ -25,15 +25,15 @@ func New(_ *shared.Deps) module.Module {
 	}
 }
 
-// Service å…³ç³»æœåŠ¡ï¼šä¸»ä½“-ç›®æ ‡å…³ç³»æŸ¥è¯¢ä¸Žå…¨é‡æ›¿æ¢æŽˆæƒï¼ˆå…ˆåˆ åŽæ’ï¼Œäº‹åŠ¡ï¼‰ã€‚
+// Service 关系服务：主体-目标关系查询与全量替换授权（先删后插，事务）。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ å…³ç³»æœåŠ¡ã€‚
+// NewService 构造关系服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// ListTargetIDs åˆ—å‡ºä¸»ä½“å·²å…³è”ç›®æ ‡ IDï¼ˆaccountType ä¸ºç©ºä¸è¿‡æ»¤ï¼‰ã€‚
+// ListTargetIDs 列出主体已关联目标 ID（accountType 为空不过滤）。
 func (s *Service) ListTargetIDs(ctx context.Context, subjectType, subjectID, relationType, accountType string) ([]string, error) {
 	rows, err := s.repo.ListRelations(ctx, subjectType, subjectID, relationType, accountType)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *Service) ListTargetIDs(ctx context.Context, subjectType, subjectID, rel
 	return out, nil
 }
 
-// ListDeptGrants åˆ—å‡ºè´¦å·å·²æ‹¥æœ‰éƒ¨é—¨æŽˆäºˆæ˜Žç»†ã€‚
+// ListDeptGrants 列出账号已拥有部门授予明细。
 func (s *Service) ListDeptGrants(ctx context.Context, accountID, accountType string) ([]DeptGrantInfo, error) {
 	rows, err := s.repo.ListRelations(ctx, SubjectAccount, accountID, RelAccountDept, accountType)
 	if err != nil {
@@ -71,7 +71,7 @@ func (s *Service) ListDeptGrants(ctx context.Context, accountID, accountType str
 	return out, nil
 }
 
-// ListResourceGrants åˆ—å‡ºä¸»ä½“å·²æ‹¥æœ‰èµ„æºæŽˆäºˆæ˜Žç»†ï¼ˆç®¡ç†ç«¯/å®¢æˆ·ç«¯ï¼‰ã€‚
+// ListResourceGrants 列出主体已拥有资源授予明细（管理端/客户端）。
 func (s *Service) ListResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string) ([]ResourceGrantInfo, error) {
 	rows, err := s.repo.ListRelations(ctx, subjectType, subjectID, relationType, accountType)
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *Service) ListResourceGrants(ctx context.Context, subjectType, subjectID
 	return out, nil
 }
 
-// ReplaceTargetIDs å…ˆåˆ åŽæ’å…¨é‡æ›¿æ¢ä¸»ä½“-ç›®æ ‡ç®€å•å…³ç³»ï¼ˆè§’è‰²/ç”¨æˆ·ç»„ç­‰ï¼‰ã€‚
+// ReplaceTargetIDs 先删后插全量替换主体-目标简单关系（角色/用户组等）。
 func (s *Service) ReplaceTargetIDs(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, targetIDs []string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
@@ -113,7 +113,7 @@ func (s *Service) ReplaceTargetIDs(ctx context.Context, subjectType, subjectID, 
 	})
 }
 
-// ReplaceDeptGrants å…ˆåˆ åŽæ’å…¨é‡æ›¿æ¢è´¦å·-éƒ¨é—¨æŽˆäºˆã€‚
+// ReplaceDeptGrants 先删后插全量替换账号-部门授予。
 func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType string, grants []DeptGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, SubjectAccount, accountID, RelAccountDept, accountType); err != nil {
@@ -136,7 +136,7 @@ func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType 
 	})
 }
 
-// ReplaceResourceGrants å…ˆåˆ åŽæ’å…¨é‡æ›¿æ¢ä¸»ä½“-èµ„æºæŽˆäºˆï¼ˆç®¡ç†ç«¯/å®¢æˆ·ç«¯ï¼‰ã€‚
+// ReplaceResourceGrants 先删后插全量替换主体-资源授予（管理端/客户端）。
 func (s *Service) ReplaceResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, grants []ResourceGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
@@ -159,7 +159,7 @@ func (s *Service) ReplaceResourceGrants(ctx context.Context, subjectType, subjec
 	})
 }
 
-// ReplaceSubjectAccounts å…ˆåˆ åŽæ’å…¨é‡æ›¿æ¢ä¸»ä½“-è´¦å·æˆå‘˜ï¼ˆGROUP_USER/ROLE_USERï¼‰ã€‚
+// ReplaceSubjectAccounts 先删后插全量替换主体-账号成员（GROUP_USER/ROLE_USER）。
 func (s *Service) ReplaceSubjectAccounts(ctx context.Context, subjectType, subjectID, relationType string, accountIDs []string, accountTypes map[string]string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, ""); err != nil {
@@ -188,7 +188,7 @@ func (s *Service) ReplaceSubjectAccounts(ctx context.Context, subjectType, subje
 	})
 }
 
-// BindResourcePermissions å…ˆåˆ åŽæ’ä¸ºèµ„æºç»‘å®šæƒé™é”®ï¼ˆRESOURCE_PERMISSION/CLIENT_RESOURCE_PERMISSIONï¼‰ã€‚
+// BindResourcePermissions 先删后插为资源绑定权限键（RESOURCE_PERMISSION/CLIENT_RESOURCE_PERMISSION）。
 func (s *Service) BindResourcePermissions(ctx context.Context, subjectType, subjectID, relationType, accountType string, permissionKeys []string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
@@ -212,12 +212,12 @@ func (s *Service) BindResourcePermissions(ctx context.Context, subjectType, subj
 	})
 }
 
-// DeleteBySubjectIDs æŒ‰ä¸»ä½“ id é›†åˆåˆ é™¤æŒ‡å®šå…³ç³»ç±»åž‹çš„å…³ç³»ã€‚
+// DeleteBySubjectIDs 按主体 id 集合删除指定关系类型的关系。
 func (s *Service) DeleteBySubjectIDs(ctx context.Context, subjectType string, subjectIDs []string, relationType string) error {
 	return s.repo.DeleteBySubjectIDs(ctx, subjectType, subjectIDs, relationType)
 }
 
-// newRelation æž„é€ é»˜è®¤å¯ç”¨å…³ç³»è¡Œã€‚
+// newRelation 构造默认启用关系行。
 func newRelation(subjectType, subjectID, accountType, relationType, targetType, targetID string) Relation {
 	return Relation{
 		ID:                 idgen.Next(),
@@ -242,7 +242,7 @@ func orDef(s, d string) string {
 	return s
 }
 
-// parseStringList è§£æž jsonb å­—ç¬¦ä¸²æ•°ç»„ã€‚
+// parseStringList 解析 jsonb 字符串数组。
 func parseStringList(raw datatypes.JSON) []string {
 	var out []string
 	if len(raw) == 0 {
@@ -257,7 +257,7 @@ func parseStringList(raw datatypes.JSON) []string {
 	return out
 }
 
-// jsonList å°†å­—ç¬¦ä¸²æ•°ç»„ç¼–ç ä¸º jsonbã€‚
+// jsonList 将字符串数组编码为 jsonb。
 func jsonList(items []string) datatypes.JSON {
 	if items == nil {
 		items = []string{}

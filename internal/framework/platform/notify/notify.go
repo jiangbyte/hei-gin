@@ -1,4 +1,4 @@
-// Package notify æä¾›é‚®ä»¶ / çŸ­ä¿¡ / æŽ¨é€é€šçŸ¥é—¨é¢ã€‚
+// Package notify 提供邮件 / 短信 / 推送通知门面。
 //
 // Author: Charlie
 package notify
@@ -18,7 +18,7 @@ import (
 	"hei-gin/internal/framework/core/logger"
 )
 
-// Facade é€šçŸ¥å‘é€é—¨é¢ã€‚
+// Facade 通知发送门面。
 //
 // Author: Charlie
 type Facade struct {
@@ -26,12 +26,12 @@ type Facade struct {
 	db  *gorm.DB
 }
 
-// NewFacade æž„é€ é€šçŸ¥é—¨é¢ã€‚
+// NewFacade 构造通知门面。
 func NewFacade(cfg config.NotifyConfig, db *gorm.DB) *Facade {
 	return &Facade{cfg: cfg, db: db}
 }
 
-// SendMail å‘é€çº¯æ–‡æœ¬é‚®ä»¶ã€‚
+// SendMail 发送纯文本邮件。
 func (f *Facade) SendMail(ctx context.Context, to, subject, body string) error {
 	_ = ctx
 	if !f.cfg.Mail.Enabled {
@@ -57,7 +57,7 @@ func (f *Facade) SendMail(ctx context.Context, to, subject, body string) error {
 	return smtp.SendMail(addr, auth, from, []string{to}, msg)
 }
 
-// SendSMS å‘é€çŸ­ä¿¡ï¼ˆæœªå¯ç”¨æ—¶ä»…æ‰“æ—¥å¿—ï¼‰ã€‚
+// SendSMS 发送短信（未启用时仅打日志）。
 func (f *Facade) SendSMS(ctx context.Context, phone, content string) error {
 	_ = ctx
 	if !f.cfg.SMS.Enabled {
@@ -72,7 +72,7 @@ func (f *Facade) SendSMS(ctx context.Context, phone, content string) error {
 	return nil
 }
 
-// SendTemplated æŒ‰æ¨¡æ¿é”®å‘é€ï¼ˆå†…ç½®è‹¥å¹²è®¤è¯ç›¸å…³æ¨¡æ¿ï¼‰ã€‚
+// SendTemplated 按模板键发送（内置若干认证相关模板）。
 func (f *Facade) SendTemplated(ctx context.Context, template, to string, vars map[string]any) error {
 	subject, body := renderTemplate(template, vars)
 	channel := strings.ToUpper(strings.TrimSpace(template))
@@ -82,7 +82,7 @@ func (f *Facade) SendTemplated(ctx context.Context, template, to string, vars ma
 	return f.SendSMS(ctx, to, body)
 }
 
-// SendPush é€šç”¨ HTTP æŽ¨é€ï¼ˆæœªå¯ç”¨æ—¶æ‰“æ—¥å¿—ï¼‰ã€‚
+// SendPush 通用 HTTP 推送（未启用时打日志）。
 func (f *Facade) SendPush(ctx context.Context, title, body string) error {
 	_ = ctx
 	if !f.cfg.Push.Enabled || f.cfg.Push.URL == "" {
@@ -93,7 +93,7 @@ func (f *Facade) SendPush(ctx context.Context, title, body string) error {
 	return nil
 }
 
-// SendWebhook è‡ªå®šä¹‰ Webhookï¼ˆå¸¦å¯é€‰ secret æ—¥å¿—ï¼‰ã€‚
+// SendWebhook 自定义 Webhook（带可选 secret 日志）。
 func (f *Facade) SendWebhook(ctx context.Context, url, secret, payload string) error {
 	_ = ctx
 	_ = secret
@@ -104,7 +104,7 @@ func (f *Facade) SendWebhook(ctx context.Context, url, secret, payload string) e
 	return nil
 }
 
-// GetRuntimeString ä»Ž sys_config è¯»å–è¿è¡Œæ—¶å­—ç¬¦ä¸²ï¼›æ— åˆ™è¿”å›ž defã€‚
+// GetRuntimeString 从 sys_config 读取运行时字符串；无则返回 def。
 func (f *Facade) GetRuntimeString(ctx context.Context, key, def string) string {
 	if f == nil || f.db == nil || key == "" {
 		return def
@@ -130,15 +130,15 @@ func renderTemplate(template string, vars map[string]any) (subject, body string)
 	app := get("app_name", "HEI")
 	switch strings.ToUpper(strings.TrimSpace(template)) {
 	case "LOGIN_CODE", "LOGIN_CODE_MAIL":
-		return app + " ç™»å½•éªŒè¯ç ", fmt.Sprintf("æ‚¨çš„ç™»å½•éªŒè¯ç ä¸º %sï¼Œ%s åˆ†é’Ÿå†…æœ‰æ•ˆã€‚", get("code", ""), get("expire_minutes", "5"))
+		return app + " 登录验证码", fmt.Sprintf("您的登录验证码为 %s，%s 分钟内有效。", get("code", ""), get("expire_minutes", "5"))
 	case "RESET_PASSWORD_CODE":
 		link := get("reset_link", "")
 		if link != "" {
-			return app + " é‡ç½®å¯†ç ", fmt.Sprintf("è¯·ç‚¹å‡»é“¾æŽ¥é‡ç½®å¯†ç ï¼ˆ%s åˆ†é’Ÿå†…æœ‰æ•ˆï¼‰ï¼š\n%s", get("expire_minutes", "10"), link)
+			return app + " 重置密码", fmt.Sprintf("请点击链接重置密码（%s 分钟内有效）：\n%s", get("expire_minutes", "10"), link)
 		}
-		return app + " é‡ç½®å¯†ç ", fmt.Sprintf("æ‚¨çš„å¯†ç é‡ç½®ä»¤ç‰Œä¸º %sï¼Œ%s åˆ†é’Ÿå†…æœ‰æ•ˆã€‚", get("token", get("code", "")), get("expire_minutes", "10"))
+		return app + " 重置密码", fmt.Sprintf("您的密码重置令牌为 %s，%s 分钟内有效。", get("token", get("code", "")), get("expire_minutes", "10"))
 	default:
-		return app + " é€šçŸ¥", fmt.Sprintf("%v", vars)
+		return app + " 通知", fmt.Sprintf("%v", vars)
 	}
 }
 

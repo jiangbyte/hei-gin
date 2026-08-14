@@ -15,7 +15,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// AuthOptions ç™»å½•é¡µå…¬å¼€é…ç½®ï¼ˆå¯¹é½ hei-boot AuthOptionsResultï¼‰ã€‚
+// AuthOptions 登录页公开配置（对齐 hei-boot AuthOptionsResult）。
 //
 // Author: Charlie
 type AuthOptions struct {
@@ -36,20 +36,20 @@ type AuthOptions struct {
 	CopyrightURL               string                 `json:"copyright_url"`
 }
 
-// OauthProviderOption ä¸‰æ–¹ç™»å½•å…¥å£é€‰é¡¹ã€‚
+// OauthProviderOption 三方登录入口选项。
 //
 // Author: Charlie
-// RefreshResult åˆ·æ–°ä¼šè¯ç»“æžœï¼ˆä¸Ž LoginResult ä¸€è‡´ï¼‰ã€‚
+// RefreshResult 刷新会话结果（与 LoginResult 一致）。
 type RefreshResult = LoginResult
 
-// CancelParam æ³¨é”€è´¦å·å…¥å‚ã€‚
+// CancelParam 注销账号入参。
 //
 // Author: Charlie
 type CancelParam struct {
 	CancelReason *string `json:"cancel_reason"`
 }
 
-// AuthOptions è¯»å–ç™»å½•é¡µå…¬å¼€é…ç½®ã€‚
+// AuthOptions 读取登录页公开配置。
 func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountType) *AuthOptions {
 	o := &AuthOptions{
 		AccountType:                string(accountType),
@@ -69,7 +69,7 @@ func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountT
 	return o
 }
 
-// RefreshSession ç»­æœŸå½“å‰ä¼šè¯ Tokenã€‚
+// RefreshSession 续期当前会话 Token。
 func (s *Service) RefreshSession(ctx context.Context, accountType security.AccountType, clientIP, userAgent string) (*LoginResult, error) {
 	sess := contextx.Session(ctx)
 	if sess == nil {
@@ -78,7 +78,7 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 	if sess.AccountType != accountType {
 		return nil, fmt.Errorf("unauthorized")
 	}
-	// é‡æ–°è®¡ç®—æƒé™ï¼ˆè§’è‰²/èµ„æºå˜æ›´åŽåˆ·æ–°ç”Ÿæ•ˆï¼‰
+	// 重新计算权限（角色/资源变更后刷新生效）
 	keys, grants, err := s.accounts.EnsureSuperPermissions(ctx, sess.AccountID)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 	}, nil
 }
 
-// CancelAccount æ³¨é”€ï¼ˆåœç”¨ï¼‰å½“å‰è´¦å·å¹¶æ¸…ç†ä¼šè¯ã€‚
+// CancelAccount 注销（停用）当前账号并清理会话。
 func (s *Service) CancelAccount(ctx context.Context, accountType security.AccountType, clientIP, userAgent string, reason *string) error {
 	sess := contextx.Session(ctx)
 	if sess == nil {
@@ -117,7 +117,7 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 		return errAccountFinder
 	}
 	accountID := sess.AccountID
-	// æ ‡è®°è´¦å·å·²å–æ¶ˆï¼ˆè½¯æ³¨é”€ï¼‰ï¼šæ›´æ–° sys_account çŠ¶æ€
+	// 标记账号已取消（软注销）：更新 sys_account 状态
 	now := time.Now().UTC()
 	if err := s.db.WithContext(ctx).Table("sys_account").
 		Where("id = ?", accountID).
@@ -135,7 +135,7 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 	return nil
 }
 
-// sendRegisterCode é—¨æˆ·æ³¨å†Œå‘é€éªŒè¯ç ã€‚
+// sendRegisterCode 门户注册发送验证码。
 func (s *Service) sendRegisterCode(ctx context.Context, req SendLoginCodeParam) error {
 	if !s.cfg.Auth.PortalRegisterEnabled {
 		return errRegisterDisabled

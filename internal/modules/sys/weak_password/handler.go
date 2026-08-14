@@ -21,12 +21,12 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/weak-password/create", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:create", "å¼±å¯†ç åˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/weak-password/update", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:update", "å¼±å¯†ç æ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/weak-password/delete", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:delete", "å¼±å¯†ç åˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/weak-password/detail", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:detail", "å¼±å¯†ç è¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/weak-password/page", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:page", "å¼±å¯†ç åˆ†é¡µ"), s.page)
-		api.GET("/v1/admin/sys/weak-password/list", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:list", "å¼±å¯†ç åˆ—è¡¨"), s.list)
+		api.POST("/v1/admin/sys/weak-password/create", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:create", "弱密码创建"), s.create)
+		api.POST("/v1/admin/sys/weak-password/update", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:update", "弱密码更新"), s.update)
+		api.POST("/v1/admin/sys/weak-password/delete", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:delete", "弱密码删除"), s.delete)
+		api.GET("/v1/admin/sys/weak-password/detail", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:detail", "弱密码详情"), s.detail)
+		api.GET("/v1/admin/sys/weak-password/page", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:page", "弱密码分页"), s.page)
+		api.GET("/v1/admin/sys/weak-password/list", admin, middleware.RequirePermission(d.Perms, "sys:weak-password:list", "弱密码列表"), s.list)
 	}
 }
 

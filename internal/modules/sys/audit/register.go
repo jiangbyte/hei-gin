@@ -9,7 +9,7 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// init è‡ªæ³¨å†Œ sys.audit æ¨¡å—ã€‚
+// init 自注册 sys.audit 模块。
 func init() {
 	module.Register("sys.audit", 50, func(d *module.Deps) module.Module {
 		return New(shared.FromModule(d))

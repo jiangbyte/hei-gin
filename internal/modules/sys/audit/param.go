@@ -6,7 +6,7 @@ package audit
 
 import "hei-gin/internal/framework/core/schema"
 
-// PageParam å®¡è®¡æ—¥å¿—åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 审计日志分页查询。
 //
 // Author: Charlie
 type PageParam struct {

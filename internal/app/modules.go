@@ -8,7 +8,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 )
 
-// AttachRegisteredModules æ ¹æ®å·² Register çš„æž„é€ å™¨è£…é…æ¨¡å—ï¼ˆéœ€å…ˆ blank import app/internal/modules/allï¼‰ã€‚
+// AttachRegisteredModules 根据已 Register 的构造器装配模块（需先 blank import app/internal/modules/all）。
 func AttachRegisteredModules(d *Deps) {
 	md := &module.Deps{
 		Cfg:      d.Cfg,

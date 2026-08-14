@@ -21,15 +21,15 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		api.POST("/v1/admin/sys/config/create", admin, middleware.RequirePermission(d.Perms, "sys:config:create", "é…ç½®åˆ›å»º"), s.create)
-		api.POST("/v1/admin/sys/config/update", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "é…ç½®æ›´æ–°"), s.update)
-		api.POST("/v1/admin/sys/config/delete", admin, middleware.RequirePermission(d.Perms, "sys:config:delete", "é…ç½®åˆ é™¤"), s.delete)
-		api.GET("/v1/admin/sys/config/detail", admin, middleware.RequirePermission(d.Perms, "sys:config:detail", "é…ç½®è¯¦æƒ…"), s.detail)
-		api.GET("/v1/admin/sys/config/page", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "é…ç½®åˆ†é¡µ"), s.page)
-		api.GET("/v1/admin/sys/config/list", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "é…ç½®åˆ—è¡¨"), s.list)
-		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "é…ç½®æ‰¹é‡ä¿å­˜"), s.batchSave)
-		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "Webhookæµ‹è¯•"), s.testWebhook)
-		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "æŽ¨é€æµ‹è¯•"), s.testPush)
+		api.POST("/v1/admin/sys/config/create", admin, middleware.RequirePermission(d.Perms, "sys:config:create", "配置创建"), s.create)
+		api.POST("/v1/admin/sys/config/update", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置更新"), s.update)
+		api.POST("/v1/admin/sys/config/delete", admin, middleware.RequirePermission(d.Perms, "sys:config:delete", "配置删除"), s.delete)
+		api.GET("/v1/admin/sys/config/detail", admin, middleware.RequirePermission(d.Perms, "sys:config:detail", "配置详情"), s.detail)
+		api.GET("/v1/admin/sys/config/page", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置分页"), s.page)
+		api.GET("/v1/admin/sys/config/list", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置列表"), s.list)
+		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置批量保存"), s.batchSave)
+		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "Webhook测试"), s.testWebhook)
+		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "推送测试"), s.testPush)
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *Service) testWebhook(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "æµ‹è¯•æ¶ˆæ¯å·²å‘é€"})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
 }
 
 func (s *Service) testPush(c *gin.Context) {
@@ -152,5 +152,5 @@ func (s *Service) testPush(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "æµ‹è¯•æ¶ˆæ¯å·²å‘é€"})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
 }

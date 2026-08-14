@@ -16,15 +16,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service çŸ¥è¯†åˆ†ç±»æœåŠ¡ã€‚
+// Service 知识分类服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ æœåŠ¡ã€‚
+// NewService 构造服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º biz.cg_test_knowledge_category æ¨¡å—ã€‚
+// New 构建 biz.cg_test_knowledge_category 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -35,7 +35,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create åˆ›å»ºåˆ†ç±»ã€‚
+// Create 创建分类。
 func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
 	row := Category{
 		ID: idgen.Next(), ParentID: req.ParentID, Code: req.Code, Name: req.Name, Status: req.Status,
@@ -45,7 +45,7 @@ func (s *Service) Create(ctx context.Context, accountID string, req AddParam) er
 	return s.repo.CreateCategory(ctx, &row)
 }
 
-// Update æ›´æ–°åˆ†ç±»ã€‚
+// Update 更新分类。
 func (s *Service) Update(ctx context.Context, accountID string, req EditParam) error {
 	return s.repo.UpdateCategory(ctx, req.ID, map[string]any{
 		"parent_id": req.ParentID, "code": req.Code, "name": req.Name, "status": req.Status,
@@ -54,24 +54,24 @@ func (s *Service) Update(ctx context.Context, accountID string, req EditParam) e
 	})
 }
 
-// Delete æ‰¹é‡åˆ é™¤åˆ†ç±»ã€‚
+// Delete 批量删除分类。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	return s.repo.DeleteCategoriesByIDs(ctx, ids)
 }
 
-// Detail åˆ†ç±»è¯¦æƒ…ã€‚
+// Detail 分类详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Category, error) {
 	return s.repo.GetCategoryByID(ctx, id)
 }
 
-// Page åˆ†é¡µã€‚
+// Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam) (rows []Category, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageCategories(ctx, p)
 	return rows, total, current, size, err
 }
 
-// Tree åˆ†ç±»æ ‘ã€‚
+// Tree 分类树。
 func (s *Service) Tree(ctx context.Context) ([]TreeNode, error) {
 	rows, err := s.repo.ListAllCategories(ctx)
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *Service) Tree(ctx context.Context) ([]TreeNode, error) {
 	return out, nil
 }
 
-// CreateDoc åˆ›å»ºæ–‡æ¡£ã€‚
+// CreateDoc 创建文档。
 func (s *Service) CreateDoc(ctx context.Context, accountID string, req DocAddParam) error {
 	row := Doc{
 		ID: idgen.Next(), CategoryID: req.CategoryID, Code: req.Code, Title: req.Title, Type: req.Type,
@@ -112,7 +112,7 @@ func (s *Service) CreateDoc(ctx context.Context, accountID string, req DocAddPar
 	return s.repo.CreateDoc(ctx, &row)
 }
 
-// UpdateDoc æ›´æ–°æ–‡æ¡£ã€‚
+// UpdateDoc 更新文档。
 func (s *Service) UpdateDoc(ctx context.Context, accountID string, req DocEditParam) error {
 	return s.repo.UpdateDoc(ctx, req.ID, map[string]any{
 		"category_id": req.CategoryID, "code": req.Code, "title": req.Title, "type": req.Type, "status": req.Status,
@@ -122,17 +122,17 @@ func (s *Service) UpdateDoc(ctx context.Context, accountID string, req DocEditPa
 	})
 }
 
-// DeleteDocs æ‰¹é‡åˆ é™¤æ–‡æ¡£ã€‚
+// DeleteDocs 批量删除文档。
 func (s *Service) DeleteDocs(ctx context.Context, ids []string) error {
 	return s.repo.DeleteDocsByIDs(ctx, ids)
 }
 
-// DetailDoc æ–‡æ¡£è¯¦æƒ…ã€‚
+// DetailDoc 文档详情。
 func (s *Service) DetailDoc(ctx context.Context, id string) (*Doc, error) {
 	return s.repo.GetDocByID(ctx, id)
 }
 
-// PageDocs æ–‡æ¡£åˆ†é¡µã€‚
+// PageDocs 文档分页。
 func (s *Service) PageDocs(ctx context.Context, p DocPageParam) (rows []Doc, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageDocs(ctx, p)

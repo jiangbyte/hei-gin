@@ -12,7 +12,7 @@ import (
 	"hei-gin/internal/modules/iam/result"
 )
 
-// OwnUsers è§’è‰²å·²å…³è”è´¦å·æˆå‘˜ã€‚
+// OwnUsers 角色已关联账号成员。
 func (s *Service) OwnUsers(ctx context.Context, id string) (*result.OwnUserResult, error) {
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (s *Service) OwnUsers(ctx context.Context, id string) (*result.OwnUserResul
 	return &result.OwnUserResult{ID: id, Users: users, AccountIDs: accountIDs}, nil
 }
 
-// GrantUsers å…¨é‡æ›¿æ¢è§’è‰²æˆå‘˜è´¦å·ã€‚
+// GrantUsers 全量替换角色成员账号。
 func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
@@ -40,7 +40,7 @@ func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	return s.rel.ReplaceSubjectAccounts(ctx, relation.SubjectRole, req.ID, relation.RelRoleUser, req.AccountIDs, accountTypes)
 }
 
-// OwnResources è§’è‰²å·²æ‹¥æœ‰ç®¡ç†ç«¯èµ„æºæŽˆæƒã€‚
+// OwnResources 角色已拥有管理端资源授权。
 func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*OwnResourceResult, error) {
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*Ow
 	return &OwnResourceResult{ID: id, Modules: modules, GrantInfoList: grants}, nil
 }
 
-// GrantResources å…¨é‡æ›¿æ¢è§’è‰²ç®¡ç†ç«¯èµ„æºæŽˆæƒã€‚
+// GrantResources 全量替换角色管理端资源授权。
 func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) error {
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
@@ -65,7 +65,7 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	return s.rel.ReplaceResourceGrants(ctx, relation.SubjectRole, req.ID, relation.RelRoleResource, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList)
 }
 
-// OwnClientResources è§’è‰²å·²æ‹¥æœ‰å®¢æˆ·ç«¯èµ„æºæŽˆæƒã€‚
+// OwnClientResources 角色已拥有客户端资源授权。
 func (s *Service) OwnClientResources(ctx context.Context, id, accountType string) (*OwnClientResourceResult, error) {
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *Service) OwnClientResources(ctx context.Context, id, accountType string
 	return &OwnClientResourceResult{ID: id, Modules: modules, GrantInfoList: grants}, nil
 }
 
-// GrantClientResources å…¨é‡æ›¿æ¢è§’è‰²å®¢æˆ·ç«¯èµ„æºæŽˆæƒã€‚
+// GrantClientResources 全量替换角色客户端资源授权。
 func (s *Service) GrantClientResources(ctx context.Context, req GrantResourceParam) error {
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err

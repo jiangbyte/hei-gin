@@ -10,7 +10,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// AddParam åˆ›å»ºè®¢å•å…¥å‚ã€‚
+// AddParam 创建订单入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -30,7 +30,7 @@ type AddParam struct {
 	Extra         map[string]any `json:"extra"`
 }
 
-// EditParam æ›´æ–°è®¢å•å…¥å‚ã€‚
+// EditParam 更新订单入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -38,14 +38,14 @@ type EditParam struct {
 	AddParam
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// PageParam è®¢å•åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 订单分页查询。
 //
 // Author: Charlie
 type PageParam struct {
@@ -57,7 +57,7 @@ type PageParam struct {
 	Type         string `form:"type"`
 }
 
-// ItemAddParam åˆ›å»ºè®¢å•æ˜Žç»†å…¥å‚ã€‚
+// ItemAddParam 创建订单明细入参。
 //
 // Author: Charlie
 type ItemAddParam struct {
@@ -75,7 +75,7 @@ type ItemAddParam struct {
 	Extra      map[string]any `json:"extra"`
 }
 
-// ItemEditParam æ›´æ–°è®¢å•æ˜Žç»†å…¥å‚ã€‚
+// ItemEditParam 更新订单明细入参。
 //
 // Author: Charlie
 type ItemEditParam struct {
@@ -83,7 +83,7 @@ type ItemEditParam struct {
 	ItemAddParam
 }
 
-// ItemPageParam è®¢å•æ˜Žç»†åˆ†é¡µæŸ¥è¯¢ã€‚
+// ItemPageParam 订单明细分页查询。
 //
 // Author: Charlie
 type ItemPageParam struct {

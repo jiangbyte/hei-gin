@@ -16,15 +16,15 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Service å®¢æˆ·ç«¯èµ„æºæœåŠ¡ã€‚
+// Service 客户端资源服务。
 //
 // Author: Charlie
 type Service struct{ repo *Repo }
 
-// NewService æž„é€ å®¢æˆ·ç«¯èµ„æºæœåŠ¡ã€‚
+// NewService 构造客户端资源服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
-// New æž„å»º iam.client æ¨¡å—ã€‚
+// New 构建 iam.client 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
@@ -34,7 +34,7 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// ListGrantModules å®¢æˆ·ç«¯èµ„æºæŽˆæƒæ¨¡å—é€‰é¡¹ï¼ˆå«æ¨¡å—ä¸‹å¯ç”¨èµ„æºï¼Œç©ºæ¨¡å—è¿‡æ»¤ï¼‰ã€‚
+// ListGrantModules 客户端资源授权模块选项（含模块下启用资源，空模块过滤）。
 func (s *Service) ListGrantModules(ctx context.Context, accountType string) ([]GrantModule, error) {
 	at := accountType
 	if at == "" {
@@ -63,7 +63,7 @@ func (s *Service) ListGrantModules(ctx context.Context, accountType string) ([]G
 	return out, nil
 }
 
-// CreateModule åˆ›å»ºå®¢æˆ·ç«¯æ¨¡å—ã€‚
+// CreateModule 创建客户端模块。
 func (s *Service) CreateModule(ctx context.Context, req ModuleAddParam) error {
 	at := req.AccountType
 	if at == "" {
@@ -76,7 +76,7 @@ func (s *Service) CreateModule(ctx context.Context, req ModuleAddParam) error {
 	return s.repo.CreateModule(ctx, &row)
 }
 
-// UpdateModule æ›´æ–°å®¢æˆ·ç«¯æ¨¡å—ã€‚
+// UpdateModule 更新客户端模块。
 func (s *Service) UpdateModule(ctx context.Context, req ModuleEditParam) error {
 	at := req.AccountType
 	if at == "" {
@@ -89,24 +89,24 @@ func (s *Service) UpdateModule(ctx context.Context, req ModuleEditParam) error {
 	return s.repo.UpdateModule(ctx, req.ID, updates)
 }
 
-// DeleteModules æ‰¹é‡åˆ é™¤å®¢æˆ·ç«¯æ¨¡å—ã€‚
+// DeleteModules 批量删除客户端模块。
 func (s *Service) DeleteModules(ctx context.Context, ids []string) error {
 	return s.repo.DeleteModules(ctx, ids)
 }
 
-// ModuleDetail å®¢æˆ·ç«¯æ¨¡å—è¯¦æƒ…ã€‚
+// ModuleDetail 客户端模块详情。
 func (s *Service) ModuleDetail(ctx context.Context, id string) (*ClientModule, error) {
 	return s.repo.GetModuleByID(ctx, id)
 }
 
-// ModulePage å®¢æˆ·ç«¯æ¨¡å—åˆ†é¡µã€‚
+// ModulePage 客户端模块分页。
 func (s *Service) ModulePage(ctx context.Context, p ModulePageParam) (rows []ClientModule, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageModules(ctx, p)
 	return rows, total, current, size, err
 }
 
-// ModuleSelector å®¢æˆ·ç«¯æ¨¡å—é€‰æ‹©å™¨ã€‚
+// ModuleSelector 客户端模块选择器。
 func (s *Service) ModuleSelector(ctx context.Context, accountType string) ([]ModuleOption, error) {
 	rows, err := s.repo.ListEnabledModules(ctx, accountType)
 	if err != nil {
@@ -119,7 +119,7 @@ func (s *Service) ModuleSelector(ctx context.Context, accountType string) ([]Mod
 	return out, nil
 }
 
-// CreateResource åˆ›å»ºå®¢æˆ·ç«¯èµ„æºã€‚
+// CreateResource 创建客户端资源。
 func (s *Service) CreateResource(ctx context.Context, req ResourceAddParam) error {
 	vis := true
 	if req.IsVisible != nil {
@@ -134,7 +134,7 @@ func (s *Service) CreateResource(ctx context.Context, req ResourceAddParam) erro
 	return s.repo.CreateResource(ctx, &row)
 }
 
-// UpdateResource æ›´æ–°å®¢æˆ·ç«¯èµ„æºã€‚
+// UpdateResource 更新客户端资源。
 func (s *Service) UpdateResource(ctx context.Context, req ResourceEditParam) error {
 	vis := true
 	if req.IsVisible != nil {
@@ -150,24 +150,24 @@ func (s *Service) UpdateResource(ctx context.Context, req ResourceEditParam) err
 	return s.repo.UpdateResource(ctx, req.ID, updates)
 }
 
-// DeleteResources æ‰¹é‡åˆ é™¤å®¢æˆ·ç«¯èµ„æºã€‚
+// DeleteResources 批量删除客户端资源。
 func (s *Service) DeleteResources(ctx context.Context, ids []string) error {
 	return s.repo.DeleteResources(ctx, ids)
 }
 
-// ResourceDetail å®¢æˆ·ç«¯èµ„æºè¯¦æƒ…ã€‚
+// ResourceDetail 客户端资源详情。
 func (s *Service) ResourceDetail(ctx context.Context, id string) (*ClientResource, error) {
 	return s.repo.GetResourceByID(ctx, id)
 }
 
-// ResourcePage å®¢æˆ·ç«¯èµ„æºåˆ†é¡µã€‚
+// ResourcePage 客户端资源分页。
 func (s *Service) ResourcePage(ctx context.Context, p ResourcePageParam) (rows []ClientResource, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageResources(ctx, p)
 	return rows, total, current, size, err
 }
 
-// ResourceTree å®¢æˆ·ç«¯èµ„æºæ ‘ã€‚
+// ResourceTree 客户端资源树。
 func (s *Service) ResourceTree(ctx context.Context, moduleID string) ([]TreeNode, error) {
 	rows, err := s.repo.ListResources(ctx, moduleID)
 	if err != nil {

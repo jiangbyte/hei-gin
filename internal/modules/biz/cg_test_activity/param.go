@@ -10,7 +10,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 )
 
-// AddParam åˆ›å»ºæ´»åŠ¨å…¥å‚ã€‚
+// AddParam 创建活动入参。
 //
 // Author: Charlie
 type AddParam struct {
@@ -31,7 +31,7 @@ type AddParam struct {
 	Extra           map[string]any `json:"extra"`
 }
 
-// EditParam æ›´æ–°æ´»åŠ¨å…¥å‚ã€‚
+// EditParam 更新活动入参。
 //
 // Author: Charlie
 type EditParam struct {
@@ -39,14 +39,14 @@ type EditParam struct {
 	AddParam
 }
 
-// IDsParam æ‰¹é‡ ID å…¥å‚ã€‚
+// IDsParam 批量 ID 入参。
 //
 // Author: Charlie
 type IDsParam struct {
 	IDs []string `json:"ids" binding:"required"`
 }
 
-// PageParam æ´»åŠ¨åˆ†é¡µæŸ¥è¯¢ã€‚
+// PageParam 活动分页查询。
 //
 // Author: Charlie
 type PageParam struct {

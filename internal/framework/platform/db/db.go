@@ -1,4 +1,4 @@
-// Package db æä¾› GORM æ‰“å¼€ã€å®¡è®¡å­—æ®µæ··å…¥ä¸Žäº‹åŠ¡è¾…åŠ©ã€‚
+// Package db 提供 GORM 打开、审计字段混入与事务辅助。
 //
 // Author: Charlie
 package db
@@ -17,7 +17,7 @@ import (
 	contextx "hei-gin/internal/framework/core/context"
 )
 
-// Model ä¸ºå…±äº«å®¡è®¡å­—æ®µæ··å…¥ã€‚
+// Model 为共享审计字段混入。
 //
 // Author: Charlie
 type Model struct {
@@ -27,14 +27,14 @@ type Model struct {
 	UpdatedBy *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
 }
 
-// OwnerDept è¡Œçº§å½’å±žéƒ¨é—¨å­—æ®µæ··å…¥ã€‚
+// OwnerDept 行级归属部门字段混入。
 //
 // Author: Charlie
 type OwnerDept struct {
 	OwnerDeptID *string `gorm:"column:owner_dept_id;size:64;index" json:"owner_dept_id"`
 }
 
-// Open æŒ‰é…ç½®æ‰“å¼€ Postgres æˆ– sqlite: å‰ç¼€çš„ SQLiteï¼Œå¹¶æ³¨å†Œå®¡è®¡å›žè°ƒã€‚
+// Open 按配置打开 Postgres 或 sqlite: 前缀的 SQLite，并注册审计回调。
 func Open(cfg config.DBConfig) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 	dsn := cfg.URL
@@ -90,7 +90,7 @@ func auditUpdate(db *gorm.DB) {
 	db.Statement.SetColumn("updated_by", aid)
 }
 
-// WithTx åœ¨äº‹åŠ¡ä¸­æ‰§è¡Œ fnã€‚
+// WithTx 在事务中执行 fn。
 func WithTx(ctx context.Context, gdb *gorm.DB, fn func(tx *gorm.DB) error) error {
 	return gdb.WithContext(ctx).Transaction(fn)
 }
