@@ -101,14 +101,16 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 	if err := s.sessions.Save(ctx, sess, ttl); err != nil {
 		return nil, err
 	}
+	passwordExpired, warningDays := s.passwordPolicy.PasswordExpired(ctx, sess.AccountID)
+	sess.PasswordExpired = passwordExpired
 	return &LoginResult{
 		Token:                     sess.Token,
 		AccountID:                 sess.AccountID,
 		AccountType:               sess.AccountType,
-		PasswordExpired:           sess.PasswordExpired,
+		PasswordExpired:           passwordExpired,
 		ForceBindEmail:            s.forceBind(ctx, sess.AccountType, "EMAIL"),
 		ForceBindPhone:            s.forceBind(ctx, sess.AccountType, "PHONE"),
-		PasswordExpiryWarningDays: 0,
+		PasswordExpiryWarningDays: warningDays,
 	}, nil
 }
 

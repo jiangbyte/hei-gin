@@ -20,7 +20,9 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/notify"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
+	"hei-gin/internal/modules/shared"
 )
 
 // otpBindPrefix 绑定验证码 Redis 前缀。
@@ -30,24 +32,28 @@ const otpBindPrefix = "profile:otp:bind:"
 //
 // Author: Charlie
 type Service struct {
-	repo         *Repo
-	rdb          *redis.Client
-	notify       *notify.Facade
-	storage      *storage.Manager
-	avatarPrefix string
-	accountType  security.AccountType
+	repo           *Repo
+	rdb            *redis.Client
+	notify         *notify.Facade
+	storage        *storage.Manager
+	runtime        *runtimecfg.Settings
+	passwordPolicy *shared.PasswordPolicy
+	avatarPrefix   string
+	accountType    security.AccountType
 }
 
 // NewService 构造按账户类型绑定的用户中心服务。
 func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, storage *storage.Manager,
-	accountType security.AccountType, table, avatarPrefix string) *Service {
+	rt *runtimecfg.Settings, accountType security.AccountType, table, avatarPrefix string) *Service {
 	return &Service{
-		repo:         NewRepo(db, table),
-		rdb:          rdb,
-		notify:       nf,
-		storage:      storage,
-		avatarPrefix: avatarPrefix,
-		accountType:  accountType,
+		repo:           NewRepo(db, table),
+		rdb:            rdb,
+		notify:         nf,
+		storage:        storage,
+		runtime:        rt,
+		passwordPolicy: shared.NewPasswordPolicy(db, rt),
+		avatarPrefix:   avatarPrefix,
+		accountType:    accountType,
 	}
 }
 
@@ -111,16 +117,32 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	return url, nil
 }
 
-// UpdatePassword 更新密码（旧密码或 OTP 校验）。
+// UpdatePassword 更新密码（旧密码或 OTP 校验 + 密码策略校验 + 历史记录）。
 func (s *Service) UpdatePassword(ctx context.Context, accountID string, req PasswordUpdateParam) error {
 	if err := s.verify(ctx, accountID, req.OldPassword, req.OTPCode, "PASSWORD_CHANGE"); err != nil {
+		return err
+	}
+	accountName, _ := s.repo.GetAccountIdentifier(ctx, accountID)
+	email, phone := "", ""
+	if p, err := s.repo.GetProfile(ctx, accountID); err == nil {
+		if p.Email != nil {
+			email = *p.Email
+		}
+		if p.Phone != nil {
+			phone = *p.Phone
+		}
+	}
+	if err := s.passwordPolicy.Validate(ctx, req.NewPassword, accountID, accountName, email, phone); err != nil {
 		return err
 	}
 	hash, err := security.HashPassword(req.NewPassword)
 	if err != nil {
 		return err
 	}
-	return s.repo.UpdateAccountPassword(ctx, accountID, hash)
+	if err := s.repo.UpdateAccountPassword(ctx, accountID, hash); err != nil {
+		return err
+	}
+	return s.passwordPolicy.RecordHistory(ctx, accountID, req.NewPassword, accountID, "self_update")
 }
 
 // UpdatePhone 更新手机号（密码/OTP 校验 + 维护 PHONE 登录身份）。
@@ -167,7 +189,8 @@ func (s *Service) OrgInfo(sess *security.SessionPayload) OrgInfoResult {
 }
 
 // SendBindCode 发送绑定/改密验证码（通道未配置时仅写入 OTP 缓存并返回成功）。
-func (s *Service) SendBindCode(ctx context.Context, accountID string, channel, target string) error {
+// scene 区分绑定（BIND_PHONE_CODE/BIND_EMAIL_CODE）与改密（CHANGE_PASSWORD_CODE）。
+func (s *Service) SendBindCode(ctx context.Context, accountID, scene, channel, target string) error {
 	code, err := sixDigitCode()
 	if err != nil {
 		return err
@@ -178,11 +201,7 @@ func (s *Service) SendBindCode(ctx context.Context, accountID string, channel, t
 	}
 	if s.notify != nil {
 		vars := map[string]any{"app_name": "HEI", "code": code, "expire_minutes": 5}
-		if channel == "PHONE" {
-			_ = s.notify.SendTemplated(ctx, "BIND_PHONE_CODE", target, vars)
-		} else {
-			_ = s.notify.SendTemplated(ctx, "BIND_EMAIL_CODE", target, vars)
-		}
+		_ = s.notify.SendTemplated(ctx, scene, target, vars)
 	}
 	_ = accountID
 	return nil
@@ -195,10 +214,10 @@ func (s *Service) SendPasswordChangeCode(ctx context.Context, accountID string) 
 		return err
 	}
 	if p.Phone != nil && *p.Phone != "" {
-		return s.SendBindCode(ctx, accountID, "PHONE", *p.Phone)
+		return s.SendBindCode(ctx, accountID, "CHANGE_PASSWORD_CODE", "PHONE", *p.Phone)
 	}
 	if p.Email != nil && *p.Email != "" {
-		return s.SendBindCode(ctx, accountID, "EMAIL", *p.Email)
+		return s.SendBindCode(ctx, accountID, "CHANGE_PASSWORD_CODE", "EMAIL", *p.Email)
 	}
 	return nil
 }
@@ -293,11 +312,8 @@ func (s *Service) consumeOTP(ctx context.Context, channel, target, code string) 
 // forceBind 读取 AUTH_FORCE_BIND_{TYPE}_{CHANNEL} 运行时配置。
 func (s *Service) forceBind(ctx context.Context, channel string) bool {
 	key := "AUTH_FORCE_BIND_" + strings.ToUpper(string(s.accountType)) + "_" + channel
-	if s.notify != nil {
-		v := s.notify.GetRuntimeString(ctx, key, "")
-		if v != "" {
-			return strings.EqualFold(v, "true") || v == "1"
-		}
+	if s.runtime != nil {
+		return s.runtime.GetBool(ctx, key, false)
 	}
 	return false
 }

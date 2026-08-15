@@ -107,7 +107,7 @@ func (s *Service) portalSendPhoneCode(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.SendBindCode(c.Request.Context(), contextx.AccountID(c.Request.Context()), "PHONE", req.Target); err != nil {
+	if err := s.SendBindCode(c.Request.Context(), contextx.AccountID(c.Request.Context()), "BIND_PHONE_CODE", "PHONE", req.Target); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
@@ -133,7 +133,7 @@ func (s *Service) portalSendEmailCode(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.SendBindCode(c.Request.Context(), contextx.AccountID(c.Request.Context()), "EMAIL", req.Target); err != nil {
+	if err := s.SendBindCode(c.Request.Context(), contextx.AccountID(c.Request.Context()), "BIND_EMAIL_CODE", "EMAIL", req.Target); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}

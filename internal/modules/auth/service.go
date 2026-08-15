@@ -31,30 +31,32 @@ import (
 //
 // Author: Charlie
 type Service struct {
-	cfg      *config.Config
-	db       *gorm.DB
-	repo     *Repo
-	sessions *security.SessionStore
-	accounts AccountFinder
-	notify   *notify.Facade
-	audit    *audit.Queue
-	runtime  *runtimecfg.Settings
-	oauth    *oauth.Service
-	perms    *security.PermissionRegistry
+	cfg            *config.Config
+	db             *gorm.DB
+	repo           *Repo
+	sessions       *security.SessionStore
+	accounts       AccountFinder
+	notify         *notify.Facade
+	audit          *audit.Queue
+	runtime        *runtimecfg.Settings
+	passwordPolicy *shared.PasswordPolicy
+	oauth          *oauth.Service
+	perms          *security.PermissionRegistry
 }
 
 // NewService 构造认证服务。
 func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 	s := &Service{
-		cfg:      d.Cfg,
-		db:       d.DB,
-		repo:     NewRepo(d.Redis),
-		sessions: d.Sessions,
-		accounts: accounts,
-		notify:   d.Notify,
-		audit:    d.Audit,
-		runtime:  d.Runtime,
-		perms:    d.Perms,
+		cfg:            d.Cfg,
+		db:             d.DB,
+		repo:           NewRepo(d.Redis),
+		sessions:       d.Sessions,
+		accounts:       accounts,
+		notify:         d.Notify,
+		audit:          d.Audit,
+		runtime:        d.Runtime,
+		passwordPolicy: shared.NewPasswordPolicy(d.DB, d.Runtime),
+		perms:          d.Perms,
 	}
 	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
 		out, err := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, rememberMe)
@@ -213,6 +215,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		ttlSec = 14400
 	}
 	ttl := time.Duration(ttlSec) * time.Second
+	passwordExpired, warningDays := s.passwordPolicy.PasswordExpired(ctx, accountID)
 	payload := &security.SessionPayload{
 		Token:            token,
 		AccountID:        accountID,
@@ -222,7 +225,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		ClientIP:         &clientIP,
 		UserAgent:        &userAgent,
 		RememberMe:       rememberMe,
-		PasswordExpired:  false,
+		PasswordExpired:  passwordExpired,
 		LoginAt:          now,
 		LastActiveAt:     now,
 		ExpiresAt:        now.Add(ttl),
@@ -234,10 +237,10 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		Token:                     token,
 		AccountID:                 accountID,
 		AccountType:               accountType,
-		PasswordExpired:           false,
+		PasswordExpired:           passwordExpired,
 		ForceBindEmail:            s.forceBind(ctx, accountType, "EMAIL"),
 		ForceBindPhone:            s.forceBind(ctx, accountType, "PHONE"),
-		PasswordExpiryWarningDays: 0,
+		PasswordExpiryWarningDays: warningDays,
 	}, nil
 }
 
@@ -379,11 +382,17 @@ func (s *Service) ResetPassword(ctx context.Context, accountType security.Accoun
 	if err != nil || gotType != accountType {
 		return errResetTokenInvalid
 	}
+	if err := s.passwordPolicy.Validate(ctx, password, accountID, "", "", ""); err != nil {
+		return err
+	}
 	hash, err := security.HashPassword(password)
 	if err != nil {
 		return err
 	}
-	return s.accounts.UpdatePasswordHash(ctx, accountID, hash)
+	if err := s.accounts.UpdatePasswordHash(ctx, accountID, hash); err != nil {
+		return err
+	}
+	return s.passwordPolicy.RecordHistory(ctx, accountID, password, accountID, "self_reset")
 }
 
 // Register 门户注册。
@@ -396,6 +405,9 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	}
 	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.passwordPolicy.Validate(ctx, password, "", req.Account, req.Email, req.Phone); err != nil {
 		return nil, err
 	}
 	hash, err := security.HashPassword(password)
@@ -423,6 +435,7 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	if err != nil {
 		return nil, err
 	}
+	_ = s.passwordPolicy.RecordHistory(ctx, accountID, password, accountID, "register")
 	return &RegisterResult{
 		AccountID:   accountID,
 		Account:     req.Account,
