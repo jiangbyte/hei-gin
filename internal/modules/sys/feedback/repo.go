@@ -6,6 +6,7 @@ package feedback
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -99,4 +100,65 @@ func (r *Repo) UpdateReply(ctx context.Context, id string, status string, reply 
 		"status": status, "reply": reply, "replied_by": meta.RepliedBy,
 		"replied_at": repliedAt, "updated_by": meta.UpdatedBy,
 	})
+}
+
+// ListFilesByObjectNames 按对象名集合查询 sys_file 元数据。
+func (r *Repo) ListFilesByObjectNames(ctx context.Context, objectNames []string) ([]FileRow, error) {
+	if len(objectNames) == 0 {
+		return nil, nil
+	}
+	var rows []FileRow
+	err := r.with(ctx).Table("sys_file").
+		Select("id", "object_name", "original_name", "content_type", "size").
+		Where("object_name IN ?", objectNames).
+		Find(&rows).Error
+	return rows, err
+}
+
+// FileMapByObjectNames 按对象名批量加载文件元数据（供附件回填）。
+func (r *Repo) FileMapByObjectNames(ctx context.Context, objectNames []string) map[string]FileRow {
+	out := make(map[string]FileRow)
+	if len(objectNames) == 0 {
+		return out
+	}
+	rows, err := r.ListFilesByObjectNames(ctx, objectNames)
+	if err != nil {
+		return out
+	}
+	for _, row := range rows {
+		out[row.ObjectName] = row
+	}
+	return out
+}
+
+// ProfileBrief 账号资料摘要（昵称/头像）。
+type ProfileBrief struct {
+	Nickname string `gorm:"column:nickname"`
+	Avatar   string `gorm:"column:avatar"`
+}
+
+// ProfileNames 按账号类型查询资料表昵称/头像（admin/portal 表结构一致）。
+func (r *Repo) ProfileNames(ctx context.Context, accountType string, accountIDs []string) map[string]ProfileBrief {
+	out := make(map[string]ProfileBrief)
+	if len(accountIDs) == 0 {
+		return out
+	}
+	table := "profile_user_admin"
+	if strings.EqualFold(accountType, "PORTAL") {
+		table = "profile_user_portal"
+	}
+	var rows []struct {
+		AccountID string `gorm:"column:account_id"`
+		ProfileBrief
+	}
+	if err := r.with(ctx).Table(table).
+		Select("account_id", "nickname", "avatar").
+		Where("account_id IN ?", accountIDs).
+		Find(&rows).Error; err != nil {
+		return out
+	}
+	for _, row := range rows {
+		out[row.AccountID] = row.ProfileBrief
+	}
+	return out
 }

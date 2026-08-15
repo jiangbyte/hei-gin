@@ -78,9 +78,12 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Dict, total int64,
 	return rows, total, err
 }
 
-// ListForTree 查询树形字典节点。
+// ListForTree 查询树形字典节点（status 为空表示不过滤，含全部状态）。
 func (r *Repo) ListForTree(ctx context.Context, q TreeParam, status string) ([]Dict, error) {
-	db := r.with(ctx).Model(&Dict{}).Where("status = ?", status)
+	db := r.with(ctx).Model(&Dict{})
+	if status != "" {
+		db = db.Where("status = ?", status)
+	}
 	if q.Code != "" {
 		db = db.Where("code = ? OR parent_id IN (SELECT id FROM sys_dict WHERE code = ?)", q.Code, q.Code)
 	}

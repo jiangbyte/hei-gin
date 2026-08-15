@@ -30,6 +30,34 @@ type Feedback struct {
 	CreatedBy            *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt            time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UpdatedBy            *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
+
+	// 以下为展示回填字段（对齐 hei-boot @TableField(exist=false)，不入库）。
+	Attachments       []AttachmentResult `gorm:"-" json:"attachments"`
+	SubmitterNickname *string            `gorm:"-" json:"submitter_nickname"`
+	SubmitterAvatar   *string            `gorm:"-" json:"submitter_avatar"`
+}
+
+// AttachmentResult 反馈附件展示结果（对齐 hei-boot SysFeedbackAttachmentResult）。
+//
+// Author: Charlie
+type AttachmentResult struct {
+	ObjectName   string  `json:"object_name"`
+	ID           *string `json:"id"`
+	OriginalName *string `json:"original_name"`
+	ContentType  *string `json:"content_type"`
+	Size         *int64  `json:"size"`
+	URL          *string `json:"url"`
+}
+
+// FileRow 附件文件元数据行（sys_file 查询结果）。
+//
+// Author: Charlie
+type FileRow struct {
+	ID           string `gorm:"column:id"`
+	ObjectName   string `gorm:"column:object_name"`
+	OriginalName string `gorm:"column:original_name"`
+	ContentType  string `gorm:"column:content_type"`
+	Size         int64  `gorm:"column:size"`
 }
 
 // TableName 返回 Feedback 对应的数据库表名。

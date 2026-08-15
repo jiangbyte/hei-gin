@@ -106,21 +106,38 @@ func (s *Service) Page(ctx context.Context, q PageParam) (rows []Dict, total int
 	return rows, total, current, size, err
 }
 
-// Tree 字典树。
+// Tree 字典树（含全部状态；断链父节点置为根，对齐 hei-boot DictServiceImpl.tree）。
 func (s *Service) Tree(ctx context.Context, q TreeParam) ([]TreeNode, error) {
-	rows, err := s.repo.ListForTree(ctx, q, security.StatusEnabled)
+	rows, err := s.repo.ListForTree(ctx, q, "")
 	if err != nil {
 		return nil, err
 	}
 	return buildTree(rows, nil), nil
 }
 
+// buildTree 组装字典树：父节点不在集合内（断链/孤儿）时提升为根节点。
 func buildTree(rows []Dict, parent *string) []TreeNode {
+	ids := make(map[string]struct{}, len(rows))
+	for i := range rows {
+		ids[rows[i].ID] = struct{}{}
+	}
 	out := make([]TreeNode, 0)
 	for _, r := range rows {
 		same := (r.ParentID == nil && parent == nil) || (r.ParentID != nil && parent != nil && *r.ParentID == *parent)
-		if same {
-			out = append(out, TreeNode{Dict: r, Children: buildTree(rows, &r.ID)})
+		if !same {
+			continue
+		}
+		out = append(out, TreeNode{Dict: r, Children: buildTree(rows, &r.ID)})
+	}
+	// 孤儿节点（父 id 指向集合外）作为根节点补回
+	if parent == nil {
+		for _, r := range rows {
+			if r.ParentID == nil {
+				continue
+			}
+			if _, ok := ids[*r.ParentID]; !ok {
+				out = append(out, TreeNode{Dict: r, Children: buildTree(rows, &r.ID)})
+			}
 		}
 	}
 	return out

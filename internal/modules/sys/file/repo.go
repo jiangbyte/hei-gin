@@ -68,6 +68,16 @@ func (r *Repo) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
 	return rows, err
 }
 
+// ListByObjectNames 按对象名集合批量查询（供反馈附件等跨模块回填）。
+func (r *Repo) ListByObjectNames(ctx context.Context, objectNames []string) ([]File, error) {
+	if len(objectNames) == 0 {
+		return nil, nil
+	}
+	var rows []File
+	err := r.with(ctx).Where("object_name IN ?", objectNames).Find(&rows).Error
+	return rows, err
+}
+
 // LoadAccountNames 批量按账号 ID 解析主登录标识（ACCOUNT 身份），供 created_name/updated_name 回填。
 func (r *Repo) LoadAccountNames(ctx context.Context, ids []string) map[string]string {
 	out := make(map[string]string, len(ids))
