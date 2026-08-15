@@ -36,8 +36,11 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create 创建方案并反射同步字段。
+// Create 创建方案并反射同步字段（先校验方案，对齐 hei-boot CodegenServiceImpl.create）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
+	if err := s.validatePlan(ctx, req); err != nil {
+		return err
+	}
 	plan := fromAddParam(req)
 	if plan.MainPK == "" {
 		plan.MainPK = "id"
@@ -58,8 +61,11 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.syncReflectedFields(ctx, plan)
 }
 
-// Update 更新方案并重新同步字段。
+// Update 更新方案并重新同步字段（先校验方案）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	if err := s.validatePlan(ctx, req.AddParam); err != nil {
+		return err
+	}
 	plan := fromAddParam(req.AddParam)
 	plan.ID = req.ID
 	if plan.MainPK == "" {
@@ -211,6 +217,64 @@ func (s *Service) ParentResources(ctx context.Context, moduleID string) ([]Resou
 		return nil, err
 	}
 	return buildResourceTree(rows, nil), nil
+}
+
+// 生成类型常量（对齐 hei-boot CodegenServiceImpl TREE_TYPES / RELATION_TYPES）。
+var (
+	treeGenTypes     = map[string]bool{"TREE": true, "LEFT_TREE_TABLE": true}
+	relationGenTypes = map[string]bool{"LEFT_TREE_TABLE": true, "MASTER_DETAIL": true}
+)
+
+// validatePlan 校验方案：主键/树字段/子表配置必须存在于表结构（对齐 hei-boot validatePlan）。
+func (s *Service) validatePlan(ctx context.Context, req AddParam) error {
+	mainNames, err := s.columnNameSet(ctx, req.MainTable)
+	if err != nil {
+		return err
+	}
+	mainPK := req.MainPK
+	if mainPK == "" {
+		mainPK = "id"
+	}
+	if !mainNames[mainPK] {
+		return fmt.Errorf("main primary key field does not exist")
+	}
+	if treeGenTypes[req.GenType] {
+		if req.TreeParentField == nil || !mainNames[*req.TreeParentField] {
+			return fmt.Errorf("tree parent field does not exist")
+		}
+		if req.TreeLabelField == nil || !mainNames[*req.TreeLabelField] {
+			return fmt.Errorf("tree label field does not exist")
+		}
+	}
+	if relationGenTypes[req.GenType] {
+		if req.SubTable == nil || *req.SubTable == "" || req.SubPK == nil || *req.SubPK == "" || req.SubForeignKey == nil || *req.SubForeignKey == "" {
+			return fmt.Errorf("sub table configuration is incomplete")
+		}
+		subNames, err := s.columnNameSet(ctx, *req.SubTable)
+		if err != nil {
+			return err
+		}
+		if !subNames[*req.SubPK] {
+			return fmt.Errorf("sub primary key field does not exist")
+		}
+		if !subNames[*req.SubForeignKey] {
+			return fmt.Errorf("sub foreign key field does not exist")
+		}
+	}
+	return nil
+}
+
+// columnNameSet 查询表列名集合。
+func (s *Service) columnNameSet(ctx context.Context, tableName string) (map[string]bool, error) {
+	cols, err := s.repo.ListColumns(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]bool, len(cols))
+	for _, c := range cols {
+		out[c.ColumnName] = true
+	}
+	return out, nil
 }
 
 // syncReflectedFields 按表结构反射同步 MAIN/SUB 字段。
