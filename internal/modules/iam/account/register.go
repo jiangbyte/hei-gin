@@ -12,7 +12,7 @@ import (
 // init 自注册模块 iam.account。
 func init() {
 	module.Register("iam.account", 20, func(d *module.Deps) module.Module {
-		svc := NewService(d.DB)
+		svc := NewService(d.DB, d.Redis, d.Runtime)
 		d.Provide(shared.AccountFinderKey, svc)
 		return New(shared.FromModule(d))
 	})

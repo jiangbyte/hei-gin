@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,6 +66,25 @@ func (m *Manager) ProviderName() string {
 	default:
 		return "local"
 	}
+}
+
+// ResolveURL 对象引用 → 访问 URL（对齐 hei-boot FileAccessUrls.resolveFileUrl）：
+// 外部 http(s) URL 原样返回；否则拼 path-style 公开路径 {publicPath}/{key}。
+func (m *Manager) ResolveURL(ctx context.Context, value string) string {
+	_ = ctx
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if u, err := url.Parse(value); err == nil && u.Scheme != "" {
+		return value
+	}
+	pathOnly := strings.ReplaceAll(value, "\\", "/")
+	pathOnly = strings.TrimLeft(pathOnly, "/")
+	if pathOnly == "" {
+		return ""
+	}
+	return strings.TrimRight(m.PublicPath(), "/") + "/" + pathOnly
 }
 
 // PublicPath 公开访问路径前缀（yaml storage.public_path，缺省 /api/v1/files）。

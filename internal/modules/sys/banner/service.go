@@ -6,6 +6,7 @@ package banner
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"gorm.io/datatypes"
@@ -14,20 +15,26 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/framework/platform/storage"
 	"hei-gin/internal/modules/shared"
 )
 
 // Service Banner 业务服务。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	repo *Repo
+	sto  *storage.Manager
+}
 
 // NewService 构造 Banner 服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB, sto *storage.Manager) *Service {
+	return &Service{repo: NewRepo(db), sto: sto}
+}
 
 // New 构建 sys.banner 模块。
 func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB)
+	s := NewService(d.DB, d.Storage)
 	return module.Module{
 		Name:   "sys.banner",
 		Models: []any{&Banner{}},
@@ -83,36 +90,81 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 
 // Detail 详情。
 func (s *Service) Detail(ctx context.Context, id string) (*Banner, error) {
-	return s.repo.GetByID(ctx, id)
+	row, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.withResolvedImageURL(row)
+	return row, nil
 }
 
 // Page 分页。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []Banner, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
+	for i := range rows {
+		s.withResolvedImageURL(&rows[i])
+	}
 	return rows, total, current, size, err
 }
 
-// List 启用 Banner 列表。
+// List 管理端可见 Banner 列表。
 func (s *Service) List(ctx context.Context, q ListParam) ([]Banner, error) {
-	return s.repo.List(ctx, q.Position, security.StatusEnabled)
+	rows, err := s.repo.List(ctx, q.Position, q.Category, q.Type, "ADMIN", security.StatusEnabled)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		s.withResolvedImageURL(&rows[i])
+	}
+	return rows, nil
 }
 
-// Interaction 互动上报：找到 Banner 行并将互动计数 +1。
+// Interaction 互动上报：Banner 须存在、启用且目标含 PORTAL（对齐 hei-boot interaction）。
 func (s *Service) Interaction(ctx context.Context, id string) error {
-	n, err := s.repo.IncrementInteraction(ctx, id)
+	row, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return err
-	}
-	if n == 0 {
 		return errors.New("banner not found")
 	}
-	return nil
+	if row.Status != security.StatusEnabled {
+		return errors.New("banner not enabled")
+	}
+	portal := false
+	var targets []string
+	_ = json.Unmarshal(row.TargetAccountTypes, &targets)
+	for _, t := range targets {
+		if t == "PORTAL" {
+			portal = true
+			break
+		}
+	}
+	if !portal {
+		return errors.New("banner not targeted to portal")
+	}
+	_, err = s.repo.IncrementInteraction(ctx, id)
+	return err
 }
 
 // PortalList 门户端有效 Banner 列表。
 func (s *Service) PortalList(ctx context.Context, q PortalListParam) ([]Banner, error) {
-	return s.repo.ListPortal(ctx, q, security.StatusEnabled)
+	rows, err := s.repo.ListPortal(ctx, q, security.StatusEnabled)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		s.withResolvedImageURL(&rows[i])
+	}
+	return rows, nil
+}
+
+// withResolvedImageURL 回填 image_url（对齐 hei-boot withResolvedImageUrl）。
+func (s *Service) withResolvedImageURL(row *Banner) {
+	if row == nil || row.Image == "" {
+		return
+	}
+	if u := s.sto.ResolveURL(context.Background(), row.Image); u != "" {
+		row.ImageURL = &u
+	}
 }
 
 func statusOr(st string) string {

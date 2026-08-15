@@ -55,6 +55,8 @@ type PageParam struct {
 // Author: Charlie
 type ListParam struct {
 	Position string `form:"position"`
+	Category string `form:"category"`
+	Type     string `form:"type"`
 }
 
 // IDsParam 批量 ID 入参。

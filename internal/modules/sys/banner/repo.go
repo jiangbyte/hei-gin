@@ -70,12 +70,21 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Banner, total int6
 	return rows, total, err
 }
 
-// List 按位置列出启用 Banner。
-func (r *Repo) List(ctx context.Context, position, status string) ([]Banner, error) {
+// List 管理端可见 Banner（对齐 hei-boot adminList：启用 + 账户类型 + 展示窗口 + category/type 过滤）。
+func (r *Repo) List(ctx context.Context, position, category, typ, accountType, status string) ([]Banner, error) {
 	db := r.with(ctx).Model(&Banner{}).Where("status = ?", status)
 	if position != "" {
 		db = db.Where("position = ?", position)
 	}
+	if category != "" {
+		db = db.Where("category = ?", category)
+	}
+	if typ != "" {
+		db = db.Where("type = ?", typ)
+	}
+	db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", accountType)
+	now := time.Now()
+	db = db.Where("(start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)", now, now)
 	var rows []Banner
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err
@@ -88,7 +97,7 @@ func (r *Repo) IncrementInteraction(ctx context.Context, id string) (int64, erro
 	return res.RowsAffected, res.Error
 }
 
-// ListPortal 门户端有效 Banner 列表：状态启用且在展示窗口内，按 sort 排序。
+// ListPortal 门户端有效 Banner 列表：状态启用 + PORTAL 目标 + 展示窗口，按 sort 排序。
 func (r *Repo) ListPortal(ctx context.Context, q PortalListParam, status string) ([]Banner, error) {
 	now := time.Now()
 	db := r.with(ctx).Model(&Banner{}).Where("status = ?", status)
@@ -102,6 +111,7 @@ func (r *Repo) ListPortal(ctx context.Context, q PortalListParam, status string)
 		db = db.Where("type = ?", q.Type)
 	}
 	db = db.Where("(start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)", now, now)
+	db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", "PORTAL")
 	var rows []Banner
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err

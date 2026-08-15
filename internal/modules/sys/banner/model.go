@@ -16,6 +16,7 @@ type Banner struct {
 	ID                 string         `gorm:"column:id;primaryKey;size:64" json:"id"`
 	Title              string         `gorm:"column:title;size:255;not null" json:"title"`
 	Image              string         `gorm:"column:image;size:500;not null" json:"image"`
+	ImageURL           *string        `gorm:"-" json:"image_url"`
 	URL                *string        `gorm:"column:url;size:500" json:"url"`
 	LinkType           string         `gorm:"column:link_type;size:16;not null" json:"link_type"`
 	Summary            *string        `gorm:"column:summary;size:500" json:"summary"`

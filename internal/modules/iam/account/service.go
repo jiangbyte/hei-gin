@@ -6,12 +6,16 @@ package account
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/modules/iam/client"
 	"hei-gin/internal/modules/iam/group"
 	"hei-gin/internal/modules/iam/relation"
@@ -41,12 +45,13 @@ type Service struct {
 	groups    *group.Repo
 	resources *resource.Service
 	clients   *client.Service
+	runtime   *runtimecfg.Settings
 }
 
 // NewService 构造账号服务。
-func NewService(db *gorm.DB) *Service {
+func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings) *Service {
 	return &Service{
-		repo:      NewRepo(db),
+		repo:      NewRepo(db, rdb),
 		admin:     profile.AdminRepo(db),
 		portal:    profile.PortalRepo(db),
 		rel:       relation.NewService(db),
@@ -54,12 +59,13 @@ func NewService(db *gorm.DB) *Service {
 		groups:    group.NewRepo(db),
 		resources: resource.NewService(db),
 		clients:   client.NewService(db),
+		runtime:   rt,
 	}
 }
 
 // New 构建 iam.account 模块。
 func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB)
+	s := NewService(d.DB, d.Redis, d.Runtime)
 	return s.withJobs(module.Module{
 		Name:   "iam.account",
 		Models: []any{&Account{}, &Identity{}},
@@ -179,9 +185,29 @@ func (s *Service) UpdatePasswordHash(ctx context.Context, accountID, passwordHas
 	return s.repo.UpdatePasswordHash(ctx, accountID, passwordHash)
 }
 
-// Create 创建账号并写入对应端资料。
+// Create 创建账号（对齐 hei-boot AccountServiceImpl.create：RSA 解密密码、校验、全量身份）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
-	hash, err := security.HashPassword(req.Password)
+	if strings.EqualFold(req.AccountStatus, "CANCELLED") {
+		return fmt.Errorf("注销状态不允许通过管理端设置")
+	}
+	accountType := strings.ToUpper(strings.TrimSpace(req.AccountType))
+	if accountType != "ADMIN" && accountType != "PORTAL" {
+		return fmt.Errorf("unsupported account type: %s", req.AccountType)
+	}
+	if boolOf(req.EmailLoginEnabled) && !hasText(firstNonNil(req.EmailIdentity, req.Email)) {
+		return fmt.Errorf("email login requires an email")
+	}
+	if boolOf(req.PhoneLoginEnabled) && !hasText(firstNonNil(req.PhoneIdentity, req.Phone)) {
+		return fmt.Errorf("phone login requires a phone")
+	}
+	if _, err := s.repo.FindIdentity(ctx, IdentityAccount, req.Account); err == nil {
+		return fmt.Errorf("account identifier already exists")
+	}
+	rawPassword, err := s.resolveCreatePassword(ctx, req.Password, req.PasswordKeyID)
+	if err != nil {
+		return err
+	}
+	hash, err := security.HashPassword(rawPassword)
 	if err != nil {
 		return err
 	}
@@ -190,7 +216,7 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		st = security.AccountStatusEnabled
 	}
 	accID := idgen.Next()
-	acc := Account{ID: accID, PasswordHash: hash, AccountType: req.AccountType, AccountStatus: st}
+	acc := Account{ID: accID, PasswordHash: hash, AccountType: accountType, AccountStatus: st}
 	ident := Identity{
 		ID: idgen.Next(), AccountID: accID, IdentityType: IdentityAccount, Identifier: req.Account,
 		Verified: true, IsPrimary: true, BindStatus: BindBound,
@@ -198,7 +224,15 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	if err := s.repo.CreateAccount(ctx, acc, ident); err != nil {
 		return err
 	}
-	if req.AccountType == string(security.AccountAdmin) {
+	if err := s.replaceAccountIdentities(ctx, accID,
+		boolOf(req.EmailLoginEnabled), req.EmailIdentity, req.Email,
+		boolOf(req.EmailIdentityVerified), strOr(req.EmailIdentityBindStatus, BindBound),
+		boolOf(req.PhoneLoginEnabled), req.PhoneIdentity, req.Phone,
+		boolOf(req.PhoneIdentityVerified), strOr(req.PhoneIdentityBindStatus, BindBound)); err != nil {
+		return err
+	}
+	_ = s.recordHistory(ctx, accID, rawPassword, accID, "admin_reset")
+	if accountType == string(security.AccountAdmin) {
 		return s.admin.UpsertProfile(ctx, &profile.Profile{
 			AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
@@ -210,24 +244,59 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	})
 }
 
-// Update 更新账号与资料。
+// Update 更新账号与资料（对齐 hei-boot AccountServiceImpl.update：可选改密 + 全量替换身份）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	acc, err := s.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return fmt.Errorf("account not found")
+	}
+	if strings.EqualFold(acc.AccountStatus, "CANCELLED") {
+		return fmt.Errorf("已注销账号不允许通过管理端修改")
+	}
+	if strings.EqualFold(req.AccountStatus, "CANCELLED") {
+		return fmt.Errorf("注销状态不允许通过管理端设置")
+	}
+	accountType := strings.ToUpper(strings.TrimSpace(req.AccountType))
+	if accountType != "ADMIN" && accountType != "PORTAL" {
+		return fmt.Errorf("unsupported account type: %s", req.AccountType)
+	}
+	if boolOf(req.EmailLoginEnabled) && !hasText(firstNonNil(req.EmailIdentity, req.Email)) {
+		return fmt.Errorf("email login requires an email")
+	}
+	if boolOf(req.PhoneLoginEnabled) && !hasText(firstNonNil(req.PhoneIdentity, req.Phone)) {
+		return fmt.Errorf("phone login requires a phone")
+	}
+	if existing, err := s.repo.FindIdentity(ctx, IdentityAccount, req.Account); err == nil && existing.AccountID != req.ID {
+		return fmt.Errorf("account identifier already exists")
+	}
 	st := req.AccountStatus
 	if st == "" {
 		st = security.AccountStatusEnabled
 	}
-	updates := map[string]any{"account_type": req.AccountType, "account_status": st}
+	updates := map[string]any{"account_type": accountType, "account_status": st}
 	if req.Password != nil && *req.Password != "" {
-		hash, err := security.HashPassword(*req.Password)
-		if err != nil {
-			return err
+		rawPassword, derr := s.repo.DecryptPassword(ctx, req.PasswordKeyID, *req.Password)
+		if derr != nil {
+			return derr
+		}
+		hash, herr := security.HashPassword(rawPassword)
+		if herr != nil {
+			return herr
 		}
 		updates["password_hash"] = hash
+		_ = s.recordHistory(ctx, req.ID, rawPassword, req.ID, "admin_reset")
 	}
 	if err := s.repo.UpdateAccount(ctx, req.ID, updates, req.Account); err != nil {
 		return err
 	}
-	if req.AccountType == string(security.AccountAdmin) {
+	if err := s.replaceAccountIdentities(ctx, req.ID,
+		boolOf(req.EmailLoginEnabled), req.EmailIdentity, req.Email,
+		boolOf(req.EmailIdentityVerified), strOr(req.EmailIdentityBindStatus, BindBound),
+		boolOf(req.PhoneLoginEnabled), req.PhoneIdentity, req.Phone,
+		boolOf(req.PhoneIdentityVerified), strOr(req.PhoneIdentityBindStatus, BindBound)); err != nil {
+		return err
+	}
+	if accountType == string(security.AccountAdmin) {
 		return s.admin.UpsertProfile(ctx, &profile.Profile{
 			AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
@@ -239,8 +308,86 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	})
 }
 
-// Delete 先删双端资料，再删身份与账号。
+// resolveCreatePassword 管理端建号密码：RSA 解密，空则回退 AUTH_DEFAULT_PASSWORD（对齐 hei-boot resolveCreatePassword）。
+func (s *Service) resolveCreatePassword(ctx context.Context, password, passwordKeyID string) (string, error) {
+	raw := ""
+	if password != "" {
+		dec, err := s.repo.DecryptPassword(ctx, passwordKeyID, password)
+		if err != nil {
+			return "", err
+		}
+		raw = dec
+	}
+	if raw == "" && s.runtime != nil {
+		raw = s.runtime.GetString(ctx, "AUTH_DEFAULT_PASSWORD", "")
+	}
+	if strings.TrimSpace(raw) == "" {
+		return "", fmt.Errorf("password is required")
+	}
+	return raw, nil
+}
+
+// replaceAccountIdentities 全量替换 EMAIL/PHONE 登录身份（对齐 hei-boot replaceAccountIdentities）。
+func (s *Service) replaceAccountIdentities(ctx context.Context, accountID string,
+	emailLoginEnabled bool, emailIdentity, email *string, emailVerified bool, emailBindStatus string,
+	phoneLoginEnabled bool, phoneIdentity, phone *string, phoneVerified bool, phoneBindStatus string) error {
+	if err := s.repo.DeleteIdentitiesExcept(ctx, accountID, IdentityAccount); err != nil {
+		return err
+	}
+	emailID := firstNonNil(emailIdentity, email)
+	if emailLoginEnabled && hasText(emailID) {
+		row := Identity{
+			ID: idgen.Next(), AccountID: accountID, IdentityType: IdentityEmail,
+			Identifier: strings.ToLower(strings.TrimSpace(*emailID)), Verified: emailVerified,
+			IsPrimary: false, BindStatus: emailBindStatus,
+		}
+		if err := s.repo.CreateIdentity(ctx, &row); err != nil {
+			return err
+		}
+	}
+	phoneID := firstNonNil(phoneIdentity, phone)
+	if phoneLoginEnabled && hasText(phoneID) {
+		row := Identity{
+			ID: idgen.Next(), AccountID: accountID, IdentityType: IdentityPhone,
+			Identifier: strings.TrimSpace(*phoneID), Verified: phoneVerified,
+			IsPrimary: false, BindStatus: phoneBindStatus,
+		}
+		if err := s.repo.CreateIdentity(ctx, &row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) recordHistory(ctx context.Context, accountID, rawPassword, changedBy, reason string) error {
+	policy := shared.NewPasswordPolicy(s.repo.DB(), s.runtime)
+	return policy.RecordHistory(ctx, accountID, rawPassword, changedBy, reason)
+}
+
+func boolOf(p *bool) bool { return p != nil && *p }
+
+func strOr(p *string, def string) string {
+	if p == nil || *p == "" {
+		return def
+	}
+	return *p
+}
+
+func firstNonNil(a, b *string) *string {
+	if a != nil && strings.TrimSpace(*a) != "" {
+		return a
+	}
+	if b != nil && strings.TrimSpace(*b) != "" {
+		return b
+	}
+	return nil
+}
+
+func hasText(p *string) bool { return p != nil && strings.TrimSpace(*p) != "" }
+
+// Delete 先删关联授权关系，再删双端资料与身份、账号（对齐 hei-boot cleanupAccountSideData）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	_ = s.rel.DeleteBySubjectIDs(ctx, "ACCOUNT", ids, "")
 	if err := s.admin.DeleteByAccountIDs(ctx, ids); err != nil {
 		return err
 	}
@@ -314,6 +461,39 @@ func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, er
 	}
 	if ident, err := s.repo.FindAccountIdentity(ctx, id); err == nil {
 		vo.Account = ident.Identifier
+	}
+	// 全量身份 + 三方绑定 + 登录开关（对齐 hei-boot SysAccountResult）
+	vo.Identities = []IdentityResult{}
+	if idents, err := s.repo.FindIdentities(ctx, id); err == nil {
+		for _, it := range idents {
+			vo.Identities = append(vo.Identities, IdentityResult{
+				ID: it.ID, AccountID: it.AccountID, IdentityType: it.IdentityType,
+				Identifier: it.Identifier, Verified: it.Verified, IsPrimary: it.IsPrimary,
+				BindStatus: it.BindStatus, CreatedAt: it.CreatedAt, CreatedBy: it.CreatedBy,
+				UpdatedAt: it.UpdatedAt, UpdatedBy: it.UpdatedBy,
+			})
+			switch it.IdentityType {
+			case IdentityEmail:
+				vo.EmailLoginEnabled = true
+				vo.EmailIdentity = &it.Identifier
+				vo.EmailIdentityVerified = it.Verified
+				vo.EmailIdentityBindStatus = &it.BindStatus
+			case IdentityPhone:
+				vo.PhoneLoginEnabled = true
+				vo.PhoneIdentity = &it.Identifier
+				vo.PhoneIdentityVerified = it.Verified
+				vo.PhoneIdentityBindStatus = &it.BindStatus
+			}
+		}
+	}
+	vo.OAuthBindings = []OAuthBindingResult{}
+	if binds, err := s.repo.FindOAuthBindings(ctx, id); err == nil {
+		for _, b := range binds {
+			vo.OAuthBindings = append(vo.OAuthBindings, OAuthBindingResult{
+				ID: b.ID, Provider: b.Provider, OpenID: b.OpenID, UnionID: b.UnionID,
+				Nickname: b.Nickname, Avatar: b.Avatar, BoundAt: &b.BoundAt,
+			})
+		}
 	}
 	if acc.AccountType == string(security.AccountAdmin) {
 		if p, err := s.admin.GetProfile(ctx, id); err == nil {

@@ -1,4 +1,4 @@
-// internal/modules/iam/account/result.go 出参定义。
+// internal/modules/iam/account/result.go 出参定义（对齐 hei-boot SysAccountResult + 身份/三方绑定行）。
 //
 // Author: Charlie
 
@@ -14,36 +14,76 @@ import (
 	"hei-gin/internal/modules/iam/role"
 )
 
+// IdentityResult 账号身份行（对齐 hei-boot AccountIdentityResult）。
+//
+// Author: Charlie
+type IdentityResult struct {
+	ID           string    `json:"id"`
+	AccountID    string    `json:"account_id"`
+	IdentityType string    `json:"identity_type"`
+	Identifier   string    `json:"identifier"`
+	Verified     bool      `json:"verified"`
+	IsPrimary    bool      `json:"is_primary"`
+	BindStatus   string    `json:"bind_status"`
+	CreatedAt    time.Time `json:"created_at"`
+	CreatedBy    *string   `json:"created_by"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	UpdatedBy    *string   `json:"updated_by"`
+}
+
+// OAuthBindingResult 账号三方绑定行（对齐 hei-boot AccountOauthBindingResult）。
+//
+// Author: Charlie
+type OAuthBindingResult struct {
+	ID       string     `json:"id"`
+	Provider string     `json:"provider"`
+	OpenID   string     `json:"open_id"`
+	UnionID  *string    `json:"union_id"`
+	Nickname *string    `json:"nickname"`
+	Avatar   *string    `json:"avatar"`
+	BoundAt  *time.Time `json:"bound_at"`
+}
+
 // AccountResult 账号详情/分页行。
 //
 // Author: Charlie
 type AccountResult struct {
-	ID                 string     `json:"id"`
-	Account            string     `json:"account"`
-	AccountType        string     `json:"account_type"`
-	AccountStatus      string     `json:"account_status"`
-	Name               *string    `json:"name"`
-	Nickname           *string    `json:"nickname"`
-	Avatar             *string    `json:"avatar"`
-	Signature          *string    `json:"signature"`
-	Phone              *string    `json:"phone"`
-	Email              *string    `json:"email"`
-	Remark             *string    `json:"remark"`
-	CancelledAt        *time.Time `json:"cancelled_at"`
-	CancelledBy        *string    `json:"cancelled_by"`
-	CancelReason       *string    `json:"cancel_reason"`
-	LastLoginIP        *string    `json:"last_login_ip"`
-	LastLoginAddress   *string    `json:"last_login_address"`
-	LastLoginTime      *time.Time `json:"last_login_time"`
-	LastLoginDevice    *string    `json:"last_login_device"`
-	LatestLoginIP      *string    `json:"latest_login_ip"`
-	LatestLoginAddress *string    `json:"latest_login_address"`
-	LatestLoginTime    *time.Time `json:"latest_login_time"`
-	LatestLoginDevice  *string    `json:"latest_login_device"`
-	CreatedAt          time.Time  `json:"created_at"`
-	CreatedBy          *string    `json:"created_by"`
-	UpdatedAt          time.Time  `json:"updated_at"`
-	UpdatedBy          *string    `json:"updated_by"`
+	ID                      string               `json:"id"`
+	Account                 string               `json:"account"`
+	AccountType             string               `json:"account_type"`
+	AccountStatus           string               `json:"account_status"`
+	Name                    *string              `json:"name"`
+	Nickname                *string              `json:"nickname"`
+	Avatar                  *string              `json:"avatar"`
+	Signature               *string              `json:"signature"`
+	Phone                   *string              `json:"phone"`
+	Email                   *string              `json:"email"`
+	EmailLoginEnabled       bool                 `json:"email_login_enabled"`
+	PhoneLoginEnabled       bool                 `json:"phone_login_enabled"`
+	EmailIdentity           *string              `json:"email_identity"`
+	PhoneIdentity           *string              `json:"phone_identity"`
+	EmailIdentityVerified   bool                 `json:"email_identity_verified"`
+	PhoneIdentityVerified   bool                 `json:"phone_identity_verified"`
+	EmailIdentityBindStatus *string              `json:"email_identity_bind_status"`
+	PhoneIdentityBindStatus *string              `json:"phone_identity_bind_status"`
+	Identities              []IdentityResult     `json:"identities"`
+	OAuthBindings           []OAuthBindingResult `json:"oauth_bindings"`
+	Remark                  *string              `json:"remark"`
+	CancelledAt             *time.Time           `json:"cancelled_at"`
+	CancelledBy             *string              `json:"cancelled_by"`
+	CancelReason            *string              `json:"cancel_reason"`
+	LastLoginIP             *string              `json:"last_login_ip"`
+	LastLoginAddress        *string              `json:"last_login_address"`
+	LastLoginTime           *time.Time           `json:"last_login_time"`
+	LastLoginDevice         *string              `json:"last_login_device"`
+	LatestLoginIP           *string              `json:"latest_login_ip"`
+	LatestLoginAddress      *string              `json:"latest_login_address"`
+	LatestLoginTime         *time.Time           `json:"latest_login_time"`
+	LatestLoginDevice       *string              `json:"latest_login_device"`
+	CreatedAt               time.Time            `json:"created_at"`
+	CreatedBy               *string              `json:"created_by"`
+	UpdatedAt               time.Time            `json:"updated_at"`
+	UpdatedBy               *string              `json:"updated_by"`
 }
 
 // OwnRoleResult 账号已拥有角色结果。

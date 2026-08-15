@@ -28,8 +28,8 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/dicts/page", admin, middleware.RequirePermission(d.Perms, "sys:dict:page", "字典分页"), s.page)
 		api.GET("/v1/admin/sys/dicts/tree", admin, s.tree)
 
-		portal := middleware.RequireAccountType(security.AccountPortal)
-		api.GET("/v1/portal/sys/dicts/tree", portal, s.portalTree)
+		// 门户字典树为公开接口（对齐 hei-boot PortalDictController，web public:true）
+		api.GET("/v1/portal/sys/dicts/tree", s.portalTree)
 	}
 }
 

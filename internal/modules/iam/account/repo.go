@@ -6,20 +6,88 @@ package account
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"fmt"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/core/security/datascope"
+	"hei-gin/internal/modules/auth/oauth"
 )
+
+// passwordKeyPrefix Redis 密码加密密钥前缀（与 auth 模块一致）。
+const passwordKeyPrefix = "password:crypto:"
 
 // Repo 账号持久化（仅 sys_account / sys_account_identity；资料表归 user 模块）。
 //
 // Author: Charlie
-type Repo struct{ db *gorm.DB }
+type Repo struct {
+	db  *gorm.DB
+	rdb *redis.Client
+}
 
 // NewRepo 构造 Repo。
-func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
+func NewRepo(db *gorm.DB, rdb *redis.Client) *Repo { return &Repo{db: db, rdb: rdb} }
+
+// DecryptPassword 用 Redis 私钥解密管理端 RSA 加密密码（对齐 hei-boot passwordCryptoApi）。
+func (r *Repo) DecryptPassword(ctx context.Context, keyID, encryptedValue string) (string, error) {
+	if keyID == "" {
+		return "", fmt.Errorf("缺少 password_key_id")
+	}
+	raw, err := r.rdb.Get(ctx, passwordKeyPrefix+keyID).Result()
+	_ = r.rdb.Del(ctx, passwordKeyPrefix+keyID)
+	if err == redis.Nil || raw == "" {
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
+	}
+	if err != nil {
+		return "", err
+	}
+	if encryptedValue == "" {
+		return "", nil
+	}
+	block, _ := pem.Decode([]byte(raw))
+	if block == nil {
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
+	}
+	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
+	}
+	rsaKey, ok := priv.(*rsa.PrivateKey)
+	if !ok {
+		return "", fmt.Errorf("无效或过期的密码加密密钥")
+	}
+	ciphertext, err := base64.StdEncoding.DecodeString(encryptedValue)
+	if err != nil {
+		return "", fmt.Errorf("无效的加密密码")
+	}
+	plain, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, ciphertext, nil)
+	if err != nil {
+		return "", fmt.Errorf("无效的加密密码")
+	}
+	return string(plain), nil
+}
+
+// FindIdentities 查账号全部身份。
+func (r *Repo) FindIdentities(ctx context.Context, accountID string) ([]Identity, error) {
+	var rows []Identity
+	err := r.with(ctx).Where("account_id = ?", accountID).Order("identity_type, is_primary DESC").Find(&rows).Error
+	return rows, err
+}
+
+// FindOAuthBindings 查账号三方绑定。
+func (r *Repo) FindOAuthBindings(ctx context.Context, accountID string) ([]oauth.AccountOAuthBinding, error) {
+	var rows []oauth.AccountOAuthBinding
+	err := r.with(ctx).Where("account_id = ?", accountID).Order("provider").Find(&rows).Error
+	return rows, err
+}
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
@@ -77,6 +145,16 @@ func (r *Repo) FindAccountIdentities(ctx context.Context, ids []string) (map[str
 		}
 	}
 	return out, nil
+}
+
+// DeleteIdentitiesExcept 删除账号除指定类型外的全部身份。
+func (r *Repo) DeleteIdentitiesExcept(ctx context.Context, accountID, keepType string) error {
+	return r.with(ctx).Where("account_id = ? AND identity_type <> ?", accountID, keepType).Delete(&Identity{}).Error
+}
+
+// CreateIdentity 创建身份。
+func (r *Repo) CreateIdentity(ctx context.Context, row *Identity) error {
+	return r.with(ctx).Create(row).Error
 }
 
 // ListRoleIDs 查账号已启用角色 ID。
@@ -175,6 +253,20 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE name ILIKE ?))
 			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE name ILIKE ?))`,
 			string(security.AccountAdmin), "%"+p.Name+"%", string(security.AccountPortal), "%"+p.Name+"%",
+		)
+	}
+	if p.Phone != "" {
+		db = db.Where(
+			`id IN (SELECT account_id FROM profile_user_admin WHERE phone ILIKE ?)
+			 OR id IN (SELECT account_id FROM profile_user_portal WHERE phone ILIKE ?)`,
+			"%"+p.Phone+"%", "%"+p.Phone+"%",
+		)
+	}
+	if p.Email != "" {
+		db = db.Where(
+			`id IN (SELECT account_id FROM profile_user_admin WHERE email ILIKE ?)
+			 OR id IN (SELECT account_id FROM profile_user_portal WHERE email ILIKE ?)`,
+			"%"+p.Email+"%", "%"+p.Email+"%",
 		)
 	}
 	if err = db.Count(&total).Error; err != nil {

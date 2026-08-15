@@ -28,9 +28,9 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/banners/detail", admin, middleware.RequirePermission(d.Perms, "sys:banner:detail", "Banner详情"), s.detail)
 		api.GET("/v1/admin/sys/banners/page", admin, middleware.RequirePermission(d.Perms, "sys:banner:page", "Banner分页"), s.page)
 
-		portal := middleware.RequireAccountType(security.AccountPortal)
-		api.GET("/v1/portal/sys/banners/list", portal, s.portalList)
-		api.POST("/v1/portal/sys/banners/interaction", portal, s.interaction)
+		// 门户 banner 列表与互动为公开接口（对齐 hei-boot PortalBannerController，web public:true）
+		api.GET("/v1/portal/sys/banners/list", s.portalList)
+		api.POST("/v1/portal/sys/banners/interaction", s.interaction)
 	}
 }
 
@@ -101,6 +101,8 @@ func (s *Service) page(c *gin.Context) {
 func (s *Service) list(c *gin.Context) {
 	var q ListParam
 	q.Position = c.Query("position")
+	q.Category = c.Query("category")
+	q.Type = c.Query("type")
 	rows, err := s.List(c.Request.Context(), q)
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
