@@ -158,6 +158,9 @@ func main() {
 		authGET(login.Data.Token, "/dashboard/overview")
 		authGET(login.Data.Token, "/sys/config/list?category=AUTH_PASSWORD")
 		authGET(login.Data.Token, "/sys/notices/my-page?current=1&size=3")
+		authGET(login.Data.Token, "/sys/banners/page?current=1&size=10")
+		authGET(login.Data.Token, "/sys/banners/list?position=HOME_TOP")
+		authGET(login.Data.Token, "/sys/banners/detail?id=7491889345134235648")
 	authGETFile(login.Data.Token)
 	}
 }
