@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, Empty, Image, Skeleton, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { Link, useParams } from 'react-router-dom'
-import { feedbackApi } from '@/api'
+import { sysFeedbackApi } from '@/api'
 import { DictTag } from '@/components/common/DictTag'
 import { displayValue, formatDateTime, formatFileSize, isImageFile } from '@/utils'
 
@@ -29,7 +29,7 @@ export function FeedbackDetailPage() {
 
     void (async () => {
       try {
-        const res = await feedbackApi.myDetail(id)
+        const res = await sysFeedbackApi.myDetail(id)
         if (!mounted) return
         setDetail(res.data ?? null)
         setNotFound(!res.data)

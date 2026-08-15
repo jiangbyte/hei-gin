@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
 import { readPageMeta } from '@/utils/wire'
-import { noticeApi } from '@/api'
+import { sysNoticeApi } from '@/api'
 
 function announcementSummary(content: string, contentType: string) {
   const raw = content || ''
@@ -37,7 +37,7 @@ export function AnnouncementListPage() {
     async function load() {
       setLoading(true)
       try {
-        const res = await noticeApi.list({ current, size })
+        const res = await sysNoticeApi.list({ current, size })
         if (!mounted) return
         setRecords(res.data.records ?? [])
         setTotal(readPageMeta(res.data).total)

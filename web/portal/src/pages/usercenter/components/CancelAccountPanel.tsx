@@ -46,7 +46,7 @@ export function CancelAccountPanel() {
   }
 
   return (
-    <div className="user-center-form user-center-form--narrow w-full min-w-0">
+    <div className="profile-form profile-form--narrow w-full min-w-0">
       <Alert
         type="warning"
         showIcon

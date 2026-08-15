@@ -34,25 +34,25 @@ export function resetPassword(data: any) {
 }
 
 export function updateProfile(data: any) {
-  return http.post<any>(`${prefix}/user-center/profile/update`, data)
+  return http.post<any>(`${prefix}/profile/update`, data)
 }
 
 export function updatePassword(data: any) {
-  return http.post<any>(`${prefix}/user-center/password/update`, data)
+  return http.post<any>(`${prefix}/profile/password/update`, data)
 }
 
 export function updatePhone(data: any) {
-  return http.post<any>(`${prefix}/user-center/phone/update`, data)
+  return http.post<any>(`${prefix}/profile/phone/update`, data)
 }
 
 export function updateEmail(data: any) {
-  return http.post<any>(`${prefix}/user-center/email/update`, data)
+  return http.post<any>(`${prefix}/profile/email/update`, data)
 }
 
 export function orgInfo() {
-  return http.get<any>(`${prefix}/user-center/org-info`)
+  return http.get<any>(`${prefix}/profile/org-info`)
 }
 
 export function uploadAvatar(filePath: string) {
-    return http.upload<any>(`${prefix}/user-center/avatar/upload`, filePath)
+    return http.upload<any>(`${prefix}/profile/avatar/upload`, filePath)
 }

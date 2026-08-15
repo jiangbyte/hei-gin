@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Modal, Space, Spin, Tag, Typography } from 'antd'
-import { messageApi } from '@/api'
+import { myNoticeApi } from '@/api'
 import { useMessageUnreadStore } from '@/stores/messageUnread'
 import { displayValue, formatDateTime, wireBool } from '@/utils'
 import { dictTypeData } from '@/utils/dict'
@@ -65,7 +65,7 @@ function MessageDetailBody({
     void (async () => {
       try {
         // myDetail 后端会顺带标记已读
-        const response = await messageApi.myDetail(sourceId)
+        const response = await myNoticeApi.myDetail(sourceId)
         if (!mounted) return
         const data = response.data ?? {}
         setDetail(data)
@@ -110,7 +110,7 @@ function MessageDetailBody({
     const kind = resolveKind(detail.kind || messageKind)
     setActionLoading(true)
     try {
-      await messageApi.read({ ids: [id] })
+      await myNoticeApi.read({ ids: [id] })
       setDetail((prev: any) => ({ ...prev, is_read: true }))
       setReadLocally(true)
       notifyRead()

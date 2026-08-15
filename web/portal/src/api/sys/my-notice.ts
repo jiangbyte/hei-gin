@@ -3,7 +3,7 @@
 import { API_PREFIX } from '@/constants/api'
 import { http } from '@/utils'
 
-const prefix = `${API_PREFIX}/message/notices`
+const prefix = `${API_PREFIX}/sys/notices`
 
 export function myPage(params?: { current?: number; size?: number; kind?: string }) {
   return http.get<any>(`${prefix}/my-page`, { params })

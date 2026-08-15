@@ -137,9 +137,9 @@ export function UserCenterPage() {
   }
 
   return (
-    <div className="user-center page-shell w-full min-w-0">
-      <div className="user-center__body">
-        <aside className="user-center__sidebar">
+    <div className="profile page-shell w-full min-w-0">
+      <div className="profile__body">
+        <aside className="profile__sidebar">
           <Menu
             mode="inline"
             selectedKeys={[activeTab]}
@@ -148,13 +148,13 @@ export function UserCenterPage() {
           />
         </aside>
 
-        <section className="user-center__content">
-          <div className="user-center__panel">
+        <section className="profile__content">
+          <div className="profile__panel">
             <h2
               className={
                 activeTab === 'basic_info'
-                  ? 'user-center__panel-title user-center__panel-title--with-tabs'
-                  : 'user-center__panel-title'
+                  ? 'profile__panel-title profile__panel-title--with-tabs'
+                  : 'profile__panel-title'
               }
             >
               {activeNav.label}

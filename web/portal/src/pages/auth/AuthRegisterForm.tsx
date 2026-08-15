@@ -43,6 +43,8 @@ export function AuthRegisterForm() {
     register_allow_account: true,
     register_allow_email: true,
     register_allow_phone: false,
+    register_require_email: false,
+    register_require_phone: false,
   })
   const captchaRef = useRef<CaptchaInputHandle>(null)
   const captchaId = Form.useWatch('captcha_id', form) || ''
@@ -73,6 +75,8 @@ export function AuthRegisterForm() {
           register_allow_account: wireBool(data.register_allow_account ?? true),
           register_allow_email: wireBool(data.register_allow_email ?? true),
           register_allow_phone: wireBool(data.register_allow_phone ?? false),
+          register_require_email: wireBool(data.register_require_email ?? false),
+          register_require_phone: wireBool(data.register_require_phone ?? false),
         })
       })
       .catch(() => undefined)
@@ -138,6 +142,22 @@ export function AuthRegisterForm() {
         return
       }
       encryptedPayload.account = account
+      if (options.register_require_email) {
+        const email = (values.email || '').trim()
+        if (!isValidEmail(email) || email.length > 128) {
+          message.warning('邮箱格式不正确')
+          return
+        }
+        encryptedPayload.email = email
+      }
+      if (options.register_require_phone) {
+        const phone = (values.phone || '').trim()
+        if (!isValidPhone(phone)) {
+          message.warning('请输入有效手机号')
+          return
+        }
+        encryptedPayload.phone = phone
+      }
     } else if (resolvedChannel === 'EMAIL') {
       const email = (values.email || '').trim()
       if (!isValidEmail(email) || email.length > 128) {
@@ -211,15 +231,37 @@ export function AuthRegisterForm() {
         />
 
         {resolvedChannel === 'ACCOUNT' ? (
-          <Form.Item
-            name="account"
-            rules={[
-              { required: true, message: '请输入用户名' },
-              { min: 3, max: 64, message: '用户名需 3-64 个字符' },
-            ]}
-          >
-            <Input placeholder="用户名" allowClear />
-          </Form.Item>
+          <>
+            <Form.Item
+              name="account"
+              rules={[
+                { required: true, message: '请输入用户名' },
+                { min: 3, max: 64, message: '用户名需 3-64 个字符' },
+              ]}
+            >
+              <Input placeholder="用户名" allowClear />
+            </Form.Item>
+            {options.register_require_email ? (
+              <Form.Item
+                name="email"
+                rules={[
+                  { required: true, message: '请输入邮箱' },
+                  { type: 'email', message: '邮箱格式不正确' },
+                  { max: 128, message: '邮箱最多 128 个字符' },
+                ]}
+              >
+                <Input placeholder="邮箱（必填）" allowClear />
+              </Form.Item>
+            ) : null}
+            {options.register_require_phone ? (
+              <Form.Item
+                name="phone"
+                rules={[{ required: true, message: '请输入手机号' }]}
+              >
+                <Input placeholder="手机号（必填）" allowClear />
+              </Form.Item>
+            ) : null}
+          </>
         ) : null}
 
         {resolvedChannel === 'EMAIL' ? (

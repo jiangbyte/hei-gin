@@ -115,7 +115,7 @@ export function EmailPanel() {
     try {
       const encrypted = await encryptPasswords({ password })
       const values = form.getFieldsValue()
-      await authApi.updateUserCenterEmail({
+      await authApi.updateEmail({
         password: encrypted.values.password || '',
         password_key_id: encrypted.password_key_id,
         email: email || null,
@@ -144,7 +144,7 @@ export function EmailPanel() {
         <Form
           form={form}
           layout="vertical"
-          className="user-center-form user-center-form--narrow w-full min-w-0"
+          className="profile-form profile-form--narrow w-full min-w-0"
         >
           <Form.Item
             name="email"

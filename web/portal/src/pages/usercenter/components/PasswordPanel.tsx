@@ -55,7 +55,7 @@ export function PasswordPanel() {
         payload.old_password = values.old_password
       }
       const encrypted = await encryptPasswords(payload)
-      await authApi.updateUserCenterPassword({
+      await authApi.updatePassword({
         old_password: encrypted.values.old_password,
         new_password: encrypted.values.new_password || '',
         password_key_id: encrypted.password_key_id,
@@ -72,7 +72,7 @@ export function PasswordPanel() {
     <Form
       form={form}
       layout="vertical"
-      className="user-center-form user-center-form--narrow w-full min-w-0"
+      className="profile-form profile-form--narrow w-full min-w-0"
     >
       {verifyMethod === 'OLD_PASSWORD' ? (
         <Form.Item

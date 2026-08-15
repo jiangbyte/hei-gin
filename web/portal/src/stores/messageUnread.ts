@@ -1,7 +1,7 @@
 /** Author: Charlie */
 
 import { create } from 'zustand'
-import { messageApi } from '@/api'
+import { myNoticeApi } from '@/api'
 import { wireInt } from '@/utils/wire'
 
 type MessageUnreadState = {
@@ -20,7 +20,7 @@ export const useMessageUnreadStore = create<MessageUnreadState>((set, get) => ({
   notifyReadAll: () => set({ unreadTotal: 0 }),
   refresh: async () => {
     try {
-      const res = await messageApi.unreadCount()
+      const res = await myNoticeApi.unreadCount()
       const raw = res.data
       const total =
         typeof raw === 'string' ? wireInt(raw) : typeof raw === 'number' ? raw : Number(raw ?? 0)

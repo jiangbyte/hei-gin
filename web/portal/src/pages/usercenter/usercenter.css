@@ -1,17 +1,17 @@
-.user-center {
+.profile {
   --uc-sidebar-width: 220px;
   color: var(--ant-color-text);
 }
 
-.user-center__body {
+.profile__body {
   display: grid;
   grid-template-columns: var(--uc-sidebar-width) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.user-center__sidebar,
-.user-center__content {
+.profile__sidebar,
+.profile__content {
   min-width: 0;
   background: var(--ant-color-bg-container);
   border: 1px solid color-mix(in srgb, var(--ant-color-border) 65%, transparent);
@@ -19,33 +19,33 @@
   box-shadow: 0 2px 8px rgba(22, 119, 255, 0.04);
 }
 
-.user-center__sidebar {
+.profile__sidebar {
   position: sticky;
   top: 12px;
   padding: 8px 0;
   overflow: hidden;
 }
 
-.user-center__sidebar .ant-menu {
+.profile__sidebar .ant-menu {
   background: transparent !important;
   border-inline-end: 0 !important;
 }
 
-.user-center__sidebar .ant-menu-item-group-title {
+.profile__sidebar .ant-menu-item-group-title {
   padding-inline: 16px;
 }
 
-.user-center__content {
+.profile__content {
   overflow-x: clip;
 }
 
-.user-center__panel {
+.profile__panel {
   min-width: 0;
   min-height: 420px;
   padding: 20px 24px 28px;
 }
 
-.user-center__panel-title {
+.profile__panel-title {
   margin: 0 0 18px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--ant-color-border);
@@ -54,21 +54,21 @@
   line-height: 1.25;
 }
 
-.user-center__panel-title--with-tabs {
+.profile__panel-title--with-tabs {
   margin-bottom: 4px;
   padding-bottom: 0;
   border-bottom: 0;
 }
 
-.user-center__subtabs {
+.profile__subtabs {
   margin-top: 0;
 }
 
-.user-center__subtabs .ant-tabs-nav {
+.profile__subtabs .ant-tabs-nav {
   margin-bottom: 18px;
 }
 
-.user-center__avatar-card {
+.profile__avatar-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -76,7 +76,7 @@
   max-width: 480px;
 }
 
-.user-center__avatar-edit {
+.profile__avatar-edit {
   position: relative;
   border: 0;
   background: transparent;
@@ -86,7 +86,7 @@
   line-height: 0;
 }
 
-.user-center__avatar-badge {
+.profile__avatar-badge {
   position: absolute;
   left: 10px;
   bottom: 10px;
@@ -103,45 +103,45 @@
   line-height: 1;
 }
 
-.user-center__avatar-name {
+.profile__avatar-name {
   font-size: 16px;
   font-weight: 650;
   line-height: 1.35;
   word-break: break-word;
 }
 
-.user-center__avatar-account {
+.profile__avatar-account {
   margin-top: -4px;
   font-size: 13px;
   color: var(--ant-color-text-tertiary);
   word-break: break-all;
 }
 
-.user-center__avatar-desc {
+.profile__avatar-desc {
   width: 100%;
   margin-top: 4px;
 }
 
-.user-center__hint {
+.profile__hint {
   color: var(--ant-color-text-tertiary);
   font-size: 12px;
 }
 
-.user-center-form {
+.profile-form {
   min-width: 0;
 }
 
-.user-center-form--narrow {
+.profile-form--narrow {
   max-width: 480px;
 }
 
 @media (max-width: 960px) {
-  .user-center__body {
+  .profile__body {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
-  .user-center__sidebar {
+  .profile__sidebar {
     position: static;
   }
 }

@@ -115,7 +115,7 @@ export function PhonePanel() {
     try {
       const encrypted = await encryptPasswords({ password })
       const values = form.getFieldsValue()
-      await authApi.updateUserCenterPhone({
+      await authApi.updatePhone({
         password: encrypted.values.password || '',
         password_key_id: encrypted.password_key_id,
         phone: phone || null,
@@ -144,7 +144,7 @@ export function PhonePanel() {
         <Form
           form={form}
           layout="vertical"
-          className="user-center-form user-center-form--narrow w-full min-w-0"
+          className="profile-form profile-form--narrow w-full min-w-0"
         >
           <Form.Item name="phone" label="手机号">
             <Input allowClear />

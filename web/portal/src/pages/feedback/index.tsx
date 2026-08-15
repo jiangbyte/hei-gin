@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button, Empty, Pagination, Skeleton } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
-import { feedbackApi } from '@/api'
+import { sysFeedbackApi } from '@/api'
 import { DictTag } from '@/components/common/DictTag'
 import { formatDateTime } from '@/utils/time'
 import { readPageMeta } from '@/utils/wire'
@@ -22,7 +22,7 @@ export function FeedbackListPage() {
     async function load() {
       setLoading(true)
       try {
-        const res = await feedbackApi.myPage({ current, size })
+        const res = await sysFeedbackApi.myPage({ current, size })
         if (!mounted) return
         setRecords(res.data.records ?? [])
         setTotal(readPageMeta(res.data).total)

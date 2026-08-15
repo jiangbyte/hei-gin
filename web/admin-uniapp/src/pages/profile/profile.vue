@@ -68,7 +68,7 @@ function chooseAvatar() {
     count: 1,
     success: (res) => {
       const path = encodeURIComponent(res.tempFilePaths[0])
-      uni.navigateTo({ url: `/pages/usercenter/avatar-crop?imagePath=${path}` })
+      uni.navigateTo({ url: `/pages/profile/avatar-crop?imagePath=${path}` })
     },
   })
 }

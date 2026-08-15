@@ -81,7 +81,7 @@ onShow(() => {
 })
 
 function goToProfile() {
-  uni.navigateTo({ url: '/pages/usercenter/profile' })
+  uni.navigateTo({ url: '/pages/profile/profile' })
 }
 
 function confirmLogout() {

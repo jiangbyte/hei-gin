@@ -29,21 +29,21 @@
       }
     },
     {
-      "path": "pages/usercenter/index",
+      "path": "pages/profile/index",
       "style": {
         "navigationBarTitleText": "我的",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/usercenter/profile",
+      "path": "pages/profile/profile",
       "style": {
         "navigationBarTitleText": "个人资料",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/usercenter/avatar-crop",
+      "path": "pages/profile/avatar-crop",
       "style": {
         "navigationBarTitleText": "",
         "navigationStyle": "custom"
@@ -85,7 +85,7 @@
         "text": "工作台"
       },
       {
-        "pagePath": "pages/usercenter/index",
+        "pagePath": "pages/profile/index",
         "text": "我的"
       }
     ]

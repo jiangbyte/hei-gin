@@ -5,7 +5,7 @@ import { Button, Form, Input, Upload, message } from 'antd'
 import { ArrowLeftOutlined, InboxOutlined } from '@ant-design/icons'
 import type { UploadFile, UploadProps } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-import { feedbackApi, fileApi } from '@/api'
+import { sysFeedbackApi, fileApi } from '@/api'
 import { DictSelect } from '@/components/common/DictSelect'
 import { normalizeUploadedFile } from '@/utils/file'
 
@@ -61,7 +61,7 @@ export function FeedbackNewPage() {
 
     setSubmitting(true)
     try {
-      await feedbackApi.submit({
+      await sysFeedbackApi.submit({
         title: values.title.trim(),
         content: values.content.trim(),
         category: values.category,

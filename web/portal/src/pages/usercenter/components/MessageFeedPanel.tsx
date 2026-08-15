@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Badge, Button, Empty, List, Pagination, Space, Spin, Tag, Typography, message } from 'antd'
 import { NotificationOutlined, SoundOutlined } from '@ant-design/icons'
-import { messageApi } from '@/api'
+import { myNoticeApi } from '@/api'
 import {
   MessageDetailModal,
   type MessageDetailSource,
-} from '@/components/message/MessageDetailModal'
+} from '@/components/sys/MessageDetailModal'
 import { useMessageUnreadStore } from '@/stores/messageUnread'
 import { formatDateTime, wireBool } from '@/utils'
 import { dictTypeData } from '@/utils/dict'
@@ -46,7 +46,7 @@ export function MessageFeedPanel() {
   const fetchPage = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await messageApi.myPage({ current: page, size: pageSize })
+      const response = await myNoticeApi.myPage({ current: page, size: pageSize })
       applyPage(response.data ?? {}, page, pageSize)
     } finally {
       setLoading(false)
@@ -57,7 +57,7 @@ export function MessageFeedPanel() {
     let cancelled = false
     void (async () => {
       try {
-        const response = await messageApi.myPage({ current: page, size: pageSize })
+        const response = await myNoticeApi.myPage({ current: page, size: pageSize })
         if (!cancelled) applyPage(response.data ?? {}, page, pageSize)
       } finally {
         if (!cancelled) setLoading(false)
@@ -106,7 +106,7 @@ export function MessageFeedPanel() {
   }
 
   async function markAllRead() {
-    await messageApi.readAll()
+    await myNoticeApi.readAll()
     setRows((prev) => prev.map((row) => ({ ...row, is_read: true })))
     notifyReadAll()
     message.success('已全部标记为已读')

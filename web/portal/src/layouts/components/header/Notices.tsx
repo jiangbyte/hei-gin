@@ -4,14 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Divider, Popover, Tooltip } from 'antd'
 import { BellOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { messageApi } from '@/api'
+import { myNoticeApi } from '@/api'
 import { formatDateTime, wireBool } from '@/utils'
 import { readPageMeta } from '@/utils/wire'
 import { useMessageUnreadStore } from '@/stores/messageUnread'
 import {
   MessageDetailModal,
   type MessageDetailSource,
-} from '@/components/message/MessageDetailModal'
+} from '@/components/sys/MessageDetailModal'
 import { NoticeList, type BannerItem } from '../common/NoticeList'
 
 const pageSize = 8
@@ -85,7 +85,7 @@ export function Notices() {
   const loadList = useCallback(async (page = 1, mode: LoadMode = 'replace') => {
     setLoading(true)
     try {
-      const response = await messageApi.myPage({ current: page, size: pageSize })
+      const response = await myNoticeApi.myPage({ current: page, size: pageSize })
       const data = response.data ?? {}
       const incoming = (data.records ?? []).map((item: any) => mapHistoryItem(item))
       setRecords((prev) => mergeNoticeRecords(prev, incoming, mode))
@@ -134,7 +134,7 @@ export function Notices() {
 
   async function markAllRead() {
     try {
-      await messageApi.readAll()
+      await myNoticeApi.readAll()
       setRecords((prev) => prev.map((item) => ({ ...item, isRead: true })))
       notifyReadAll()
     } catch {

@@ -30,15 +30,15 @@ export function sendRegisterCode(data: any) {
 }
 
 export function sendPasswordChangeCode() {
-  return http.post<any>(`${prefix}/user-center/password/send-code`)
+  return http.post<any>(`${prefix}/profile/password/send-code`)
 }
 
 export function sendBindEmailCode(data: { target: string }) {
-  return http.post<any>(`${prefix}/user-center/email/send-code`, data)
+  return http.post<any>(`${prefix}/profile/email/send-code`, data)
 }
 
 export function sendBindPhoneCode(data: { target: string }) {
-  return http.post<any>(`${prefix}/user-center/phone/send-code`, data)
+  return http.post<any>(`${prefix}/profile/phone/send-code`, data)
 }
 
 export function register(data: any) {
@@ -74,26 +74,26 @@ export function cancelAccount(data?: { cancel_reason?: string | null }) {
   return http.post<any>(`${prefix}/cancel`, data ?? {})
 }
 
-export function updateUserCenterProfile(data: any) {
-  return http.post<any>(`${prefix}/user-center/profile/update`, data)
+export function updateProfile(data: any) {
+  return http.post<any>(`${prefix}/profile/update`, data)
 }
 
-export function updateUserCenterPassword(data: any) {
-  return http.post<any>(`${prefix}/user-center/password/update`, data)
+export function updatePassword(data: any) {
+  return http.post<any>(`${prefix}/profile/password/update`, data)
 }
 
-export function updateUserCenterPhone(data: any) {
-  return http.post<any>(`${prefix}/user-center/phone/update`, data)
+export function updatePhone(data: any) {
+  return http.post<any>(`${prefix}/profile/phone/update`, data)
 }
 
-export function updateUserCenterEmail(data: any) {
-  return http.post<any>(`${prefix}/user-center/email/update`, data)
+export function updateEmail(data: any) {
+  return http.post<any>(`${prefix}/profile/email/update`, data)
 }
 
-export function uploadUserCenterAvatar(file: File) {
+export function uploadAvatar(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return http.post<any>(`${prefix}/user-center/avatar/upload`, formData)
+  return http.post<any>(`${prefix}/profile/avatar/upload`, formData)
 }
 
 export function getPublicSpace(accountId: string) {

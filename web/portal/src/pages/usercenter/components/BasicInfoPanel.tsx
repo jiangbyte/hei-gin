@@ -59,7 +59,7 @@ export function BasicInfoPanel() {
     setSavingProfile(true)
     try {
       const values = await profileForm.validateFields()
-      await authApi.updateUserCenterProfile({
+      await authApi.updateProfile({
         name: values.name || null,
         nickname: values.nickname || null,
         signature: values.signature || null,
@@ -86,29 +86,29 @@ export function BasicInfoPanel() {
         <Tabs
           activeKey={basicInfoTab}
           onChange={setBasicInfoTab}
-          className="user-center__subtabs"
+          className="profile__subtabs"
           items={[
             {
               key: 'avatar',
               label: '头像',
               children: (
-                <div className="user-center__avatar-card">
+                <div className="profile__avatar-card">
                   <button
                     type="button"
-                    className="user-center__avatar-edit"
+                    className="profile__avatar-edit"
                     title="更换头像"
                     onClick={() => setAvatarModalShow(true)}
                   >
                     <Avatar size={160} src={avatarUrl} icon={<UserOutlined />} />
-                    <span className="user-center__avatar-badge">
+                    <span className="profile__avatar-badge">
                       <EditOutlined />
                       编辑
                     </span>
                   </button>
-                  <div className="user-center__avatar-name">{displayName}</div>
-                  <div className="user-center__avatar-account">{me?.account || '-'}</div>
+                  <div className="profile__avatar-name">{displayName}</div>
+                  <div className="profile__avatar-account">{me?.account || '-'}</div>
                   <Descriptions
-                    className="user-center__avatar-desc"
+                    className="profile__avatar-desc"
                     column={1}
                     size="small"
                     labelStyle={{ width: 72 }}
@@ -127,11 +127,11 @@ export function BasicInfoPanel() {
                 <Form
                   form={profileForm}
                   layout="vertical"
-                  className="user-center-form user-center-form--narrow w-full min-w-0"
+                  className="profile-form profile-form--narrow w-full min-w-0"
                 >
                   <Form.Item
                     label="账号"
-                    extra={<span className="user-center__hint">登录账号不可修改。</span>}
+                    extra={<span className="profile__hint">登录账号不可修改。</span>}
                   >
                     <Input value={me?.account} disabled />
                   </Form.Item>
@@ -140,7 +140,7 @@ export function BasicInfoPanel() {
                     label="姓名"
                     rules={[{ max: 64, message: '姓名最多 64 个字符' }]}
                     extra={
-                      <span className="user-center__hint">姓名可能出现在审批、审计等场景中。</span>
+                      <span className="profile__hint">姓名可能出现在审批、审计等场景中。</span>
                     }
                   >
                     <Input allowClear />

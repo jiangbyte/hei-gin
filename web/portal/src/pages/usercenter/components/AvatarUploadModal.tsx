@@ -82,7 +82,7 @@ export function AvatarUploadModal({ open, avatar, onClose, onUploaded }: Props) 
 
     setUploading(true)
     try {
-      await authApi.uploadUserCenterAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
+      await authApi.uploadAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
       message.success('头像已更新')
       onUploaded()
       onClose()

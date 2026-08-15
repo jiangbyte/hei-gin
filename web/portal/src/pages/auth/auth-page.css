@@ -12,18 +12,72 @@
   --auth-font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
   --auth-font-body: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
 
+  /* 波浪海洋配色（浅色）— 与主题蓝协调的中等浓度 */
+  --auth-wave-far: color-mix(in srgb, var(--auth-primary) 7%, transparent);
+  --auth-wave-mid: color-mix(in srgb, var(--auth-primary) 12%, transparent);
+  --auth-wave-near: color-mix(in srgb, var(--auth-primary) 18%, transparent);
+  --auth-ocean-1: color-mix(in srgb, var(--auth-primary) 8%, var(--auth-bg));
+  --auth-ocean-2: color-mix(in srgb, var(--auth-primary) 16%, var(--auth-bg));
+
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
   box-sizing: border-box;
+  isolation: isolate;
+  overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 50% at 10% 0%, color-mix(in srgb, var(--auth-primary) 10%, transparent), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--auth-primary) 8%, transparent), transparent 50%),
-    var(--auth-bg);
+    radial-gradient(ellipse 90% 55% at 12% -5%, var(--auth-ocean-2), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 100% 108%, var(--auth-ocean-1), transparent 55%),
+    linear-gradient(180deg, var(--auth-bg) 0%, color-mix(in srgb, var(--auth-primary) 4%, var(--auth-bg)) 100%);
   color: var(--auth-text);
   font-family: var(--auth-font-body);
+}
+
+/* 暗黑模式：海洋更深、波浪更白 */
+html.dark .portal-auth {
+  --auth-wave-far: rgba(255, 255, 255, 0.05);
+  --auth-wave-mid: rgba(255, 255, 255, 0.08);
+  --auth-wave-near: rgba(255, 255, 255, 0.12);
+  --auth-ocean-1: color-mix(in srgb, #1677ff 11%, #0f1117);
+  --auth-ocean-2: color-mix(in srgb, #1677ff 18%, #0f1117);
+}
+
+/* 页面级波浪（固定底部，位于卡片之下；静态三层波浪） */
+.portal-auth__waves {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  min-height: 190px;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.portal-auth__waves-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.portal-auth__waves-svg path {
+  fill: currentColor;
+}
+
+.portal-auth__waves-svg--far {
+  color: var(--auth-wave-far);
+}
+
+.portal-auth__waves-svg--mid {
+  color: var(--auth-wave-mid);
+}
+
+.portal-auth__waves-svg--near {
+  color: var(--auth-wave-near);
 }
 
 .portal-auth__enter {
@@ -44,6 +98,11 @@
 @media (prefers-reduced-motion: reduce) {
   .portal-auth__enter {
     animation: none;
+  }
+
+  .portal-auth__brand-wave--far,
+  .portal-auth__brand-wave--near {
+    animation: none !important;
   }
 }
 
@@ -77,10 +136,48 @@
 .portal-auth__panel--brand {
   position: relative;
   color: #fff;
-  background: var(--auth-primary);
+  background:
+    radial-gradient(560px 380px at 88% -10%, rgba(255, 255, 255, 0.22), transparent 60%),
+    radial-gradient(480px 360px at -8% 108%, rgba(0, 40, 100, 0.35), transparent 62%),
+    linear-gradient(165deg, #1e6fe0 0%, var(--auth-primary) 46%, #0b3f96 100%);
   justify-content: stretch;
   padding: 36px 36px 32px;
   overflow: hidden;
+}
+
+/* 品牌面板底部波浪（白色低透明度，静态） */
+.portal-auth__brand-waves {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 46%;
+  pointer-events: none;
+}
+
+.portal-auth__brand-wave--far {
+  fill: rgba(255, 255, 255, 0.1);
+}
+
+.portal-auth__brand-wave--near {
+  fill: rgba(255, 255, 255, 0.18);
+}
+
+/* 品牌面板气泡 */
+.portal-auth__panel--brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 16% 26%, rgba(255, 255, 255, 0.5) 0 3px, transparent 4px),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.4) 0 5px, transparent 6px),
+    radial-gradient(circle at 62% 42%, rgba(255, 255, 255, 0.32) 0 2px, transparent 3px),
+    radial-gradient(circle at 28% 56%, rgba(255, 255, 255, 0.4) 0 4px, transparent 5px),
+    radial-gradient(circle at 84% 52%, rgba(255, 255, 255, 0.3) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 46% 74%, rgba(255, 255, 255, 0.35) 0 3px, transparent 4px);
+  background-repeat: no-repeat;
 }
 
 .portal-auth__brand-inner {

@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useMessageUnreadStore } from '@/stores/messageUnread'
 import { formatDateTime } from '@/utils/time'
 import { readPageMeta, wireBool } from '@/utils/wire'
-import { messageApi, noticeApi } from '@/api'
+import { myNoticeApi, sysNoticeApi } from '@/api'
 
 async function findAnnouncementById(id: string) {
   const pageSize = 50
@@ -18,7 +18,7 @@ async function findAnnouncementById(id: string) {
   let total = Infinity
 
   while ((current - 1) * pageSize < total) {
-    const res = await noticeApi.list({ current, size: pageSize })
+    const res = await sysNoticeApi.list({ current, size: pageSize })
     const records = res.data.records ?? []
     total = readPageMeta(res.data).total
     const found = records.find((row: any) => String(row.id) === String(id))
@@ -60,7 +60,7 @@ export function AnnouncementDetailPage() {
         if (loggedIn) {
           try {
             // myDetail 后端会顺带标记已读
-            const res = await messageApi.myDetail(id)
+            const res = await myNoticeApi.myDetail(id)
             item = res.data
             loadedByMyDetail = true
           } catch {
@@ -88,7 +88,7 @@ export function AnnouncementDetailPage() {
           void refreshUnread()
         } else if (loggedIn && item.id && !wireBool(item.is_read ?? false)) {
           try {
-            await messageApi.read({ ids: [item.id] })
+            await myNoticeApi.read({ ids: [item.id] })
             if (mounted) {
               setDetail((curr: any) => (curr ? { ...curr, is_read: true } : curr))
               void refreshUnread()

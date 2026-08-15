@@ -8,7 +8,7 @@ import { PromoCarousel } from '@/components/common/PromoCarousel'
 import { useBannerSlides } from '@/hooks/useBannerSlides'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
-import { noticeApi } from '@/api'
+import { sysNoticeApi } from '@/api'
 
 const HOME_BANNER_QUERY = { position: 'HOME_TOP' } as const
 
@@ -45,7 +45,7 @@ export function HomePage() {
     async function loadAnnouncements() {
       setAnnounceLoading(true)
       try {
-        const res = await noticeApi.list({ current: 1, size: 5 })
+        const res = await sysNoticeApi.list({ current: 1, size: 5 })
         if (!mounted) return
         setAnnouncements(res.data.records ?? [])
       } catch {

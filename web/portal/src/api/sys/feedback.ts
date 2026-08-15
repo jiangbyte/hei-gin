@@ -3,7 +3,7 @@
 import { API_PREFIX } from '@/constants/api'
 import { http } from '@/utils'
 
-const prefix = `${API_PREFIX}/message/feedbacks`
+const prefix = `${API_PREFIX}/sys/feedbacks`
 
 export function submit(data: {
   title: string
