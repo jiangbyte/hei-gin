@@ -6,6 +6,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -218,6 +219,11 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 	}
 	for _, it := range items {
 		row, ok := existing[it.ConfigKey]
+		// 敏感键落库后以 ext_json.is_set=true 标记「已配置」（对齐 web loadByCategory 契约）。
+		ext := datatypes.JSON([]byte("{}"))
+		if isSensitive(it.ConfigKey, it.Category) && it.ConfigValue != nil && *it.ConfigValue != "" {
+			ext, _ = json.Marshal(map[string]bool{"is_set": true})
+		}
 		if !ok {
 			nr := Config{
 				ID:          idgen.Next(),
@@ -226,7 +232,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 				Category:    it.Category,
 				Remark:      pickRemark(it.Description, it.Remark),
 				ValueType:   "STRING",
-				ExtJSON:     datatypes.JSON([]byte("{}")),
+				ExtJSON:     ext,
 			}
 			if err := s.repo.Create(ctx, &nr); err != nil {
 				return err
@@ -235,6 +241,9 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 		}
 		updates := map[string]any{
 			"config_value": s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
+		}
+		if string(ext) != "{}" {
+			updates["ext_json"] = ext
 		}
 		if it.Category != nil {
 			updates["category"] = it.Category
