@@ -57,7 +57,7 @@ func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountT
 		AllowEmail:                 true,
 		AllowPhone:                 true,
 		AllowOTP:                   true,
-		RegisterEnabled:            s.cfg.Auth.PortalRegisterEnabled && accountType == security.AccountPortal,
+		RegisterEnabled:            s.registerEnabled(ctx) && accountType == security.AccountPortal,
 		RegisterAllowAccount:       accountType == security.AccountPortal,
 		RegisterAllowEmail:         accountType == security.AccountPortal,
 		RegisterAllowPhone:         accountType == security.AccountPortal,
@@ -140,7 +140,7 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 
 // sendRegisterCode 门户注册发送验证码。
 func (s *Service) sendRegisterCode(ctx context.Context, req SendLoginCodeParam) error {
-	if !s.cfg.Auth.PortalRegisterEnabled {
+	if !s.registerEnabled(ctx) {
 		return errRegisterDisabled
 	}
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {

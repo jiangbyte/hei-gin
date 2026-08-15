@@ -235,6 +235,17 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 	}, nil
 }
 
+// registerEnabled 门户注册开关：优先运行时配置 AUTH_REGISTER_PORTAL_ENABLED，回退 yaml。
+func (s *Service) registerEnabled(ctx context.Context) bool {
+	if s.notify != nil {
+		v := s.notify.GetRuntimeString(ctx, "AUTH_REGISTER_PORTAL_ENABLED", "")
+		if v != "" {
+			return strings.EqualFold(v, "true") || v == "1"
+		}
+	}
+	return s.cfg.Auth.PortalRegisterEnabled
+}
+
 // forceBind 读取 AUTH_FORCE_BIND_{TYPE}_{CHANNEL} 运行时配置。
 func (s *Service) forceBind(ctx context.Context, accountType security.AccountType, channel string) bool {
 	key := "AUTH_FORCE_BIND_" + strings.ToUpper(string(accountType)) + "_" + channel
@@ -362,7 +373,7 @@ func (s *Service) ResetPassword(ctx context.Context, accountType security.Accoun
 
 // Register 门户注册。
 func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterResult, error) {
-	if !s.cfg.Auth.PortalRegisterEnabled {
+	if !s.registerEnabled(ctx) {
 		return nil, errRegisterDisabled
 	}
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
