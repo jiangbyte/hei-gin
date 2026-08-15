@@ -16,6 +16,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/notify"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
 )
 
@@ -78,6 +79,7 @@ type Deps struct {
 	Storage  *storage.Manager
 	Notify   *notify.Facade
 	Audit    *audit.Queue
+	Runtime  *runtimecfg.Settings
 	services map[string]any
 }
 

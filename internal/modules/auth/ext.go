@@ -61,7 +61,9 @@ func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountT
 		RegisterAllowAccount:       accountType == security.AccountPortal,
 		RegisterAllowEmail:         accountType == security.AccountPortal,
 		RegisterAllowPhone:         accountType == security.AccountPortal,
-		PasswordChangeVerifyMethod: "OLD_PASSWORD",
+		PasswordChangeVerifyMethod: s.runtimeString(ctx, "PASSWORD_CHANGE_VERIFY_METHOD", "OLD_PASSWORD"),
+		CopyrightText:              s.runtimeString(ctx, "COPYRIGHT_TEXT", ""),
+		CopyrightURL:               s.runtimeString(ctx, "COPYRIGHT_URL", ""),
 	}
 	if s.oauth != nil {
 		o.OAuthProviders = s.oauth.ProviderOptions()

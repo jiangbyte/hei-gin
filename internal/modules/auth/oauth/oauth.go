@@ -25,6 +25,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
 	"hei-gin/internal/framework/platform/idgen"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/modules/shared"
 )
 
@@ -42,19 +43,21 @@ type IssueSessionFunc func(ctx context.Context, accountType security.AccountType
 //
 // Author: Charlie
 type Service struct {
-	cfg   *config.Config
-	db    *gorm.DB
-	rdb   *redis.Client
-	issue IssueSessionFunc
+	cfg     *config.Config
+	db      *gorm.DB
+	rdb     *redis.Client
+	runtime *runtimecfg.Settings
+	issue   IssueSessionFunc
 }
 
 // NewService 构造 OAuth 服务。
 func NewService(d *shared.Deps, issue IssueSessionFunc) *Service {
 	return &Service{
-		cfg:   d.Cfg,
-		db:    d.DB,
-		rdb:   d.Redis,
-		issue: issue,
+		cfg:     d.Cfg,
+		db:      d.DB,
+		rdb:     d.Redis,
+		runtime: d.Runtime,
+		issue:   issue,
 	}
 }
 
@@ -148,10 +151,14 @@ func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
 			response.Fail(c, http.StatusInternalServerError, 500, err.Error())
 			return
 		}
+		redirect := c.Query("redirect")
+		if redirect == "" {
+			redirect = s.frontendCallback(c.Request.Context(), accountType)
+		}
 		payload, _ := json.Marshal(map[string]string{
 			"account_type": string(accountType),
 			"provider":     provider,
-			"redirect":     c.Query("redirect"),
+			"redirect":     redirect,
 			"intent":       c.Query("intent"),
 			"account_id":   c.Query("account_id"),
 		})
@@ -268,6 +275,20 @@ func (s *Service) exchange(accountType security.AccountType) gin.HandlerFunc {
 			AccountType: accountType,
 		})
 	}
+}
+
+// frontendCallback 前端 OAuth 回调页：优先运行时 AUTH_OAUTH_FRONTEND_CALLBACK_{TYPE}，缺省同源路径（对齐 hei-boot）。
+func (s *Service) frontendCallback(ctx context.Context, accountType security.AccountType) string {
+	key := "AUTH_OAUTH_FRONTEND_CALLBACK_ADMIN"
+	if accountType != security.AccountAdmin {
+		key = "AUTH_OAUTH_FRONTEND_CALLBACK_PORTAL"
+	}
+	if s.runtime != nil {
+		if v := strings.TrimSpace(s.runtime.GetString(ctx, key, "")); v != "" {
+			return v
+		}
+	}
+	return "/auth/oauth/callback"
 }
 
 type providerCfg struct {

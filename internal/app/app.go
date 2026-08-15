@@ -29,6 +29,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/otel"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/snailjob"
 	"hei-gin/internal/framework/platform/storage"
 )
@@ -46,6 +47,7 @@ type Deps struct {
 	Events   *events.Bus
 	Audit    *audit.Queue
 	Notify   *notify.Facade
+	Runtime  *runtimecfg.Settings
 	Modules  *module.Registry
 }
 
@@ -94,6 +96,7 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		Events:   events.NewBus(),
 		Audit:    audit.NewQueue(gdb, rdb, cfg.Audit),
 		Notify:   nf,
+		Runtime:  runtimecfg.New(gdb),
 	}, nil
 }
 

@@ -6,7 +6,10 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +22,7 @@ import (
 	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/modules/auth/oauth"
 	"hei-gin/internal/modules/shared"
 )
@@ -34,6 +38,7 @@ type Service struct {
 	accounts AccountFinder
 	notify   *notify.Facade
 	audit    *audit.Queue
+	runtime  *runtimecfg.Settings
 	oauth    *oauth.Service
 	perms    *security.PermissionRegistry
 }
@@ -48,6 +53,7 @@ func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 		accounts: accounts,
 		notify:   d.Notify,
 		audit:    d.Audit,
+		runtime:  d.Runtime,
 		perms:    d.Perms,
 	}
 	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
@@ -128,7 +134,7 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 	)
 	defer func() {
 		if err != nil {
-			s.repo.RecordLoginFailure(ctx, s.protectCfg(), accountType, req.Account, clientIP)
+			s.repo.RecordLoginFailure(ctx, s.protectCfg(ctx), accountType, req.Account, clientIP)
 			s.publishAudit(ctx, "login", false, "", string(accountType), clientIP, userAgent, err.Error())
 		}
 	}()
@@ -199,7 +205,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		return nil, err
 	}
 	now := time.Now().UTC()
-	ttlSec := s.cfg.Auth.TokenTTLSeconds
+	ttlSec := s.runtimeInt(ctx, "AUTH_TOKEN_TTL_SECONDS", s.cfg.Auth.TokenTTLSeconds)
 	if !rememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
 		ttlSec = s.cfg.Auth.TokenTTLShortSeconds
 	}
@@ -237,25 +243,13 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 
 // registerEnabled 门户注册开关：优先运行时配置 AUTH_REGISTER_PORTAL_ENABLED，回退 yaml。
 func (s *Service) registerEnabled(ctx context.Context) bool {
-	if s.notify != nil {
-		v := s.notify.GetRuntimeString(ctx, "AUTH_REGISTER_PORTAL_ENABLED", "")
-		if v != "" {
-			return strings.EqualFold(v, "true") || v == "1"
-		}
-	}
-	return s.cfg.Auth.PortalRegisterEnabled
+	return s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ENABLED", s.cfg.Auth.PortalRegisterEnabled)
 }
 
 // forceBind 读取 AUTH_FORCE_BIND_{TYPE}_{CHANNEL} 运行时配置。
 func (s *Service) forceBind(ctx context.Context, accountType security.AccountType, channel string) bool {
 	key := "AUTH_FORCE_BIND_" + strings.ToUpper(string(accountType)) + "_" + channel
-	if s.notify != nil {
-		v := s.notify.GetRuntimeString(ctx, key, "")
-		if v != "" {
-			return strings.EqualFold(v, "true") || v == "1"
-		}
-	}
-	return false
+	return s.runtimeBool(ctx, key, false)
 }
 
 // Logout 登出。
@@ -324,21 +318,42 @@ func (s *Service) ForgotPassword(ctx context.Context, accountType security.Accou
 	if err != nil {
 		return err
 	}
-	ttl := 10 * time.Minute
+	ttlSeconds := s.runtimeInt(ctx, "AUTH_PASSWORD_RESET_TOKEN_TTL_SECONDS", 600)
+	if ttlSeconds < 60 {
+		ttlSeconds = 60
+	}
+	ttl := time.Duration(ttlSeconds) * time.Second
 	if err := s.repo.StoreResetToken(ctx, token, accountID, ttl); err != nil {
+		return err
+	}
+	resetLink, err := s.buildPasswordResetLink(ctx, token, accountType)
+	if err != nil {
 		return err
 	}
 	if s.notify != nil {
 		vars := map[string]any{
-			"app_name":       s.cfg.App.Name,
-			"token":          token,
+			"app_name":       s.runtimeString(ctx, "COPYRIGHT_TEXT", "HEI"),
+			"reset_link":     resetLink,
 			"email":          email,
-			"expire_minutes": "10",
-			"reset_link":     "",
+			"expire_minutes": strconv.Itoa(max(1, ttlSeconds/60)),
 		}
 		_ = s.notify.SendTemplated(ctx, "RESET_PASSWORD_CODE", email, vars)
 	}
 	return nil
+}
+
+// buildPasswordResetLink 按账户类型读取重置页 URL 并拼接 token（对齐 hei-boot）。
+func (s *Service) buildPasswordResetLink(ctx context.Context, token string, accountType security.AccountType) (string, error) {
+	key := "AUTH_PASSWORD_RESET_URL_" + strings.ToUpper(string(accountType))
+	base := strings.TrimSpace(s.runtimeString(ctx, key, ""))
+	if base == "" {
+		return "", fmt.Errorf("缺少系统配置: %s", key)
+	}
+	sep := "?"
+	if strings.Contains(base, "?") {
+		sep = "&"
+	}
+	return base + sep + "token=" + url.QueryEscape(token), nil
 }
 
 // ResetPassword 校验令牌并设置新密码。
@@ -487,13 +502,38 @@ func (s *Service) sessionCookieName() string {
 	return name
 }
 
-func (s *Service) protectCfg() loginProtectCfg {
+// protectCfg 登录保护参数：优先运行时配置 AUTH_LOGIN_*（配置页可改），回退 yaml。
+func (s *Service) protectCfg(ctx context.Context) loginProtectCfg {
 	return loginProtectCfg{
-		WindowSeconds: s.cfg.Auth.LoginFailureWindowSeconds,
-		AccountMax:    s.cfg.Auth.LoginAccountMaxFailures,
-		IPMax:         s.cfg.Auth.LoginIPMaxFailures,
-		LockSeconds:   s.cfg.Auth.LoginLockSeconds,
+		WindowSeconds: s.runtimeInt(ctx, "AUTH_LOGIN_FAILURE_WINDOW_SECONDS", s.cfg.Auth.LoginFailureWindowSeconds),
+		AccountMax:    s.runtimeInt(ctx, "AUTH_LOGIN_ACCOUNT_MAX_FAILURES", s.cfg.Auth.LoginAccountMaxFailures),
+		IPMax:         s.runtimeInt(ctx, "AUTH_LOGIN_IP_MAX_FAILURES", s.cfg.Auth.LoginIPMaxFailures),
+		LockSeconds:   s.runtimeInt(ctx, "AUTH_LOGIN_LOCK_SECONDS", s.cfg.Auth.LoginLockSeconds),
 	}
+}
+
+// runtimeInt 运行时整型配置（sys_config 优先，yaml 回退）。
+func (s *Service) runtimeInt(ctx context.Context, key string, def int) int {
+	if s.runtime != nil {
+		return s.runtime.GetInt(ctx, key, def)
+	}
+	return def
+}
+
+// runtimeString 运行时字符串配置（sys_config 优先，yaml 回退）。
+func (s *Service) runtimeString(ctx context.Context, key, def string) string {
+	if s.runtime != nil {
+		return s.runtime.GetString(ctx, key, def)
+	}
+	return def
+}
+
+// runtimeBool 运行时布尔配置（sys_config 优先，yaml 回退）。
+func (s *Service) runtimeBool(ctx context.Context, key string, def bool) bool {
+	if s.runtime != nil {
+		return s.runtime.GetBool(ctx, key, def)
+	}
+	return def
 }
 
 func (s *Service) publishAudit(ctx context.Context, action string, success bool, accountID, accountType, ip, ua, errMsg string) {

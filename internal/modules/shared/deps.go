@@ -12,6 +12,7 @@ import (
 	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
 )
 
@@ -27,6 +28,7 @@ type Deps struct {
 	Storage  *storage.Manager
 	Audit    *audit.Queue
 	Notify   *notify.Facade
+	Runtime  *runtimecfg.Settings
 }
 
 // FromModule 从 framework 注册表 Deps 转换。
@@ -40,6 +42,7 @@ func FromModule(d *module.Deps) *Deps {
 		Storage:  d.Storage,
 		Audit:    d.Audit,
 		Notify:   d.Notify,
+		Runtime:  d.Runtime,
 	}
 }
 
