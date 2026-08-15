@@ -45,9 +45,10 @@ type EditParam struct {
 // Author: Charlie
 type PageParam struct {
 	schema.PageQuery
-	Title    string `form:"title"`
-	Position string `form:"position"`
-	Status   string `form:"status"`
+	Title             string `form:"title"`
+	Position          string `form:"position"`
+	Status            string `form:"status"`
+	TargetAccountType string `form:"target_account_type"`
 }
 
 // ListParam Banner 列表查询。

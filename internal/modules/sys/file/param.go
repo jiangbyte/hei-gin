@@ -6,12 +6,12 @@ package file
 
 import "hei-gin/internal/framework/core/schema"
 
-// EditParam 更新文件元数据入参（对齐 hei-boot SysFileEditParam）。
+// EditParam 更新文件元数据入参（对齐 hei-boot SysFileEditParam：original_name @NotBlank）。
 //
 // Author: Charlie
 type EditParam struct {
-	ID           string  `json:"id" binding:"required"`
-	OriginalName *string `json:"original_name"`
+	ID           string `json:"id" binding:"required"`
+	OriginalName string `json:"original_name" binding:"required"`
 }
 
 // PageParam 文件分页查询（对齐 hei-boot SysFilePageParam）。

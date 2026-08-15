@@ -6,6 +6,7 @@ package notice
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -164,6 +165,10 @@ func (s *Service) pin(c *gin.Context) {
 func (s *Service) portalList(c *gin.Context) {
 	var q PageParam
 	_ = c.ShouldBindQuery(&q)
+	// 门户公告列表固定查 ANNOUNCEMENT（对齐 hei-boot portalList → pagePublished(..., KIND_ANNOUNCEMENT)）。
+	if strings.TrimSpace(q.Kind) == "" {
+		q.Kind = "ANNOUNCEMENT"
+	}
 	accountType, accountID := sessionScope(c)
 	rows, total, current, size, err := s.PagePublished(c.Request.Context(), q, accountType, accountID)
 	if err != nil {

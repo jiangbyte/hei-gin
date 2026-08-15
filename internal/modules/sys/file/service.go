@@ -126,21 +126,14 @@ func (s *Service) DeleteByObjectName(ctx context.Context, objectName string) err
 	return s.repo.DeleteByIDs(ctx, []string{row.ID})
 }
 
-// Update 更新文件元数据。
+// Update 更新文件元数据（original_name 必填；对齐 hei-boot FileServiceImpl.update）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
-	row, err := s.repo.GetByID(ctx, req.ID)
-	if err != nil {
+	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return fmt.Errorf("file not found")
 	}
-	updates := map[string]any{}
-	if req.OriginalName != nil {
-		updates["original_name"] = safeOriginalName(*req.OriginalName)
-	}
-	if len(updates) == 0 {
-		return nil
-	}
-	_ = row
-	return s.repo.Update(ctx, req.ID, updates)
+	return s.repo.Update(ctx, req.ID, map[string]any{
+		"original_name": safeOriginalName(req.OriginalName),
+	})
 }
 
 // Detail 详情（重算访问 URL + 回填创建/更新人名）。
@@ -456,6 +449,19 @@ func isExternalURL(value string) bool {
 		return true
 	}
 	return false
+}
+
+// NormalizeObjectName 规范化对象名（对齐 hei-boot FileAccessUrls.normalizeObjectName）：外部 URL 原样返回，
+// 否则去掉公开路径前缀后返回纯 object key（供 banner/feedback 等落库前规范化图片/附件引用）。
+func NormalizeObjectName(value, publicPath string) string {
+	raw := strings.TrimSpace(value)
+	if raw == "" {
+		return ""
+	}
+	if isExternalURL(raw) {
+		return raw
+	}
+	return toObjectKey(raw, publicPath)
 }
 
 // toObjectKey 把任意对象引用（纯 key / /api/v1/files/... 路径 / 完整 URL）转成存储纯 key。

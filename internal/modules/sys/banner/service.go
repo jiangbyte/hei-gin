@@ -17,6 +17,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/storage"
 	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/modules/sys/file"
 )
 
 // Service Banner 业务服务。
@@ -57,12 +58,20 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		targets = datatypes.JSON([]byte("[]"))
 	}
 	row := Banner{
-		ID: idgen.Next(), Title: req.Title, Image: req.Image, URL: req.URL, LinkType: lt,
+		ID: idgen.Next(), Title: req.Title, Image: s.normalizeImage(req.Image), URL: req.URL, LinkType: lt,
 		Summary: req.Summary, Description: req.Description, Category: req.Category, Type: req.Type,
 		Position: req.Position, TargetAccountTypes: targets, Sort: req.Sort, Status: statusOr(req.Status),
 		StartAt: req.StartAt, EndAt: req.EndAt,
 	}
 	return s.repo.Create(ctx, &row)
+}
+
+// normalizeImage 规范化图片对象名（对齐 hei-boot create/update 的 fileApi.normalizeObjectName）。
+func (s *Service) normalizeImage(image string) string {
+	if image == "" {
+		return ""
+	}
+	return file.NormalizeObjectName(image, s.sto.PublicPath())
 }
 
 // Update 更新 Banner。
@@ -72,7 +81,7 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		lt = "URL"
 	}
 	updates := map[string]any{
-		"title": req.Title, "image": req.Image, "url": req.URL, "link_type": lt,
+		"title": req.Title, "image": s.normalizeImage(req.Image), "url": req.URL, "link_type": lt,
 		"summary": req.Summary, "description": req.Description, "category": req.Category,
 		"type": req.Type, "position": req.Position, "sort": req.Sort, "status": statusOr(req.Status),
 		"start_at": req.StartAt, "end_at": req.EndAt,

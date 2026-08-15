@@ -63,6 +63,9 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Banner, total int6
 	if q.Status != "" {
 		db = db.Where("status = ?", q.Status)
 	}
+	if q.TargetAccountType != "" {
+		db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", q.TargetAccountType)
+	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
