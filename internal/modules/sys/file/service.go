@@ -18,6 +18,7 @@ import (
 
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
 	"hei-gin/internal/modules/shared"
 )
@@ -26,18 +27,19 @@ import (
 //
 // Author: Charlie
 type Service struct {
-	repo *Repo
-	sto  *storage.Manager
+	repo    *Repo
+	sto     *storage.Manager
+	runtime *runtimecfg.Settings
 }
 
 // NewService 构造文件服务。
-func NewService(db *gorm.DB, sto *storage.Manager) *Service {
-	return &Service{repo: NewRepo(db), sto: sto}
+func NewService(db *gorm.DB, sto *storage.Manager, rt *runtimecfg.Settings) *Service {
+	return &Service{repo: NewRepo(db), sto: sto, runtime: rt}
 }
 
 // New 构建 sys.file 模块。
 func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Storage)
+	s := NewService(d.DB, d.Storage, d.Runtime)
 	return module.Module{
 		Name:   "sys.file",
 		Models: []any{&File{}},
@@ -45,8 +47,11 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Upload 上传文件并写入元数据。
+// Upload 上传文件并写入元数据（按 STORAGE_UPLOAD_* 运行时配置校验大小/类型/扩展名）。
 func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader) (*File, error) {
+	if err := s.validateUpload(ctx, fh); err != nil {
+		return nil, err
+	}
 	f, err := fh.Open()
 	if err != nil {
 		return nil, err
@@ -136,13 +141,67 @@ func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error
 	return &URLResult{ObjectName: objectName, URL: row.URL}, nil
 }
 
-// PresignedURL 获取对象预签名 URL（本地存储返回公开 URL）。
+// PresignedURL 获取对象预签名 URL（本地返回公开 URL；S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
 func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResult, error) {
 	if _, err := s.repo.FindByObjectName(ctx, objectName); err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
+	expire := time.Duration(s.sto.PresignExpireSeconds(ctx)) * time.Second
+	if p, ok := s.sto.Provider().(storage.Presigner); ok {
+		u, err := p.PresignedURL(ctx, objectName, expire)
+		if err != nil {
+			return nil, err
+		}
+		return &URLResult{ObjectName: objectName, URL: u}, nil
+	}
 	pub := s.sto.Provider().PublicURL(objectName)
 	return &URLResult{ObjectName: objectName, URL: pub}, nil
+}
+
+// validateUpload 按运行时上传限制校验（STORAGE_UPLOAD_*；缺省 20MB、放行全部类型/扩展名）。
+func (s *Service) validateUpload(ctx context.Context, fh *multipart.FileHeader) error {
+	maxBytes := 20 * 1024 * 1024
+	if s.runtime != nil {
+		if v := s.runtime.GetInt(ctx, "STORAGE_UPLOAD_MAX_BYTES", 0); v > 0 {
+			maxBytes = v
+		}
+	}
+	if fh.Size > int64(maxBytes) {
+		return fmt.Errorf("文件大小超过限制（最大 %d 字节）", maxBytes)
+	}
+	ext := strings.ToLower(path.Ext(fh.Filename))
+	ct := strings.ToLower(fh.Header.Get("Content-Type"))
+	allowedTypes := strings.Split(s.str(ctx, "STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES"), ",")
+	allowedExts := strings.Split(s.str(ctx, "STORAGE_UPLOAD_ALLOWED_EXTENSIONS"), ",")
+	deniedExts := strings.Split(s.str(ctx, "STORAGE_UPLOAD_DENIED_EXTENSIONS"), ",")
+	for _, d := range deniedExts {
+		if d = strings.TrimSpace(strings.ToLower(d)); d != "" && (d == ext || d == "."+strings.TrimPrefix(ext, ".")) {
+			return fmt.Errorf("不允许上传该文件类型：%s", ext)
+		}
+	}
+	if len(allowedTypes) > 0 && allowedTypes[0] != "" && !containsFold(allowedTypes, ct) {
+		return fmt.Errorf("不允许上传该内容类型：%s", ct)
+	}
+	if len(allowedExts) > 0 && allowedExts[0] != "" && !containsFold(allowedExts, ext) {
+		return fmt.Errorf("不允许上传该扩展名：%s", ext)
+	}
+	return nil
+}
+
+func (s *Service) str(ctx context.Context, key string) string {
+	if s.runtime == nil {
+		return ""
+	}
+	return s.runtime.GetString(ctx, key, "")
+}
+
+func containsFold(list []string, v string) bool {
+	for _, it := range list {
+		if strings.EqualFold(strings.TrimSpace(it), v) {
+			return true
+		}
+	}
+	return false
 }
 
 // OpenByObjectName 按对象名打开文件。

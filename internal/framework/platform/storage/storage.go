@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"hei-gin/internal/framework/core/config"
+	"hei-gin/internal/framework/platform/runtimecfg"
 )
 
 // Provider 抽象对象存储（local / S3 兼容）。
@@ -32,6 +34,36 @@ type Manager struct {
 	mu       sync.RWMutex
 	provider Provider
 	cfg      config.StorageConfig
+	runtime  *runtimecfg.Settings
+}
+
+// Presigner 可选接口：支持预签名 URL 的 Provider（本地返回公开 URL）。
+type Presigner interface {
+	PresignedURL(ctx context.Context, objectName string, expire time.Duration) (string, error)
+}
+
+// SetRuntime 注入运行时配置读取器（用于 STORAGE_PRESIGN_EXPIRE_SECONDS 等）。
+func (m *Manager) SetRuntime(s *runtimecfg.Settings) {
+	m.mu.Lock()
+	m.runtime = s
+	m.mu.Unlock()
+}
+
+// PresignExpireSeconds 预签名有效期（秒）：运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 优先，回退 yaml。
+func (m *Manager) PresignExpireSeconds(ctx context.Context) int {
+	m.mu.RLock()
+	rt := m.runtime
+	def := m.cfg.PresignExpireSeconds
+	m.mu.RUnlock()
+	if rt != nil {
+		if v := rt.GetInt(ctx, "STORAGE_PRESIGN_EXPIRE_SECONDS", def); v > 0 {
+			return v
+		}
+	}
+	if def <= 0 {
+		return 3600
+	}
+	return def
 }
 
 // NewManager 按配置创建存储管理器。
@@ -123,6 +155,11 @@ func (l *Local) PublicURL(objectName string) string {
 		return l.baseURL + p
 	}
 	return p
+}
+
+// PresignedURL 本地存储直接返回公开 URL（预签名无意义）。
+func (l *Local) PresignedURL(_ context.Context, objectName string, _ time.Duration) (string, error) {
+	return l.PublicURL(objectName), nil
 }
 
 // ObjectKey 用前缀与文件名拼对象键。

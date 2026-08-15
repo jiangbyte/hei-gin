@@ -86,6 +86,8 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		return nil, err
 	}
 	nf := notify.NewFacade(cfg.Notify, gdb)
+	rt := runtimecfg.New(gdb)
+	store.SetRuntime(rt)
 	return &Deps{
 		Cfg:      cfg,
 		DB:       gdb,
@@ -96,7 +98,7 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		Events:   events.NewBus(),
 		Audit:    audit.NewQueue(gdb, rdb, cfg.Audit),
 		Notify:   nf,
-		Runtime:  runtimecfg.New(gdb),
+		Runtime:  rt,
 	}, nil
 }
 

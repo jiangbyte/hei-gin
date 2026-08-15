@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -134,4 +135,20 @@ func (s *S3) PublicURL(objectName string) string {
 	}
 	u := url.URL{Scheme: "https", Host: s.bucket + ".s3.amazonaws.com", Path: "/" + key}
 	return u.String()
+}
+
+// PresignedURL 生成 S3 预签名 GET URL（有效期由调用方传入）。
+func (s *S3) PresignedURL(ctx context.Context, objectName string, expire time.Duration) (string, error) {
+	key := strings.TrimLeft(objectName, "/")
+	pc := s3.NewPresignClient(s.client)
+	req, err := pc.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}, func(o *s3.PresignOptions) {
+		o.Expires = expire
+	})
+	if err != nil {
+		return "", err
+	}
+	return req.URL, nil
 }
