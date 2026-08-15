@@ -161,6 +161,8 @@ func main() {
 		authGET(login.Data.Token, "/sys/banners/page?current=1&size=10")
 		authGET(login.Data.Token, "/sys/banners/list?position=HOME_TOP")
 		authGET(login.Data.Token, "/sys/banners/detail?id=7491889345134235648")
+		authGET(login.Data.Token, "/sys/roles/own-resource?id=1&account_type=ADMIN")
+		authGET(login.Data.Token, "/sys/roles/own-client-resource?id=1&account_type=ADMIN")
 	authGETFile(login.Data.Token)
 	}
 }

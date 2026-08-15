@@ -66,5 +66,18 @@ type ResourceModule struct {
 // TableName 返回表名。
 func (ResourceModule) TableName() string { return "sys_resource_module" }
 
-// 资源类型常量。
-const ResourceTypeButton = "BUTTON"
+// 资源类型常量（对齐 hei-boot ResourceServiceImpl：BUTTON/ACTION/MENU/PAGE/API_GROUP）。
+const (
+	ResourceTypeButton   = "BUTTON"
+	ResourceTypeAction   = "ACTION"
+	ResourceTypeMenu     = "MENU"
+	ResourceTypePage     = "PAGE"
+	ResourceTypeAPIGroup = "API_GROUP"
+)
+
+// GrantMenuTypes 授权树中作为菜单节点展示的资源类型（对齐 hei-boot GRANT_MENU_TYPES）。
+var GrantMenuTypes = map[string]bool{
+	ResourceTypeMenu:     true,
+	ResourceTypePage:     true,
+	ResourceTypeAPIGroup: true,
+}

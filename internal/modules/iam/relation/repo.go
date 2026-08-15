@@ -75,3 +75,38 @@ func (r *Repo) DeleteByTargetIDs(ctx context.Context, targetType string, targetI
 func (r *Repo) CreateInBatches(db *gorm.DB, rows []Relation) error {
 	return db.CreateInBatches(rows, 200).Error
 }
+
+// AssertResourcesExist 校验资源 ID 集合在指定资源表中全部存在（targetType 决定表）。
+func (r *Repo) AssertResourcesExist(db *gorm.DB, targetType string, resourceIDs []string) error {
+	if len(resourceIDs) == 0 {
+		return nil
+	}
+	var count int64
+	table := "sys_resource"
+	if targetType == TargetClientResource {
+		table = "sys_client_resource"
+	}
+	if err := db.Table(table).Where("id IN ?", resourceIDs).Count(&count).Error; err != nil {
+		return err
+	}
+	if int(count) != len(uniqueStrings(resourceIDs)) {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func uniqueStrings(items []string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(items))
+	for _, s := range items {
+		if s == "" {
+			continue
+		}
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	return out
+}

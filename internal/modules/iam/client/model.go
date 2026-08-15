@@ -65,3 +65,19 @@ type ClientResource struct {
 
 // TableName 返回表名。
 func (ClientResource) TableName() string { return "sys_client_resource" }
+
+// 资源类型常量（对齐 hei-boot ClientResourceServiceImpl）。
+const (
+	ResourceTypeButton   = "BUTTON"
+	ResourceTypeAction   = "ACTION"
+	ResourceTypeMenu     = "MENU"
+	ResourceTypePage     = "PAGE"
+	ResourceTypeAPIGroup = "API_GROUP"
+)
+
+// GrantMenuTypes 授权树中作为菜单节点展示的资源类型。
+var GrantMenuTypes = map[string]bool{
+	ResourceTypeMenu:     true,
+	ResourceTypePage:     true,
+	ResourceTypeAPIGroup: true,
+}

@@ -21,13 +21,35 @@ type ModuleOption struct {
 	Code string `json:"code"`
 }
 
-// GrantModule 资源授权模块选项（含模块下启用资源）。
+// GrantModule 资源授权模块选项（对齐 hei-boot SysResourceGrantModuleOptionResult：模块 → 菜单 → 按钮权限树）。
 //
 // Author: Charlie
 type GrantModule struct {
-	ModuleID  string     `json:"module_id"`
-	Name      string     `json:"name"`
-	Resources []Resource `json:"resources"`
+	ID    string            `json:"id"`
+	Title string            `json:"title"`
+	Menu  []GrantMenuOption `json:"menu"`
+}
+
+// GrantMenuOption 资源授权菜单选项节点（对齐 hei-boot SysResourceGrantMenuOptionResult）。
+//
+// Author: Charlie
+type GrantMenuOption struct {
+	ID           string             `json:"id"`
+	ModuleID     string             `json:"module_id"`
+	ParentID     *string            `json:"parent_id"`
+	ParentIDName string             `json:"parent_id_name"`
+	Title        string             `json:"title"`
+	Button       []PermissionOption `json:"button"`
+}
+
+// PermissionOption 资源可绑定权限选项（对齐 hei-boot SysResourcePermissionOptionResult）。
+//
+// Author: Charlie
+type PermissionOption struct {
+	ID            string `json:"id"`
+	PermissionKey string `json:"permission_key"`
+	Title         string `json:"title"`
+	DataScope     string `json:"data_scope"`
 }
 
 // PermissionItem 已注册权限项（对齐 hei-boot SysRegisteredPermissionResult）。

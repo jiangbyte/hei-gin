@@ -125,6 +125,41 @@ func (r *Repo) ButtonPermissions(ctx context.Context, buttonIDs []string) map[st
 	return out
 }
 
+// GrantPermissions 批量加载资源权限绑定选项（RESOURCE_PERMISSION，subject=资源 id，可按账号类型过滤；对齐 hei-boot listGrantModules 第 3 步）。
+func (r *Repo) GrantPermissions(ctx context.Context, resourceIDs []string, accountType string) (map[string][]PermissionOption, error) {
+	out := make(map[string][]PermissionOption)
+	if len(resourceIDs) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		ID          string  `gorm:"column:id"`
+		SubjectID   string  `gorm:"column:subject_id"`
+		TargetKey   string  `gorm:"column:target_key"`
+		DataScope   string  `gorm:"column:data_scope"`
+		Description *string `gorm:"column:description"`
+	}
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("id", "subject_id", "target_key", "data_scope", "description").
+		Where("subject_type = ? AND relation_type = ? AND subject_id IN ? AND status = ?",
+			"RESOURCE", "RESOURCE_PERMISSION", resourceIDs, "ENABLED")
+	if accountType != "" {
+		q = q.Where("account_type = ?", accountType)
+	}
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		title := row.TargetKey
+		if row.Description != nil && *row.Description != "" {
+			title = *row.Description
+		}
+		out[row.SubjectID] = append(out[row.SubjectID], PermissionOption{
+			ID: row.ID, PermissionKey: row.TargetKey, Title: title, DataScope: row.DataScope,
+		})
+	}
+	return out, nil
+}
+
 // ModulesByIDs 批量查资源模块。
 func (r *Repo) ModulesByIDs(ctx context.Context, ids []string) ([]ResourceModule, error) {
 	if len(ids) == 0 {

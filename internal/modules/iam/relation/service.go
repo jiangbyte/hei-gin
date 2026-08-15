@@ -101,11 +101,24 @@ func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType 
 	})
 }
 
-// ReplaceResourceGrants 先删后插全量替换主体-资源授予（permission_keys 逐键落库，DIRECT；整菜单授权落 CASCADE 空键）。
+// ReplaceResourceGrants 先删后插全量替换主体-资源授予（permission_keys 逐键落库，DIRECT；整菜单授权落 CASCADE 空键；校验资源存在，对齐 hei-boot replaceSubjectResourceGrants）。
 func (s *Service) ReplaceResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, grants []ResourceGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
 			return err
+		}
+		// 校验勾选资源存在，避免产生悬空授权
+		resourceIDs := make([]string, 0, len(grants))
+		for _, g := range grants {
+			if g.ResourceID == "" {
+				continue
+			}
+			resourceIDs = append(resourceIDs, g.ResourceID)
+		}
+		if len(resourceIDs) > 0 {
+			if err := s.repo.AssertResourcesExist(tx, targetType, resourceIDs); err != nil {
+				return err
+			}
 		}
 		rows := make([]Relation, 0, len(grants)*3)
 		for _, g := range grants {
