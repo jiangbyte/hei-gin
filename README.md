@@ -51,15 +51,14 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 go.mod                     # 唯一 Go module：hei-gin
 cmd/                       # 可执行入口（main 包）
   api/                     # 唯一运行入口：go run ./cmd/api
-  migrate/                 # goose 运维命令（up/down/status）
 internal/                  # 私有代码（外部不可导入）
   app/                     # 装配：基础设施 + HTTP + SnailJob
   framework/               # 可改的运行时（core/middleware/platform）
   modules/                 # 业务包（auth/iam/profile/sys/dashboard/health/biz/shared）
     all/                   # 汇总 blank import
-scripts/                   # db.sql / migrate.sh / docker / sql
+scripts/                   # db.sql：建表 + seed（与 hei-boot schema 对齐；无迁移步骤）
 configs/                   # config.example.yaml
-web/                       # admin（Vue）
+web/                       # admin（Vue）/ portal（React）/ admin-uniapp
 storage/                   # 本地文件存储（.gitignore）
 ```
 
@@ -88,6 +87,7 @@ cp configs/config.example.yaml config.yaml
 psql -U postgres -d hei_gin -f scripts/db.sql   # 建表 + seed（与 hei-boot 同构 schema）
 # 可选：docker compose -f scripts/docker/docker-compose.snailjob.yml up -d
 go run ./cmd/api
+# 与 hei-fastapi 一致：应用启动不做迁移；schema/种子变更以 scripts/db.sql 为权威，由人工/运维执行后再启动
 ```
 
 默认地址：`http://127.0.0.1:8000`  
