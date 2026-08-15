@@ -268,3 +268,71 @@ func (r *Repo) ListEnabledModules(ctx context.Context, client string) ([]Resourc
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err
 }
+
+// ListGrantedResourceIDs 列出账号/角色/用户组主体已授予的资源 ID（ACCOUNT_RESOURCE/GROUP_RESOURCE/ROLE_RESOURCE，按账号类型过滤）。
+func (r *Repo) ListGrantedResourceIDs(ctx context.Context, accountID string, groupIDs, roleIDs []string, accountType string) ([]string, error) {
+	cond := "(subject_type = ? AND subject_id = ?"
+	args := []any{"ACCOUNT", accountID}
+	if len(groupIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "GROUP", groupIDs)
+	}
+	if len(roleIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "ROLE", roleIDs)
+	}
+	cond += ")"
+	fullArgs := make([]any, 0, len(args)+3)
+	fullArgs = append(fullArgs, []string{"ACCOUNT_RESOURCE", "GROUP_RESOURCE", "ROLE_RESOURCE"}, "RESOURCE", "ENABLED")
+	fullArgs = append(fullArgs, args...)
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("DISTINCT target_id").
+		Where("relation_type IN ? AND target_type = ? AND status = ? AND "+cond, fullArgs...)
+	if accountType != "" {
+		q = q.Where("account_type = ?", accountType)
+	}
+	var ids []string
+	if err := q.Scan(&ids).Error; err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+// ListResourcesByIDsWithParents 按授权 ID 补齐祖先链后返回（保持 sort 排序；对齐 hei-boot listResourcesByIdsWithParents）。
+func (r *Repo) ListResourcesByIDsWithParents(ctx context.Context, resourceIDs []string, client string) ([]Resource, error) {
+	all, err := r.ListResourcesByClient(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	if len(all) == 0 {
+		return []Resource{}, nil
+	}
+	byID := make(map[string]*Resource, len(all))
+	for i := range all {
+		byID[all[i].ID] = &all[i]
+	}
+	selected := map[string]struct{}{}
+	for _, id := range resourceIDs {
+		cur := byID[id]
+		for cur != nil {
+			if _, ok := selected[cur.ID]; ok {
+				break
+			}
+			selected[cur.ID] = struct{}{}
+			if cur.ParentID == nil || *cur.ParentID == "" {
+				break
+			}
+			cur = byID[*cur.ParentID]
+		}
+	}
+	out := make([]Resource, 0, len(selected))
+	for i := range all {
+		if _, ok := selected[all[i].ID]; ok {
+			out = append(out, all[i])
+		}
+	}
+	return out, nil
+}

@@ -61,6 +61,11 @@ type ClientResource struct {
 	CreatedBy    *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt    time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UpdatedBy    *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
+
+	// 以下为字典/外键翻译字段（对齐 hei-boot @Trans 字段，不入库）。
+	ParentIDName *string `gorm:"-" json:"parent_id_name"`
+	ModuleIDName *string `gorm:"-" json:"module_id_name"`
+	AccountType  *string `gorm:"-" json:"account_type"`
 }
 
 // TableName 返回表名。

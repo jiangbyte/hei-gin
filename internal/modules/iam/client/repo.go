@@ -168,13 +168,38 @@ func (r *Repo) GrantPermissions(ctx context.Context, resourceIDs []string, accou
 	return out, nil
 }
 
-// ListResources 列出客户端资源（可选模块过滤）。
-func (r *Repo) ListResources(ctx context.Context, moduleID string) ([]ClientResource, error) {
+// ListResources 列出客户端资源（可选模块/账号类型过滤；对齐 hei-boot ClientResourceServiceImpl.tree）。
+func (r *Repo) ListResources(ctx context.Context, moduleID, accountType string) ([]ClientResource, error) {
 	db := r.with(ctx).Model(&ClientResource{})
 	if moduleID != "" {
 		db = db.Where("module_id = ?", moduleID)
+	} else if accountType != "" {
+		db = db.Where("module_id IN (SELECT id FROM sys_client_module WHERE account_type = ? AND status = ?)",
+			accountType, security.StatusEnabled)
 	}
 	var rows []ClientResource
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err
+}
+
+// GetModulesByIDs 批量查客户端模块。
+func (r *Repo) GetModulesByIDs(ctx context.Context, ids []string) ([]ClientModule, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []ClientModule
+	err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error
+	return rows, err
+}
+
+// GetResourcesByIDs 按 ID 集合查询客户端资源。
+func (r *Repo) GetResourcesByIDs(ctx context.Context, ids []string) ([]ClientResource, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []ClientResource
+	if err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

@@ -163,7 +163,9 @@ func main() {
 		authGET(login.Data.Token, "/sys/banners/detail?id=7491889345134235648")
 		authGET(login.Data.Token, "/sys/roles/own-resource?id=1&account_type=ADMIN")
 		authGET(login.Data.Token, "/sys/roles/own-client-resource?id=1&account_type=ADMIN")
-	authGETFile(login.Data.Token)
+		authGET(login.Data.Token, "/sys/resources/current")
+		authGET(login.Data.Token, "/sys/client-resources/tree?account_type=ADMIN")
+		authGETFile(login.Data.Token)
 	}
 }
 

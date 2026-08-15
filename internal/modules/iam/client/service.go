@@ -236,23 +236,94 @@ func (s *Service) DeleteResources(ctx context.Context, ids []string) error {
 
 // ResourceDetail 客户端资源详情。
 func (s *Service) ResourceDetail(ctx context.Context, id string) (*ClientResource, error) {
-	return s.repo.GetResourceByID(ctx, id)
+	row, err := s.repo.GetResourceByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.withNames(ctx, []*ClientResource{row})
+	return row, nil
 }
 
 // ResourcePage 客户端资源分页。
 func (s *Service) ResourcePage(ctx context.Context, p ResourcePageParam) (rows []ClientResource, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageResources(ctx, p)
-	return rows, total, current, size, err
+	if err != nil {
+		return nil, 0, current, size, err
+	}
+	s.withNames(ctx, toPtrs2(rows))
+	return rows, total, current, size, nil
 }
 
-// ResourceTree 客户端资源树。
-func (s *Service) ResourceTree(ctx context.Context, moduleID string) ([]TreeNode, error) {
-	rows, err := s.repo.ListResources(ctx, moduleID)
+// ResourceTree 客户端资源树（module_id 或 account_type 过滤；对齐 hei-boot ClientResourceServiceImpl.tree）。
+func (s *Service) ResourceTree(ctx context.Context, moduleID, accountType string) ([]TreeNode, error) {
+	rows, err := s.repo.ListResources(ctx, moduleID, accountType)
 	if err != nil {
 		return nil, err
 	}
+	s.withNames(ctx, toPtrs2(rows))
 	return buildTree(rows, nil), nil
+}
+
+// withNames 批量回填 parent_id_name / module_id_name / account_type（对齐 hei-boot tree 的 transBatch + loadModuleAccountTypes）。
+func (s *Service) withNames(ctx context.Context, rows []*ClientResource) {
+	moduleIDs := make([]string, 0, len(rows))
+	parentIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		if row.ModuleID != nil && *row.ModuleID != "" {
+			moduleIDs = append(moduleIDs, *row.ModuleID)
+		}
+		if row.ParentID != nil && *row.ParentID != "" {
+			parentIDs = append(parentIDs, *row.ParentID)
+		}
+	}
+	modules := map[string]ClientModule{}
+	if len(moduleIDs) > 0 {
+		ms, err := s.repo.GetModulesByIDs(ctx, moduleIDs)
+		if err == nil {
+			for i := range ms {
+				modules[ms[i].ID] = ms[i]
+			}
+		}
+	}
+	parents := map[string]string{}
+	if len(parentIDs) > 0 {
+		ps, err := s.repo.GetResourcesByIDs(ctx, parentIDs)
+		if err == nil {
+			for i := range ps {
+				parents[ps[i].ID] = ps[i].Name
+			}
+		}
+	}
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		if row.ModuleID != nil {
+			if m, ok := modules[*row.ModuleID]; ok {
+				name := m.Name
+				row.ModuleIDName = &name
+				at := m.AccountType
+				row.AccountType = &at
+			}
+		}
+		if row.ParentID != nil {
+			if n, ok := parents[*row.ParentID]; ok {
+				row.ParentIDName = &n
+			}
+		}
+	}
+}
+
+func toPtrs2(rows []ClientResource) []*ClientResource {
+	out := make([]*ClientResource, len(rows))
+	for i := range rows {
+		out[i] = &rows[i]
+	}
+	return out
 }
 
 func buildTree(rows []ClientResource, parent *string) []TreeNode {

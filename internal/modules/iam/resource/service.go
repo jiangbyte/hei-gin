@@ -84,24 +84,71 @@ func (s *Service) DeleteResources(ctx context.Context, ids []string) error {
 
 // ResourceDetail 资源详情。
 func (s *Service) ResourceDetail(ctx context.Context, id string) (*Resource, error) {
-	return s.repo.GetResourceByID(ctx, id)
+	row, err := s.repo.GetResourceByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.withNames(ctx, []*Resource{row})
+	return row, nil
 }
 
 // ResourcePage 资源分页。
 func (s *Service) ResourcePage(ctx context.Context, p ResourcePageParam) (rows []Resource, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err = s.repo.PageResources(ctx, p)
-	return rows, total, current, size, err
+	if err != nil {
+		return nil, 0, current, size, err
+	}
+	ptrs := make([]*Resource, len(rows))
+	for i := range rows {
+		ptrs[i] = &rows[i]
+	}
+	s.withNames(ctx, ptrs)
+	return rows, total, current, size, nil
 }
 
-// CurrentAdmin 管理端当前资源。
-func (s *Service) CurrentAdmin(ctx context.Context) ([]Resource, error) {
-	return s.repo.ListResourcesByClient(ctx, string(security.AccountAdmin))
+// CurrentAdmin 管理端当前资源（超管/全权限返回全部启用，普通账号按授权资源+祖先过滤；对齐 hei-boot currentMenus）。
+func (s *Service) CurrentAdmin(ctx context.Context, accountID string, roleIDs, groupIDs []string, allPerms bool) ([]Resource, error) {
+	return s.listVisibleResources(ctx, string(security.AccountAdmin), accountID, roleIDs, groupIDs, allPerms)
 }
 
-// CurrentPortal 门户当前资源。
-func (s *Service) CurrentPortal(ctx context.Context) ([]Resource, error) {
-	return s.repo.ListResourcesByClient(ctx, string(security.AccountPortal))
+// CurrentPortal 门户当前资源（同上，门户客户端）。
+func (s *Service) CurrentPortal(ctx context.Context, accountID string, roleIDs, groupIDs []string, allPerms bool) ([]Resource, error) {
+	return s.listVisibleResources(ctx, string(security.AccountPortal), accountID, roleIDs, groupIDs, allPerms)
+}
+
+// listVisibleResources 按授权过滤可见资源（对齐 hei-boot listVisibleResources）。
+// allPerms 表示会话已含 *:*:* 通配（EnsureSuperPermissions 对超管/全权限注入），此时返回客户端全部启用资源。
+func (s *Service) listVisibleResources(ctx context.Context, client, accountID string, roleIDs, groupIDs []string, allPerms bool) ([]Resource, error) {
+	if allPerms {
+		rows, err := s.repo.ListResourcesByClient(ctx, client)
+		if err != nil {
+			return nil, err
+		}
+		s.withNames(ctx, toPtrs(rows))
+		return rows, nil
+	}
+	resourceIDs, err := s.repo.ListGrantedResourceIDs(ctx, accountID, groupIDs, roleIDs, client)
+	if err != nil {
+		return nil, err
+	}
+	if len(resourceIDs) == 0 {
+		return []Resource{}, nil
+	}
+	rows, err := s.repo.ListResourcesByIDsWithParents(ctx, resourceIDs, client)
+	if err != nil {
+		return nil, err
+	}
+	s.withNames(ctx, toPtrs(rows))
+	return rows, nil
+}
+
+func toPtrs(rows []Resource) []*Resource {
+	out := make([]*Resource, len(rows))
+	for i := range rows {
+		out[i] = &rows[i]
+	}
+	return out
 }
 
 // ListGrantModules 资源授权模块选项树（模块 → 菜单 → 按钮权限；对齐 hei-boot listGrantModules）。
@@ -213,7 +260,61 @@ func (s *Service) ResourceTree(ctx context.Context, moduleID string) ([]TreeNode
 	if err != nil {
 		return nil, err
 	}
+	s.withNames(ctx, toPtrs(rows))
 	return buildTree(rows, nil), nil
+}
+
+// withNames 批量回填 parent_id_name / module_id_name / module_client（对齐 hei-boot @Trans 字典翻译）。
+func (s *Service) withNames(ctx context.Context, rows []*Resource) {
+	moduleIDs := make([]string, 0, len(rows))
+	parentIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		if row.ModuleID != nil && *row.ModuleID != "" {
+			moduleIDs = append(moduleIDs, *row.ModuleID)
+		}
+		if row.ParentID != nil && *row.ParentID != "" {
+			parentIDs = append(parentIDs, *row.ParentID)
+		}
+	}
+	modules := map[string]ResourceModule{}
+	if len(moduleIDs) > 0 {
+		ms, err := s.repo.ModulesByIDs(ctx, moduleIDs)
+		if err == nil {
+			for i := range ms {
+				modules[ms[i].ID] = ms[i]
+			}
+		}
+	}
+	parents := map[string]string{}
+	if len(parentIDs) > 0 {
+		ps, err := s.repo.GetResourcesByIDs(ctx, parentIDs)
+		if err == nil {
+			for i := range ps {
+				parents[ps[i].ID] = ps[i].Name
+			}
+		}
+	}
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		if row.ModuleID != nil {
+			if m, ok := modules[*row.ModuleID]; ok {
+				name := m.Name
+				row.ModuleIDName = &name
+				client := m.Client
+				row.ModuleClient = &client
+			}
+		}
+		if row.ParentID != nil {
+			if n, ok := parents[*row.ParentID]; ok {
+				row.ParentIDName = &n
+			}
+		}
+	}
 }
 
 // CreateModule 创建资源模块。

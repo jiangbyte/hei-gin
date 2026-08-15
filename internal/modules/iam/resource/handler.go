@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/internal/framework/core/bind"
+	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
@@ -110,7 +111,8 @@ func (s *Service) page(c *gin.Context) {
 }
 
 func (s *Service) currentAdmin(c *gin.Context) {
-	rows, err := s.CurrentAdmin(c.Request.Context())
+	sess := contextx.Session(c.Request.Context())
+	rows, err := s.CurrentAdmin(c.Request.Context(), sessionAccountID(sess), sessionRoleIDs(sess), sessionGroupIDs(sess), sessionAllPerms(sess))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
@@ -119,12 +121,46 @@ func (s *Service) currentAdmin(c *gin.Context) {
 }
 
 func (s *Service) currentPortal(c *gin.Context) {
-	rows, err := s.CurrentPortal(c.Request.Context())
+	sess := contextx.Session(c.Request.Context())
+	rows, err := s.CurrentPortal(c.Request.Context(), sessionAccountID(sess), sessionRoleIDs(sess), sessionGroupIDs(sess), sessionAllPerms(sess))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
 	response.OK(c, rows)
+}
+
+func sessionAccountID(s *security.SessionPayload) string {
+	if s == nil {
+		return ""
+	}
+	return s.AccountID
+}
+
+func sessionRoleIDs(s *security.SessionPayload) []string {
+	if s == nil {
+		return nil
+	}
+	return s.RoleIDs
+}
+
+func sessionGroupIDs(s *security.SessionPayload) []string {
+	if s == nil {
+		return nil
+	}
+	return s.GroupIDs
+}
+
+func sessionAllPerms(s *security.SessionPayload) bool {
+	if s == nil {
+		return false
+	}
+	for _, k := range s.PermissionKeys {
+		if k == "*:*:*" {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) tree(c *gin.Context) {

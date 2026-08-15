@@ -174,7 +174,7 @@ func (s *Service) pageResource(c *gin.Context) {
 }
 
 func (s *Service) treeResource(c *gin.Context) {
-	nodes, err := s.ResourceTree(c.Request.Context(), c.Query("module_id"))
+	nodes, err := s.ResourceTree(c.Request.Context(), c.Query("module_id"), c.Query("account_type"))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
