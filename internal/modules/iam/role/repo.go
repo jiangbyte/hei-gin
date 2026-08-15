@@ -22,6 +22,15 @@ func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
+// FindByCode 按编码查询角色。
+func (r *Repo) FindByCode(ctx context.Context, code string) (*Role, error) {
+	var row Role
+	if err := r.with(ctx).Where("code = ?", code).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
 // Create 创建角色。
 func (r *Repo) Create(ctx context.Context, row *Role) error {
 	return r.with(ctx).Create(row).Error

@@ -72,8 +72,10 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete 批量删除。
+// Delete 批量删除（先清组关联，再删组；对齐 hei-boot GroupServiceImpl.delete）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	_ = s.rel.DeleteBySubjectIDs(ctx, relation.SubjectGroup, ids, "")
+	_ = s.rel.DeleteByTargetIDs(ctx, relation.TargetGroup, ids, "")
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 

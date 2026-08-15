@@ -13,16 +13,22 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/shared"
 )
 
 // Service 部门服务。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	repo *Repo
+	rel  *relation.Service
+}
 
 // NewService 构造部门服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB) *Service {
+	return &Service{repo: NewRepo(db), rel: relation.NewService(db)}
+}
 
 // New 构建 iam.dept 模块。
 func New(d *shared.Deps) module.Module {
@@ -57,8 +63,9 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete 批量删除。
+// Delete 批量删除（先清引用关系，再删部门；对齐 hei-boot DeptServiceImpl.delete）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	_ = s.rel.DeleteByTargetIDs(ctx, relation.TargetDept, ids, "")
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 

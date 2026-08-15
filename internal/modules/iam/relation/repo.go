@@ -52,8 +52,23 @@ func (r *Repo) DeleteBySubjectIDs(ctx context.Context, subjectType string, subje
 	if len(subjectIDs) == 0 {
 		return nil
 	}
-	return r.with(ctx).Where("subject_type = ? AND subject_id IN ? AND relation_type = ?",
-		subjectType, subjectIDs, relationType).Delete(&Relation{}).Error
+	q := r.with(ctx).Where("subject_type = ? AND subject_id IN ?", subjectType, subjectIDs)
+	if relationType != "" {
+		q = q.Where("relation_type = ?", relationType)
+	}
+	return q.Delete(&Relation{}).Error
+}
+
+// DeleteByTargetIDs 按目标 id 集合删除指定关系类型的关系（清理部门/角色/组被引用关系）。
+func (r *Repo) DeleteByTargetIDs(ctx context.Context, targetType string, targetIDs []string, relationType string) error {
+	if len(targetIDs) == 0 {
+		return nil
+	}
+	q := r.with(ctx).Where("target_type = ? AND target_id IN ?", targetType, targetIDs)
+	if relationType != "" {
+		q = q.Where("relation_type = ?", relationType)
+	}
+	return q.Delete(&Relation{}).Error
 }
 
 // CreateInBatches 批量插入关系行（供事务内调用）。

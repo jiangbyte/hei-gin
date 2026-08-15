@@ -4,20 +4,26 @@
 
 package role
 
-import "hei-gin/internal/modules/iam/relation"
+import (
+	"gorm.io/datatypes"
+
+	"hei-gin/internal/modules/iam/relation"
+)
 
 // AddParam 创建角色入参。
 //
 // Author: Charlie
 type AddParam struct {
-	Code        string  `json:"code" binding:"required"`
-	Name        string  `json:"name" binding:"required"`
-	Category    string  `json:"category"`
-	ScopeType   string  `json:"scope_type"`
-	OwnerDeptID *string `json:"owner_dept_id"`
-	Sort        int     `json:"sort"`
-	Status      string  `json:"status"`
-	Description *string `json:"description"`
+	Code        string         `json:"code" binding:"required"`
+	Name        string         `json:"name" binding:"required"`
+	Category    string         `json:"category"`
+	ScopeType   string         `json:"scope_type"`
+	OwnerDeptID *string        `json:"owner_dept_id"`
+	Sort        int            `json:"sort"`
+	Status      string         `json:"status"`
+	IsBuiltin   *bool          `json:"is_builtin"`
+	Description *string        `json:"description"`
+	Extra       datatypes.JSON `json:"extra"`
 }
 
 // EditParam 更新角色入参。
@@ -32,11 +38,13 @@ type EditParam struct {
 //
 // Author: Charlie
 type PageParam struct {
-	Current int    `form:"current" json:"current"`
-	Size    int    `form:"size" json:"size"`
-	Code    string `form:"code" json:"code"`
-	Name    string `form:"name" json:"name"`
-	Status  string `form:"status" json:"status"`
+	Current   int    `form:"current" json:"current"`
+	Size      int    `form:"size" json:"size"`
+	Code      string `form:"code" json:"code"`
+	Name      string `form:"name" json:"name"`
+	Category  string `form:"category" json:"category"`
+	ScopeType string `form:"scope_type" json:"scope_type"`
+	Status    string `form:"status" json:"status"`
 }
 
 // Normalize 分页规范化。

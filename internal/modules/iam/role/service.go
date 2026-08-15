@@ -6,6 +6,7 @@ package role
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -51,13 +52,20 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create 创建角色。
+// Create 创建角色（code 唯一校验；对齐 hei-boot RoleServiceImpl.create）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
+	if _, err := s.repo.FindByCode(ctx, req.Code); err == nil {
+		return fmt.Errorf("角色编码已存在")
+	}
+	ext := req.Extra
+	if len(ext) == 0 {
+		ext = datatypes.JSON([]byte("{}"))
+	}
 	row := Role{
 		ID: idgen.Next(), Code: req.Code, Name: req.Name,
 		Category: orDef(req.Category, "SYS"), ScopeType: orDef(req.ScopeType, "PLATFORM"),
 		OwnerDeptID: req.OwnerDeptID, Sort: orSort(req.Sort), Status: orStatus(req.Status),
-		Description: req.Description, Extra: datatypes.JSON([]byte("{}")),
+		IsBuiltin: boolOr(req.IsBuiltin), Description: req.Description, Extra: ext,
 	}
 	return s.repo.Create(ctx, &row)
 }
@@ -69,11 +77,19 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		"scope_type": orDef(req.ScopeType, "PLATFORM"), "owner_dept_id": req.OwnerDeptID,
 		"sort": orSort(req.Sort), "status": orStatus(req.Status), "description": req.Description,
 	}
+	if req.IsBuiltin != nil {
+		updates["is_builtin"] = *req.IsBuiltin
+	}
+	if len(req.Extra) > 0 {
+		updates["extra"] = req.Extra
+	}
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete 批量删除。
+// Delete 批量删除（先清角色关联，再删角色；对齐 hei-boot RoleServiceImpl.delete）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	_ = s.rel.DeleteBySubjectIDs(ctx, relation.SubjectRole, ids, "")
+	_ = s.rel.DeleteByTargetIDs(ctx, relation.TargetRole, ids, "")
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
@@ -88,6 +104,8 @@ func (s *Service) Page(ctx context.Context, p PageParam) (rows []Role, total int
 	rows, total, err = s.repo.Page(ctx, p)
 	return rows, total, current, size, err
 }
+
+func boolOr(p *bool) bool { return p != nil && *p }
 
 func orStatus(st string) string {
 	if st == "" {

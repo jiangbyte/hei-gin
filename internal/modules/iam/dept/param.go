@@ -4,18 +4,21 @@
 
 package dept
 
+import "gorm.io/datatypes"
+
 // AddParam 创建部门入参。
 //
 // Author: Charlie
 type AddParam struct {
-	ParentID       *string `json:"parent_id"`
-	MasterID       *string `json:"master_id"`
-	DeputyMasterID *string `json:"deputy_master_id"`
-	Name           string  `json:"name" binding:"required"`
-	Category       string  `json:"category" binding:"required"`
-	Sort           int     `json:"sort"`
-	IsVirtual      bool    `json:"is_virtual"`
-	Status         string  `json:"status"`
+	ParentID       *string        `json:"parent_id"`
+	MasterID       *string        `json:"master_id"`
+	DeputyMasterID *string        `json:"deputy_master_id"`
+	Name           string         `json:"name" binding:"required"`
+	Category       string         `json:"category" binding:"required"`
+	Sort           int            `json:"sort"`
+	IsVirtual      bool           `json:"is_virtual"`
+	Status         string         `json:"status"`
+	Extra          datatypes.JSON `json:"extra"`
 }
 
 // EditParam 更新部门入参。
@@ -30,10 +33,12 @@ type EditParam struct {
 //
 // Author: Charlie
 type PageParam struct {
-	Current int    `form:"current" json:"current"`
-	Size    int    `form:"size" json:"size"`
-	Name    string `form:"name" json:"name"`
-	Status  string `form:"status" json:"status"`
+	Current  int    `form:"current" json:"current"`
+	Size     int    `form:"size" json:"size"`
+	Name     string `form:"name" json:"name"`
+	Category string `form:"category" json:"category"`
+	ParentID string `form:"parent_id" json:"parent_id"`
+	Status   string `form:"status" json:"status"`
 }
 
 // Normalize 分页规范化。

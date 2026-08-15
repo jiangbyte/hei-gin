@@ -4,16 +4,21 @@
 
 package group
 
-import "hei-gin/internal/modules/iam/relation"
+import (
+	"gorm.io/datatypes"
+
+	"hei-gin/internal/modules/iam/relation"
+)
 
 // AddParam 创建用户组入参。
 //
 // Author: Charlie
 type AddParam struct {
-	Name        string  `json:"name" binding:"required"`
-	OwnerDeptID *string `json:"owner_dept_id"`
-	Description *string `json:"description"`
-	Status      string  `json:"status"`
+	Name        string         `json:"name" binding:"required"`
+	OwnerDeptID *string        `json:"owner_dept_id"`
+	Description *string        `json:"description"`
+	Status      string         `json:"status"`
+	Extra       datatypes.JSON `json:"extra"`
 }
 
 // EditParam 更新用户组入参。

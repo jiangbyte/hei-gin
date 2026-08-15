@@ -4,18 +4,21 @@
 
 package client
 
+import "gorm.io/datatypes"
+
 // ModuleAddParam 创建客户端模块入参。
 //
 // Author: Charlie
 type ModuleAddParam struct {
-	Name        string  `json:"name" binding:"required"`
-	Code        string  `json:"code" binding:"required"`
-	AccountType string  `json:"account_type"`
-	Icon        *string `json:"icon"`
-	Color       *string `json:"color"`
-	Sort        int     `json:"sort"`
-	Status      string  `json:"status"`
-	Description *string `json:"description"`
+	Name        string         `json:"name" binding:"required"`
+	Code        string         `json:"code" binding:"required"`
+	AccountType string         `json:"account_type"`
+	Icon        *string        `json:"icon"`
+	Color       *string        `json:"color"`
+	Sort        int            `json:"sort"`
+	Status      string         `json:"status"`
+	Description *string        `json:"description"`
+	Extra       datatypes.JSON `json:"extra"`
 }
 
 // ModuleEditParam 更新客户端模块入参。
@@ -33,6 +36,7 @@ type ModulePageParam struct {
 	Current     int    `form:"current" json:"current"`
 	Size        int    `form:"size" json:"size"`
 	Name        string `form:"name" json:"name"`
+	Code        string `form:"code" json:"code"`
 	AccountType string `form:"account_type" json:"account_type"`
 	Status      string `form:"status" json:"status"`
 }
@@ -88,11 +92,14 @@ type ResourceEditParam struct {
 //
 // Author: Charlie
 type ResourcePageParam struct {
-	Current  int    `form:"current" json:"current"`
-	Size     int    `form:"size" json:"size"`
-	Name     string `form:"name" json:"name"`
-	ModuleID string `form:"module_id" json:"module_id"`
-	Status   string `form:"status" json:"status"`
+	Current      int    `form:"current" json:"current"`
+	Size         int    `form:"size" json:"size"`
+	Name         string `form:"name" json:"name"`
+	Code         string `form:"code" json:"code"`
+	ResourceType string `form:"resource_type" json:"resource_type"`
+	ModuleID     string `form:"module_id" json:"module_id"`
+	ParentID     string `form:"parent_id" json:"parent_id"`
+	Status       string `form:"status" json:"status"`
 }
 
 // Normalize 分页规范化。

@@ -13,16 +13,22 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/shared"
 )
 
 // Service 客户端资源服务。
 //
 // Author: Charlie
-type Service struct{ repo *Repo }
+type Service struct {
+	repo *Repo
+	rel  *relation.Service
+}
 
 // NewService 构造客户端资源服务。
-func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
+func NewService(db *gorm.DB) *Service {
+	return &Service{repo: NewRepo(db), rel: relation.NewService(db)}
+}
 
 // New 构建 iam.client 模块。
 func New(d *shared.Deps) module.Module {
@@ -150,8 +156,10 @@ func (s *Service) UpdateResource(ctx context.Context, req ResourceEditParam) err
 	return s.repo.UpdateResource(ctx, req.ID, updates)
 }
 
-// DeleteResources 批量删除客户端资源。
+// DeleteResources 批量删除客户端资源（先清关联，再删；对齐 hei-boot ClientResourceServiceImpl.delete）。
 func (s *Service) DeleteResources(ctx context.Context, ids []string) error {
+	_ = s.rel.DeleteBySubjectIDs(ctx, relation.SubjectClientResource, ids, "")
+	_ = s.rel.DeleteByTargetIDs(ctx, relation.TargetClientResource, ids, "")
 	return s.repo.DeleteResources(ctx, ids)
 }
 

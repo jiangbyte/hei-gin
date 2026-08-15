@@ -232,6 +232,11 @@ func (s *Service) DeleteBySubjectIDs(ctx context.Context, subjectType string, su
 	return s.repo.DeleteBySubjectIDs(ctx, subjectType, subjectIDs, relationType)
 }
 
+// DeleteByTargetIDs 按目标 id 集合删除指定关系类型的关系。
+func (s *Service) DeleteByTargetIDs(ctx context.Context, targetType string, targetIDs []string, relationType string) error {
+	return s.repo.DeleteByTargetIDs(ctx, targetType, targetIDs, relationType)
+}
+
 // newRelation 构造默认启用关系行。
 func newRelation(subjectType, subjectID, accountType, relationType, targetType, targetID string) Relation {
 	return Relation{
