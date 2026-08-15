@@ -425,7 +425,6 @@ func toObjectKey(raw, publicPath string) string {
 	return key
 }
 
-
 // CleanupManaged 跨模块清理托管文件（换头像/删附件等）：跳过外部 URL，删存储对象并清元数据。
 func CleanupManaged(ctx context.Context, db *gorm.DB, sto *storage.Manager, objectName string) error {
 	name := strings.TrimSpace(objectName)
