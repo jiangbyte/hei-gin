@@ -2142,8 +2142,6 @@ COMMENT ON COLUMN "public"."sys_role"."updated_by" IS '更新人';
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO "public"."sys_role" VALUES ('1', 'SUPER_ADMIN', '超级管理员', 'SYS', 'PLATFORM', NULL, 1, 'ENABLED', 'f', '系统内置超级管理员角色', '{}', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 11:56:13.747886+00', NULL);
--- 内置超管账号(1)挂 SUPER_ADMIN 角色（代码侧对该角色补通配 *:*:*，对齐 hei-boot IamRelationServiceImpl）
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_superadmin_role', 'ACCOUNT', '1', 'ADMIN', 'ACCOUNT_ROLE', 'ROLE', '1', '', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '内置超管角色', NULL, NULL, '{}', '2026-08-08 00:00:00+00', '1', '2026-08-08 00:00:00+00', '1');
 
 -- ----------------------------
 -- Table structure for sys_weak_password
