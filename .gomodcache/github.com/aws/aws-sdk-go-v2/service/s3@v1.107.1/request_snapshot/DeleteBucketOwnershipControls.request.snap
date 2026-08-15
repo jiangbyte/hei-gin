@@ -1,4 +1,0 @@
-DELETE /?ownershipControls=
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

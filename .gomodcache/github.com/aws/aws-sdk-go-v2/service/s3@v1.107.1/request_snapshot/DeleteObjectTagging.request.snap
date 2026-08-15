@@ -1,4 +1,0 @@
-DELETE /__Key__?tagging=&versionId=__VersionId__
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

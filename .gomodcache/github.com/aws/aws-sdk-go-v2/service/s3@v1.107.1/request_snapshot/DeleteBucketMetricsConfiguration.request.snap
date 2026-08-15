@@ -1,4 +1,0 @@
-DELETE /?id=__Id__&metrics=
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

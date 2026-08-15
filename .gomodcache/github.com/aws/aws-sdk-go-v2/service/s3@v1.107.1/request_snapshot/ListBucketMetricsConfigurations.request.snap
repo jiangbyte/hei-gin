@@ -1,4 +1,0 @@
-GET /?continuation-token=__ContinuationToken__&metrics=&x-id=ListBucketMetricsConfigurations
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

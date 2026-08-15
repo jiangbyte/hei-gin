@@ -1,8 +1,0 @@
-./handler.go
-./job.go
-./model.go
-./param.go
-./register.go
-./repo.go
-./result.go
-./service.go

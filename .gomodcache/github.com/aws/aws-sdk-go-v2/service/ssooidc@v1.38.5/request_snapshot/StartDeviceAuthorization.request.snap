@@ -1,5 +1,0 @@
-POST /device_authorization
-
-Content-Type: application/json
-
-{"clientId":"__ClientId__","clientSecret":"__ClientSecret__","startUrl":"__StartUrl__"}

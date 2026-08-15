@@ -1,4 +1,0 @@
-POST /logout
-
-X-Amz-Sso_bearer_token: __AccessToken__
-

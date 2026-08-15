@@ -1,4 +1,0 @@
-GET /?id=__Id__&metrics=&x-id=GetBucketMetricsConfiguration
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

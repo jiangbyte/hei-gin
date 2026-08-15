@@ -1,1 +1,0 @@
-/*!80031 ALTER TABLE `table_a` MODIFY `column_1` TEXT NOT NULL */;

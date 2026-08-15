@@ -1,4 +1,0 @@
-GET /?logging=
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-

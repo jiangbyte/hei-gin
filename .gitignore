@@ -48,4 +48,3 @@ lerna-debug.log*
 .gomodcache/
 .gocache/
 .gotmp/
-/config.yaml

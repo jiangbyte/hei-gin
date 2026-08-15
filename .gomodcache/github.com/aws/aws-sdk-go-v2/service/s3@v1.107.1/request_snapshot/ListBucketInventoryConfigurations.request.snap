@@ -1,4 +1,0 @@
-GET /?continuation-token=__ContinuationToken__&inventory=&x-id=ListBucketInventoryConfigurations
-
-X-Amz-Expected-Bucket-Owner: __ExpectedBucketOwner__
-
