@@ -23,6 +23,7 @@ import (
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
 	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/modules/sys/file"
 )
 
 // otpBindPrefix 绑定验证码 Redis 前缀。
@@ -104,7 +105,7 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, req Profi
 	return s.repo.UpdateProfile(ctx, accountID, updates)
 }
 
-// UploadAvatar 上传头像并更新资料。
+// UploadAvatar 上传头像并更新资料（替换旧头像时清理原文件，对齐 hei-boot deleteByObjectName）。
 func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename string, r io.Reader, size int64, contentType string) (string, error) {
 	ext := path.Ext(filename)
 	object := storage.ObjectKey("avatar/"+s.avatarPrefix, idgen.Next()+ext)
@@ -112,7 +113,10 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	if err != nil {
 		return "", err
 	}
-	_ = s.getOrCreate(ctx, accountID)
+	p := s.getOrCreate(ctx, accountID)
+	if p.Avatar != nil && *p.Avatar != "" {
+		_ = file.CleanupManaged(ctx, s.repo.DB(), s.storage, *p.Avatar)
+	}
 	_ = s.repo.UpdateProfile(ctx, accountID, map[string]any{"avatar": url, "updated_by": accountID})
 	return url, nil
 }

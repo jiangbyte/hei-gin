@@ -34,6 +34,9 @@ func (r *Repo) Update(ctx context.Context, id string, updates map[string]any) er
 
 // DeleteByIDs 批量删除。
 func (r *Repo) DeleteByIDs(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
 	return r.with(ctx).Where("id IN ?", ids).Delete(&File{}).Error
 }
 
@@ -57,21 +60,33 @@ func (r *Repo) FindByObjectName(ctx context.Context, objectName string) (*File, 
 
 // ListByIDs 批量查询。
 func (r *Repo) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
 	var rows []File
 	err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error
 	return rows, err
 }
 
-// Page 分页查询。
+// Page 分页查询（对齐 hei-boot FileServiceImpl.page 过滤条件）。
 func (r *Repo) Page(ctx context.Context, q PageParam) (rows []File, total int64, err error) {
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&File{})
 	if q.OriginalName != "" {
 		db = db.Where("original_name ILIKE ?", "%"+q.OriginalName+"%")
 	}
+	if q.ObjectName != "" {
+		db = db.Where("object_name ILIKE ?", "%"+q.ObjectName+"%")
+	}
+	if q.StorageProvider != "" {
+		db = db.Where("storage_provider = ?", q.StorageProvider)
+	}
+	if q.ContentType != "" {
+		db = db.Where("content_type ILIKE ?", "%"+q.ContentType+"%")
+	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	err = db.Order("id desc").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
+	err = db.Order("created_at DESC, id DESC").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
 	return rows, total, err
 }

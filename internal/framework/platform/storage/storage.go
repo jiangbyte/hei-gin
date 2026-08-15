@@ -49,6 +49,32 @@ func (m *Manager) SetRuntime(s *runtimecfg.Settings) {
 	m.mu.Unlock()
 }
 
+// ProviderName 当前生效的存储引擎名（对齐 web STORAGE_PROVIDER_OPTIONS 词汇）。
+func (m *Manager) ProviderName() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	switch strings.ToLower(strings.TrimSpace(m.cfg.Provider)) {
+	case "s3":
+		return "s3"
+	case "minio":
+		return "minio"
+	case "oss":
+		return "oss"
+	default:
+		return "local"
+	}
+}
+
+// PublicPath 公开访问路径前缀（yaml storage.public_path，缺省 /api/v1/files）。
+func (m *Manager) PublicPath() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.cfg.PublicPath != "" {
+		return m.cfg.PublicPath
+	}
+	return "/api/v1/files"
+}
+
 // PresignExpireSeconds 预签名有效期（秒）：运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 优先，回退 yaml。
 func (m *Manager) PresignExpireSeconds(ctx context.Context) int {
 	m.mu.RLock()

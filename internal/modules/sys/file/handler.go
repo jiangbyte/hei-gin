@@ -1,4 +1,4 @@
-// internal/modules/sys/file/handler.go HTTP 处理器。
+// internal/modules/sys/file/handler.go HTTP 处理器（对齐 hei-boot Admin/Portal/PublicFileController）。
 //
 // Author: Charlie
 
@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/internal/framework/core/bind"
+	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
@@ -32,6 +33,7 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/file/download", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件下载"), s.download)
 		api.POST("/v1/admin/sys/file/url", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件URL"), s.url)
 		api.POST("/v1/admin/sys/file/presigned_url", admin, middleware.RequirePermission(d.Perms, "sys:file:presignedurl", "文件预签名URL"), s.presignedURL)
+		api.GET("/v1/files", s.publicGet)
 		api.GET("/v1/files/*object_name", s.publicGet)
 
 		portal := middleware.RequireAccountType(security.AccountPortal)
@@ -50,7 +52,7 @@ func (s *Service) upload(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, "file required")
 		return
 	}
-	row, err := s.Upload(c.Request.Context(), fh)
+	row, err := s.Upload(c.Request.Context(), fh, c.PostForm("storage_provider"), accountID(c))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
@@ -139,10 +141,14 @@ func (s *Service) download(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, row.Size, row.ContentType, rc, nil)
 }
 
+// publicGet 公开文件访问：/v1/files?object_name= 或 /v1/files/**（校验元数据存在，防越权读存储）。
 func (s *Service) publicGet(c *gin.Context) {
 	objectName := strings.TrimPrefix(c.Param("object_name"), "/")
 	if objectName == "" {
-		response.Fail(c, http.StatusNotFound, 404, "not found")
+		objectName = c.Query("object_name")
+	}
+	if objectName == "" {
+		response.Fail(c, http.StatusBadRequest, 400, "object_name required")
 		return
 	}
 	ct, rc, err := s.OpenByObjectName(c.Request.Context(), objectName)
@@ -151,6 +157,11 @@ func (s *Service) publicGet(c *gin.Context) {
 		return
 	}
 	defer rc.Close()
+	filename := objectName
+	if idx := strings.LastIndex(filename, "/"); idx >= 0 {
+		filename = filename[idx+1:]
+	}
+	c.Header("Content-Disposition", `inline; filename="`+filename+`"`)
 	c.Header("Content-Type", ct)
 	_, _ = io.Copy(c.Writer, rc)
 }
@@ -183,13 +194,15 @@ func (s *Service) presignedURL(c *gin.Context) {
 	response.OK(c, out)
 }
 
+// ---- Portal（仅本人文件，对齐 hei-boot PortalFileController.assertOwnedByCurrent）----
+
 func (s *Service) portalUpload(c *gin.Context) {
 	fh, err := c.FormFile("file")
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "file required")
 		return
 	}
-	row, err := s.Upload(c.Request.Context(), fh)
+	row, err := s.Upload(c.Request.Context(), fh, c.PostForm("storage_provider"), accountID(c))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
@@ -208,6 +221,10 @@ func (s *Service) portalDetail(c *gin.Context) {
 		response.Fail(c, http.StatusNotFound, 404, "not found")
 		return
 	}
+	if err := s.AssertOwnedByCurrent(row, accountID(c)); err != nil {
+		response.Fail(c, http.StatusForbidden, 403, err.Error())
+		return
+	}
 	response.OK(c, row)
 }
 
@@ -222,17 +239,85 @@ func (s *Service) portalListByIDs(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	response.OK(c, rows)
+	me := accountID(c)
+	filtered := make([]File, 0, len(rows))
+	for i := range rows {
+		if s.AssertOwnedByCurrent(&rows[i], me) == nil {
+			filtered = append(filtered, rows[i])
+		}
+	}
+	response.OK(c, filtered)
 }
 
 func (s *Service) portalDownload(c *gin.Context) {
-	s.download(c)
+	var q schema.IDQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	row, err := s.Detail(c.Request.Context(), q.ID)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, "not found")
+		return
+	}
+	if err := s.AssertOwnedByCurrent(row, accountID(c)); err != nil {
+		response.Fail(c, http.StatusForbidden, 403, err.Error())
+		return
+	}
+	rc, err := s.sto.Provider().Get(c.Request.Context(), toObjectKey(row.ObjectName, s.publicPath()))
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, "not found")
+		return
+	}
+	defer rc.Close()
+	c.Header("Content-Disposition", `attachment; filename="`+row.OriginalName+`"`)
+	c.DataFromReader(http.StatusOK, row.Size, row.ContentType, rc, nil)
 }
 
 func (s *Service) portalURL(c *gin.Context) {
-	s.url(c)
+	s.portalObjectName(c, func(ctx *gin.Context, objectName string) (*URLResult, error) {
+		return s.URL(ctx, objectName)
+	})
 }
 
 func (s *Service) portalPresignedURL(c *gin.Context) {
-	s.presignedURL(c)
+	s.portalObjectName(c, func(ctx *gin.Context, objectName string) (*URLResult, error) {
+		return s.PresignedURL(ctx, objectName)
+	})
+}
+
+// portalObjectName 门户端按 object_name 获取 URL：先校验本人归属。
+func (s *Service) portalObjectName(c *gin.Context, fn func(ctx *gin.Context, objectName string) (*URLResult, error)) {
+	var req ObjectNameParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	key := toObjectKey(req.ObjectName, s.publicPath())
+	if key == "" {
+		response.Fail(c, http.StatusNotFound, 404, "file not found")
+		return
+	}
+	row, err := s.repo.FindByObjectName(c.Request.Context(), key)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, "file not found")
+		return
+	}
+	if err := s.AssertOwnedByCurrent(row, accountID(c)); err != nil {
+		response.Fail(c, http.StatusForbidden, 403, err.Error())
+		return
+	}
+	out, err := fn(c, key)
+	if err != nil {
+		response.Fail(c, http.StatusNotFound, 404, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+func accountID(c *gin.Context) string {
+	if sess := contextx.Session(c.Request.Context()); sess != nil {
+		return sess.AccountID
+	}
+	return ""
 }

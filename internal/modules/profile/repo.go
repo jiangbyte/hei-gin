@@ -30,6 +30,9 @@ func PortalRepo(db *gorm.DB) *Repo { return NewRepo(db, ProfileTablePortal) }
 // Table 返回绑定的表名。
 func (r *Repo) Table() string { return r.table }
 
+// DB 返回底层 DB（供跨模块清理等）。
+func (r *Repo) DB() *gorm.DB { return r.db }
+
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx).Table(r.table)
 }

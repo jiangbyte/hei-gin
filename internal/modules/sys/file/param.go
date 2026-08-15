@@ -6,7 +6,7 @@ package file
 
 import "hei-gin/internal/framework/core/schema"
 
-// EditParam 更新文件元数据入参。
+// EditParam 更新文件元数据入参（对齐 hei-boot SysFileEditParam）。
 //
 // Author: Charlie
 type EditParam struct {
@@ -14,12 +14,15 @@ type EditParam struct {
 	OriginalName *string `json:"original_name"`
 }
 
-// PageParam 文件分页查询。
+// PageParam 文件分页查询（对齐 hei-boot SysFilePageParam）。
 //
 // Author: Charlie
 type PageParam struct {
 	schema.PageQuery
-	OriginalName string `form:"original_name"`
+	OriginalName    string `form:"original_name"`
+	ObjectName      string `form:"object_name"`
+	StorageProvider string `form:"storage_provider"`
+	ContentType     string `form:"content_type"`
 }
 
 // IDsParam 批量 ID 入参。

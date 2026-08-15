@@ -1,4 +1,4 @@
-// internal/modules/sys/file/service.go 业务服务。
+// internal/modules/sys/file/service.go 业务服务（对齐 hei-boot FileServiceImpl + FileAccessUrls）。
 //
 // Author: Charlie
 
@@ -6,9 +6,11 @@ package file
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -47,8 +49,8 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Upload 上传文件并写入元数据（按 STORAGE_UPLOAD_* 运行时配置校验大小/类型/扩展名）。
-func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader) (*File, error) {
+// Upload 上传文件并写入元数据（按 STORAGE_UPLOAD_* 运行时配置校验；storageProvider 记录到元数据）。
+func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageProvider, accountID string) (*File, error) {
 	if err := s.validateUpload(ctx, fh); err != nil {
 		return nil, err
 	}
@@ -57,66 +59,108 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader) (*File, 
 		return nil, err
 	}
 	defer f.Close()
-	now := time.Now().UTC()
-	ext := path.Ext(fh.Filename)
-	objectName := fmt.Sprintf("%04d/%02d/%02d/%s%s", now.Year(), now.Month(), now.Day(), strings.ReplaceAll(uuid.NewString(), "-", ""), ext)
-	ct := fh.Header.Get("Content-Type")
-	if ct == "" {
-		ct = "application/octet-stream"
-	}
-	url, err := s.sto.Provider().Put(ctx, objectName, f, fh.Size, ct)
+	originalName := safeOriginalName(fh.Filename)
+	objectName := s.buildObjectName(ctx, originalName, "uploads")
+	ct := sanitizeContentType(fh.Header.Get("Content-Type"))
+	// 记录实际生效的引擎（hei-gin 单引擎来自 yaml；storage_provider 参数保留 API 兼容）。
+	_ = storageProvider
+	provider := s.sto.ProviderName()
+	urlVal, err := s.sto.Provider().Put(ctx, objectName, f, fh.Size, ct)
 	if err != nil {
 		return nil, err
 	}
 	row := File{
-		ID: idgen.Next(), ObjectName: objectName, OriginalName: fh.Filename,
-		StorageProvider: "local", ContentType: ct, Size: fh.Size, URL: url,
+		ID: idgen.Next(), ObjectName: objectName, OriginalName: originalName,
+		StorageProvider: provider, ContentType: ct, Size: fh.Size, URL: urlVal,
+	}
+	if accountID != "" {
+		row.CreatedBy = &accountID
+		row.UpdatedBy = &accountID
 	}
 	if err := s.repo.Create(ctx, &row); err != nil {
 		return nil, err
 	}
-	return &row, nil
+	return s.withResolvedURL(ctx, &row), nil
 }
 
-// Delete 批量删除文件及存储对象。
+// Delete 批量删除文件及存储对象（object_name 兼容 URL/路径形式；存储删除失败不阻断元数据清理）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
 	rows, err := s.repo.ListByIDs(ctx, ids)
 	if err != nil {
 		return err
 	}
-	for _, r := range rows {
-		_ = s.sto.Provider().Delete(ctx, r.ObjectName)
+	for i := range rows {
+		objectKey := toObjectKey(rows[i].ObjectName, s.publicPath())
+		if objectKey == "" {
+			continue
+		}
+		_ = s.sto.Provider().Delete(ctx, objectKey)
 	}
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
+// DeleteByObjectName 按对象名删除（跨模块清理附件用；外部 URL 忽略）。
+func (s *Service) DeleteByObjectName(ctx context.Context, objectName string) error {
+	name := strings.TrimSpace(objectName)
+	if name == "" || isExternalURL(name) {
+		return nil
+	}
+	row, err := s.repo.FindByObjectName(ctx, toObjectKey(name, s.publicPath()))
+	if err != nil {
+		return nil
+	}
+	if key := toObjectKey(row.ObjectName, s.publicPath()); key != "" {
+		_ = s.sto.Provider().Delete(ctx, key)
+	}
+	return s.repo.DeleteByIDs(ctx, []string{row.ID})
+}
+
 // Update 更新文件元数据。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	row, err := s.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return fmt.Errorf("file not found")
+	}
 	updates := map[string]any{}
 	if req.OriginalName != nil {
-		updates["original_name"] = *req.OriginalName
+		updates["original_name"] = safeOriginalName(*req.OriginalName)
 	}
 	if len(updates) == 0 {
 		return nil
 	}
+	_ = row
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Detail 详情。
+// Detail 详情（重算访问 URL）。
 func (s *Service) Detail(ctx context.Context, id string) (*File, error) {
-	return s.repo.GetByID(ctx, id)
+	row, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.withResolvedURL(ctx, row), nil
 }
 
-// Page 分页。
+// Page 分页（重算访问 URL；支持 original_name/object_name/storage_provider/content_type 过滤）。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []File, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
+	for i := range rows {
+		s.withResolvedURL(ctx, &rows[i])
+	}
 	return rows, total, current, size, err
 }
 
-// ListByIDs 批量查询。
+// ListByIDs 批量查询（重算访问 URL）。
 func (s *Service) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
-	return s.repo.ListByIDs(ctx, ids)
+	rows, err := s.repo.ListByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		s.withResolvedURL(ctx, &rows[i])
+	}
+	return rows, nil
 }
 
 // OpenByID 打开文件内容流。
@@ -125,67 +169,146 @@ func (s *Service) OpenByID(ctx context.Context, id string) (*File, io.ReadCloser
 	if err != nil {
 		return nil, nil, err
 	}
-	rc, err := s.sto.Provider().Get(ctx, row.ObjectName)
+	rc, err := s.sto.Provider().Get(ctx, toObjectKey(row.ObjectName, s.publicPath()))
 	if err != nil {
 		return nil, nil, err
 	}
 	return row, rc, nil
 }
 
-// URL 获取对象访问 URL。
+// URL 获取对象访问 URL（始终重算，避免返回已过期的预签名；对齐 hei-boot FileServiceImpl.url）。
 func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error) {
-	row, err := s.repo.FindByObjectName(ctx, objectName)
-	if err != nil {
+	key := toObjectKey(objectName, s.publicPath())
+	if key == "" {
 		return nil, fmt.Errorf("file not found")
 	}
-	return &URLResult{ObjectName: objectName, URL: row.URL}, nil
+	if _, err := s.repo.FindByObjectName(ctx, key); err != nil {
+		return nil, fmt.Errorf("file not found")
+	}
+	return &URLResult{ObjectName: key, URL: s.sto.Provider().PublicURL(key)}, nil
 }
 
 // PresignedURL 获取对象预签名 URL（本地返回公开 URL；S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
 func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResult, error) {
-	if _, err := s.repo.FindByObjectName(ctx, objectName); err != nil {
+	key := toObjectKey(objectName, s.publicPath())
+	if key == "" {
+		return nil, fmt.Errorf("file not found")
+	}
+	if _, err := s.repo.FindByObjectName(ctx, key); err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
 	expire := time.Duration(s.sto.PresignExpireSeconds(ctx)) * time.Second
 	if p, ok := s.sto.Provider().(storage.Presigner); ok {
-		u, err := p.PresignedURL(ctx, objectName, expire)
+		u, err := p.PresignedURL(ctx, key, expire)
 		if err != nil {
 			return nil, err
 		}
-		return &URLResult{ObjectName: objectName, URL: u}, nil
+		return &URLResult{ObjectName: key, URL: u}, nil
 	}
-	pub := s.sto.Provider().PublicURL(objectName)
-	return &URLResult{ObjectName: objectName, URL: pub}, nil
+	return &URLResult{ObjectName: key, URL: s.sto.Provider().PublicURL(key)}, nil
 }
 
-// validateUpload 按运行时上传限制校验（STORAGE_UPLOAD_*；缺省 20MB、放行全部类型/扩展名）。
-func (s *Service) validateUpload(ctx context.Context, fh *multipart.FileHeader) error {
-	maxBytes := 20 * 1024 * 1024
-	if s.runtime != nil {
-		if v := s.runtime.GetInt(ctx, "STORAGE_UPLOAD_MAX_BYTES", 0); v > 0 {
-			maxBytes = v
+// OpenByObjectName 按对象名打开文件（公开访问：先校验元数据存在，避免越权读取存储对象）。
+func (s *Service) OpenByObjectName(ctx context.Context, objectName string) (contentType string, rc io.ReadCloser, err error) {
+	if !validObjectName(objectName) {
+		return "", nil, fmt.Errorf("file not found")
+	}
+	key := toObjectKey(objectName, s.publicPath())
+	if key == "" {
+		return "", nil, fmt.Errorf("file not found")
+	}
+	row, err := s.repo.FindByObjectName(ctx, key)
+	if err != nil {
+		return "", nil, fmt.Errorf("file not found")
+	}
+	rc, err = s.sto.Provider().Get(ctx, key)
+	if err != nil {
+		return "", nil, err
+	}
+	return row.ContentType, rc, nil
+}
+
+// AssertOwnedByCurrent 校验文件归属（门户端仅本人可访问；对齐 hei-boot assertOwnedByCurrent）。
+func (s *Service) AssertOwnedByCurrent(row *File, accountID string) error {
+	if row == nil {
+		return fmt.Errorf("file not found")
+	}
+	if row.CreatedBy == nil || *row.CreatedBy == "" || *row.CreatedBy != accountID {
+		return fmt.Errorf("无权访问该文件")
+	}
+	return nil
+}
+
+// withResolvedURL 重算访问 URL（库中 url 可能为已过期预签名）。
+func (s *Service) withResolvedURL(_ context.Context, row *File) *File {
+	if row == nil || row.ObjectName == "" {
+		return row
+	}
+	key := toObjectKey(row.ObjectName, s.publicPath())
+	if key == "" {
+		return row
+	}
+	if u := s.sto.Provider().PublicURL(key); u != "" {
+		row.URL = u
+	}
+	return row
+}
+
+// publicPath 公开路径前缀（默认 /api/v1/files）。
+func (s *Service) publicPath() string {
+	if s.sto != nil {
+		if p := s.sto.PublicPath(); p != "" {
+			return p
 		}
 	}
+	return "/api/v1/files"
+}
+
+// validateUpload 按运行时上传限制校验（STORAGE_UPLOAD_*：JSON 数组或逗号分隔；缺省 10MB）。
+func (s *Service) validateUpload(ctx context.Context, fh *multipart.FileHeader) error {
+	maxBytes := s.int(ctx, "STORAGE_UPLOAD_MAX_BYTES", 10*1024*1024)
 	if fh.Size > int64(maxBytes) {
 		return fmt.Errorf("文件大小超过限制（最大 %d 字节）", maxBytes)
 	}
-	ext := strings.ToLower(path.Ext(fh.Filename))
-	ct := strings.ToLower(fh.Header.Get("Content-Type"))
-	allowedTypes := strings.Split(s.str(ctx, "STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES"), ",")
-	allowedExts := strings.Split(s.str(ctx, "STORAGE_UPLOAD_ALLOWED_EXTENSIONS"), ",")
-	deniedExts := strings.Split(s.str(ctx, "STORAGE_UPLOAD_DENIED_EXTENSIONS"), ",")
-	for _, d := range deniedExts {
-		if d = strings.TrimSpace(strings.ToLower(d)); d != "" && (d == ext || d == "."+strings.TrimPrefix(ext, ".")) {
+	originalName := safeOriginalName(fh.Filename)
+	ext := strings.ToLower(path.Ext(originalName))
+	ct := strings.ToLower(strings.TrimSpace(fh.Header.Get("Content-Type")))
+
+	denied := s.strList(ctx, "STORAGE_UPLOAD_DENIED_EXTENSIONS")
+	for _, d := range denied {
+		if normalizeExt(d) == ext {
 			return fmt.Errorf("不允许上传该文件类型：%s", ext)
 		}
 	}
-	if len(allowedTypes) > 0 && allowedTypes[0] != "" && !containsFold(allowedTypes, ct) {
-		return fmt.Errorf("不允许上传该内容类型：%s", ct)
-	}
-	if len(allowedExts) > 0 && allowedExts[0] != "" && !containsFold(allowedExts, ext) {
+	allowedExts := s.strList(ctx, "STORAGE_UPLOAD_ALLOWED_EXTENSIONS")
+	if len(allowedExts) > 0 && !containsFold(allowedExts, ext) {
 		return fmt.Errorf("不允许上传该扩展名：%s", ext)
 	}
+	allowedTypes := s.strList(ctx, "STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES")
+	if ct != "" && len(allowedTypes) > 0 && !containsFold(allowedTypes, ct) {
+		return fmt.Errorf("不允许上传该内容类型：%s", ct)
+	}
 	return nil
+}
+
+// buildObjectName 形如 uploads/YYYY/MM/DD/{uuid}{ext}（category 长度受 STORAGE_UPLOAD_CATEGORY_MAX_LENGTH 约束）。
+func (s *Service) buildObjectName(ctx context.Context, filename, category string) string {
+	maxCategoryLen := s.int(ctx, "STORAGE_UPLOAD_CATEGORY_MAX_LENGTH", 64)
+	if maxCategoryLen < 1 {
+		maxCategoryLen = 1
+	}
+	category = strings.TrimSpace(category)
+	if category == "" {
+		category = "uploads"
+	}
+	if len(category) > maxCategoryLen {
+		category = category[:maxCategoryLen]
+	}
+	ext := strings.ToLower(path.Ext(filename))
+	now := time.Now().UTC()
+	return fmt.Sprintf("%s/%04d/%02d/%02d/%s%s",
+		category, now.Year(), now.Month(), now.Day(),
+		strings.ReplaceAll(uuid.NewString(), "-", ""), ext)
 }
 
 func (s *Service) str(ctx context.Context, key string) string {
@@ -193,6 +316,43 @@ func (s *Service) str(ctx context.Context, key string) string {
 		return ""
 	}
 	return s.runtime.GetString(ctx, key, "")
+}
+
+func (s *Service) int(ctx context.Context, key string, def int) int {
+	if s.runtime == nil {
+		return def
+	}
+	return s.runtime.GetInt(ctx, key, def)
+}
+
+// strList 读取列表配置：兼容 JSON 数组与逗号分隔两种形态。
+func (s *Service) strList(ctx context.Context, key string) []string {
+	raw := strings.TrimSpace(s.str(ctx, key))
+	if raw == "" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "[") {
+		var list []string
+		if err := json.Unmarshal([]byte(raw), &list); err == nil {
+			return list
+		}
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func normalizeExt(ext string) string {
+	v := strings.ToLower(strings.TrimSpace(ext))
+	if v != "" && !strings.HasPrefix(v, ".") {
+		return "." + v
+	}
+	return v
 }
 
 func containsFold(list []string, v string) bool {
@@ -204,15 +364,93 @@ func containsFold(list []string, v string) bool {
 	return false
 }
 
-// OpenByObjectName 按对象名打开文件。
-func (s *Service) OpenByObjectName(ctx context.Context, objectName string) (contentType string, rc io.ReadCloser, err error) {
-	rc, err = s.sto.Provider().Get(ctx, objectName)
-	if err != nil {
-		return "", nil, err
+func safeOriginalName(filename string) string {
+	safe := strings.ReplaceAll(filename, "\\", "/")
+	if idx := strings.LastIndex(safe, "/"); idx >= 0 {
+		safe = safe[idx+1:]
 	}
-	ct := "application/octet-stream"
-	if row, err := s.repo.FindByObjectName(ctx, objectName); err == nil {
-		ct = row.ContentType
+	if strings.TrimSpace(safe) == "" {
+		return "file"
 	}
-	return ct, rc, nil
+	return safe
+}
+
+func sanitizeContentType(ct string) string {
+	ct = strings.TrimSpace(ct)
+	if ct == "" {
+		return "application/octet-stream"
+	}
+	return ct
+}
+
+// isExternalURL 是否为 http(s)/data/blob 外部引用。
+func isExternalURL(value string) bool {
+	u, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || u.Scheme == "" {
+		return false
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "http", "https", "data", "blob":
+		return true
+	}
+	return false
+}
+
+// toObjectKey 把任意对象引用（纯 key / /api/v1/files/... 路径 / 完整 URL）转成存储纯 key。
+func toObjectKey(raw, publicPath string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	pathOnly := raw
+	if strings.Contains(raw, "://") {
+		if u, err := url.Parse(raw); err == nil {
+			pathOnly = u.Path
+		}
+	}
+	pathOnly = strings.ReplaceAll(pathOnly, "\\", "/")
+	prefix := strings.TrimRight(publicPath, "/") + "/"
+	if strings.HasPrefix(pathOnly, prefix) {
+		pathOnly = pathOnly[len(prefix):]
+	} else if strings.TrimRight(pathOnly, "/") == strings.TrimRight(publicPath, "/") {
+		return ""
+	}
+	key := strings.TrimLeft(pathOnly, "/")
+	if key == "" {
+		return ""
+	}
+	if strings.Contains(key, "..") {
+		return ""
+	}
+	return key
+}
+
+
+// CleanupManaged 跨模块清理托管文件（换头像/删附件等）：跳过外部 URL，删存储对象并清元数据。
+func CleanupManaged(ctx context.Context, db *gorm.DB, sto *storage.Manager, objectName string) error {
+	name := strings.TrimSpace(objectName)
+	if name == "" || isExternalURL(name) {
+		return nil
+	}
+	key := toObjectKey(name, sto.PublicPath())
+	if key == "" {
+		return nil
+	}
+	var row File
+	if err := db.WithContext(ctx).Where("object_name = ?", key).First(&row).Error; err != nil {
+		return nil
+	}
+	_ = sto.Provider().Delete(ctx, key)
+	return db.WithContext(ctx).Where("id = ?", row.ID).Delete(&File{}).Error
+}
+
+// validObjectName 公开访问路径安全校验（对齐 hei-boot publicDownload）。
+func validObjectName(objectName string) bool {
+	if objectName == "" {
+		return false
+	}
+	if strings.Contains(objectName, "..") || strings.HasPrefix(objectName, "/") || strings.Contains(objectName, "\\") {
+		return false
+	}
+	return true
 }
