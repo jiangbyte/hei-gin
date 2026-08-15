@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/iam/client"
@@ -84,8 +85,15 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.repo.Create(ctx, &row)
 }
 
-// Update 更新角色。
-func (s *Service) Update(ctx context.Context, req EditParam) error {
+// Update 更新角色（数据范围校验；对齐 hei-boot assertOwnerOrDeptAccessible）。
+func (s *Service) Update(ctx context.Context, req EditParam, sess *security.SessionPayload) error {
+	cur, err := s.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+	if err := s.assertScope(sess, cur); err != nil {
+		return err
+	}
 	updates := map[string]any{
 		"code": req.Code, "name": req.Name, "category": orDef(req.Category, "SYS"),
 		"scope_type": orDef(req.ScopeType, "PLATFORM"), "owner_dept_id": req.OwnerDeptID,
@@ -100,23 +108,55 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete 批量删除（先清角色关联，再删角色；对齐 hei-boot RoleServiceImpl.delete）。
-func (s *Service) Delete(ctx context.Context, ids []string) error {
+// Delete 批量删除（先校验数据范围、清角色关联，再删角色；对齐 hei-boot RoleServiceImpl.delete）。
+func (s *Service) Delete(ctx context.Context, ids []string, sess *security.SessionPayload) error {
+	for _, id := range ids {
+		row, err := s.repo.GetByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if err := s.assertScope(sess, row); err != nil {
+			return err
+		}
+	}
 	_ = s.rel.DeleteBySubjectIDs(ctx, relation.SubjectRole, ids, "")
 	_ = s.rel.DeleteByTargetIDs(ctx, relation.TargetRole, ids, "")
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
-// Detail 角色详情。
-func (s *Service) Detail(ctx context.Context, id string) (*Role, error) {
-	return s.repo.GetByID(ctx, id)
+// Detail 角色详情（数据范围校验）。
+func (s *Service) Detail(ctx context.Context, id string, sess *security.SessionPayload) (*Role, error) {
+	row, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.assertScope(sess, row); err != nil {
+		return nil, err
+	}
+	return row, nil
 }
 
-// Page 分页。
-func (s *Service) Page(ctx context.Context, p PageParam) (rows []Role, total int64, current, size int, err error) {
+// Page 分页（数据范围过滤）。
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Role, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err = s.repo.Page(ctx, p)
+	rows, total, err = s.repo.Page(ctx, p, sess)
 	return rows, total, current, size, err
+}
+
+// assertScope 数据范围断言：ALL 放行；SELF 比创建人；部门类要求 owner_dept_id 落在可见部门内。
+func (s *Service) assertScope(sess *security.SessionPayload, row *Role) error {
+	if sess == nil {
+		return datascope.ErrDenied
+	}
+	var ownerDept string
+	if row.OwnerDeptID != nil {
+		ownerDept = *row.OwnerDeptID
+	}
+	var ownerAccount string
+	if row.CreatedBy != nil {
+		ownerAccount = *row.CreatedBy
+	}
+	return datascope.Assert(sess, ownerDept, ownerAccount)
 }
 
 func boolOr(p *bool) bool { return p != nil && *p }

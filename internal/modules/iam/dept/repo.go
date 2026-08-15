@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 )
 
 // Repo 部门持久化。
@@ -46,10 +49,13 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Dept, error) {
 	return &row, nil
 }
 
-// Page 分页查询。
-func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Dept, total int64, err error) {
+// Page 分页查询（sess 非空时按数据范围过滤；对齐 hei-boot applyOwnerOrDept 以 dept.id 为归属列）。
+func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Dept, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Dept{})
+	if sess != nil {
+		db = datascope.Apply(db, sess, "id")
+	}
 	if p.Name != "" {
 		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
 	}
@@ -63,9 +69,13 @@ func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Dept, total int64,
 	return rows, total, err
 }
 
-// ListAll 列出全部（树形）。
-func (r *Repo) ListAll(ctx context.Context) ([]Dept, error) {
+// ListAll 列出全部（树形；sess 非空时按数据范围过滤）。
+func (r *Repo) ListAll(ctx context.Context, sess *security.SessionPayload) ([]Dept, error) {
+	db := r.with(ctx).Model(&Dept{})
+	if sess != nil {
+		db = datascope.Apply(db, sess, "id")
+	}
 	var rows []Dept
-	err := r.with(ctx).Order("sort asc, id asc").Find(&rows).Error
+	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err
 }

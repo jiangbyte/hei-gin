@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 )
 
 // Repo 用户组持久化。
@@ -68,10 +71,13 @@ func (r *Repo) GetByIDs(ctx context.Context, ids []string) ([]Group, error) {
 	return out, nil
 }
 
-// Page 分页查询。
-func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Group, total int64, err error) {
+// Page 分页查询（sess 非空时按数据范围过滤；对齐 hei-boot applyOwnerOrDept 以 owner_dept_id 为归属列）。
+func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Group, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Group{})
+	if sess != nil {
+		db = datascope.Apply(db, sess, "owner_dept_id")
+	}
 	if p.Name != "" {
 		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
 	}

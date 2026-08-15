@@ -5,11 +5,14 @@
 package group
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/bind"
+	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
@@ -56,7 +59,7 @@ func (s *Service) update(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.Update(c.Request.Context(), req); err != nil {
+	if err := s.Update(c.Request.Context(), req, contextx.Session(c.Request.Context())); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
@@ -69,7 +72,7 @@ func (s *Service) delete(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.Delete(c.Request.Context(), body.IDs); err != nil {
+	if err := s.Delete(c.Request.Context(), body.IDs, contextx.Session(c.Request.Context())); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
@@ -82,9 +85,13 @@ func (s *Service) detail(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	row, err := s.Detail(c.Request.Context(), q.ID)
+	row, err := s.Detail(c.Request.Context(), q.ID, contextx.Session(c.Request.Context()))
 	if err != nil {
-		response.Fail(c, http.StatusNotFound, 404, "not found")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Fail(c, http.StatusNotFound, 404, "not found")
+			return
+		}
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
 	response.OK(c, row)
@@ -93,7 +100,7 @@ func (s *Service) detail(c *gin.Context) {
 func (s *Service) page(c *gin.Context) {
 	var q PageParam
 	_ = c.ShouldBindQuery(&q)
-	rows, total, cur, size, err := s.Page(c.Request.Context(), q)
+	rows, total, cur, size, err := s.Page(c.Request.Context(), q, contextx.Session(c.Request.Context()))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
