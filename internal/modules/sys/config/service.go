@@ -109,6 +109,11 @@ func isSensitive(key string, category *string) bool {
 	if _, ok := sensitiveKeys[key]; ok {
 		return true
 	}
+	// AUTH_OAUTH_*_CLIENT_SECRET / AUTH_OAUTH_*_APP_SECRET（对齐 hei-boot isSensitive）。
+	up := strings.ToUpper(strings.TrimSpace(key))
+	if strings.HasPrefix(up, "AUTH_OAUTH_") && (strings.HasSuffix(up, "_CLIENT_SECRET") || strings.HasSuffix(up, "_APP_SECRET")) {
+		return true
+	}
 	if category == nil {
 		return false
 	}
@@ -138,8 +143,11 @@ func (s *Service) reveal(row *Config) {
 	}
 }
 
-// Create 创建配置。
+// Create 创建配置（config_key 唯一校验；对齐 hei-boot ConfigServiceImpl.create）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
+	if _, err := s.repo.GetByKey(ctx, req.ConfigKey); err == nil {
+		return errors.New("配置键已存在")
+	}
 	vt := req.ValueType
 	if vt == "" {
 		vt = "STRING"
@@ -148,13 +156,20 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	row := Config{
 		ID: idgen.Next(), ConfigKey: req.ConfigKey, ConfigValue: val, Category: req.Category,
 		Remark: req.Remark, SortCode: req.SortCode, ValueType: vt, Label: req.Label, Scope: req.Scope,
-		Scene: req.Scene, ExtJSON: datatypes.JSON([]byte("{}")),
+		Scene: req.Scene, IsBuiltin: false, ExtJSON: datatypes.JSON([]byte("{}")),
 	}
 	return s.repo.Create(ctx, &row)
 }
 
-// Update 更新配置。
+// Update 更新配置（config_key 唯一排除自身 + 内置保护；对齐 hei-boot ConfigServiceImpl.update）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	cur, err := s.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return errors.New("配置不存在")
+	}
+	if existing, err2 := s.repo.GetByKey(ctx, req.ConfigKey); err2 == nil && existing.ID != req.ID {
+		return errors.New("配置键已存在")
+	}
 	vt := req.ValueType
 	if vt == "" {
 		vt = "STRING"
@@ -165,11 +180,32 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		"remark": req.Remark, "sort_code": req.SortCode, "value_type": vt, "label": req.Label,
 		"scope": req.Scope, "scene": req.Scene,
 	}
+	if cur.IsBuiltin {
+		// 内置配置不可改 scene；is_builtin 恒为 true（对齐 hei-boot）
+		delete(updates, "scene")
+		updates["is_builtin"] = true
+		if req.Scope == nil || *req.Scope == "" {
+			updates["scope"] = cur.Scope
+		}
+	}
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Delete 批量删除。
+// Delete 批量删除（内置配置禁止删除；对齐 hei-boot ConfigServiceImpl.delete）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	rows, err := s.repo.ListByIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	var builtin []string
+	for i := range rows {
+		if rows[i].IsBuiltin {
+			builtin = append(builtin, rows[i].ConfigKey)
+		}
+	}
+	if len(builtin) > 0 {
+		return errors.New("内置配置不可删除: " + strings.Join(builtin, ", "))
+	}
 	return s.repo.DeleteByIDs(ctx, ids)
 }
 
@@ -246,7 +282,12 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 				ConfigValue: s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
 				Category:    it.Category,
 				Remark:      pickRemark(it.Description, it.Remark),
-				ValueType:   "STRING",
+				ValueType:   strOr(it.ValueType, "STRING"),
+				Label:       it.Label,
+				Scope:       it.Scope,
+				Scene:       it.Scene,
+				IsBuiltin:   boolOr(it.IsBuiltin),
+				SortCode:    intOr(it.SortCode),
 				ExtJSON:     ext,
 			}
 			if err := s.repo.Create(ctx, &nr); err != nil {
@@ -266,11 +307,50 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 		if it.Description != nil {
 			updates["remark"] = pickRemark(it.Description, it.Remark)
 		}
+		if it.ValueType != nil {
+			updates["value_type"] = strOr(it.ValueType, "STRING")
+		}
+		if it.Label != nil {
+			updates["label"] = it.Label
+		}
+		if it.Scope != nil {
+			updates["scope"] = it.Scope
+		}
+		if it.Scene != nil {
+			updates["scene"] = it.Scene
+		}
+		if it.IsBuiltin != nil {
+			updates["is_builtin"] = *it.IsBuiltin
+		}
+		if it.SortCode != nil {
+			updates["sort_code"] = *it.SortCode
+		}
 		if err := s.repo.Update(ctx, row.ID, updates); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func strOr(v *string, def string) string {
+	if v == nil || *v == "" {
+		return def
+	}
+	return *v
+}
+
+func boolOr(v *bool) bool {
+	if v == nil {
+		return false
+	}
+	return *v
+}
+
+func intOr(v *int) int {
+	if v == nil {
+		return 0
+	}
+	return *v
 }
 
 // TestWebhook 发送审计告警测试 Webhook。

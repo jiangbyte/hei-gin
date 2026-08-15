@@ -46,6 +46,27 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Config, error) {
 	return &row, nil
 }
 
+// GetByKey 按配置键查询。
+func (r *Repo) GetByKey(ctx context.Context, key string) (*Config, error) {
+	var row Config
+	if err := r.with(ctx).Where("config_key = ?", key).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+// ListByIDs 按主键集合查询。
+func (r *Repo) ListByIDs(ctx context.Context, ids []string) ([]Config, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []Config
+	if err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
 // Page 分页查询。
 func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Config, total int64, err error) {
 	cur, size := q.Normalize()

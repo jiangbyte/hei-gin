@@ -56,12 +56,21 @@ type IDsParam struct {
 // BatchItemParam 批量保存单项入参（remark 与 description 兼容）。
 //
 // Author: Charlie
+// BatchItemParam 批量保存单项入参（对齐 hei-boot SysConfigBatchItemParam；remark 与 description 兼容）。
+//
+// Author: Charlie
 type BatchItemParam struct {
 	ConfigKey   string  `json:"config_key" binding:"required"`
 	ConfigValue *string `json:"config_value"`
 	Description *string `json:"description"`
 	Remark      *string `json:"remark"`
 	Category    *string `json:"category"`
+	ValueType   *string `json:"value_type"`
+	Label       *string `json:"label"`
+	Scope       *string `json:"scope"`
+	Scene       *string `json:"scene"`
+	IsBuiltin   *bool   `json:"is_builtin"`
+	SortCode    *int    `json:"sort_code"`
 }
 
 // BatchSaveParam 批量保存入参。
