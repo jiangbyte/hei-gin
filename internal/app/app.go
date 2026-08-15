@@ -17,6 +17,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/config"
+	"hei-gin/internal/framework/core/crypto"
 	"hei-gin/internal/framework/core/logger"
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
@@ -87,6 +88,9 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 	}
 	nf := notify.NewFacade(cfg.Notify, gdb)
 	rt := runtimecfg.New(gdb)
+	if codec, err := crypto.NewFernetFromConfig(cfg.Crypto.FernetKey, cfg.Crypto.VaultAddr); err == nil {
+		rt.WithCodec(codec)
+	}
 	store.SetRuntime(rt)
 	return &Deps{
 		Cfg:      cfg,

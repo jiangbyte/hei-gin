@@ -22,6 +22,15 @@ func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
+// FindByCode 按编码查询字典。
+func (r *Repo) FindByCode(ctx context.Context, code string) (*Dict, error) {
+	var row Dict
+	if err := r.with(ctx).Where("code = ?", code).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
 // Create 创建字典。
 func (r *Repo) Create(ctx context.Context, row *Dict) error {
 	return r.with(ctx).Create(row).Error
@@ -58,6 +67,9 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Dict, total int64,
 	}
 	if q.Status != "" {
 		db = db.Where("status = ?", q.Status)
+	}
+	if q.ParentID != "" {
+		db = db.Where("parent_id = ?", q.ParentID)
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err

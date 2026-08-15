@@ -121,6 +121,21 @@ func (s *Service) reveal(row *Config) {
 		return
 	}
 	row.ConfigValue = s.maybeDecrypt(row.ConfigKey, row.Category, row.ConfigValue)
+	// 敏感键已配置时置 ext_json.is_set=true（web loadByCategory「已配置」标记契约）。
+	if row.ConfigValue != nil && *row.ConfigValue != "" && isSensitive(row.ConfigKey, row.Category) {
+		var ext map[string]any
+		if len(row.ExtJSON) > 0 {
+			_ = json.Unmarshal(row.ExtJSON, &ext)
+		}
+		if ext == nil {
+			ext = map[string]any{}
+		}
+		if _, ok := ext["is_set"]; !ok {
+			ext["is_set"] = true
+			b, _ := json.Marshal(ext)
+			row.ExtJSON = b
+		}
+	}
 }
 
 // Create 创建配置。

@@ -28,8 +28,8 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.GET("/v1/admin/sys/config/page", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置分页"), s.page)
 		api.GET("/v1/admin/sys/config/list", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置列表"), s.list)
 		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置批量保存"), s.batchSave)
-		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "Webhook测试"), s.testWebhook)
-		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "推送测试"), s.testPush)
+		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, s.testWebhook)
+		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, s.testPush)
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *Service) testWebhook(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
+	response.OK(c, map[string]string{"message": "测试消息已发送"})
 }
 
 func (s *Service) testPush(c *gin.Context) {
@@ -152,5 +152,5 @@ func (s *Service) testPush(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "message": "测试消息已发送"})
+	response.OK(c, map[string]string{"message": "测试消息已发送"})
 }

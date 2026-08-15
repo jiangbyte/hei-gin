@@ -35,6 +35,9 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []OperationLog, tota
 	if q.AccountID != "" {
 		db = db.Where("account_id = ?", q.AccountID)
 	}
+	if q.Success != nil {
+		db = db.Where("success = ?", *q.Success)
+	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}

@@ -6,6 +6,7 @@ package dict
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -33,8 +34,17 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create 创建字典。
+// Create 创建字典（code 唯一 + 分类校验；对齐 hei-boot DictServiceImpl）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
+	if err := validateCode(req.Code); err != nil {
+		return err
+	}
+	if err := validateCategory(req.Category); err != nil {
+		return err
+	}
+	if _, err := s.repo.FindByCode(ctx, req.Code); err == nil {
+		return fmt.Errorf("字典编码已存在")
+	}
 	row := Dict{
 		ID: idgen.Next(), Code: req.Code, Label: req.Label, Value: req.Value, Color: req.Color,
 		Category: req.Category, ParentID: req.ParentID, Status: statusOr(req.Status), Sort: req.Sort,
@@ -42,13 +52,41 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	return s.repo.Create(ctx, &row)
 }
 
-// Update 更新字典。
+// Update 更新字典（404 + code 唯一排除自身）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
+		return fmt.Errorf("字典不存在")
+	}
+	if err := validateCode(req.Code); err != nil {
+		return err
+	}
+	if err := validateCategory(req.Category); err != nil {
+		return err
+	}
+	if existing, err := s.repo.FindByCode(ctx, req.Code); err == nil && existing.ID != req.ID {
+		return fmt.Errorf("字典编码已存在")
+	}
 	updates := map[string]any{
 		"code": req.Code, "label": req.Label, "value": req.Value, "color": req.Color,
 		"category": req.Category, "parent_id": req.ParentID, "status": statusOr(req.Status), "sort": req.Sort,
 	}
 	return s.repo.Update(ctx, req.ID, updates)
+}
+
+func validateCode(code string) error {
+	for _, r := range code {
+		if !(r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_') {
+			return fmt.Errorf("字典编码仅支持大写字母、数字与下划线")
+		}
+	}
+	return nil
+}
+
+func validateCategory(category *string) error {
+	if category != nil && *category != "" && *category != "SYS" && *category != "BIZ" {
+		return fmt.Errorf("字典分类仅支持 SYS / BIZ")
+	}
+	return nil
 }
 
 // Delete 批量删除。

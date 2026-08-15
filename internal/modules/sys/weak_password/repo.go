@@ -6,6 +6,7 @@ package weakpassword
 
 import (
 	"context"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -20,6 +21,15 @@ func NewRepo(db *gorm.DB) *Repo { return &Repo{db: db} }
 
 func (r *Repo) with(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
+}
+
+// FindByPassword 按密码查询。
+func (r *Repo) FindByPassword(ctx context.Context, password string) (*WeakPassword, error) {
+	var row WeakPassword
+	if err := r.with(ctx).Where("password = ?", password).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
 }
 
 // Create 创建弱密码。
@@ -50,8 +60,9 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*WeakPassword, error) {
 func (r *Repo) Page(ctx context.Context, q PageParam) (rows []WeakPassword, total int64, err error) {
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&WeakPassword{})
-	if q.Password != "" {
-		db = db.Where("password ILIKE ?", "%"+q.Password+"%")
+	kw := firstText(q.Password, q.Keyword)
+	if kw != "" {
+		db = db.Where("password ILIKE ?", "%"+kw+"%")
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -63,10 +74,18 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []WeakPassword, tota
 // List 列表查询。
 func (r *Repo) List(ctx context.Context, q ListParam) ([]WeakPassword, error) {
 	db := r.with(ctx).Model(&WeakPassword{})
-	if q.Password != "" {
-		db = db.Where("password ILIKE ?", "%"+q.Password+"%")
+	kw := firstText(q.Password, q.Keyword)
+	if kw != "" {
+		db = db.Where("password ILIKE ?", "%"+kw+"%")
 	}
 	var rows []WeakPassword
 	err := db.Order("id desc").Find(&rows).Error
 	return rows, err
+}
+
+func firstText(a, b string) string {
+	if strings.TrimSpace(a) != "" {
+		return strings.TrimSpace(a)
+	}
+	return strings.TrimSpace(b)
 }

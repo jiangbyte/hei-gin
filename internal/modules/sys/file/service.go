@@ -62,10 +62,17 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageP
 	originalName := safeOriginalName(fh.Filename)
 	objectName := s.buildObjectName(ctx, originalName, "uploads")
 	ct := sanitizeContentType(fh.Header.Get("Content-Type"))
-	// 记录实际生效的引擎（hei-gin 上传走活动引擎；storage_provider 参数保留 API 兼容，存储桶取自配置）。
-	_ = storageProvider
+	// 按传入 storage_provider 解析引擎（缺省活动引擎；对齐 hei-boot storageSettingsResolver.resolve）。
+	prov := s.sto.Provider()
 	provider := s.sto.ProviderName()
-	urlVal, err := s.sto.Provider().Put(ctx, objectName, f, fh.Size, ct)
+	if strings.TrimSpace(storageProvider) != "" {
+		p := s.sto.ProviderByName(ctx, storageProvider)
+		if p != nil {
+			prov = p
+			provider = strings.ToLower(strings.TrimSpace(storageProvider))
+		}
+	}
+	urlVal, err := prov.Put(ctx, objectName, f, fh.Size, ct)
 	if err != nil {
 		return nil, err
 	}

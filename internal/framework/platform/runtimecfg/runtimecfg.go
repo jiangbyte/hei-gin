@@ -13,19 +13,28 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/core/crypto"
 )
 
-// Settings 基于 sys_config 的运行时配置读取器。
+// Settings 基于 sys_config 的运行时配置读取器（敏感值自动解密，对齐 hei-boot getValue）。
 //
 // Author: Charlie
 type Settings struct {
-	db *gorm.DB
+	db    *gorm.DB
+	codec *crypto.Codec
 }
 
 // New 构造读取器。
 func New(db *gorm.DB) *Settings { return &Settings{db: db} }
 
-// GetString 读取字符串配置；空值/缺失返回 def。
+// WithCodec 注入配置加解密器（敏感键运行时读取需解密）。
+func (s *Settings) WithCodec(codec *crypto.Codec) *Settings {
+	s.codec = codec
+	return s
+}
+
+// GetString 读取字符串配置；空值/缺失返回 def；密文自动解密。
 func (s *Settings) GetString(ctx context.Context, key, def string) string {
 	if s == nil || s.db == nil || key == "" {
 		return def
@@ -34,6 +43,11 @@ func (s *Settings) GetString(ctx context.Context, key, def string) string {
 	if err := s.db.WithContext(ctx).Table("sys_config").Select("config_value").
 		Where("config_key = ?", key).Limit(1).Scan(&v).Error; err != nil || v == "" {
 		return def
+	}
+	if s.codec != nil && crypto.LooksEncrypted(v) {
+		if plain, err := s.codec.Decrypt(v); err == nil && plain != "" {
+			return plain
+		}
 	}
 	return v
 }

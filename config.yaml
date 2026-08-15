@@ -36,7 +36,11 @@ auth:
   session_cookie_samesite: lax
   session_cookie_path: /
   default_password: "123456"
-  auth_whitelist: []
+  auth_whitelist:
+    - /api/v1/portal/sys/banners/list
+    - /api/v1/portal/sys/banners/interaction
+    - /api/v1/portal/sys/dicts/tree
+    - /api/v1/portal/sys/notices/list
 
 cors:
   allow_origins:

@@ -6,6 +6,8 @@ package weakpassword
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -32,15 +34,26 @@ func New(d *shared.Deps) module.Module {
 	}
 }
 
-// Create 创建弱密码。
+// Create 创建弱密码（trim + 去重；对齐 hei-boot）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
-	row := WeakPassword{ID: idgen.Next(), Password: req.Password}
+	pwd := strings.TrimSpace(req.Password)
+	if _, err := s.repo.FindByPassword(ctx, pwd); err == nil {
+		return fmt.Errorf("弱密码已存在")
+	}
+	row := WeakPassword{ID: idgen.Next(), Password: pwd}
 	return s.repo.Create(ctx, &row)
 }
 
-// Update 更新弱密码。
+// Update 更新弱密码（404 + 去重排除自身 + trim）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
-	return s.repo.UpdatePassword(ctx, req.ID, req.Password)
+	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
+		return fmt.Errorf("弱密码不存在")
+	}
+	pwd := strings.TrimSpace(req.Password)
+	if existing, err := s.repo.FindByPassword(ctx, pwd); err == nil && existing.ID != req.ID {
+		return fmt.Errorf("弱密码已存在")
+	}
+	return s.repo.UpdatePassword(ctx, req.ID, pwd)
 }
 
 // Delete 批量删除。

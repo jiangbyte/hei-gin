@@ -36,7 +36,12 @@ auth:
   session_cookie_samesite: lax
   session_cookie_path: /
   default_password: "123456"
-  auth_whitelist: []
+  # 门户公开接口（匿名可访问）：banner 列表/互动、字典树、公告列表
+  auth_whitelist:
+    - /api/v1/portal/sys/banners/list
+    - /api/v1/portal/sys/banners/interaction
+    - /api/v1/portal/sys/dicts/tree
+    - /api/v1/portal/sys/notices/list
 
 cors:
   allow_origins:

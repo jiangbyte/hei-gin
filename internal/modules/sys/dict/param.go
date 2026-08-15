@@ -36,6 +36,7 @@ type PageParam struct {
 	Code     string `form:"code"`
 	Category string `form:"category"`
 	Status   string `form:"status"`
+	ParentID string `form:"parent_id"`
 }
 
 // TreeParam 字典树查询。

@@ -14,4 +14,5 @@ type PageParam struct {
 	Module    string `form:"module"`
 	Action    string `form:"action"`
 	AccountID string `form:"account_id"`
+	Success   *bool  `form:"success"`
 }
