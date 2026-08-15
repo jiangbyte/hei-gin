@@ -26,7 +26,7 @@ func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 		api.POST("/v1/admin/sys/depts/delete", admin, middleware.RequirePermission(d.Perms, "iam:dept:delete", "部门删除"), s.delete)
 		api.GET("/v1/admin/sys/depts/detail", admin, middleware.RequirePermission(d.Perms, "iam:dept:detail", "部门详情"), s.detail)
 		api.GET("/v1/admin/sys/depts/page", admin, middleware.RequirePermission(d.Perms, "iam:dept:page", "部门分页"), s.page)
-		api.GET("/v1/admin/sys/depts/tree", admin, middleware.RequirePermission(d.Perms, "iam:dept:list", "部门树"), s.tree)
+		api.GET("/v1/admin/sys/depts/tree", admin, middleware.RequirePermission(d.Perms, "iam:dept:tree", "部门树"), s.tree)
 	}
 }
 

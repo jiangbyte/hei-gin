@@ -203,6 +203,12 @@ func renderPlan(plan *Plan, mainFields, subFields []Field) ([]PreviewFileResult,
 	return out, nil
 }
 
+// normalizePermissionPrefix 三段式权限码归一化：去掉连字符与下划线（对齐 hei-boot CodegenTemplateEngine）。
+// 如 "sys:weak-password" / "sys:weak_password" -> "sys:weakpassword"。
+func normalizePermissionPrefix(prefix string) string {
+	return strings.NewReplacer("-", "", "_", "").Replace(strings.TrimSpace(prefix))
+}
+
 // emitCtx 模板上下文。
 //
 // Author: Charlie
@@ -353,7 +359,7 @@ func buildEmitContext(plan *Plan, mainFields, subFields []Field) *emitCtx {
 		HasTree:           hasTree,
 		HasSub:            hasSub,
 		HasTreeParentForm: hasTreeParentForm,
-		PermissionPrefix:  plan.PermissionPrefix,
+		PermissionPrefix:  normalizePermissionPrefix(plan.PermissionPrefix),
 		APIPrefix:         apiPrefix,
 		ModulePath:        modPath,
 		ModuleRoot:        moduleRoot,

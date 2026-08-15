@@ -28,11 +28,11 @@ func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
 		g.GET("/page", middleware.RequirePermission(d.Perms, "biz:cgtestorder:page", "Order page"), s.page)
 
 		ch := g.Group("/children")
-		ch.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestorder:children:create", "Create order item"), s.createItem)
-		ch.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestorder:children:update", "Update order item"), s.updateItem)
-		ch.POST("/delete", middleware.RequirePermission(d.Perms, "biz:cgtestorder:children:delete", "Delete order item"), s.deleteItem)
-		ch.GET("/detail", middleware.RequirePermission(d.Perms, "biz:cgtestorder:children:detail", "Order item detail"), s.detailItem)
-		ch.GET("/page", middleware.RequirePermission(d.Perms, "biz:cgtestorder:children:page", "Order item page"), s.pageItem)
+		ch.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestorder:create", "Create order item"), s.createItem)
+		ch.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestorder:update", "Update order item"), s.updateItem)
+		ch.POST("/delete", middleware.RequirePermission(d.Perms, "biz:cgtestorder:delete", "Delete order item"), s.deleteItem)
+		ch.GET("/detail", middleware.RequirePermission(d.Perms, "biz:cgtestorder:detail", "Order item detail"), s.detailItem)
+		ch.GET("/page", middleware.RequirePermission(d.Perms, "biz:cgtestorder:page", "Order item page"), s.pageItem)
 	}
 }
 

@@ -29,11 +29,11 @@ func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
 		g.GET("/tree", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:tree", "Knowledge category tree"), s.tree)
 
 		ch := g.Group("/children")
-		ch.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:children:create", "Create knowledge doc"), s.createDoc)
-		ch.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:children:update", "Update knowledge doc"), s.updateDoc)
-		ch.POST("/delete", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:children:delete", "Delete knowledge doc"), s.deleteDoc)
-		ch.GET("/detail", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:children:detail", "Knowledge doc detail"), s.detailDoc)
-		ch.GET("/page", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:children:page", "Knowledge doc page"), s.pageDoc)
+		ch.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:create", "Create knowledge doc"), s.createDoc)
+		ch.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:update", "Update knowledge doc"), s.updateDoc)
+		ch.POST("/delete", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:delete", "Delete knowledge doc"), s.deleteDoc)
+		ch.GET("/detail", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:detail", "Knowledge doc detail"), s.detailDoc)
+		ch.GET("/page", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:page", "Knowledge doc page"), s.pageDoc)
 	}
 }
 
