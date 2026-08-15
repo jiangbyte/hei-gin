@@ -190,6 +190,12 @@ func (s *Service) ReplaceSubjectAccounts(ctx context.Context, subjectType, subje
 
 // BindResourcePermissions 先删后插为资源绑定权限键（RESOURCE_PERMISSION/CLIENT_RESOURCE_PERMISSION）。
 func (s *Service) BindResourcePermissions(ctx context.Context, subjectType, subjectID, relationType, accountType string, permissionKeys []string) error {
+	return s.BindResourcePermissionDetail(ctx, subjectType, subjectID, relationType, accountType, permissionKeys, "", nil, 0, nil)
+}
+
+// BindResourcePermissionDetail 先删后插为资源绑定权限（带数据范围/自定义部门/排序/描述；对齐 hei-boot bindPermission）。
+func (s *Service) BindResourcePermissionDetail(ctx context.Context, subjectType, subjectID, relationType, accountType string,
+	permissionKeys []string, dataScope string, customScopeDeptIDs []string, sort int, description *string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
 			return err
@@ -202,7 +208,16 @@ func (s *Service) BindResourcePermissions(ctx context.Context, subjectType, subj
 			rel := newRelation(subjectType, subjectID, accountType, relationType, TargetPermission, "")
 			rel.TargetKey = key
 			rel.GrantMode = GrantCascade
-			rel.DataScope = string(security.DataScopeAll)
+			rel.DataScope = dataScope
+			if rel.DataScope == "" {
+				rel.DataScope = string(security.DataScopeAll)
+			}
+			if len(customScopeDeptIDs) > 0 {
+				b, _ := json.Marshal(customScopeDeptIDs)
+				rel.CustomScopeDeptIDs = b
+			}
+			rel.Sort = sort
+			rel.Description = description
 			rows = append(rows, rel)
 		}
 		if len(rows) == 0 {

@@ -30,10 +30,36 @@ type GrantModule struct {
 	Resources []Resource `json:"resources"`
 }
 
-// PermissionItem 已注册权限项。
+// PermissionItem 已注册权限项（对齐 hei-boot SysRegisteredPermissionResult）。
 //
 // Author: Charlie
 type PermissionItem struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
+	PermissionKey string `json:"permission_key"`
+	Name          string `json:"name"`
+	ModuleCode    string `json:"module_code"`
+	ResourceCode  string `json:"resource_code"`
+	Action        string `json:"action"`
+}
+
+// ButtonResult 按钮资源行（对齐 hei-boot SysResourceButtonResult：含权限绑定字段）。
+//
+// Author: Charlie
+type ButtonResult struct {
+	ID                    string   `json:"id"`
+	ParentID              *string  `json:"parent_id"`
+	ParentIDName          *string  `json:"parent_id_name"`
+	Code                  string   `json:"code"`
+	Name                  string   `json:"name"`
+	PermissionKey         string   `json:"permission_key"`
+	PermissionDescription *string  `json:"permission_description"`
+	DataScope             string   `json:"data_scope"`
+	CustomScopeDeptIDs    []string `json:"custom_scope_dept_ids"`
+	ModuleID              *string  `json:"module_id"`
+	ModuleIDName          *string  `json:"module_id_name"`
+	ModuleClient          *string  `json:"module_client"`
+	Sort                  int      `json:"sort"`
+	Status                string   `json:"status"`
+	Description           *string  `json:"description"`
+	CreatedAt             string   `json:"created_at"`
+	UpdatedAt             string   `json:"updated_at"`
 }

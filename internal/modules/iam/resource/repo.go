@@ -6,7 +6,9 @@ package resource
 
 import (
 	"context"
+	"encoding/json"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
@@ -93,12 +95,52 @@ func (r *Repo) GetResourcesByIDs(ctx context.Context, ids []string) ([]Resource,
 	return rows, nil
 }
 
+// ButtonPermissions 批量加载按钮权限绑定（RESOURCE_PERMISSION，subject=按钮 id）。
+func (r *Repo) ButtonPermissions(ctx context.Context, buttonIDs []string) map[string]buttonPerm {
+	out := make(map[string]buttonPerm, len(buttonIDs))
+	if len(buttonIDs) == 0 {
+		return out
+	}
+	var rows []struct {
+		SubjectID          string         `gorm:"column:subject_id"`
+		TargetKey          string         `gorm:"column:target_key"`
+		DataScope          string         `gorm:"column:data_scope"`
+		CustomScopeDeptIDs datatypes.JSON `gorm:"column:custom_scope_dept_ids"`
+		Description        *string        `gorm:"column:description"`
+	}
+	if err := r.with(ctx).Table("sys_iam_relation").
+		Select("subject_id", "target_key", "data_scope", "custom_scope_dept_ids", "description").
+		Where("subject_type = ? AND relation_type = ? AND subject_id IN ? AND status = ?",
+			"RESOURCE", "RESOURCE_PERMISSION", buttonIDs, "ENABLED").
+		Find(&rows).Error; err != nil {
+		return out
+	}
+	for _, row := range rows {
+		perm := buttonPerm{PermissionKey: row.TargetKey, DataScope: row.DataScope, Description: row.Description}
+		if len(row.CustomScopeDeptIDs) > 0 {
+			_ = json.Unmarshal(row.CustomScopeDeptIDs, &perm.CustomScopeDeptIDs)
+		}
+		out[row.SubjectID] = perm
+	}
+	return out
+}
+
+// ModulesByIDs 批量查资源模块。
+func (r *Repo) ModulesByIDs(ctx context.Context, ids []string) ([]ResourceModule, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []ResourceModule
+	err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error
+	return rows, err
+}
+
 // PageButtons 按钮资源分页。
 func (r *Repo) PageButtons(ctx context.Context, p ButtonPageParam) (rows []Resource, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Resource{}).Where("resource_type = ?", ResourceTypeButton)
-	if p.ResourceID != "" {
-		db = db.Where("parent_id = ?", p.ResourceID)
+	if p.ParentID != "" {
+		db = db.Where("parent_id = ?", p.ParentID)
 	}
 	if p.Code != "" {
 		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
