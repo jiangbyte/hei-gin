@@ -35,7 +35,11 @@ func (s *Service) GrantRoles(ctx context.Context, req GrantRoleParam) error {
 	if err != nil {
 		return err
 	}
-	return s.rel.ReplaceTargetIDs(ctx, relation.SubjectAccount, req.ID, relation.RelAccountRole, relation.TargetRole, acc.AccountType, req.RoleIDs)
+	if err := s.rel.ReplaceTargetIDs(ctx, relation.SubjectAccount, req.ID, relation.RelAccountRole, relation.TargetRole, acc.AccountType, req.RoleIDs); err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, req.ID)
+	return nil
 }
 
 // OwnGroups 账号已拥有用户组。
@@ -61,7 +65,11 @@ func (s *Service) GrantGroups(ctx context.Context, req GrantGroupParam) error {
 	if err != nil {
 		return err
 	}
-	return s.rel.ReplaceTargetIDs(ctx, relation.SubjectAccount, req.ID, relation.RelAccountGroup, relation.TargetGroup, acc.AccountType, req.GroupIDs)
+	if err := s.rel.ReplaceTargetIDs(ctx, relation.SubjectAccount, req.ID, relation.RelAccountGroup, relation.TargetGroup, acc.AccountType, req.GroupIDs); err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, req.ID)
+	return nil
 }
 
 // OwnDepts 账号已拥有部门授权。
@@ -83,7 +91,11 @@ func (s *Service) GrantDepts(ctx context.Context, req GrantDeptParam) error {
 	if err != nil {
 		return err
 	}
-	return s.rel.ReplaceDeptGrants(ctx, req.ID, acc.AccountType, req.GrantInfoList)
+	if err := s.rel.ReplaceDeptGrants(ctx, req.ID, acc.AccountType, req.GrantInfoList); err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, req.ID)
+	return nil
 }
 
 // OwnResources 账号已拥有管理端资源授权。
@@ -117,7 +129,11 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	if typ == "" {
 		typ = acc.AccountType
 	}
-	return s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountResource, relation.TargetResource, typ, req.GrantInfoList)
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountResource, relation.TargetResource, typ, req.GrantInfoList); err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, req.ID)
+	return nil
 }
 
 // OwnClientResources 账号已拥有客户端资源授权。
@@ -151,7 +167,11 @@ func (s *Service) GrantClientResources(ctx context.Context, req GrantResourcePar
 	if typ == "" {
 		typ = acc.AccountType
 	}
-	return s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountClientResource, relation.TargetClientResource, typ, req.GrantInfoList)
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountClientResource, relation.TargetClientResource, typ, req.GrantInfoList); err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, req.ID)
+	return nil
 }
 
 func (s *Service) loadRoles(ctx context.Context, ids []string) ([]role.Role, error) {

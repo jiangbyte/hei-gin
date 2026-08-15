@@ -38,7 +38,11 @@ func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	if err != nil {
 		return err
 	}
-	return s.rel.ReplaceSubjectAccounts(ctx, relation.SubjectGroup, req.ID, relation.RelGroupUser, req.AccountIDs, accountTypes)
+	if err := s.rel.ReplaceSubjectAccounts(ctx, relation.SubjectGroup, req.ID, relation.RelGroupUser, req.AccountIDs, accountTypes); err != nil {
+		return err
+	}
+	s.invalidateAccounts(ctx, req.AccountIDs)
+	return nil
 }
 
 // OwnRoles 用户组已拥有角色。
@@ -65,7 +69,15 @@ func (s *Service) GrantRoles(ctx context.Context, req GrantRoleParam) error {
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
 	}
-	return s.rel.ReplaceTargetIDs(ctx, relation.SubjectGroup, req.ID, relation.RelGroupRole, relation.TargetRole, orAdmin(req.AccountType), req.RoleIDs)
+	affected, err := s.membersOf(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+	if err := s.rel.ReplaceTargetIDs(ctx, relation.SubjectGroup, req.ID, relation.RelGroupRole, relation.TargetRole, orAdmin(req.AccountType), req.RoleIDs); err != nil {
+		return err
+	}
+	s.invalidateAccounts(ctx, affected)
+	return nil
 }
 
 // OwnResources 用户组已拥有管理端资源授权。
@@ -90,7 +102,15 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
 	}
-	return s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupResource, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList)
+	affected, err := s.membersOf(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupResource, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+		return err
+	}
+	s.invalidateAccounts(ctx, affected)
+	return nil
 }
 
 // OwnClientResources 用户组已拥有客户端资源授权。
@@ -115,7 +135,15 @@ func (s *Service) GrantClientResources(ctx context.Context, req GrantResourcePar
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
 	}
-	return s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupClientResource, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList)
+	affected, err := s.membersOf(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupClientResource, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+		return err
+	}
+	s.invalidateAccounts(ctx, affected)
+	return nil
 }
 
 func orAdmin(t string) string {

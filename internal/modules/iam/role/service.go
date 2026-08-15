@@ -29,6 +29,7 @@ type Service struct {
 	rel       *relation.Service
 	resources *resource.Service
 	clients   *client.Service
+	sessions  *security.SessionStore
 }
 
 // NewService 构造角色服务。
@@ -45,10 +46,23 @@ func NewService(db *gorm.DB) *Service {
 // New 构建 iam.role 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB)
+	s.sessions = d.Sessions
 	return module.Module{
 		Name:   "iam.role",
 		Models: []any{&Role{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
+	}
+}
+
+// invalidateAccounts 授权变更后强制受影响账号下线（对齐 hei-boot logoutAccounts）。
+func (s *Service) invalidateAccounts(ctx context.Context, accountIDs []string) {
+	if s.sessions == nil || len(accountIDs) == 0 {
+		return
+	}
+	for _, id := range accountIDs {
+		if id != "" {
+			_ = s.sessions.DeleteAllForAccount(ctx, id)
+		}
 	}
 }
 

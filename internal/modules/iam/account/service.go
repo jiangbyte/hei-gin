@@ -46,6 +46,7 @@ type Service struct {
 	resources *resource.Service
 	clients   *client.Service
 	runtime   *runtimecfg.Settings
+	sessions  *security.SessionStore
 }
 
 // NewService 构造账号服务。
@@ -66,11 +67,20 @@ func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings) *Servic
 // New 构建 iam.account 模块。
 func New(d *shared.Deps) module.Module {
 	s := NewService(d.DB, d.Redis, d.Runtime)
+	s.sessions = d.Sessions
 	return s.withJobs(module.Module{
 		Name:   "iam.account",
 		Models: []any{&Account{}, &Identity{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
 	})
+}
+
+// invalidateSessions 授权变更后强制该账号下线（对齐 hei-boot LoginHelper.logoutAccount）。
+func (s *Service) invalidateSessions(ctx context.Context, accountID string) {
+	if s.sessions == nil || accountID == "" {
+		return
+	}
+	_ = s.sessions.DeleteAllForAccount(ctx, accountID)
 }
 
 // AsLookup 返回 auth 查找接口。
