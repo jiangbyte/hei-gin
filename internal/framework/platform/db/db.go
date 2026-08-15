@@ -75,8 +75,12 @@ func auditCreate(db *gorm.DB) {
 	if aid == "" {
 		return
 	}
-	db.Statement.SetColumn("created_by", aid)
-	db.Statement.SetColumn("updated_by", aid)
+	if schemaHasField(db, "created_by") {
+		db.Statement.SetColumn("created_by", aid)
+	}
+	if schemaHasField(db, "updated_by") {
+		db.Statement.SetColumn("updated_by", aid)
+	}
 }
 
 func auditUpdate(db *gorm.DB) {
@@ -87,7 +91,23 @@ func auditUpdate(db *gorm.DB) {
 	if aid == "" {
 		return
 	}
-	db.Statement.SetColumn("updated_by", aid)
+	if schemaHasField(db, "updated_by") {
+		db.Statement.SetColumn("updated_by", aid)
+	}
+}
+
+// schemaHasField 判断当前语句目标模型/表是否有指定列（避免对无审计列表如 sys_account_password_history 报 invalid field）。
+func schemaHasField(db *gorm.DB, column string) bool {
+	schema := db.Statement.Schema
+	if schema == nil {
+		return false
+	}
+	for _, f := range schema.Fields {
+		if f.DBName == column {
+			return true
+		}
+	}
+	return false
 }
 
 // WithTx 在事务中执行 fn。

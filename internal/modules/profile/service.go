@@ -7,6 +7,11 @@ package profile
 import (
 	"context"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"path"
@@ -121,9 +126,18 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	return url, nil
 }
 
-// UpdatePassword 更新密码（旧密码或 OTP 校验 + 密码策略校验 + 历史记录）。
+// UpdatePassword 更新密码（RSA 解密新旧密码 + 旧密码或 OTP 校验 + 密码策略校验 + 历史记录；对齐 hei-boot updateCurrentPassword）。
 func (s *Service) UpdatePassword(ctx context.Context, accountID string, req PasswordUpdateParam) error {
-	if err := s.verify(ctx, accountID, req.OldPassword, req.OTPCode, "PASSWORD_CHANGE"); err != nil {
+	decrypted, err := s.decryptPasswords(ctx, req.PasswordKeyID, req.OldPassword, req.NewPassword)
+	if err != nil {
+		return err
+	}
+	rawOld := decrypted[0]
+	rawNew := decrypted[1]
+	if strings.TrimSpace(rawNew) == "" {
+		return errPasswordRequired
+	}
+	if err := s.verify(ctx, accountID, rawOld, req.OTPCode, "PASSWORD_CHANGE"); err != nil {
 		return err
 	}
 	accountName, _ := s.repo.GetAccountIdentifier(ctx, accountID)
@@ -136,22 +150,27 @@ func (s *Service) UpdatePassword(ctx context.Context, accountID string, req Pass
 			phone = *p.Phone
 		}
 	}
-	if err := s.passwordPolicy.Validate(ctx, req.NewPassword, accountID, accountName, email, phone); err != nil {
+	if err := s.passwordPolicy.Validate(ctx, rawNew, accountID, accountName, email, phone); err != nil {
 		return err
 	}
-	hash, err := security.HashPassword(req.NewPassword)
+	hash, err := security.HashPassword(rawNew)
 	if err != nil {
 		return err
 	}
 	if err := s.repo.UpdateAccountPassword(ctx, accountID, hash); err != nil {
 		return err
 	}
-	return s.passwordPolicy.RecordHistory(ctx, accountID, req.NewPassword, accountID, "self_update")
+	return s.passwordPolicy.RecordHistory(ctx, accountID, rawNew, accountID, "self_update")
 }
 
-// UpdatePhone 更新手机号（密码/OTP 校验 + 维护 PHONE 登录身份）。
+// UpdatePhone 更新手机号（RSA 解密密码校验 + 维护 PHONE 登录身份；对齐 hei-boot updateCurrentPhone）。
 func (s *Service) UpdatePhone(ctx context.Context, accountID string, req PhoneUpdateParam) error {
-	if err := s.verify(ctx, accountID, req.Password, req.OTPCode, "PHONE"); err != nil {
+	decrypted, err := s.decryptPasswords(ctx, req.PasswordKeyID, req.Password)
+	if err != nil {
+		return err
+	}
+	rawPassword := decrypted[0]
+	if err := s.verify(ctx, accountID, rawPassword, req.OTPCode, "PHONE"); err != nil {
 		return err
 	}
 	_ = s.getOrCreate(ctx, accountID)
@@ -166,9 +185,14 @@ func (s *Service) UpdatePhone(ctx context.Context, accountID string, req PhoneUp
 	return s.syncIdentity(ctx, accountID, "PHONE", req.Phone, enabled)
 }
 
-// UpdateEmail 更新邮箱（密码/OTP 校验 + 维护 EMAIL 登录身份）。
+// UpdateEmail 更新邮箱（RSA 解密密码校验 + 维护 EMAIL 登录身份；对齐 hei-boot updateCurrentEmail）。
 func (s *Service) UpdateEmail(ctx context.Context, accountID string, req EmailUpdateParam) error {
-	if err := s.verify(ctx, accountID, req.Password, req.OTPCode, "EMAIL"); err != nil {
+	decrypted, err := s.decryptPasswords(ctx, req.PasswordKeyID, req.Password)
+	if err != nil {
+		return err
+	}
+	rawPassword := decrypted[0]
+	if err := s.verify(ctx, accountID, rawPassword, req.OTPCode, "EMAIL"); err != nil {
 		return err
 	}
 	_ = s.getOrCreate(ctx, accountID)
@@ -181,6 +205,54 @@ func (s *Service) UpdateEmail(ctx context.Context, accountID string, req EmailUp
 	}
 	enabled := req.EmailLoginEnabled != nil && *req.EmailLoginEnabled
 	return s.syncIdentity(ctx, accountID, "EMAIL", req.Email, enabled)
+}
+
+// decryptPasswords 用同一把 Redis 密码密钥解密多个值（对齐 hei-boot cryptoService.decryptPasswords；
+// 密钥只取一次并删除，支持改密的旧/新密码同 key 场景）。
+func (s *Service) decryptPasswords(ctx context.Context, keyID string, encryptedValues ...string) ([]string, error) {
+	out := make([]string, len(encryptedValues))
+	if keyID == "" {
+		return out, errPasswordKeyRequired
+	}
+	if s.rdb == nil {
+		return out, errPasswordKeyInvalid
+	}
+	key := "password:crypto:" + keyID
+	raw, err := s.rdb.Get(ctx, key).Result()
+	_ = s.rdb.Del(ctx, key)
+	if err == redis.Nil || raw == "" {
+		return out, errPasswordKeyInvalid
+	}
+	if err != nil {
+		return out, err
+	}
+	block, _ := pem.Decode([]byte(raw))
+	if block == nil {
+		return out, errPasswordKeyInvalid
+	}
+	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return out, errPasswordKeyInvalid
+	}
+	rsaKey, ok := priv.(*rsa.PrivateKey)
+	if !ok {
+		return out, errPasswordKeyInvalid
+	}
+	for i, encrypted := range encryptedValues {
+		if encrypted == "" {
+			continue
+		}
+		ciphertext, err := base64.StdEncoding.DecodeString(encrypted)
+		if err != nil {
+			continue
+		}
+		plain, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, ciphertext, nil)
+		if err != nil {
+			continue
+		}
+		out[i] = string(plain)
+	}
+	return out, nil
 }
 
 // OrgInfo 组织关联信息。
@@ -211,22 +283,71 @@ func (s *Service) SendBindCode(ctx context.Context, accountID, scene, channel, t
 	return nil
 }
 
-// SendPasswordChangeCode 发送改密验证码到已绑定手机/邮箱。
+// SendPasswordChangeCode 按系统配置（PASSWORD_CHANGE_VERIFY_METHOD）向绑定手机/邮箱发送改密验证码；对齐 hei-boot sendChangePasswordCode。
 func (s *Service) SendPasswordChangeCode(ctx context.Context, accountID string) error {
+	method := s.changeVerifyMethod(ctx)
+	channel := ""
+	switch method {
+	case "EMAIL_CODE":
+		channel = "EMAIL"
+	case "PHONE_CODE":
+		channel = "PHONE"
+	}
+	if channel == "" {
+		// OLD_PASSWORD 或未配置：无需验证码
+		return nil
+	}
 	p, err := s.repo.GetProfile(ctx, accountID)
 	if err != nil {
 		return err
 	}
-	if p.Phone != nil && *p.Phone != "" {
-		return s.SendBindCode(ctx, accountID, "CHANGE_PASSWORD_CODE", "PHONE", *p.Phone)
+	var target string
+	if channel == "PHONE" && p.Phone != nil {
+		target = *p.Phone
 	}
-	if p.Email != nil && *p.Email != "" {
-		return s.SendBindCode(ctx, accountID, "CHANGE_PASSWORD_CODE", "EMAIL", *p.Email)
+	if channel == "EMAIL" && p.Email != nil {
+		target = *p.Email
+	}
+	if target == "" {
+		return fmt.Errorf("账号未绑定可用的%s", map[string]string{"PHONE": "手机号", "EMAIL": "邮箱"}[channel])
+	}
+	return s.sendChangePasswordOTP(ctx, accountID, channel, target)
+}
+
+// changeVerifyMethod 读取改密校验方式（默认 OLD_PASSWORD；对齐 hei-boot changeVerifyMethod）。
+func (s *Service) changeVerifyMethod(ctx context.Context) string {
+	if s.runtime != nil {
+		if m := s.runtime.GetString(ctx, "PASSWORD_CHANGE_VERIFY_METHOD", ""); m != "" {
+			return strings.ToUpper(strings.TrimSpace(m))
+		}
+	}
+	return "OLD_PASSWORD"
+}
+
+// sendChangePasswordOTP 改密验证码按账号 ID 存储（对齐 hei-boot consumeChangePasswordOtp(accountType, channel, accountId)）。
+func (s *Service) sendChangePasswordOTP(ctx context.Context, accountID, channel, target string) error {
+	code, err := sixDigitCode()
+	if err != nil {
+		return err
+	}
+	ttl := 5 * time.Minute
+	if s.rdb != nil {
+		key := otpBindPrefix + string(s.accountType) + ":CHANGE_PASSWORD:" + channel + ":" + accountID
+		if err := s.rdb.Set(ctx, key, code, ttl).Err(); err != nil {
+			return err
+		}
+	}
+	if s.notify != nil {
+		vars := map[string]any{"app_name": "HEI", "code": code, "expire_minutes": 5}
+		_ = s.notify.SendTemplated(ctx, "CHANGE_PASSWORD_CODE", target, vars)
 	}
 	return nil
 }
 
 func (s *Service) verify(ctx context.Context, accountID, password, otpCode, channel string) error {
+	if channel == "PASSWORD_CHANGE" {
+		return s.verifyChangePassword(ctx, accountID, password, otpCode)
+	}
 	if strings.TrimSpace(otpCode) != "" {
 		target := ""
 		p, err := s.repo.GetProfile(ctx, accountID)
@@ -261,6 +382,53 @@ func (s *Service) verify(ctx context.Context, accountID, password, otpCode, chan
 		return errPassword
 	}
 	return nil
+}
+
+// verifyChangePassword 改密校验：按 PASSWORD_CHANGE_VERIFY_METHOD 走旧密码或账号 OTP（对齐 hei-boot verifyChangePassword）。
+func (s *Service) verifyChangePassword(ctx context.Context, accountID, oldPassword, otpCode string) error {
+	method := s.changeVerifyMethod(ctx)
+	switch method {
+	case "OLD_PASSWORD":
+		if strings.TrimSpace(oldPassword) == "" {
+			return errPasswordRequired
+		}
+		acc, err := s.repo.GetAccountPassword(ctx, accountID)
+		if err != nil {
+			return err
+		}
+		if !security.CheckPassword(acc.PasswordHash, oldPassword) {
+			return errPassword
+		}
+		return nil
+	case "EMAIL_CODE", "PHONE_CODE":
+		if strings.TrimSpace(otpCode) == "" {
+			return errOTPInvalid
+		}
+		channel := "EMAIL"
+		if method == "PHONE_CODE" {
+			channel = "PHONE"
+		}
+		if !s.consumeChangePasswordOTP(ctx, accountID, channel, otpCode) {
+			return errOTPInvalid
+		}
+		return nil
+	default:
+		return fmt.Errorf("不支持的改密校验方式: %s", method)
+	}
+}
+
+// consumeChangePasswordOTP 消费改密账号 OTP（对齐 hei-boot consumeChangePasswordOtp）。
+func (s *Service) consumeChangePasswordOTP(ctx context.Context, accountID, channel, code string) bool {
+	if s.rdb == nil {
+		return false
+	}
+	key := otpBindPrefix + string(s.accountType) + ":CHANGE_PASSWORD:" + channel + ":" + accountID
+	stored, err := s.rdb.Get(ctx, key).Result()
+	_ = s.rdb.Del(ctx, key)
+	if err == redis.Nil || err != nil || stored == "" {
+		return false
+	}
+	return stored == strings.TrimSpace(code)
 }
 
 // syncIdentity 维护 sys_account_identity 登录身份（PHONE/EMAIL），enabled=false 时删除。
@@ -342,10 +510,12 @@ func sixDigitCode() (string, error) {
 }
 
 var (
-	errUnauthorized     = &passErr{msg: "unauthorized"}
-	errPassword         = &passErr{msg: "password incorrect"}
-	errPasswordRequired = &passErr{msg: "password or otp_code required"}
-	errOTPInvalid       = &passErr{msg: "otp code invalid or expired"}
+	errUnauthorized        = &passErr{msg: "unauthorized"}
+	errPassword            = &passErr{msg: "password incorrect"}
+	errPasswordRequired    = &passErr{msg: "password or otp_code required"}
+	errOTPInvalid          = &passErr{msg: "otp code invalid or expired"}
+	errPasswordKeyRequired = &passErr{msg: "缺少 password_key_id"}
+	errPasswordKeyInvalid  = &passErr{msg: "无效或过期的密码加密密钥"}
 )
 
 type passErr struct{ msg string }
