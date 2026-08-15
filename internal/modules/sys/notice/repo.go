@@ -162,10 +162,10 @@ func (r *Repo) backfillRead(ctx context.Context, accountType, accountID string, 
 
 // applyVisibility 按目标范围过滤已发布通知（ALL/ACCOUNT_TYPE 匹配类型 JSON，SPECIFIC 匹配账号 JSON）。
 func applyVisibility(db *gorm.DB, accountType, accountID string) *gorm.DB {
-	cond := "(target_scope IN (''ALL'',''ACCOUNT_TYPE'') AND (target_account_types IS NULL OR jsonb_array_length(COALESCE(target_account_types::jsonb,''[]''::jsonb)) = 0 OR jsonb_exists((target_account_types)::jsonb, ?)))"
+	cond := "(target_scope IN ('ALL','ACCOUNT_TYPE') AND (target_account_types IS NULL OR jsonb_array_length(COALESCE(target_account_types::jsonb,'[]'::jsonb)) = 0 OR jsonb_exists((target_account_types)::jsonb, ?)))"
 	args := []any{accountType}
 	if accountID != "" {
-		cond += " OR (target_scope = ''SPECIFIC'' AND jsonb_exists((target_account_ids)::jsonb, ?))"
+		cond += " OR (target_scope = 'SPECIFIC' AND jsonb_exists((target_account_ids)::jsonb, ?))"
 		args = append(args, accountID)
 	}
 	return db.Where(cond, args...)

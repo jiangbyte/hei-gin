@@ -101,6 +101,7 @@ func (s *Service) FindEnabledByIdentity(ctx context.Context, accountType securit
 }
 
 // EnsureSuperPermissions 从 sys_iam_relation 解析角色权限键与授权。
+// 超管（内置 superadmin 账号或持有 SUPER_ADMIN 角色）补通配 *:*:*，对齐 hei-boot IamRelationServiceImpl。
 func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) (keys []string, grants []security.PermissionGrant, err error) {
 	roleIDs, err := s.repo.ListRoleIDs(ctx, accountID)
 	if err != nil {
@@ -124,10 +125,41 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 			SourceID:      r.SourceID,
 		})
 	}
+	if s.isSuperAdmin(ctx, accountID, roleIDs) {
+		if _, ok := seen["*:*:*"]; !ok {
+			seen["*:*:*"] = struct{}{}
+			keys = append(keys, "*:*:*")
+			grants = append(grants, security.PermissionGrant{
+				PermissionKey: "*:*:*",
+				DataScope:     security.DataScopeAll,
+				SourceType:    "SUPER_ADMIN",
+				SourceID:      accountID,
+			})
+		}
+	}
 	if keys == nil {
 		keys = []string{}
 	}
 	return keys, grants, nil
+}
+
+// isSuperAdmin 判定超管：内置 superadmin 账号（identity=superadmin）或持有 SUPER_ADMIN 角色。
+func (s *Service) isSuperAdmin(ctx context.Context, accountID string, roleIDs []string) bool {
+	var n int64
+	if err := s.repo.DB().WithContext(ctx).Table("sys_account_identity").
+		Where("account_id = ? AND identity_type = ? AND identifier = ?", accountID, "ACCOUNT", "superadmin").
+		Count(&n).Error; err == nil && n > 0 {
+		return true
+	}
+	if len(roleIDs) == 0 {
+		return false
+	}
+	var m int64
+	if err := s.repo.DB().WithContext(ctx).Table("sys_role").
+		Where("id IN ? AND code = ?", roleIDs, "SUPER_ADMIN").Count(&m).Error; err == nil {
+		return m > 0
+	}
+	return false
 }
 
 // GetEnabledAccount 返回已启用账号类型。
