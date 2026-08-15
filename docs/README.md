@@ -13,11 +13,10 @@
 | [framework/platform/snailjob](../internal/framework/platform/snailjob/) | API 内嵌 SnailJob 执行器 |
 | [modules/](../internal/modules/) | 业务包目录（同属根 module） |
 | [modules/iam/account](../internal/modules/iam/account/) | 业务包分层样板 |
-| [app/](../internal/app/) | 装配根：唯一运行入口 `cmd/api` + migrate；`modules/all` |
-| [migrations/](../migrations/) | goose SQL（仓根） |
-| [scripts/migrate.sh](../scripts/migrate.sh) | 迁移 |
-| [scripts/docker/README.md](../scripts/docker/README.md) | 本地 SnailJob Server |
-| [web/](../web/) | 前端 |
+| [modules/profile](../internal/modules/profile/) | 用户中心（admin/portal 共享服务） |
+| [app/](../internal/app/) | 装配根：唯一运行入口 `cmd/api`；`modules/all` |
+| [scripts/db.sql](../scripts/db.sql) | 建表 + seed（与 hei-boot schema 对齐） |
+| [web/](../web/) | 前端（admin） |
 
 ## 包职责
 

@@ -34,14 +34,14 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 |------|------|
 | 双端账号 | ADMIN / PORTAL；验证码、RSA 密码传输、登录失败锁定、会话绑定 |
 | IAM | 账号、角色、部门、用户组、岗位、资源、权限、客户端、关系；账号/角色/用户组授权（own-*/grant-*）、资源按钮、权限注册表 |
-| 系统 | 字典、配置（批量保存/测试推送）、Banner（门户互动）、文件（URL/预签名）、弱口令、审计、**Go 代码生成** |
-| 消息 | 通知、公告、反馈 |
+| 系统 | 字典、配置（批量保存/测试推送）、Banner（门户互动）、文件（URL/预签名）、弱口令、审计（含告警规则）、**通知/公告/反馈**、**Go 代码生成** |
+| 用户中心 | ADMIN / PORTAL 资料维护、头像、改密、换绑手机/邮箱（含身份登录开关） |
 | 认证扩展 | OAuth（GitHub 完整；Gitee / 微信为配置桩）、三方绑定/解绑、会话管理（在线会话统计/强退）、忘记/重置密码、登录验证码 |
 | 调度 | **SnailJob** 执行器嵌在 `api` 进程（`module.Job` 注册） |
 | 可观测 | Prometheus `/metrics`（可关）、访问日志、安全头 / 可选 HSTS |
 | 通知 | 邮件 / 短信 / 推送门面（默认关闭，见 `notify`） |
 | 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**`；Portal 端受限文件访问 |
-| 前端同仓 | `web/admin`（Vue）、`web/portal`（React）、`web/admin-uniapp` |
+| 前端同仓 | `web/admin`（Vue，与 hei-boot 前端同源同步） |
 
 内置业务模块由 [`internal/modules/all`](internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
 
@@ -55,13 +55,12 @@ cmd/                       # 可执行入口（main 包）
 internal/                  # 私有代码（外部不可导入）
   app/                     # 装配：基础设施 + HTTP + SnailJob
   framework/               # 可改的运行时（core/middleware/platform）
-  modules/                 # 业务包（auth/iam/user/sys/message/dashboard/health/biz/shared）
+  modules/                 # 业务包（auth/iam/profile/sys/dashboard/health/biz/shared）
     all/                   # 汇总 blank import
-migrations/                # goose SQL
-scripts/                   # migrate.sh / rollback.sh / docker / sql
+scripts/                   # db.sql / migrate.sh / docker / sql
 configs/                   # config.example.yaml
-web/                       # admin / portal / admin-uniapp
-storage/                   # 本地文件存储（.gitignore）.yaml
+web/                       # admin（Vue）
+storage/                   # 本地文件存储（.gitignore）
 ```
 
 目录上的 `internal/modules/*` 只是包边界，**全部属于同一个 module**，本地改完即可被 `go run` 编进单体进程。
@@ -86,8 +85,8 @@ cp configs/config.example.yaml config.yaml
 # CREATE DATABASE hei_gin;
 # CREATE DATABASE snail_job;  # 调度中心库（独立）
 
-./scripts/migrate.sh
-# 可选：./scripts/docker/snailjob-flyway.sh && docker compose -f scripts/docker/docker-compose.snailjob.yml up -d
+psql -U postgres -d hei_gin -f scripts/db.sql   # 建表 + seed（与 hei-boot 同构 schema）
+# 可选：docker compose -f scripts/docker/docker-compose.snailjob.yml up -d
 go run ./cmd/api
 ```
 
@@ -173,9 +172,9 @@ snail_job:
 |------------|------|
 | `accountPurgeCancelledJob` | iam/account |
 | `bannerStatusJob` | sys/banner |
-| `auditAlertJob` | sys/audit |
+| `auditAlertJob` | sys/audit（暴力破解/非常时段/敏感操作/批量删除/异地 IP 五类规则） |
 
-数据库迁移用 `./scripts/migrate.sh`（goose，入口 `cmd/migrate`）。
+数据库初始化用 `scripts/db.sql`（与 hei-boot schema 对齐；权限种子含 `sys:notice:*` / `sys:feedback:*`）。
 
 上游若新增官方模块，通常只改 `all` 包；合并上游后即可自动注册。
 
