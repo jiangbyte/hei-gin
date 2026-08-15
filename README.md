@@ -41,7 +41,7 @@ HTTP JSON 使用 **全局 stringly**：`boolean` 与数字在线上为字符串�
 | 可观测 | Prometheus `/metrics`（可关）、访问日志、安全头 / 可选 HSTS |
 | 通知 | 邮件 / 短信 / 推送门面（默认关闭，见 `notify`） |
 | 存储 | 本地目录或 S3 兼容；公开路径 `/api/v1/files/**`；Portal 端受限文件访问 |
-| 前端同仓 | `web/admin`（Vue，与 hei-boot 前端同源同步） |
+| 前端同仓 | `web/admin`（Vue）、`web/portal`（React）、`web/admin-uniapp`，均与 hei-boot 前端同源同步 |
 
 内置业务模块由 [`internal/modules/all`](internal/modules/all) blank import 汇总；可用 `modules.disabled` / `modules.enabled` 过滤。
 

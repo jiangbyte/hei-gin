@@ -10,7 +10,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-// Feedback 用户反馈实体，对应表 msg_feedback。
+// Feedback 用户反馈实体，对应表 sys_feedback。
 //
 // Author: Charlie
 type Feedback struct {
