@@ -12,9 +12,46 @@
  Target Server Version : 150017 (150017)
  File Encoding         : 65001
 
- Date: 15/08/2026 22:20:12
+ Date: 15/08/2026 08:43:26
 */
 
+
+-- ----------------------------
+-- Table structure for profile_user_admin
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."profile_user_admin";
+CREATE TABLE "public"."profile_user_admin" (
+  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "name" varchar(64) COLLATE "pg_catalog"."default",
+  "nickname" varchar(64) COLLATE "pg_catalog"."default",
+  "avatar" text COLLATE "pg_catalog"."default",
+  "signature" text COLLATE "pg_catalog"."default",
+  "phone" varchar(32) COLLATE "pg_catalog"."default",
+  "email" varchar(128) COLLATE "pg_catalog"."default",
+  "remark" text COLLATE "pg_catalog"."default",
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."profile_user_admin"."account_id" IS '账户ID';
+COMMENT ON COLUMN "public"."profile_user_admin"."name" IS '姓名';
+COMMENT ON COLUMN "public"."profile_user_admin"."nickname" IS '昵称';
+COMMENT ON COLUMN "public"."profile_user_admin"."avatar" IS '头像';
+COMMENT ON COLUMN "public"."profile_user_admin"."signature" IS '个性签名';
+COMMENT ON COLUMN "public"."profile_user_admin"."phone" IS '手机号';
+COMMENT ON COLUMN "public"."profile_user_admin"."email" IS '邮箱';
+COMMENT ON COLUMN "public"."profile_user_admin"."remark" IS '备注';
+COMMENT ON COLUMN "public"."profile_user_admin"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."profile_user_admin"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."profile_user_admin"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."profile_user_admin"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of profile_user_admin
+-- ----------------------------
+INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
 
 -- ----------------------------
 -- Table structure for cg_test_activity
@@ -313,41 +350,158 @@ INSERT INTO "public"."cg_test_order_item" VALUES ('900000000000000211', '9000000
 INSERT INTO "public"."cg_test_order_item" VALUES ('900000000000000212', '900000000000000201', 'SKU-002', '测试商品B', 'COURSE', 'ENABLED', 1, 200.00, '2026-07-19 02:30:00+00', 'f', '{"duration": 30}', '赠品明细', '{"line": 2}', '2026-08-08 13:09:50.732542+00', '1', '2026-08-08 13:09:50.732542+00', '1');
 
 -- ----------------------------
--- Table structure for profile_user_admin
+-- Table structure for sys_feedback
 -- ----------------------------
-DROP TABLE IF EXISTS "public"."profile_user_admin";
-CREATE TABLE "public"."profile_user_admin" (
-  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "name" varchar(64) COLLATE "pg_catalog"."default",
-  "nickname" varchar(64) COLLATE "pg_catalog"."default",
-  "avatar" text COLLATE "pg_catalog"."default",
-  "signature" text COLLATE "pg_catalog"."default",
-  "phone" varchar(32) COLLATE "pg_catalog"."default",
-  "email" varchar(128) COLLATE "pg_catalog"."default",
-  "remark" text COLLATE "pg_catalog"."default",
+DROP TABLE IF EXISTS "public"."sys_feedback";
+CREATE TABLE "public"."sys_feedback" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "content" text COLLATE "pg_catalog"."default" NOT NULL,
+  "category" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "contact" varchar(255) COLLATE "pg_catalog"."default",
+  "attach_object_names" json NOT NULL,
+  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "reply" text COLLATE "pg_catalog"."default",
+  "replied_by" varchar(64) COLLATE "pg_catalog"."default",
+  "replied_at" timestamptz(6),
+  "submitter_account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "submitter_account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "created_at" timestamptz(6) NOT NULL DEFAULT now(),
   "created_by" varchar(64) COLLATE "pg_catalog"."default",
   "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
   "updated_by" varchar(64) COLLATE "pg_catalog"."default"
 )
 ;
-COMMENT ON COLUMN "public"."profile_user_admin"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."profile_user_admin"."name" IS '姓名';
-COMMENT ON COLUMN "public"."profile_user_admin"."nickname" IS '昵称';
-COMMENT ON COLUMN "public"."profile_user_admin"."avatar" IS '头像';
-COMMENT ON COLUMN "public"."profile_user_admin"."signature" IS '个性签名';
-COMMENT ON COLUMN "public"."profile_user_admin"."phone" IS '手机号';
-COMMENT ON COLUMN "public"."profile_user_admin"."email" IS '邮箱';
-COMMENT ON COLUMN "public"."profile_user_admin"."remark" IS '备注';
-COMMENT ON COLUMN "public"."profile_user_admin"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."profile_user_admin"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."profile_user_admin"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."profile_user_admin"."updated_by" IS '更新人';
+COMMENT ON COLUMN "public"."sys_feedback"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_feedback"."title" IS '反馈标题';
+COMMENT ON COLUMN "public"."sys_feedback"."content" IS '反馈内容';
+COMMENT ON COLUMN "public"."sys_feedback"."category" IS '反馈分类';
+COMMENT ON COLUMN "public"."sys_feedback"."contact" IS '联系方式';
+COMMENT ON COLUMN "public"."sys_feedback"."attach_object_names" IS '附件 object_name 列表';
+COMMENT ON COLUMN "public"."sys_feedback"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_feedback"."reply" IS '管理员回复';
+COMMENT ON COLUMN "public"."sys_feedback"."replied_by" IS '回复人ID';
+COMMENT ON COLUMN "public"."sys_feedback"."replied_at" IS '回复时间';
+COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_type" IS '提交者账户类型';
+COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_id" IS '提交者账户ID';
+COMMENT ON COLUMN "public"."sys_feedback"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_feedback"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_feedback"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_feedback"."updated_by" IS '更新人';
 
 -- ----------------------------
--- Records of profile_user_admin
+-- Records of sys_feedback
 -- ----------------------------
-INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
+INSERT INTO "public"."sys_feedback" VALUES ('7491849375090675712', '哈哈哈', '撒擦三次', 'SUGGESTION', '擦拭擦拭', '["uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png"]', 'RESOLVED', 'ok', '1', '2026-08-08 13:40:49.757811+00', 'PORTAL', '7491847383584804864', '2026-08-08 13:34:42.831539+00', '7491847383584804864', '2026-08-08 13:40:49.742207+00', '1');
+
+-- ----------------------------
+-- Table structure for sys_notice
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_notice";
+CREATE TABLE "public"."sys_notice" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "kind" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "content" text COLLATE "pg_catalog"."default" NOT NULL,
+  "content_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "category" varchar(32) COLLATE "pg_catalog"."default",
+  "severity" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_scope" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_account_types" json NOT NULL,
+  "target_account_ids" json NOT NULL,
+  "target_dept_ids" json NOT NULL,
+  "target_role_ids" json NOT NULL,
+  "publish_locations" json NOT NULL,
+  "is_pinned" bool NOT NULL,
+  "pinned_until" timestamptz(6),
+  "sender_account_type" varchar(32) COLLATE "pg_catalog"."default",
+  "sender_account_id" varchar(64) COLLATE "pg_catalog"."default",
+  "source_type" varchar(64) COLLATE "pg_catalog"."default",
+  "source_id" varchar(64) COLLATE "pg_catalog"."default",
+  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "publish_at" timestamptz(6),
+  "revoked_at" timestamptz(6),
+  "expire_at" timestamptz(6),
+  "view_count" int4 NOT NULL,
+  "extra" json NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_notice"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_notice"."kind" IS '类型：NOTIFICATION|ANNOUNCEMENT';
+COMMENT ON COLUMN "public"."sys_notice"."title" IS '标题';
+COMMENT ON COLUMN "public"."sys_notice"."content" IS '内容';
+COMMENT ON COLUMN "public"."sys_notice"."content_type" IS '内容格式';
+COMMENT ON COLUMN "public"."sys_notice"."category" IS '分类（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."severity" IS '等级';
+COMMENT ON COLUMN "public"."sys_notice"."target_scope" IS '目标范围';
+COMMENT ON COLUMN "public"."sys_notice"."target_account_types" IS '目标账户类型列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_account_ids" IS '目标账户ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_dept_ids" IS '目标部门ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_role_ids" IS '目标角色ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."publish_locations" IS '发布位置（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."is_pinned" IS '是否置顶（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."pinned_until" IS '置顶截止时间';
+COMMENT ON COLUMN "public"."sys_notice"."sender_account_type" IS '发送者账户类型';
+COMMENT ON COLUMN "public"."sys_notice"."sender_account_id" IS '发送者账户ID';
+COMMENT ON COLUMN "public"."sys_notice"."source_type" IS '来源模块（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."source_id" IS '来源业务ID（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_notice"."publish_at" IS '发布时间';
+COMMENT ON COLUMN "public"."sys_notice"."revoked_at" IS '撤回时间';
+COMMENT ON COLUMN "public"."sys_notice"."expire_at" IS '过期时间（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."view_count" IS '查看次数';
+COMMENT ON COLUMN "public"."sys_notice"."extra" IS '扩展信息';
+COMMENT ON COLUMN "public"."sys_notice"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_notice"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_notice"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_notice"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_notice
+-- ----------------------------
+INSERT INTO "public"."sys_notice" VALUES ('7491842112464527360', 'NOTIFICATION', '急急急', '哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:05:46+00', NULL, NULL, 0, '{}', '2026-08-08 13:05:51.295643+00', '1', '2026-08-08 13:05:51.295643+00', '1');
+INSERT INTO "public"."sys_notice" VALUES ('7491842211315884032', 'NOTIFICATION', '哈哈哈', '哈哈哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:06:10+00', NULL, NULL, 0, '{}', '2026-08-08 13:06:14.871274+00', '1', '2026-08-08 13:06:14.871274+00', '1');
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291905', 'ANNOUNCEMENT', '系统维护预告', '本周日 02:00-04:00 将进行例行维护，期间门户可能短暂不可用，请提前做好安排。', 'markdown', 'SYSTEM', 'WARNING', 'ALL', '["PORTAL", "ADMIN"]', '[]', '[]', '[]', '{"center": true, "popup": true, "dashboard": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 12:52:19.890496+00', NULL, '2026-08-22 13:52:19.890496+00', 1, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:11:23.438139+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291906', 'ANNOUNCEMENT', '意见反馈功能上线', '现已支持在线提交意见反馈并查看处理进度。登录后打开用户菜单中的「我的反馈」即可使用。', 'text', 'SYSTEM', 'SUCCESS', 'ACCOUNT_TYPE', '["PORTAL"]', '[]', '[]', '[]', '{"center": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:22:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652032', 'NOTIFICATION', '账号安全提醒', '建议定期修改密码，并确保绑定的手机号与邮箱可用，以便找回账号。', 'text', 'SECURITY', 'WARNING', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:32:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652033', 'NOTIFICATION', '新功能提示：消息中心', '右上角铃铛可查看未读通知与公告，支持一键全部已读。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:42:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652034', 'NOTIFICATION', '管理端测试通知', '这是一条仅面向 ADMIN 的通知，用于验证账户类型过滤。', 'text', 'SYSTEM', 'INFO', 'ACCOUNT_TYPE', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:47:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291904', 'ANNOUNCEMENT', '欢迎使用 HEI 门户', '门户账号体系、个人中心与消息中心已就绪。如有问题可通过「我的反馈」提交。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{"center":true,"dashboard":true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 11:52:19.890496+00', NULL, '2026-11-06 13:52:19.890496+00', 6, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:56:51.531823+00', '7491847383584804864');
+
+-- ----------------------------
+-- Table structure for sys_notice_read
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_notice_read";
+CREATE TABLE "public"."sys_notice_read" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "notice_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "read_at" timestamptz(6) NOT NULL DEFAULT now()
+)
+;
+COMMENT ON COLUMN "public"."sys_notice_read"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_notice_read"."notice_id" IS '消息ID';
+COMMENT ON COLUMN "public"."sys_notice_read"."account_type" IS '账户类型';
+COMMENT ON COLUMN "public"."sys_notice_read"."account_id" IS '账户ID';
+COMMENT ON COLUMN "public"."sys_notice_read"."read_at" IS '阅读时间';
+
+-- ----------------------------
+-- Records of sys_notice_read
+-- ----------------------------
+INSERT INTO "public"."sys_notice_read" VALUES ('7491843548694908928', '7491842211315884032', 'ADMIN', '1', '2026-08-08 13:11:33.720396+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491847557782638592', '7491842112464527360', 'PORTAL', '7491847383584804864', '2026-08-08 13:27:29.554552+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853876019257344', '7491853809015291904', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:35.928972+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853918088126464', '7491853809044652033', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:45.966126+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377344', '7491853809015291905', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377345', '7491853809015291906', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377346', '7491853809044652032', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695936', '7491853809015291905', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695937', '7491853809044652034', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
 
 -- ----------------------------
 -- Table structure for profile_user_portal
@@ -1321,51 +1475,6 @@ INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_open', 'WECHAT_OPEN',
 INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_mp', 'WECHAT_MP', '微信小程序', 'WECHAT_MP', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 5, '2026-08-12 15:57:59.392548+00', NULL, '2026-08-12 15:57:59.392548+00', NULL);
 
 -- ----------------------------
--- Table structure for sys_feedback
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_feedback";
-CREATE TABLE "public"."sys_feedback" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "content" text COLLATE "pg_catalog"."default" NOT NULL,
-  "category" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "contact" varchar(255) COLLATE "pg_catalog"."default",
-  "attach_object_names" json NOT NULL,
-  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "reply" text COLLATE "pg_catalog"."default",
-  "replied_by" varchar(64) COLLATE "pg_catalog"."default",
-  "replied_at" timestamptz(6),
-  "submitter_account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "submitter_account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "public"."sys_feedback"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_feedback"."title" IS '反馈标题';
-COMMENT ON COLUMN "public"."sys_feedback"."content" IS '反馈内容';
-COMMENT ON COLUMN "public"."sys_feedback"."category" IS '反馈分类';
-COMMENT ON COLUMN "public"."sys_feedback"."contact" IS '联系方式';
-COMMENT ON COLUMN "public"."sys_feedback"."attach_object_names" IS '附件 object_name 列表';
-COMMENT ON COLUMN "public"."sys_feedback"."status" IS '状态';
-COMMENT ON COLUMN "public"."sys_feedback"."reply" IS '管理员回复';
-COMMENT ON COLUMN "public"."sys_feedback"."replied_by" IS '回复人ID';
-COMMENT ON COLUMN "public"."sys_feedback"."replied_at" IS '回复时间';
-COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_type" IS '提交者账户类型';
-COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_id" IS '提交者账户ID';
-COMMENT ON COLUMN "public"."sys_feedback"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_feedback"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."sys_feedback"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_feedback"."updated_by" IS '更新人';
-
--- ----------------------------
--- Records of sys_feedback
--- ----------------------------
-INSERT INTO "public"."sys_feedback" VALUES ('7491849375090675712', '哈哈哈', '撒擦三次', 'SUGGESTION', '擦拭擦拭', '["uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png"]', 'RESOLVED', 'ok', '1', '2026-08-08 13:40:49.757811+00', 'PORTAL', '7491847383584804864', '2026-08-08 13:34:42.831539+00', '7491847383584804864', '2026-08-08 13:40:49.742207+00', '1');
-
--- ----------------------------
 -- Table structure for sys_file
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."sys_file";
@@ -1531,115 +1640,6 @@ INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202205', 'RESOURCE',
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202209', 'RESOURCE', '202209', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:publish', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '发布消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202240', 'RESOURCE', '202240', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:revoke', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '撤回消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202241', 'RESOURCE', '202241', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:pin', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '置顶消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-
--- ----------------------------
--- Table structure for sys_notice
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_notice";
-CREATE TABLE "public"."sys_notice" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "kind" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "content" text COLLATE "pg_catalog"."default" NOT NULL,
-  "content_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "category" varchar(32) COLLATE "pg_catalog"."default",
-  "severity" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "target_scope" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "target_account_types" json NOT NULL,
-  "target_account_ids" json NOT NULL,
-  "target_dept_ids" json NOT NULL,
-  "target_role_ids" json NOT NULL,
-  "publish_locations" json NOT NULL,
-  "is_pinned" bool NOT NULL,
-  "pinned_until" timestamptz(6),
-  "sender_account_type" varchar(32) COLLATE "pg_catalog"."default",
-  "sender_account_id" varchar(64) COLLATE "pg_catalog"."default",
-  "source_type" varchar(64) COLLATE "pg_catalog"."default",
-  "source_id" varchar(64) COLLATE "pg_catalog"."default",
-  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "publish_at" timestamptz(6),
-  "revoked_at" timestamptz(6),
-  "expire_at" timestamptz(6),
-  "view_count" int4 NOT NULL,
-  "extra" json NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "public"."sys_notice"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_notice"."kind" IS '类型：NOTIFICATION|ANNOUNCEMENT';
-COMMENT ON COLUMN "public"."sys_notice"."title" IS '标题';
-COMMENT ON COLUMN "public"."sys_notice"."content" IS '内容';
-COMMENT ON COLUMN "public"."sys_notice"."content_type" IS '内容格式';
-COMMENT ON COLUMN "public"."sys_notice"."category" IS '分类（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."severity" IS '等级';
-COMMENT ON COLUMN "public"."sys_notice"."target_scope" IS '目标范围';
-COMMENT ON COLUMN "public"."sys_notice"."target_account_types" IS '目标账户类型列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_account_ids" IS '目标账户ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_dept_ids" IS '目标部门ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_role_ids" IS '目标角色ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."publish_locations" IS '发布位置（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."is_pinned" IS '是否置顶（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."pinned_until" IS '置顶截止时间';
-COMMENT ON COLUMN "public"."sys_notice"."sender_account_type" IS '发送者账户类型';
-COMMENT ON COLUMN "public"."sys_notice"."sender_account_id" IS '发送者账户ID';
-COMMENT ON COLUMN "public"."sys_notice"."source_type" IS '来源模块（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."source_id" IS '来源业务ID（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."status" IS '状态';
-COMMENT ON COLUMN "public"."sys_notice"."publish_at" IS '发布时间';
-COMMENT ON COLUMN "public"."sys_notice"."revoked_at" IS '撤回时间';
-COMMENT ON COLUMN "public"."sys_notice"."expire_at" IS '过期时间（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."view_count" IS '查看次数';
-COMMENT ON COLUMN "public"."sys_notice"."extra" IS '扩展信息';
-COMMENT ON COLUMN "public"."sys_notice"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_notice"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."sys_notice"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_notice"."updated_by" IS '更新人';
-
--- ----------------------------
--- Records of sys_notice
--- ----------------------------
-INSERT INTO "public"."sys_notice" VALUES ('7491842112464527360', 'NOTIFICATION', '急急急', '哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:05:46+00', NULL, NULL, 0, '{}', '2026-08-08 13:05:51.295643+00', '1', '2026-08-08 13:05:51.295643+00', '1');
-INSERT INTO "public"."sys_notice" VALUES ('7491842211315884032', 'NOTIFICATION', '哈哈哈', '哈哈哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:06:10+00', NULL, NULL, 0, '{}', '2026-08-08 13:06:14.871274+00', '1', '2026-08-08 13:06:14.871274+00', '1');
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291905', 'ANNOUNCEMENT', '系统维护预告', '本周日 02:00-04:00 将进行例行维护，期间门户可能短暂不可用，请提前做好安排。', 'markdown', 'SYSTEM', 'WARNING', 'ALL', '["PORTAL", "ADMIN"]', '[]', '[]', '[]', '{"center": true, "popup": true, "dashboard": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 12:52:19.890496+00', NULL, '2026-08-22 13:52:19.890496+00', 1, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:11:23.438139+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291906', 'ANNOUNCEMENT', '意见反馈功能上线', '现已支持在线提交意见反馈并查看处理进度。登录后打开用户菜单中的「我的反馈」即可使用。', 'text', 'SYSTEM', 'SUCCESS', 'ACCOUNT_TYPE', '["PORTAL"]', '[]', '[]', '[]', '{"center": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:22:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652032', 'NOTIFICATION', '账号安全提醒', '建议定期修改密码，并确保绑定的手机号与邮箱可用，以便找回账号。', 'text', 'SECURITY', 'WARNING', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:32:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652033', 'NOTIFICATION', '新功能提示：消息中心', '右上角铃铛可查看未读通知与公告，支持一键全部已读。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:42:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652034', 'NOTIFICATION', '管理端测试通知', '这是一条仅面向 ADMIN 的通知，用于验证账户类型过滤。', 'text', 'SYSTEM', 'INFO', 'ACCOUNT_TYPE', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:47:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291904', 'ANNOUNCEMENT', '欢迎使用 HEI 门户', '门户账号体系、个人中心与消息中心已就绪。如有问题可通过「我的反馈」提交。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{"center":true,"dashboard":true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 11:52:19.890496+00', NULL, '2026-11-06 13:52:19.890496+00', 6, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:56:51.531823+00', '7491847383584804864');
-
--- ----------------------------
--- Table structure for sys_notice_read
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_notice_read";
-CREATE TABLE "public"."sys_notice_read" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "notice_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "read_at" timestamptz(6) NOT NULL DEFAULT now()
-)
-;
-COMMENT ON COLUMN "public"."sys_notice_read"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_notice_read"."notice_id" IS '消息ID';
-COMMENT ON COLUMN "public"."sys_notice_read"."account_type" IS '账户类型';
-COMMENT ON COLUMN "public"."sys_notice_read"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."sys_notice_read"."read_at" IS '阅读时间';
-
--- ----------------------------
--- Records of sys_notice_read
--- ----------------------------
-INSERT INTO "public"."sys_notice_read" VALUES ('7491843548694908928', '7491842211315884032', 'ADMIN', '1', '2026-08-08 13:11:33.720396+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491847557782638592', '7491842112464527360', 'PORTAL', '7491847383584804864', '2026-08-08 13:27:29.554552+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853876019257344', '7491853809015291904', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:35.928972+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853918088126464', '7491853809044652033', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:45.966126+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377344', '7491853809015291905', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377345', '7491853809015291906', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377346', '7491853809044652032', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695936', '7491853809015291905', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695937', '7491853809044652034', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
 
 -- ----------------------------
 -- Table structure for sys_operation_audit_log
@@ -1901,163 +1901,163 @@ COMMENT ON COLUMN "public"."sys_resource"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_resource
 -- ----------------------------
-INSERT INTO "public"."sys_resource" VALUES ('200001', NULL, 'dashboard', '运营工作台', 'MENU', '210001', '/dashboard', '/dashboard/index.vue', NULL, 'icon-park-outline:analysis', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200003', NULL, 'ops', '系统运维', 'CATALOG', '210001', '/sys', NULL, NULL, 'icon-park-outline:setting-two', NULL, NULL, 25, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200004', '200003', 'sys-dict', '字典管理', 'MENU', '210001', '/sys/dict', '/sys/dict/index.vue', NULL, 'icon-park-outline:file-search', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200005', '200019', 'content-banner', '展示图管理', 'MENU', '210001', '/sys/banner', '/sys/banner/index.vue', NULL, 'icon-park-outline:ad-product', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200006', NULL, 'org', '组织权限', 'CATALOG', '210001', '/iam', NULL, NULL, 'icon-park-outline:people', NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200007', '200006', 'iam-account', '账号管理', 'MENU', '210001', '/iam/account', '/iam/account/index.vue', NULL, 'icon-park-outline:people', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200008', '200006', 'iam-dept', '部门管理', 'MENU', '210001', '/iam/dept', '/iam/dept/index.vue', NULL, 'icon-park-outline:tree-diagram', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200009', '200006', 'iam-group', '用户组管理', 'MENU', '210001', '/iam/group', '/iam/group/index.vue', NULL, 'icon-park-outline:group', NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200010', '200006', 'iam-position', '岗位管理', 'MENU', '210001', '/iam/position', '/iam/position/index.vue', NULL, 'icon-park-outline:people-bottom', NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200011', '200006', 'iam-role', '角色管理', 'MENU', '210001', '/iam/role', '/iam/role/index.vue', NULL, 'icon-park-outline:peoples', NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200012', '200040', 'iam-resource', '资源管理', 'MENU', '210001', '/iam/resource', '/iam/resource/index.vue', NULL, 'icon-park-outline:all-application', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200018', '200040', 'iam-resourcemodule', '资源模块管理', 'MENU', '210001', '/iam/resource_module', '/iam/resource_module/index.vue', NULL, 'icon-park-outline:blocks-and-arrows', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200019', NULL, 'content', '内容运营', 'CATALOG', '210001', '/content', NULL, '/sys/notice', 'icon-park-outline:picture-album', NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200023', '200003', 'sys-file', '文件管理', 'MENU', '210001', '/sys/file', '/sys/file/index.vue', NULL, 'icon-park-outline:file-code', NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200025', '200003', 'sys-session', '在线会话', 'MENU', '210001', '/sys/session', '/auth/session/index.vue', NULL, 'icon-park-outline:connection', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200027', '200003', 'sys-audit-api', '操作审计接口', 'API_GROUP', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', '操作审计后端权限组', NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200028', '200003', 'sys-login-log', '登录日志', 'MENU', '210001', '/sys/login-log', '/sys/login-log/index.vue', NULL, 'icon-park-outline:log', NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', '登录成功/失败历史记录', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200029', '200003', 'sys-audit', '操作审计', 'MENU', '210001', '/sys/audit', '/sys/audit/index.vue', NULL, 'icon-park-outline:audit', NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', '系统操作审计日志', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200031', '200041', 'iam-clientmodule', '客户端模块管理', 'MENU', '210001', '/iam/client_module', '/iam/client_module/index.vue', NULL, 'icon-park-outline:application-one', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200032', '200041', 'iam-clientresource', '客户端资源管理', 'MENU', '210001', '/iam/client_resource', '/iam/client_resource/index.vue', NULL, 'icon-park-outline:page-template', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200040', NULL, 'resource-auth', '资源授权', 'CATALOG', '210001', '/resource-auth', NULL, NULL, 'icon-park-outline:all-application', NULL, NULL, 15, 'f', 'f', 'f', 'ENABLED', '菜单资源与资源模块授权配置', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200041', NULL, 'client-resource-auth', '客户端资源授权', 'CATALOG', '210001', '/client-resource-auth', NULL, NULL, 'icon-park-outline:application-one', NULL, NULL, 16, 'f', 'f', 'f', 'ENABLED', '客户端模块与客户端资源授权配置', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201011', '200004', 'sys-dict-create', '新增字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201012', '200004', 'sys-dict-detail', '查看字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201013', '200004', 'sys-dict-update', '编辑字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201014', '200004', 'sys-dict-delete', '删除字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201021', '200005', 'sys-banner-create', '新增展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201022', '200005', 'sys-banner-detail', '查看展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201023', '200005', 'sys-banner-update', '编辑展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201024', '200005', 'sys-banner-delete', '删除展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201025', '200005', 'sys-banner-create-page', '新增展示图页', 'PAGE', '210001', '/sys/banner/create', '/sys/banner/form.vue', NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201026', '200005', 'sys-banner-edit-page', '编辑展示图页', 'PAGE', '210001', '/sys/banner/edit', '/sys/banner/form.vue', NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201027', '200005', 'sys-banner-detail-page', '展示图详情页', 'PAGE', '210001', '/sys/banner/detail', '/sys/banner/detail.vue', NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201031', '200023', 'sys-file-upload', '上传文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201032', '200023', 'sys-file-detail', '查看文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201033', '200023', 'sys-file-update', '编辑文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201034', '200023', 'sys-file-url', '打开文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201035', '200023', 'sys-file-delete', '删除文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201041', '200025', 'sys-session-tokenlist', '查看令牌', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201042', '200025', 'sys-session-exit', '强退账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201043', '200025', 'sys-session-tokenexit', '强退令牌', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201051', '202015', 'sys-codegen-create', '新增生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201052', '202015', 'sys-codegen-detail', '查看生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201053', '202015', 'sys-codegen-update', '编辑生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201054', '202015', 'sys-codegen-delete', '删除生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201055', '202015', 'sys-codegen-tables', '读取数据库表', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201056', '202015', 'sys-codegen-preview', '预览代码', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201057', '202015', 'sys-codegen-download', '下载代码', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 70, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201060', '200028', 'sys-login-log-detail', '查看登录日志', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201061', '200029', 'sys-audit-detail', '查看审计详情', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201101', '200007', 'iam-account-create', '新增账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201102', '200007', 'iam-account-detail', '查看账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201103', '200007', 'iam-account-update', '编辑账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201104', '200007', 'iam-account-delete', '删除账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201105', '200007', 'iam-account-grant-role', '分配角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201106', '200007', 'iam-account-grant-group', '分配用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201107', '200007', 'iam-account-grant-dept', '分配部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201108', '200007', 'iam-account-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201109', '200007', 'iam-account-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 9, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201121', '200008', 'iam-dept-create', '新增部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201122', '200008', 'iam-dept-detail', '查看部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201123', '200008', 'iam-dept-update', '编辑部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201124', '200008', 'iam-dept-delete', '删除部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201131', '200009', 'iam-group-create', '新增用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201132', '200009', 'iam-group-detail', '查看用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201133', '200009', 'iam-group-update', '编辑用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201134', '200009', 'iam-group-delete', '删除用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201135', '200009', 'iam-group-grant-user', '分配用户', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201136', '200009', 'iam-group-grant-role', '分配角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201137', '200009', 'iam-group-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201138', '200009', 'iam-group-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201151', '200010', 'iam-position-create', '新增岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201152', '200010', 'iam-position-detail', '查看岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201153', '200010', 'iam-position-update', '编辑岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201154', '200010', 'iam-position-delete', '删除岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201161', '200011', 'iam-role-create', '新增角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201162', '200011', 'iam-role-detail', '查看角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201163', '200011', 'iam-role-update', '编辑角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201164', '200011', 'iam-role-delete', '删除角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201165', '200011', 'iam-role-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201167', '200011', 'iam-role-grant-user', '分配用户', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201168', '200011', 'iam-role-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201181', '200012', 'iam-resource-create', '新增资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201182', '200012', 'iam-resource-detail', '查看资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201183', '200012', 'iam-resource-update', '编辑资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201184', '200012', 'iam-resource-delete', '删除资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201185', '200012', 'iam-resource-grant', '绑定权限', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201191', '200018', 'iam-resourcemodule-create', '新增资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201192', '200018', 'iam-resourcemodule-detail', '查看资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201193', '200018', 'iam-resourcemodule-update', '编辑资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201194', '200018', 'iam-resourcemodule-delete', '删除资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201311', '200031', 'iam-clientmodule-create', '新增客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201312', '200031', 'iam-clientmodule-detail', '查看客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201313', '200031', 'iam-clientmodule-update', '编辑客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201314', '200031', 'iam-clientmodule-delete', '删除客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201321', '200032', 'iam-clientresource-create', '新增客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201322', '200032', 'iam-clientresource-detail', '查看客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201323', '200032', 'iam-clientresource-update', '编辑客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201324', '200032', 'iam-clientresource-delete', '删除客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201325', '200032', 'iam-clientresource-list', '客户端资源树', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201326', '200032', 'iam-clientresource-grant', '绑定客户端资源权限', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202001', NULL, 'devtools', '开发工具', 'CATALOG', '210001', '/test', NULL, '/sys/codegen', 'icon-park-outline:code', NULL, NULL, 90, 'f', 'f', 'f', 'ENABLED', '系统模块测试页面目录', NULL, '{}', '2026-07-18 12:39:16+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202002', '202001', 'system-test-editor', '编辑器测试', 'MENU', '210001', '/test/editor', '/test/editor/index.vue', NULL, 'icon-park-outline:edit', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', 'Markdown、富文本和代码编辑器组件测试页面', NULL, '{}', '2026-07-18 12:39:16+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202003', '202001', 'system-test-icon', '图标选择器测试', 'MENU', '210001', '/test/icon', '/test/icon/index.vue', NULL, 'icon-park-outline:all-application', NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', 'Iconify 离线图标选择器测试页面', NULL, '{}', '2026-07-18 12:49:42+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202004', '202030', 'biz-cgtestactivity', '代码生成测试-活动', 'MENU', '210001', '/biz/cg-test-activity', '/biz/cg-test-activity/index.vue', NULL, 'icon-park-outline:calendar', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', '代码生成 CRUD 样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202005', '202030', 'biz-cgtestcatalog', '代码生成测试-目录树', 'MENU', '210001', '/biz/cg-test-catalog', '/biz/cg-test-catalog/index.vue', NULL, 'icon-park-outline:tree-list', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', '代码生成树表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202006', '202030', 'biz-cgtestorder', '代码生成测试-订单', 'MENU', '210001', '/biz/cg-test-order', '/biz/cg-test-order/index.vue', NULL, 'icon-park-outline:transaction-order', NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', '代码生成主子表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202007', '202030', 'biz-cgtestknowledgecategory', '代码生成测试-知识分类', 'MENU', '210001', '/biz/cg-test-knowledge-category', '/biz/cg-test-knowledge-category/index.vue', NULL, 'icon-park-outline:book-open', NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', '代码生成左树右表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202010', '200003', 'system-config', '系统配置', 'MENU', '210001', '/sys/config', '/sys/config/index.vue', NULL, 'icon-park-outline:setting-config', NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', '系统配置管理页面', NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202011', '202010', 'sys:config:create', '新增系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202012', '202010', 'sys:config:detail', '查看系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202013', '202010', 'sys:config:update', '编辑系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202014', '202010', 'sys:config:delete', '删除系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202015', '202001', 'sys-codegen', '代码生成', 'MENU', '210001', '/sys/codegen', '/sys/codegen/index.vue', NULL, 'icon-park-outline:code', NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', '代码生成管理', NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_resource" VALUES ('202030', NULL, 'biz-demo', '业务示例', 'CATALOG', '210001', '/biz', NULL, NULL, 'icon-park-outline:application-one', NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', '代码生成业务示例页面', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202200', '200019', 'content-notice', '通知消息', 'MENU', '210001', '/sys/notice', '/sys/notice/index.vue', NULL, 'icon-park-outline:message', NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', '消息管理', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202201', '202200', 'sys-notice-page', '分页消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202202', '202200', 'sys-notice-create', '新增消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202203', '202200', 'sys-notice-detail', '详情消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202204', '202200', 'sys-notice-update', '编辑消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202205', '202200', 'sys-notice-delete', '删除消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202206', '202200', 'sys-notice-create-page', '新增消息页', 'PAGE', '210001', '/sys/notice/create', '/sys/notice/form.vue', NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202207', '202200', 'sys-notice-edit-page', '编辑消息页', 'PAGE', '210001', '/sys/notice/edit', '/sys/notice/form.vue', NULL, NULL, NULL, NULL, 70, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202208', '202200', 'sys-notice-detail-page', '消息详情页', 'PAGE', '210001', '/sys/notice/detail', '/sys/notice/detail.vue', NULL, NULL, NULL, NULL, 80, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202209', '202200', 'sys-notice-publish', '发布消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 55, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202220', '200019', 'content-feedback', '反馈管理', 'MENU', '210001', '/sys/feedback', '/sys/feedback/index.vue', NULL, 'icon-park-outline:write', NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', '意见反馈管理', NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202221', '202220', 'sys-feedback-page', '分页反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202222', '202220', 'sys-feedback-detail', '查看反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202223', '202220', 'sys-feedback-update', '处理反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202224', '202220', 'sys-feedback-delete', '删除反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202225', '202220', 'sys-feedback-edit-page', '处理反馈页', 'PAGE', '210001', '/sys/feedback/edit', '/sys/feedback/form.vue', NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202226', '202220', 'sys-feedback-detail-page', '反馈详情页', 'PAGE', '210001', '/sys/feedback/detail', '/sys/feedback/detail.vue', NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202230', '200019', 'content-manage', '消息管理', 'CATALOG', '210001', '/sys/manage', NULL, NULL, 'icon-park-outline:list-view', NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', '消息管理', NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202240', '202200', 'sys-notice-revoke', '撤回消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 56, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202241', '202200', 'sys-notice-pin', '置顶消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 57, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203011', '202004', 'biz-cgtestactivity-page', '分页活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203012', '202004', 'biz-cgtestactivity-create', '新增活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203013', '202004', 'biz-cgtestactivity-detail', '详情活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203014', '202004', 'biz-cgtestactivity-update', '编辑活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203015', '202004', 'biz-cgtestactivity-delete', '删除活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203021', '202005', 'biz-cgtestcatalog-page', '分页目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203022', '202005', 'biz-cgtestcatalog-create', '新增目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203023', '202005', 'biz-cgtestcatalog-detail', '详情目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203024', '202005', 'biz-cgtestcatalog-update', '编辑目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203025', '202005', 'biz-cgtestcatalog-delete', '删除目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203026', '202005', 'biz-cgtestcatalog-list', '树列表目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 90, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203031', '202006', 'biz-cgtestorder-page', '分页订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203032', '202006', 'biz-cgtestorder-create', '新增订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203033', '202006', 'biz-cgtestorder-detail', '详情订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203034', '202006', 'biz-cgtestorder-update', '编辑订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203035', '202006', 'biz-cgtestorder-delete', '删除订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203041', '202007', 'biz-cgtestknowledgecategory-page', '分页知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203042', '202007', 'biz-cgtestknowledgecategory-create', '新增知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203043', '202007', 'biz-cgtestknowledgecategory-detail', '详情知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203044', '202007', 'biz-cgtestknowledgecategory-update', '编辑知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203045', '202007', 'biz-cgtestknowledgecategory-delete', '删除知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203046', '202007', 'biz-cgtestknowledgecategory-list', '树列表知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 90, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200001',NULL,'dashboard','运营工作台','MENU','210001','/dashboard','/dashboard/index.vue',NULL,'icon-park-outline:analysis',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-06-30 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200003',NULL,'ops','系统运维','CATALOG','210001','/sys',NULL,NULL,'icon-park-outline:setting-two',NULL,NULL,25,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200004','200003','sys-dict','字典管理','MENU','210001','/sys/dict','/sys/dict/index.vue',NULL,'icon-park-outline:file-search',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200005','200019','content-banner','展示图管理','MENU','210001','/sys/banner','/sys/banner/index.vue',NULL,'icon-park-outline:ad-product',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200006',NULL,'org','组织权限','CATALOG','210001','/iam',NULL,NULL,'icon-park-outline:people',NULL,NULL,10,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200007','200006','iam-account','账号管理','MENU','210001','/iam/account','/iam/account/index.vue',NULL,'icon-park-outline:people',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200008','200006','iam-dept','部门管理','MENU','210001','/iam/dept','/iam/dept/index.vue',NULL,'icon-park-outline:tree-diagram',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200009','200006','iam-group','用户组管理','MENU','210001','/iam/group','/iam/group/index.vue',NULL,'icon-park-outline:group',NULL,NULL,3,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200010','200006','iam-position','岗位管理','MENU','210001','/iam/position','/iam/position/index.vue',NULL,'icon-park-outline:people-bottom',NULL,NULL,4,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200011','200006','iam-role','角色管理','MENU','210001','/iam/role','/iam/role/index.vue',NULL,'icon-park-outline:peoples',NULL,NULL,5,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200012','200040','iam-resource','资源管理','MENU','210001','/iam/resource','/iam/resource/index.vue',NULL,'icon-park-outline:all-application',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200018','200040','iam-resourcemodule','资源模块管理','MENU','210001','/iam/resource_module','/iam/resource_module/index.vue',NULL,'icon-park-outline:blocks-and-arrows',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200019',NULL,'content','内容运营','CATALOG','210001','/content',NULL,'/sys/notice','icon-park-outline:picture-album',NULL,NULL,20,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200023','200003','sys-file','文件管理','MENU','210001','/sys/file','/sys/file/index.vue',NULL,'icon-park-outline:file-code',NULL,NULL,3,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200025','200003','sys-session','在线会话','MENU','210001','/sys/session','/auth/session/index.vue',NULL,'icon-park-outline:connection',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200027','200003','sys-audit-api','操作审计接口','API_GROUP','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED','操作审计后端权限组',NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200028','200003','sys-login-log','登录日志','MENU','210001','/sys/login-log','/sys/login-log/index.vue',NULL,'icon-park-outline:log',NULL,NULL,5,'t','f','f','ENABLED','登录成功/失败历史记录',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200029','200003','sys-audit','操作审计','MENU','210001','/sys/audit','/sys/audit/index.vue',NULL,'icon-park-outline:audit',NULL,NULL,7,'t','f','f','ENABLED','系统操作审计日志',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200031','200041','iam-clientmodule','客户端模块管理','MENU','210001','/iam/client_module','/iam/client_module/index.vue',NULL,'icon-park-outline:application-one',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200032','200041','iam-clientresource','客户端资源管理','MENU','210001','/iam/client_resource','/iam/client_resource/index.vue',NULL,'icon-park-outline:page-template',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200040',NULL,'resource-auth','资源授权','CATALOG','210001','/resource-auth',NULL,NULL,'icon-park-outline:all-application',NULL,NULL,15,'t','f','f','ENABLED','菜单资源与资源模块授权配置',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200041',NULL,'client-resource-auth','客户端资源授权','CATALOG','210001','/client-resource-auth',NULL,NULL,'icon-park-outline:application-one',NULL,NULL,16,'t','f','f','ENABLED','客户端模块与客户端资源授权配置',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201011','200004','sys-dict-create','新增字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201012','200004','sys-dict-detail','查看字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201013','200004','sys-dict-update','编辑字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201014','200004','sys-dict-delete','删除字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201021','200005','sys-banner-create','新增展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201022','200005','sys-banner-detail','查看展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201023','200005','sys-banner-update','编辑展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201024','200005','sys-banner-delete','删除展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201025','200005','sys-banner-create-page','新增展示图页','PAGE','210001','/sys/banner/create','/sys/banner/form.vue',NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201026','200005','sys-banner-edit-page','编辑展示图页','PAGE','210001','/sys/banner/edit','/sys/banner/form.vue',NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201027','200005','sys-banner-detail-page','展示图详情页','PAGE','210001','/sys/banner/detail','/sys/banner/detail.vue',NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201031','200023','sys-file-upload','上传文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201032','200023','sys-file-detail','查看文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201033','200023','sys-file-update','编辑文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201034','200023','sys-file-url','打开文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201035','200023','sys-file-delete','删除文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201041','200025','sys-session-tokenlist','查看令牌','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201042','200025','sys-session-exit','强退账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201043','200025','sys-session-tokenexit','强退令牌','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201051','202015','sys-codegen-create','新增生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201052','202015','sys-codegen-detail','查看生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201053','202015','sys-codegen-update','编辑生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201054','202015','sys-codegen-delete','删除生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201055','202015','sys-codegen-tables','读取数据库表','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201056','202015','sys-codegen-preview','预览代码','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201057','202015','sys-codegen-download','下载代码','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,70,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201060','200028','sys-login-log-detail','查看登录日志','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201061','200029','sys-audit-detail','查看审计详情','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201101','200007','iam-account-create','新增账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201102','200007','iam-account-detail','查看账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201103','200007','iam-account-update','编辑账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201104','200007','iam-account-delete','删除账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201105','200007','iam-account-grant-role','分配角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201106','200007','iam-account-grant-group','分配用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201107','200007','iam-account-grant-dept','分配部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201108','200007','iam-account-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201109','200007','iam-account-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,9,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201121','200008','iam-dept-create','新增部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201122','200008','iam-dept-detail','查看部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201123','200008','iam-dept-update','编辑部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201124','200008','iam-dept-delete','删除部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201131','200009','iam-group-create','新增用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201132','200009','iam-group-detail','查看用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201133','200009','iam-group-update','编辑用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201134','200009','iam-group-delete','删除用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201135','200009','iam-group-grant-user','分配用户','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201136','200009','iam-group-grant-role','分配角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201137','200009','iam-group-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201138','200009','iam-group-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201151','200010','iam-position-create','新增岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201152','200010','iam-position-detail','查看岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201153','200010','iam-position-update','编辑岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201154','200010','iam-position-delete','删除岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201161','200011','iam-role-create','新增角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201162','200011','iam-role-detail','查看角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201163','200011','iam-role-update','编辑角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201164','200011','iam-role-delete','删除角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201165','200011','iam-role-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201167','200011','iam-role-grant-user','分配用户','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201168','200011','iam-role-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201181','200012','iam-resource-create','新增资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201182','200012','iam-resource-detail','查看资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201183','200012','iam-resource-update','编辑资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201184','200012','iam-resource-delete','删除资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201185','200012','iam-resource-grant','绑定权限','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201191','200018','iam-resourcemodule-create','新增资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201192','200018','iam-resourcemodule-detail','查看资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201193','200018','iam-resourcemodule-update','编辑资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201194','200018','iam-resourcemodule-delete','删除资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201311','200031','iam-clientmodule-create','新增客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201312','200031','iam-clientmodule-detail','查看客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201313','200031','iam-clientmodule-update','编辑客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201314','200031','iam-clientmodule-delete','删除客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201321','200032','iam-clientresource-create','新增客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201322','200032','iam-clientresource-detail','查看客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201323','200032','iam-clientresource-update','编辑客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201324','200032','iam-clientresource-delete','删除客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201325','200032','iam-clientresource-list','客户端资源树','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201326','200032','iam-clientresource-grant','绑定客户端资源权限','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202001',NULL,'devtools','开发工具','CATALOG','210001','/test',NULL,'/sys/codegen','icon-park-outline:code',NULL,NULL,90,'t','f','f','ENABLED','系统模块测试页面目录',NULL,'{}','2026-07-18 12:39:16+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202002','202001','system-test-editor','编辑器测试','MENU','210001','/test/editor','/test/editor/index.vue',NULL,'icon-park-outline:edit',NULL,NULL,2,'t','f','f','ENABLED','Markdown、富文本和代码编辑器组件测试页面',NULL,'{}','2026-07-18 12:39:16+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202003','202001','system-test-icon','图标选择器测试','MENU','210001','/test/icon','/test/icon/index.vue',NULL,'icon-park-outline:all-application',NULL,NULL,3,'t','f','f','ENABLED','Iconify 离线图标选择器测试页面',NULL,'{}','2026-07-18 12:49:42+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202004','202030','biz-cgtestactivity','代码生成测试-活动','MENU','210001','/biz/cg-test-activity','/biz/cg-test-activity/index.vue',NULL,'icon-park-outline:calendar',NULL,NULL,1,'t','f','f','ENABLED','代码生成 CRUD 样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202005','202030','biz-cgtestcatalog','代码生成测试-目录树','MENU','210001','/biz/cg-test-catalog','/biz/cg-test-catalog/index.vue',NULL,'icon-park-outline:tree-list',NULL,NULL,2,'t','f','f','ENABLED','代码生成树表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202006','202030','biz-cgtestorder','代码生成测试-订单','MENU','210001','/biz/cg-test-order','/biz/cg-test-order/index.vue',NULL,'icon-park-outline:transaction-order',NULL,NULL,3,'t','f','f','ENABLED','代码生成主子表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202007','202030','biz-cgtestknowledgecategory','代码生成测试-知识分类','MENU','210001','/biz/cg-test-knowledge-category','/biz/cg-test-knowledge-category/index.vue',NULL,'icon-park-outline:book-open',NULL,NULL,4,'t','f','f','ENABLED','代码生成左树右表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202010','200003','system-config','系统配置','MENU','210001','/sys/config','/sys/config/index.vue',NULL,'icon-park-outline:setting-config',NULL,NULL,4,'t','f','f','ENABLED','系统配置管理页面',NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202011','202010','sys:config:create','新增系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202012','202010','sys:config:detail','查看系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202013','202010','sys:config:update','编辑系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202014','202010','sys:config:delete','删除系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202015','202001','sys-codegen','代码生成','MENU','210001','/sys/codegen','/sys/codegen/index.vue',NULL,'icon-park-outline:code',NULL,NULL,1,'t','f','f','ENABLED','代码生成管理',NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-08-09 00:00:00+00','1');
+INSERT INTO "public"."sys_resource" VALUES ('202030',NULL,'biz-demo','业务示例','CATALOG','210001','/biz',NULL,NULL,'icon-park-outline:application-one',NULL,NULL,40,'t','f','f','ENABLED','代码生成业务示例页面',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202200','200019','content-notice','通知消息','MENU','210001','/sys/notice','/sys/notice/index.vue',NULL,'icon-park-outline:message',NULL,NULL,2,'t','f','f','ENABLED','消息管理',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202201','202200','sys-notice-page','分页消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202202','202200','sys-notice-create','新增消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202203','202200','sys-notice-detail','详情消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202204','202200','sys-notice-update','编辑消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202205','202200','sys-notice-delete','删除消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202206','202200','sys-notice-create-page','新增消息页','PAGE','210001','/sys/notice/create','/sys/notice/form.vue',NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202207','202200','sys-notice-edit-page','编辑消息页','PAGE','210001','/sys/notice/edit','/sys/notice/form.vue',NULL,NULL,NULL,NULL,70,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202208','202200','sys-notice-detail-page','消息详情页','PAGE','210001','/sys/notice/detail','/sys/notice/detail.vue',NULL,NULL,NULL,NULL,80,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202209','202200','sys-notice-publish','发布消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,55,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202220','200019','content-feedback','反馈管理','MENU','210001','/sys/feedback','/sys/feedback/index.vue',NULL,'icon-park-outline:write',NULL,NULL,3,'t','f','f','ENABLED','意见反馈管理',NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202221','202220','sys-feedback-page','分页反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202222','202220','sys-feedback-detail','查看反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202223','202220','sys-feedback-update','处理反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202224','202220','sys-feedback-delete','删除反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202225','202220','sys-feedback-edit-page','处理反馈页','PAGE','210001','/sys/feedback/edit','/sys/feedback/form.vue',NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202226','202220','sys-feedback-detail-page','反馈详情页','PAGE','210001','/sys/feedback/detail','/sys/feedback/detail.vue',NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202230','200019','content-manage','消息管理','CATALOG','210001','/sys/manage',NULL,NULL,'icon-park-outline:list-view',NULL,NULL,6,'t','f','f','ENABLED','消息管理',NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202240','202200','sys-notice-revoke','撤回消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,56,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202241','202200','sys-notice-pin','置顶消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,57,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203011','202004','biz-cgtestactivity-page','分页活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203012','202004','biz-cgtestactivity-create','新增活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203013','202004','biz-cgtestactivity-detail','详情活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203014','202004','biz-cgtestactivity-update','编辑活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203015','202004','biz-cgtestactivity-delete','删除活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203021','202005','biz-cgtestcatalog-page','分页目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203022','202005','biz-cgtestcatalog-create','新增目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203023','202005','biz-cgtestcatalog-detail','详情目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203024','202005','biz-cgtestcatalog-update','编辑目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203025','202005','biz-cgtestcatalog-delete','删除目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203026','202005','biz-cgtestcatalog-list','树列表目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,90,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203031','202006','biz-cgtestorder-page','分页订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203032','202006','biz-cgtestorder-create','新增订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203033','202006','biz-cgtestorder-detail','详情订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203034','202006','biz-cgtestorder-update','编辑订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203035','202006','biz-cgtestorder-delete','删除订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203041','202007','biz-cgtestknowledgecategory-page','分页知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203042','202007','biz-cgtestknowledgecategory-create','新增知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203043','202007','biz-cgtestknowledgecategory-detail','详情知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203044','202007','biz-cgtestknowledgecategory-update','编辑知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203045','202007','biz-cgtestknowledgecategory-delete','删除知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203046','202007','biz-cgtestknowledgecategory-list','树列表知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,90,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
 
 -- ----------------------------
 -- Table structure for sys_resource_module
@@ -2098,7 +2098,7 @@ COMMENT ON COLUMN "public"."sys_resource_module"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_resource_module
 -- ----------------------------
-INSERT INTO "public"."sys_resource_module" VALUES ('210001', '管理端', 'admin', 'ADMIN', 'icon-park-outline:all-application', '#2080f0', 1, 'ENABLED', '管理端菜单与权限资源模块', '{}', '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource_module" VALUES ('210001','管理端','admin','ADMIN','icon-park-outline:all-application','#2080f0',1,'ENABLED','管理端菜单与权限资源模块','{}','2026-06-30 00:00:00+00',NULL,'2026-06-30 00:00:00+00',NULL);
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -2173,6 +2173,11 @@ INSERT INTO "public"."sys_weak_password" VALUES ('wp_04', 'qwerty', '2026-08-08 
 INSERT INTO "public"."sys_weak_password" VALUES ('wp_05', '111111', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 
 -- ----------------------------
+-- Primary Key structure for table profile_user_admin
+-- ----------------------------
+ALTER TABLE "public"."profile_user_admin" ADD CONSTRAINT "pk_profile_user_admin" PRIMARY KEY ("account_id");
+
+-- ----------------------------
 -- Indexes structure for table cg_test_activity
 -- ----------------------------
 CREATE INDEX "ix_cg_test_activity_owner_dept_id" ON "public"."cg_test_activity" USING btree (
@@ -2231,9 +2236,24 @@ ALTER TABLE "public"."cg_test_order" ADD CONSTRAINT "pk_cg_test_order" PRIMARY K
 ALTER TABLE "public"."cg_test_order_item" ADD CONSTRAINT "pk_cg_test_order_item" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Primary Key structure for table profile_user_admin
+-- Primary Key structure for table sys_feedback
 -- ----------------------------
-ALTER TABLE "public"."profile_user_admin" ADD CONSTRAINT "pk_profile_user_admin" PRIMARY KEY ("account_id");
+ALTER TABLE "public"."sys_feedback" ADD CONSTRAINT "pk_sys_feedback" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table sys_notice
+-- ----------------------------
+ALTER TABLE "public"."sys_notice" ADD CONSTRAINT "pk_sys_notice" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Uniques structure for table sys_notice_read
+-- ----------------------------
+ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "uq_sys_notice_read_account" UNIQUE ("notice_id", "account_type", "account_id");
+
+-- ----------------------------
+-- Primary Key structure for table sys_notice_read
+-- ----------------------------
+ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "pk_sys_notice_read" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Primary Key structure for table profile_user_portal
@@ -2244,13 +2264,6 @@ ALTER TABLE "public"."profile_user_portal" ADD CONSTRAINT "pk_profile_user_porta
 -- Primary Key structure for table sys_account
 -- ----------------------------
 ALTER TABLE "public"."sys_account" ADD CONSTRAINT "pk_sys_account" PRIMARY KEY ("id");
-
--- ----------------------------
--- Indexes structure for table sys_account_identity
--- ----------------------------
-CREATE INDEX "idx_sys_account_identity_account_id" ON "public"."sys_account_identity" USING btree (
-  "account_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
 
 -- ----------------------------
 -- Uniques structure for table sys_account_identity
@@ -2418,11 +2431,6 @@ CREATE INDEX "idx_sys_dict_parent_id" ON "public"."sys_dict" USING btree (
 ALTER TABLE "public"."sys_dict" ADD CONSTRAINT "pk_sys_dict" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Primary Key structure for table sys_feedback
--- ----------------------------
-ALTER TABLE "public"."sys_feedback" ADD CONSTRAINT "pk_sys_feedback" PRIMARY KEY ("id");
-
--- ----------------------------
 -- Uniques structure for table sys_file
 -- ----------------------------
 ALTER TABLE "public"."sys_file" ADD CONSTRAINT "uq_sys_file_object_name" UNIQUE ("object_name");
@@ -2469,49 +2477,6 @@ ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "uq_sys_iam_relation_subj
 -- Primary Key structure for table sys_iam_relation
 -- ----------------------------
 ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "pk_sys_iam_relation" PRIMARY KEY ("id");
-
--- ----------------------------
--- Indexes structure for table sys_notice
--- ----------------------------
-CREATE INDEX "idx_sys_notice_status_kind_publish" ON "public"."sys_notice" USING btree (
-  "status" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-  "kind" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-  "publish_at" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
-);
-CREATE INDEX "idx_sys_notice_status_pinned_publish" ON "public"."sys_notice" USING btree (
-  "status" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-  "is_pinned" "pg_catalog"."bool_ops" ASC NULLS LAST,
-  "publish_at" "pg_catalog"."timestamptz_ops" DESC NULLS FIRST
-);
-CREATE INDEX "idx_sys_notice_target_account_ids_gin" ON "public"."sys_notice" USING gin (
-  (target_account_ids::jsonb) "pg_catalog"."jsonb_ops"
-);
-CREATE INDEX "idx_sys_notice_target_account_types_gin" ON "public"."sys_notice" USING gin (
-  (target_account_types::jsonb) "pg_catalog"."jsonb_ops"
-);
-
--- ----------------------------
--- Primary Key structure for table sys_notice
--- ----------------------------
-ALTER TABLE "public"."sys_notice" ADD CONSTRAINT "pk_sys_notice" PRIMARY KEY ("id");
-
--- ----------------------------
--- Indexes structure for table sys_notice_read
--- ----------------------------
-CREATE INDEX "idx_sys_notice_read_account" ON "public"."sys_notice_read" USING btree (
-  "account_type" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-  "account_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-
--- ----------------------------
--- Uniques structure for table sys_notice_read
--- ----------------------------
-ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "uq_sys_notice_read_account" UNIQUE ("notice_id", "account_type", "account_id");
-
--- ----------------------------
--- Primary Key structure for table sys_notice_read
--- ----------------------------
-ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "pk_sys_notice_read" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Indexes structure for table sys_operation_audit_log
@@ -2587,3 +2552,12 @@ CREATE UNIQUE INDEX "idx_sys_weak_password_password" ON "public"."sys_weak_passw
 -- Primary Key structure for table sys_weak_password
 -- ----------------------------
 ALTER TABLE "public"."sys_weak_password" ADD CONSTRAINT "pk_sys_weak_password" PRIMARY KEY ("id");
+
+-- ==================== 对齐 V6（原库未执行 V6 索引，此处补齐并沿用新表名） ====================
+CREATE INDEX IF NOT EXISTS "idx_sys_notice_status_kind_publish" ON "public"."sys_notice" USING btree ("status", "kind", "publish_at");
+CREATE INDEX IF NOT EXISTS "idx_sys_notice_status_pinned_publish" ON "public"."sys_notice" USING btree ("status", "is_pinned", "publish_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_sys_notice_target_account_types_gin" ON "public"."sys_notice" USING GIN (("target_account_types"::jsonb));
+CREATE INDEX IF NOT EXISTS "idx_sys_notice_target_account_ids_gin" ON "public"."sys_notice" USING GIN (("target_account_ids"::jsonb));
+CREATE INDEX IF NOT EXISTS "idx_sys_notice_read_account" ON "public"."sys_notice_read" USING btree ("account_type", "account_id");
+-- ==================== 对齐 V6 剩余索引（原库缺失，补齐） ====================
+CREATE INDEX IF NOT EXISTS "idx_sys_account_identity_account_id" ON "public"."sys_account_identity" USING btree ("account_id");
