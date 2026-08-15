@@ -158,6 +158,7 @@ func main() {
 		authGET(login.Data.Token, "/dashboard/overview")
 		authGET(login.Data.Token, "/sys/config/list?category=AUTH_PASSWORD")
 		authGET(login.Data.Token, "/sys/notices/my-page?current=1&size=3")
+	authGETFile(login.Data.Token)
 	}
 }
 
@@ -194,4 +195,42 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + "..."
+}
+
+// authGETFile 文件分页验证（per-provider URL + created_name）。
+func authGETFile(token string) {
+	req, _ := http.NewRequest("GET", base+"/sys/file/page?current=1&size=20", nil)
+	req.Header.Set("Authorization", token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("GET file page err:", err)
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var r struct {
+		Code string `json:"code"`
+		Data struct {
+			Records []struct {
+				ID              string  `json:"id"`
+				ObjectName      string  `json:"object_name"`
+				StorageProvider string  `json:"storage_provider"`
+				URL             string  `json:"url"`
+				CreatedName     *string `json:"created_name"`
+				UpdatedName     *string `json:"updated_name"`
+			} `json:"records"`
+		} `json:"data"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(body, &r); err != nil {
+		fmt.Println("file page parse err:", err, string(body[:min(len(body), 120)]))
+		return
+	}
+	fmt.Println("file page code:", r.Code, "records:", len(r.Data.Records))
+	for i, rec := range r.Data.Records {
+		if i >= 4 {
+			break
+		}
+		fmt.Printf("  #%d provider=%s object=%s url=%s created_name=%s\n", i, rec.StorageProvider, rec.ObjectName, truncate(rec.URL, 80), ptrStr(rec.CreatedName))
+	}
 }

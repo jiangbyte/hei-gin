@@ -21,6 +21,8 @@ type File struct {
 	CreatedBy       *string   `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UpdatedBy       *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
+	CreatedName     *string   `gorm:"-" json:"created_name"`
+	UpdatedName     *string   `gorm:"-" json:"updated_name"`
 }
 
 // TableName 返回 File 对应的数据库表名。

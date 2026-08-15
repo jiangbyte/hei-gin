@@ -62,16 +62,20 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageP
 	originalName := safeOriginalName(fh.Filename)
 	objectName := s.buildObjectName(ctx, originalName, "uploads")
 	ct := sanitizeContentType(fh.Header.Get("Content-Type"))
-	// 记录实际生效的引擎（hei-gin 单引擎来自 yaml；storage_provider 参数保留 API 兼容）。
+	// 记录实际生效的引擎（hei-gin 上传走活动引擎；storage_provider 参数保留 API 兼容，存储桶取自配置）。
 	_ = storageProvider
 	provider := s.sto.ProviderName()
 	urlVal, err := s.sto.Provider().Put(ctx, objectName, f, fh.Size, ct)
 	if err != nil {
 		return nil, err
 	}
+	bucket := s.sto.Bucket()
 	row := File{
 		ID: idgen.Next(), ObjectName: objectName, OriginalName: originalName,
 		StorageProvider: provider, ContentType: ct, Size: fh.Size, URL: urlVal,
+	}
+	if bucket != "" {
+		row.Bucket = &bucket
 	}
 	if accountID != "" {
 		row.CreatedBy = &accountID
@@ -94,7 +98,7 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 		if objectKey == "" {
 			continue
 		}
-		_ = s.sto.Provider().Delete(ctx, objectKey)
+		_ = s.providerFor(ctx, &rows[i]).Delete(ctx, objectKey)
 	}
 	return s.repo.DeleteByIDs(ctx, ids)
 }
@@ -110,7 +114,7 @@ func (s *Service) DeleteByObjectName(ctx context.Context, objectName string) err
 		return nil
 	}
 	if key := toObjectKey(row.ObjectName, s.publicPath()); key != "" {
-		_ = s.sto.Provider().Delete(ctx, key)
+		_ = s.providerFor(ctx, row).Delete(ctx, key)
 	}
 	return s.repo.DeleteByIDs(ctx, []string{row.ID})
 }
@@ -132,30 +136,37 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	return s.repo.Update(ctx, req.ID, updates)
 }
 
-// Detail 详情（重算访问 URL）。
+// Detail 详情（重算访问 URL + 回填创建/更新人名）。
 func (s *Service) Detail(ctx context.Context, id string) (*File, error) {
 	row, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+	s.fillNames(ctx, []File{*row})
 	return s.withResolvedURL(ctx, row), nil
 }
 
-// Page 分页（重算访问 URL；支持 original_name/object_name/storage_provider/content_type 过滤）。
+// Page 分页（重算访问 URL + 回填人名；支持 original_name/object_name/storage_provider/content_type 过滤）。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []File, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
+	if len(rows) > 0 {
+		s.fillNames(ctx, rows)
+	}
 	for i := range rows {
 		s.withResolvedURL(ctx, &rows[i])
 	}
 	return rows, total, current, size, err
 }
 
-// ListByIDs 批量查询（重算访问 URL）。
+// ListByIDs 批量查询（重算访问 URL + 回填人名）。
 func (s *Service) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
 	rows, err := s.repo.ListByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
+	}
+	if len(rows) > 0 {
+		s.fillNames(ctx, rows)
 	}
 	for i := range rows {
 		s.withResolvedURL(ctx, &rows[i])
@@ -169,7 +180,7 @@ func (s *Service) OpenByID(ctx context.Context, id string) (*File, io.ReadCloser
 	if err != nil {
 		return nil, nil, err
 	}
-	rc, err := s.sto.Provider().Get(ctx, toObjectKey(row.ObjectName, s.publicPath()))
+	rc, err := s.providerFor(ctx, row).Get(ctx, toObjectKey(row.ObjectName, s.publicPath()))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -182,10 +193,11 @@ func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error
 	if key == "" {
 		return nil, fmt.Errorf("file not found")
 	}
-	if _, err := s.repo.FindByObjectName(ctx, key); err != nil {
+	row, err := s.repo.FindByObjectName(ctx, key)
+	if err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
-	return &URLResult{ObjectName: key, URL: s.sto.Provider().PublicURL(key)}, nil
+	return &URLResult{ObjectName: key, URL: s.providerFor(ctx, row).PublicURL(key)}, nil
 }
 
 // PresignedURL 获取对象预签名 URL（本地返回公开 URL；S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
@@ -194,18 +206,20 @@ func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResu
 	if key == "" {
 		return nil, fmt.Errorf("file not found")
 	}
-	if _, err := s.repo.FindByObjectName(ctx, key); err != nil {
+	row, err := s.repo.FindByObjectName(ctx, key)
+	if err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
+	p := s.providerFor(ctx, row)
 	expire := time.Duration(s.sto.PresignExpireSeconds(ctx)) * time.Second
-	if p, ok := s.sto.Provider().(storage.Presigner); ok {
-		u, err := p.PresignedURL(ctx, key, expire)
+	if pr, ok := p.(storage.Presigner); ok {
+		u, err := pr.PresignedURL(ctx, key, expire)
 		if err != nil {
 			return nil, err
 		}
 		return &URLResult{ObjectName: key, URL: u}, nil
 	}
-	return &URLResult{ObjectName: key, URL: s.sto.Provider().PublicURL(key)}, nil
+	return &URLResult{ObjectName: key, URL: p.PublicURL(key)}, nil
 }
 
 // OpenByObjectName 按对象名打开文件（公开访问：先校验元数据存在，避免越权读取存储对象）。
@@ -221,7 +235,7 @@ func (s *Service) OpenByObjectName(ctx context.Context, objectName string) (cont
 	if err != nil {
 		return "", nil, fmt.Errorf("file not found")
 	}
-	rc, err = s.sto.Provider().Get(ctx, key)
+	rc, err = s.providerFor(ctx, row).Get(ctx, key)
 	if err != nil {
 		return "", nil, err
 	}
@@ -239,8 +253,8 @@ func (s *Service) AssertOwnedByCurrent(row *File, accountID string) error {
 	return nil
 }
 
-// withResolvedURL 重算访问 URL（库中 url 可能为已过期预签名）。
-func (s *Service) withResolvedURL(_ context.Context, row *File) *File {
+// withResolvedURL 按行 storage_provider 重算访问 URL（库中 url 可能为已过期预签名）。
+func (s *Service) withResolvedURL(ctx context.Context, row *File) *File {
 	if row == nil || row.ObjectName == "" {
 		return row
 	}
@@ -248,10 +262,51 @@ func (s *Service) withResolvedURL(_ context.Context, row *File) *File {
 	if key == "" {
 		return row
 	}
-	if u := s.sto.Provider().PublicURL(key); u != "" {
+	if u := s.providerFor(ctx, row).PublicURL(key); u != "" {
 		row.URL = u
 	}
 	return row
+}
+
+// providerFor 按行存储提供商解析引擎（缺省回退活动引擎；对齐 hei-boot storageFor）。
+func (s *Service) providerFor(ctx context.Context, row *File) storage.Provider {
+	if row != nil && strings.TrimSpace(row.StorageProvider) != "" {
+		return s.sto.ProviderByName(ctx, row.StorageProvider)
+	}
+	return s.sto.Provider()
+}
+
+// fillNames 批量回填 created_name / updated_name（ACCOUNT 登录标识，对齐 hei-boot easy-trans）。
+func (s *Service) fillNames(ctx context.Context, rows []File) {
+	ids := make([]string, 0, len(rows)*2)
+	seen := map[string]struct{}{}
+	add := func(v *string) {
+		if v == nil || *v == "" {
+			return
+		}
+		if _, ok := seen[*v]; ok {
+			return
+		}
+		seen[*v] = struct{}{}
+		ids = append(ids, *v)
+	}
+	for i := range rows {
+		add(rows[i].CreatedBy)
+		add(rows[i].UpdatedBy)
+	}
+	names := s.repo.LoadAccountNames(ctx, ids)
+	for i := range rows {
+		if rows[i].CreatedBy != nil {
+			if n, ok := names[*rows[i].CreatedBy]; ok {
+				rows[i].CreatedName = &n
+			}
+		}
+		if rows[i].UpdatedBy != nil {
+			if n, ok := names[*rows[i].UpdatedBy]; ok {
+				rows[i].UpdatedName = &n
+			}
+		}
+	}
 }
 
 // publicPath 公开路径前缀（默认 /api/v1/files）。
@@ -439,7 +494,8 @@ func CleanupManaged(ctx context.Context, db *gorm.DB, sto *storage.Manager, obje
 	if err := db.WithContext(ctx).Where("object_name = ?", key).First(&row).Error; err != nil {
 		return nil
 	}
-	_ = sto.Provider().Delete(ctx, key)
+	p := sto.ProviderByName(ctx, row.StorageProvider)
+	_ = p.Delete(ctx, key)
 	return db.WithContext(ctx).Where("id = ?", row.ID).Delete(&File{}).Error
 }
 

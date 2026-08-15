@@ -68,6 +68,30 @@ func (r *Repo) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
 	return rows, err
 }
 
+// LoadAccountNames 批量按账号 ID 解析主登录标识（ACCOUNT 身份），供 created_name/updated_name 回填。
+func (r *Repo) LoadAccountNames(ctx context.Context, ids []string) map[string]string {
+	out := make(map[string]string, len(ids))
+	if len(ids) == 0 {
+		return out
+	}
+	var rows []struct {
+		AccountID  string `gorm:"column:account_id"`
+		Identifier string `gorm:"column:identifier"`
+	}
+	if err := r.with(ctx).Table("sys_account_identity").
+		Select("account_id", "identifier").
+		Where("account_id IN ? AND identity_type = ?", ids, "ACCOUNT").
+		Find(&rows).Error; err != nil {
+		return out
+	}
+	for _, row := range rows {
+		if _, ok := out[row.AccountID]; !ok {
+			out[row.AccountID] = row.Identifier
+		}
+	}
+	return out
+}
+
 // Page 分页查询（对齐 hei-boot FileServiceImpl.page 过滤条件）。
 func (r *Repo) Page(ctx context.Context, q PageParam) (rows []File, total int64, err error) {
 	cur, size := q.Normalize()

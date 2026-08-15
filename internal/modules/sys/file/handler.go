@@ -264,7 +264,7 @@ func (s *Service) portalDownload(c *gin.Context) {
 		response.Fail(c, http.StatusForbidden, 403, err.Error())
 		return
 	}
-	rc, err := s.sto.Provider().Get(c.Request.Context(), toObjectKey(row.ObjectName, s.publicPath()))
+	rc, err := s.providerFor(c.Request.Context(), row).Get(c.Request.Context(), toObjectKey(row.ObjectName, s.publicPath()))
 	if err != nil {
 		response.Fail(c, http.StatusNotFound, 404, "not found")
 		return

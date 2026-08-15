@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ type Provider interface {
 type Manager struct {
 	mu       sync.RWMutex
 	provider Provider
+	byName   map[string]Provider
 	cfg      config.StorageConfig
 	runtime  *runtimecfg.Settings
 }
@@ -106,6 +108,116 @@ func (m *Manager) Provider() Provider {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.provider
+}
+
+// providerConfigKeyPrefix 提供商 → 运行时配置键前缀（对齐 hei-boot FileEngines）。
+func providerConfigKeyPrefix(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "minio":
+		return "STORAGE_MINIO"
+	case "rustfs":
+		return "STORAGE_RUSTFS"
+	case "oss":
+		return "STORAGE_ALIYUN"
+	case "s3":
+		return "STORAGE_TENCENT"
+	default:
+		return "STORAGE_LOCAL"
+	}
+}
+
+// Bucket 当前活动引擎的存储桶（local 为空）。
+func (m *Manager) Bucket() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.cfg.Bucket
+}
+
+// ProviderByName 按提供商名解析引擎（对齐 hei-boot StorageEngineFactory + RuntimeSettings）：
+// 运行时 STORAGE_{PREFIX}_* 优先，回退 yaml。构建结果按名缓存。
+func (m *Manager) ProviderByName(ctx context.Context, name string) Provider {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if name == "" {
+		return m.Provider()
+	}
+	m.mu.RLock()
+	if p, ok := m.byName[name]; ok {
+		m.mu.RUnlock()
+		return p
+	}
+	rt := m.runtime
+	cfg := m.cfg
+	m.mu.RUnlock()
+
+	p := m.buildProvider(ctx, name, rt, cfg)
+	m.mu.Lock()
+	if m.byName == nil {
+		m.byName = map[string]Provider{}
+	}
+	m.byName[name] = p
+	m.mu.Unlock()
+	return p
+}
+
+func (m *Manager) buildProvider(ctx context.Context, name string, rt *runtimecfg.Settings, cfg config.StorageConfig) Provider {
+	prefix := providerConfigKeyPrefix(name)
+	get := func(suffix, def string) string {
+		if rt != nil {
+			if v := rt.GetString(ctx, prefix+"_"+suffix, ""); v != "" {
+				return v
+			}
+		}
+		return def
+	}
+	getBool := func(suffix string, def bool) bool {
+		if rt != nil {
+			if v := rt.GetString(ctx, prefix+"_"+suffix, ""); v != "" {
+				return strings.EqualFold(v, "true") || v == "1"
+			}
+		}
+		return def
+	}
+
+	if name == "local" || name == "" {
+		root := get("LOCAL_ROOT", cfg.LocalRoot)
+		if root == "" {
+			root = "./storage"
+		}
+		if runtime.GOOS == "windows" {
+			if w := get("WINDOWS_ROOT", ""); w != "" {
+				root = w
+			}
+		}
+		publicPath := get("PUBLIC_PATH", cfg.PublicPath)
+		if publicPath == "" {
+			publicPath = "/api/v1/files"
+		}
+		baseURL := get("BASE_URL", cfg.BaseURL)
+		return NewLocal(root, publicPath, baseURL)
+	}
+
+	// S3 兼容：minio / rustfs / oss / s3
+	sc := config.StorageConfig{
+		Provider:  name,
+		Bucket:    get("BUCKET", cfg.Bucket),
+		Endpoint:  get("ENDPOINT", cfg.Endpoint),
+		AccessKey: get("ACCESS_KEY", cfg.AccessKey),
+		SecretKey: get("SECRET_KEY", cfg.SecretKey),
+		Region:    get("REGION", cfg.Region),
+		UseSSL:    getBool("USE_SSL", cfg.UseSSL),
+		BaseURL:   get("BASE_URL", cfg.BaseURL),
+	}
+	if sc.Bucket == "" {
+		sc.Bucket = "defaultbucket"
+	}
+	if sc.Region == "" {
+		sc.Region = "us-east-1"
+	}
+	p, err := NewS3(sc)
+	if err != nil {
+		return m.Provider()
+	}
+	return p
 }
 
 // Reconfigure 用新配置重建并替换 Provider。
