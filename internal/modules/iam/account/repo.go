@@ -55,6 +55,30 @@ func (r *Repo) FindAccountIdentity(ctx context.Context, accountID string) (*Iden
 	return &ident, nil
 }
 
+// FindAccountIdentities 批量查账号主登录标识（保持去重，先到先得）。
+func (r *Repo) FindAccountIdentities(ctx context.Context, ids []string) (map[string]string, error) {
+	if len(ids) == 0 {
+		return map[string]string{}, nil
+	}
+	var rows []struct {
+		AccountID  string `gorm:"column:account_id"`
+		Identifier string `gorm:"column:identifier"`
+	}
+	if err := r.with(ctx).Table("sys_account_identity").
+		Select("account_id", "identifier").
+		Where("account_id IN ? AND identity_type = ?", ids, IdentityAccount).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(rows))
+	for _, row := range rows {
+		if _, ok := out[row.AccountID]; !ok {
+			out[row.AccountID] = row.Identifier
+		}
+	}
+	return out, nil
+}
+
 // ListRoleIDs 查账号已启用角色 ID。
 func (r *Repo) ListRoleIDs(ctx context.Context, accountID string) ([]string, error) {
 	var roleRels []struct {
@@ -148,8 +172,8 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 	}
 	if p.Name != "" {
 		db = db.Where(
-			`(account_type = ? AND id IN (SELECT account_id FROM admin_user_profile WHERE name ILIKE ?))
-			 OR (account_type = ? AND id IN (SELECT account_id FROM portal_user_profile WHERE name ILIKE ?))`,
+			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE name ILIKE ?))
+			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE name ILIKE ?))`,
 			string(security.AccountAdmin), "%"+p.Name+"%", string(security.AccountPortal), "%"+p.Name+"%",
 		)
 	}

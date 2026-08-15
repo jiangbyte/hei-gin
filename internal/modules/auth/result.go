@@ -8,14 +8,17 @@ import (
 	"hei-gin/internal/framework/core/security"
 )
 
-// LoginResult 登录结果。
+// LoginResult 登录结果（对齐 hei-boot 登录响应：含安全墙字段）。
 //
 // Author: Charlie
 type LoginResult struct {
-	Token           string               `json:"token"`
-	AccountID       string               `json:"account_id"`
-	AccountType     security.AccountType `json:"account_type"`
-	PasswordExpired bool                 `json:"password_expired"`
+	Token                     string               `json:"token"`
+	AccountID                 string               `json:"account_id"`
+	AccountType               security.AccountType `json:"account_type"`
+	PasswordExpired           bool                 `json:"password_expired"`
+	ForceBindEmail            bool                 `json:"force_bind_email"`
+	ForceBindPhone            bool                 `json:"force_bind_phone"`
+	PasswordExpiryWarningDays int                  `json:"password_expiry_warning_days"`
 }
 
 // RegisterResult 注册结果。

@@ -459,7 +459,7 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		if err := tx.Table("sys_account_identity").Create(ident).Error; err != nil {
 			return err
 		}
-		_ = tx.Table("portal_user_profile").Create(map[string]any{
+		_ = tx.Table("profile_user_portal").Create(map[string]any{
 			"account_id": accountID,
 			"nickname":   profile.Nickname,
 			"avatar":     profile.Avatar,

@@ -37,6 +37,18 @@ type AlertLog struct {
 // TableName 返回告警日志表名。
 func (AlertLog) TableName() string { return "sys_alert_log" }
 
+// 告警规则名（与 hei-boot AuditAlertJob 对齐）。
+const (
+	ruleBruteForce   = "audit_volume"
+	ruleUnusualHours = "unusual_hours"
+	ruleSensitiveOps = "sensitive_ops"
+	ruleBulkDelete   = "bulk_delete"
+	ruleIPAnomaly    = "ip_anomaly"
+)
+
+// sensitiveActions 凌晨非常时段 / 短窗口敏感操作判定动作集。
+var sensitiveActions = []string{"role_create", "role_grant", "permission_change", "permission_grant"}
+
 // withJobs 附加 SnailJob handlers。
 func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
@@ -49,13 +61,42 @@ func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 	return m
 }
 
+// runAuditAlertJob 按配置规则扫描并发送告警（对齐 hei-boot AuditAlertJob 五项规则）。
 func (s *Service) runAuditAlertJob(ctx context.Context, nf *notify.Facade) error {
 	if !runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_ENABLED", true) {
 		return nil
 	}
-	if !runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_BRUTE_FORCE", true) {
-		return nil
+	fired := 0
+	if runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_BRUTE_FORCE", true) {
+		if s.evaluateBruteForce(ctx, nf) {
+			fired++
+		}
 	}
+	if runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_UNUSUAL_HOURS", true) {
+		if s.evaluateUnusualHours(ctx, nf) {
+			fired++
+		}
+	}
+	if runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_SENSITIVE_OPS", true) {
+		if s.evaluateSensitiveOps(ctx, nf) {
+			fired++
+		}
+	}
+	if runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_BULK_DELETE", true) {
+		if s.evaluateBulkDelete(ctx, nf) {
+			fired++
+		}
+	}
+	if runtimeBool(ctx, s.repo.DB(), nf, "AUDIT_ALERT_RULE_IP_ANOMALY", true) {
+		if s.evaluateIPAnomaly(ctx, nf) {
+			fired++
+		}
+	}
+	return nil
+}
+
+// evaluateBruteForce 分析窗口内审计日志总量超过阈值则告警。
+func (s *Service) evaluateBruteForce(ctx context.Context, nf *notify.Facade) bool {
 	windowSeconds := runtimeInt(ctx, s.repo.DB(), nf, "AUDIT_ALERT_ANALYSIS_INTERVAL_SECONDS", 60)
 	if windowSeconds < 60 {
 		windowSeconds = 60
@@ -68,47 +109,192 @@ func (s *Service) runAuditAlertJob(ctx context.Context, nf *notify.Facade) error
 	var volume int64
 	if err := s.repo.DB().WithContext(ctx).Model(&OperationLog{}).
 		Where("created_at >= ?", since).Count(&volume).Error; err != nil {
-		return err
+		return false
 	}
 	if volume < threshold {
-		return nil
+		return false
+	}
+	summary := fmt.Sprintf("Audit log volume %d exceeded threshold %d in last %d seconds", volume, threshold, windowSeconds)
+	details := map[string]any{
+		"volume": volume, "threshold": threshold,
+		"window_seconds": windowSeconds, "window_minutes": max(1, windowSeconds/60),
+		"since": since.Format(time.RFC3339),
 	}
 	cooldown := runtimeInt(ctx, s.repo.DB(), nf, "AUDIT_ALERT_ALERT_COOLDOWN_SECONDS", 1800)
 	if cooldown < windowSeconds {
 		cooldown = windowSeconds
 	}
-	cooldownSince := time.Now().Add(-time.Duration(cooldown) * time.Second)
-	var recent int64
-	if err := s.repo.DB().WithContext(ctx).Model(&AlertLog{}).
-		Where("rule_name = ? AND created_at >= ?", "audit_volume", cooldownSince).
-		Count(&recent).Error; err != nil {
-		return err
+	return s.fireAlert(ctx, nf, ruleBruteForce, "WARNING", summary, details, cooldown)
+}
+
+// evaluateUnusualHours 凌晨 0-6 点出现角色/权限变更等敏感操作。
+func (s *Service) evaluateUnusualHours(ctx context.Context, nf *notify.Facade) bool {
+	now := time.Now()
+	if now.Hour() > 5 {
+		return false
 	}
-	if recent > 0 {
+	since := now.Add(-time.Hour)
+	var logs []OperationLog
+	if err := s.repo.DB().WithContext(ctx).Where("created_at >= ? AND action IN ?", since, sensitiveActions).
+		Find(&logs).Error; err != nil {
+		return false
+	}
+	if len(logs) == 0 {
+		return false
+	}
+	seen := map[string]struct{}{}
+	actions := []string{}
+	for _, l := range logs {
+		if l.Action == "" {
+			continue
+		}
+		if _, ok := seen[l.Action]; ok {
+			continue
+		}
+		seen[l.Action] = struct{}{}
+		actions = append(actions, l.Action)
+	}
+	summary := fmt.Sprintf("凌晨 %d 时检测到 %d 次敏感操作", now.Hour(), len(logs))
+	return s.fireAlert(ctx, nf, ruleUnusualHours, "WARNING", summary,
+		map[string]any{"count": len(logs), "actions": actions},
+		alertCooldown(ctx, nf))
+}
+
+// evaluateSensitiveOps 5 分钟内角色授权/权限变更等敏感操作，按账户聚合告警。
+func (s *Service) evaluateSensitiveOps(ctx context.Context, nf *notify.Facade) bool {
+	since := time.Now().Add(-5 * time.Minute)
+	rows := s.countByAccount(ctx, "created_at >= ? AND action IN ?", since, []string{"role_grant", "permission_change", "permission_grant"})
+	fired := false
+	for _, r := range rows {
+		summary := fmt.Sprintf("账户 %s 执行了敏感操作 (%d 次)", r.AccountID, r.Cnt)
+		fired = s.fireAlert(ctx, nf, ruleSensitiveOps, "WARNING", summary,
+			map[string]any{"account_id": r.AccountID, "count": r.Cnt},
+			alertCooldown(ctx, nf)) || fired
+	}
+	return fired
+}
+
+// evaluateBulkDelete 同账户 5 分钟内删除操作达到阈值。
+func (s *Service) evaluateBulkDelete(ctx context.Context, nf *notify.Facade) bool {
+	threshold := int64(runtimeInt(ctx, s.repo.DB(), nf, "AUDIT_ALERT_BULK_DELETE_THRESHOLD", 20))
+	if threshold < 1 {
+		threshold = 1
+	}
+	since := time.Now().Add(-5 * time.Minute)
+	rows := s.countByAccount(ctx, "created_at >= ? AND action = ?", since, "delete")
+	fired := false
+	for _, r := range rows {
+		if r.Cnt < threshold {
+			continue
+		}
+		summary := fmt.Sprintf("账户 %s 在 5 分钟内删除了 %d 条记录", r.AccountID, r.Cnt)
+		fired = s.fireAlert(ctx, nf, ruleBulkDelete, "WARNING", summary,
+			map[string]any{"account_id": r.AccountID, "count": r.Cnt, "threshold": threshold},
+			alertCooldown(ctx, nf)) || fired
+	}
+	return fired
+}
+
+// evaluateIPAnomaly 同账户 15 分钟内从多个不同 IP 成功登录达到阈值。
+func (s *Service) evaluateIPAnomaly(ctx context.Context, nf *notify.Facade) bool {
+	threshold := runtimeInt(ctx, s.repo.DB(), nf, "AUDIT_ALERT_IP_ANOMALY_THRESHOLD", 3)
+	if threshold < 1 {
+		threshold = 1
+	}
+	since := time.Now().Add(-15 * time.Minute)
+	var rows []struct {
+		AccountID string `gorm:"column:account_id"`
+		IP        string `gorm:"column:ip"`
+	}
+	if err := s.repo.DB().WithContext(ctx).Table("sys_operation_audit_log").
+		Select("account_id", "ip").
+		Where("created_at >= ? AND action = ? AND success = ? AND account_id IS NOT NULL", since, "login", true).
+		Find(&rows).Error; err != nil {
+		return false
+	}
+	ipsByAccount := map[string]map[string]struct{}{}
+	for _, r := range rows {
+		acc := r.AccountID
+		if acc == "" {
+			continue
+		}
+		if ipsByAccount[acc] == nil {
+			ipsByAccount[acc] = map[string]struct{}{}
+		}
+		ipsByAccount[acc][r.IP] = struct{}{}
+	}
+	fired := false
+	for acc, ips := range ipsByAccount {
+		if len(ips) < threshold {
+			continue
+		}
+		summary := fmt.Sprintf("账户 %s 在 15 分钟内从 %d 个不同 IP 登录", acc, len(ips))
+		fired = s.fireAlert(ctx, nf, ruleIPAnomaly, "WARNING", summary,
+			map[string]any{"account_id": acc, "ip_count": len(ips), "threshold": threshold},
+			alertCooldown(ctx, nf)) || fired
+	}
+	return fired
+}
+
+type accountCount struct {
+	AccountID string `gorm:"column:account_id"`
+	Cnt       int64  `gorm:"column:cnt"`
+}
+
+// countByAccount 按账户聚合审计计数（WHERE 条件为预编译片段）。
+func (s *Service) countByAccount(ctx context.Context, where string, args ...any) []accountCount {
+	var rows []accountCount
+	q := s.repo.DB().WithContext(ctx).Table("sys_operation_audit_log").
+		Select("account_id, count(*) AS cnt").
+		Where(where, args...).
+		Where("account_id IS NOT NULL AND account_id <> ''").
+		Group("account_id")
+	if err := q.Scan(&rows).Error; err != nil {
 		return nil
 	}
-	summary := fmt.Sprintf("Audit log volume %d exceeded threshold %d in last %d seconds", volume, threshold, windowSeconds)
+	return rows
+}
+
+// alertCooldown 告警冷却（秒，至少 60）。
+func alertCooldown(ctx context.Context, nf *notify.Facade) int {
+	c := runtimeInt(ctx, nil, nf, "AUDIT_ALERT_ALERT_COOLDOWN_SECONDS", 1800)
+	if c < 60 {
+		c = 60
+	}
+	return c
+}
+
+// fireAlert 公共告警出口：冷却期抑制 → 通知渠道 → 写入 sys_alert_log。
+func (s *Service) fireAlert(ctx context.Context, nf *notify.Facade, ruleName, severity, summary string, details map[string]any, cooldownSeconds int) bool {
+	cooldownSince := time.Now().Add(-time.Duration(cooldownSeconds) * time.Second)
+	var recent int64
+	if err := s.repo.DB().WithContext(ctx).Model(&AlertLog{}).
+		Where("rule_name = ? AND created_at >= ?", ruleName, cooldownSince).
+		Count(&recent).Error; err != nil {
+		return false
+	}
+	if recent > 0 {
+		return false
+	}
 	notified := notifyAuditChannels(ctx, nf, s.repo.DB(), summary)
-	details, _ := json.Marshal(map[string]any{
-		"volume":         volume,
-		"threshold":      threshold,
-		"window_seconds": windowSeconds,
-		"since":          since.Format(time.RFC3339),
-	})
+	detailsJSON, _ := json.Marshal(details)
 	via := strings.Join(notified, ",")
 	if via == "" {
 		via = "sys_alert_log"
 	}
 	row := AlertLog{
 		ID:        idgen.Next(),
-		RuleName:  "audit_volume",
-		Severity:  "WARNING",
+		RuleName:  ruleName,
+		Severity:  severity,
 		Summary:   summary,
-		Details:   datatypes.JSON(details),
+		Details:   datatypes.JSON(detailsJSON),
 		CreatedAt: time.Now().UTC(),
 	}
 	row.NotifiedVia = &via
-	return s.repo.DB().WithContext(ctx).Create(&row).Error
+	if err := s.repo.DB().WithContext(ctx).Create(&row).Error; err != nil {
+		return false
+	}
+	return true
 }
 
 func notifyAuditChannels(ctx context.Context, nf *notify.Facade, db *gorm.DB, summary string) []string {

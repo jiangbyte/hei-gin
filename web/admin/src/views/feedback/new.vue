@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import type { FormInst, FormRules, UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
-import { fileApi, msgFeedbackApi } from '@/api'
+import { fileApi, sysFeedbackApi } from '@/api'
 import { createRequiredRule, normalizeUploadedFile } from '@/utils'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -74,7 +74,7 @@ async function handleSubmit() {
 
   state.submitting = true
   try {
-    await msgFeedbackApi.submit({
+    await sysFeedbackApi.submit({
       title: state.formModel.title.trim(),
       content: state.formModel.content.trim(),
       category: String(state.formModel.category || ''),

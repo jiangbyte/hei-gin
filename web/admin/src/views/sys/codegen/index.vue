@@ -1,4 +1,4 @@
-﻿<!-- Author: Charlie -->
+<!-- Author: Charlie -->
 
 <script setup lang="tsx">
 import type { FormRules, PaginationProps } from 'naive-ui'
@@ -21,25 +21,25 @@ import { NAlert, NButton, NCheckbox, NFlex, NInput, NInputNumber, NSelect, NTag,
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 
-/** 与后端 DbTypeMapper.toGoType 对齐的语义类型 → Go 类型 */
-function toGoType(semanticType: string | null | undefined) {
+/** 与后端 DbTypeMapper.toJavaType 对齐的语义类型 → Java 类型 */
+function toJavaType(semanticType: string | null | undefined) {
   switch (semanticType) {
     case 'int':
-      return 'int64'
+      return 'Integer'
     case 'float':
-      return 'float64'
+      return 'BigDecimal'
     case 'bool':
-      return 'bool'
+      return 'Boolean'
     case 'datetime':
-      return 'time.Time'
+      return 'OffsetDateTime'
     case 'dict':
-      return 'datatypes.JSON'
+      return 'Map<String, Object>'
     default:
-      return 'string'
+      return 'String'
   }
 }
 
-/** 与后端 CodegenNaming 对齐：Go 模块路径 → import path / 目录 */
+/** 与后端 CodegenNaming.packageFromModulePath 对齐 */
 function packagesFromModulePath(modulePath: string) {
   const parts = modulePath
     .trim()
@@ -49,25 +49,25 @@ function packagesFromModulePath(modulePath: string) {
     .map(part => part.replaceAll('-', '_').toLowerCase())
   if (!parts.length) {
     return {
-      basePackage: 'hei-gin/internal/modules/biz',
-      paramPackage: 'hei-gin/internal/modules/biz',
-      moduleRoot: 'internal/modules/biz',
+      basePackage: 'github.jiangbyte.io.biz.modules.biz',
+      paramPackage: 'github.jiangbyte.io.biz.modules.biz.param',
+      moduleRoot: 'module/biz',
     }
   }
   const module = parts[0]
   const feature = parts.length === 1 ? module : parts.slice(1).join('.')
-  const basePackage = `hei-gin/internal/modules/${module}/${feature}`
+  const basePackage = `github.jiangbyte.io.${module}.modules.${feature}`
   return {
     basePackage,
-    paramPackage: basePackage,
-    moduleRoot: `modules/${module}`,
+    paramPackage: `${basePackage}.param`,
+    moduleRoot: `module/${module}`,
   }
 }
 
 const genTypeHelp: Record<string, string> = {
-  TABLE: '生成 modules 单表 CRUD（model/param/repo/service/handler/register）+ Vue 列表页与菜单 SQL。',
+  TABLE: '生成 module 层单表 CRUD（Entity/Mapper/Convert/Param/Service/Controller）+ Vue 列表页与菜单 SQL。',
   TREE: '在单表基础上增加树形接口 /tree 与 list 权限，前端为树形维护页。',
-  LEFT_TREE_TABLE: '主表左树（含 /tree），子表挂在主 Handler 的 /children/*，前端左树右表。',
+  LEFT_TREE_TABLE: '主表左树（含 /tree），子表挂在主 Controller 的 /children/*，前端左树右表。',
   MASTER_DETAIL: '主表列表 + 子表 /children/*，无树接口；前端主从表联动。',
 }
 
@@ -182,8 +182,8 @@ function previewLanguageLabel(language: string | undefined, path: string) {
   if (language) {
     return language
   }
-  if (path.endsWith('.go')) {
-    return 'go'
+  if (path.endsWith('.java')) {
+    return 'java'
   }
   if (path.endsWith('.vue')) {
     return 'vue'
@@ -355,11 +355,11 @@ const fieldColumns = computed(() => [
     ),
   },
   {
-    title: 'Go',
-    key: 'go_type',
+    title: 'Java',
+    key: 'java_type',
     width: 160,
     ellipsis: { tooltip: true },
-    render: (row: any) => toGoType(row.python_type),
+    render: (row: any) => toJavaType(row.python_type),
   },
   { title: 'TS', key: 'typescript_type', width: 140 },
   {
@@ -733,6 +733,9 @@ function resolvePrimaryColumn(target: 'main' | 'sub', currentValue?: string | nu
 
 function previewTabLabel(path: string) {
   const parts = path.split('/').filter(Boolean)
+  if (path.startsWith('module/')) {
+    return parts.slice(-2).join('/')
+  }
   return parts.slice(-2).join('/') || path
 }
 
@@ -882,11 +885,11 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
               type="info"
               class="mb-16px"
               :bordered="false"
-              title="Go 模块产物"
+              title="Java 模块产物"
             >
-              交付方式为预览 + ZIP（不写回仓库）。Go 生成
-              <code>modules/{模块}</code>（model/param/result/repo/service/handler/register），
-              前端落在 <code>web/admin</code>。
+              交付方式为预览 + ZIP（不写回仓库）。Java 只生成
+              <code>module/{模块}</code>（Entity/Mapper/Convert/Param/Service/Controller），不产出
+              <code>module-api</code>。前端落在 <code>web/admin</code>。
             </NAlert>
             <NAlert
               v-if="currentGenTypeHelp"
@@ -983,13 +986,14 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                   >
                     <NInput
                       v-model:value="state.form.main_module_path"
-                      placeholder="biz/cg_test_order（首段=业务域，其后=功能包）"
+                      placeholder="biz/order（首段=Maven 模块，其后=功能包）"
                     />
                     <div
                       v-if="state.form.main_module_path"
                       class="codegen-package-preview"
                     >
-                      <div>Go 包：{{ packagePreview.basePackage }}</div>
+                      <div>实现包（生成）：{{ packagePreview.basePackage }}</div>
+                      <div>参数包：{{ packagePreview.paramPackage }}</div>
                       <div>输出目录：{{ packagePreview.moduleRoot }}</div>
                     </div>
                   </NFlex>
@@ -1188,7 +1192,7 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
           class="mb-12px"
           :bordered="false"
         >
-          Go 列由库类型映射而来（string / int64 / float64 / time.Time 等），控件与字典会进入预览中的 Param、表单与查询条件。
+          Java 列由库类型映射而来（String / Integer / BigDecimal 等），控件与字典会进入预览中的 Param、表单与查询条件。
         </NAlert>
         <NDataTable
           :columns="fieldColumns"
@@ -1236,7 +1240,7 @@ function handleDictCodeUpdate(row: any, value: string | number | Array<string | 
                   :type="state.previewGroup === 'backend' ? 'primary' : 'default'"
                   @click="selectPreviewGroup('backend')"
                 >
-                  Go ({{ previewGroupCounts.backend }})
+                  Java ({{ previewGroupCounts.backend }})
                 </NButton>
                 <NButton
                   size="small"

@@ -95,9 +95,15 @@ defineExpose({ refresh })
   overflow: hidden;
   cursor: pointer;
   line-height: 0;
-  background: var(--n-color, #f8fafc);
-  border: 1px solid var(--n-border-color);
+  /* --n-* 只在 Naive 组件根上定义，兄弟自定义元素取不到；改用自包含变量 + 模式兜底 */
+  background: var(--captcha-bg, #f8fafc);
+  border: 1px solid var(--captcha-border, #e0e0e6);
   border-radius: var(--border-radius, var(--n-border-radius, 3px));
+}
+
+html.dark .captcha-image {
+  --captcha-bg: #1a1d24;
+  --captcha-border: #2a2f3a;
 }
 
 .captcha-image:disabled {

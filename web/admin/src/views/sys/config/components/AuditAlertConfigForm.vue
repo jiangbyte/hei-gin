@@ -39,6 +39,12 @@ const state = reactive({
   cooldown: 1800,
   ruleBruteForce: true,
   bruteForceThreshold: 10,
+  ruleUnusualHours: true,
+  ruleSensitiveOps: true,
+  ruleBulkDelete: true,
+  ruleIpAnomaly: true,
+  bulkDeleteThreshold: 20,
+  ipAnomalyThreshold: 3,
   pushEngine: 'DINGTALK',
   pushConfigured: false,
   mailConfigured: false,
@@ -88,6 +94,20 @@ async function reload() {
       ? parseBool(map.AUDIT_ALERT_RULE_BRUTE_FORCE)
       : true
     state.bruteForceThreshold = parseNumber(map.AUDIT_ALERT_BRUTE_FORCE_THRESHOLD, 10)
+    state.ruleUnusualHours = hasKey(map, 'AUDIT_ALERT_RULE_UNUSUAL_HOURS')
+      ? parseBool(map.AUDIT_ALERT_RULE_UNUSUAL_HOURS)
+      : true
+    state.ruleSensitiveOps = hasKey(map, 'AUDIT_ALERT_RULE_SENSITIVE_OPS')
+      ? parseBool(map.AUDIT_ALERT_RULE_SENSITIVE_OPS)
+      : true
+    state.ruleBulkDelete = hasKey(map, 'AUDIT_ALERT_RULE_BULK_DELETE')
+      ? parseBool(map.AUDIT_ALERT_RULE_BULK_DELETE)
+      : true
+    state.ruleIpAnomaly = hasKey(map, 'AUDIT_ALERT_RULE_IP_ANOMALY')
+      ? parseBool(map.AUDIT_ALERT_RULE_IP_ANOMALY)
+      : true
+    state.bulkDeleteThreshold = parseNumber(map.AUDIT_ALERT_BULK_DELETE_THRESHOLD, 20)
+    state.ipAnomalyThreshold = parseNumber(map.AUDIT_ALERT_IP_ANOMALY_THRESHOLD, 3)
 
     state.pushEngine = (
       pushMap.DEFAULT_MESSAGE_PUSH_ENGINE ||
@@ -120,6 +140,12 @@ function snapshotOf() {
     cooldown: state.cooldown,
     ruleBruteForce: state.ruleBruteForce,
     bruteForceThreshold: state.bruteForceThreshold,
+    ruleUnusualHours: state.ruleUnusualHours,
+    ruleSensitiveOps: state.ruleSensitiveOps,
+    ruleBulkDelete: state.ruleBulkDelete,
+    ruleIpAnomaly: state.ruleIpAnomaly,
+    bulkDeleteThreshold: state.bulkDeleteThreshold,
+    ipAnomalyThreshold: state.ipAnomalyThreshold,
   })
 }
 
@@ -189,6 +215,36 @@ async function save() {
       {
         config_key: 'AUDIT_ALERT_BRUTE_FORCE_THRESHOLD',
         config_value: String(state.bruteForceThreshold),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_RULE_UNUSUAL_HOURS',
+        config_value: toBoolStr(state.ruleUnusualHours),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_RULE_SENSITIVE_OPS',
+        config_value: toBoolStr(state.ruleSensitiveOps),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_RULE_BULK_DELETE',
+        config_value: toBoolStr(state.ruleBulkDelete),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_RULE_IP_ANOMALY',
+        config_value: toBoolStr(state.ruleIpAnomaly),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_BULK_DELETE_THRESHOLD',
+        config_value: String(state.bulkDeleteThreshold),
+        category: CATEGORY,
+      },
+      {
+        config_key: 'AUDIT_ALERT_IP_ANOMALY_THRESHOLD',
+        config_value: String(state.ipAnomalyThreshold),
         category: CATEGORY,
       },
     ])
@@ -398,13 +454,6 @@ async function testWebhook() {
           :bordered="false"
           class="mt-12px"
         >
-          <NAlert
-            type="info"
-            :bordered="false"
-            class="mb-12px"
-          >
-            当前已实现「暴力破解（审计日志量）」检测；其他规则待后续迭代，已从配置页移除以免假开关。
-          </NAlert>
           <div class="alert-rule">
             <div class="alert-rule__row">
               <div class="alert-rule__switch">
@@ -422,6 +471,62 @@ async function testWebhook() {
                   class="w-full"
                   :min="1"
                   :max="100000"
+                />
+              </NFormItem>
+            </div>
+
+            <div class="alert-rule__row">
+              <div class="alert-rule__switch">
+                <span class="alert-rule__label">非常时段敏感操作</span>
+                <NSwitch v-model:value="state.ruleUnusualHours" />
+              </div>
+              <p class="sys-config__hint">凌晨 0-6 点的角色/权限变更</p>
+            </div>
+
+            <div class="alert-rule__row">
+              <div class="alert-rule__switch">
+                <span class="alert-rule__label">敏感操作检测</span>
+                <NSwitch v-model:value="state.ruleSensitiveOps" />
+              </div>
+              <p class="sys-config__hint">5 分钟内角色授权/权限变更次数</p>
+            </div>
+
+            <div class="alert-rule__row">
+              <div class="alert-rule__switch">
+                <span class="alert-rule__label">批量删除检测</span>
+                <NSwitch v-model:value="state.ruleBulkDelete" />
+              </div>
+              <NFormItem
+                v-if="state.ruleBulkDelete"
+                label="5 分钟内删除次数阈值"
+                class="alert-rule__extra"
+                :show-feedback="false"
+              >
+                <NInputNumber
+                  v-model:value="state.bulkDeleteThreshold"
+                  class="w-full"
+                  :min="1"
+                  :max="100000"
+                />
+              </NFormItem>
+            </div>
+
+            <div class="alert-rule__row">
+              <div class="alert-rule__switch">
+                <span class="alert-rule__label">异地 IP 登录检测</span>
+                <NSwitch v-model:value="state.ruleIpAnomaly" />
+              </div>
+              <NFormItem
+                v-if="state.ruleIpAnomaly"
+                label="15 分钟内不同 IP 数阈值"
+                class="alert-rule__extra"
+                :show-feedback="false"
+              >
+                <NInputNumber
+                  v-model:value="state.ipAnomalyThreshold"
+                  class="w-full"
+                  :min="1"
+                  :max="1000"
                 />
               </NFormItem>
             </div>

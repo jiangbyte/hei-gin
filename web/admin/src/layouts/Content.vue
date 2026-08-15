@@ -10,7 +10,6 @@ const routeStore = useRouteStore()
 <template>
   <n-el
     class="h-full min-h-0 overflow-hidden p-8px"
-    style="background-color: var(--body-color)"
   >
     <router-view v-slot="{ Component, route }">
       <transition

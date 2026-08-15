@@ -47,7 +47,7 @@ const options = computed<DropdownOption[]>(() => [
 // 根据下拉菜单 key 分发行为；保留弹窗确认可以避免后续接入真实登出时误触。
 function handleSelect(key: string | number) {
   if (key === 'userCenter') {
-    router.push('/usercenter')
+    router.push('/profile')
   }
   if (key === 'feedback') {
     router.push('/feedback')

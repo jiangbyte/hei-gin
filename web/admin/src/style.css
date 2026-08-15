@@ -15,11 +15,43 @@
   --app-scrollbar-track-color: transparent;
   --app-scrollbar-thumb-color: rgba(0, 0, 0, 0.24);
   --app-scrollbar-thumb-color-hover: rgba(0, 0, 0, 0.38);
+
+  /* ===== 深色侧边栏 · 浅色模式搭配 =====
+     侧边栏固定深色（不随模式切换底色），但深色模式下有独立色板（见 html.dark），
+     保证「浅色模式：深侧边栏 + 浅内容」与「暗黑模式：深侧边栏 + 暗内容」都协调。 */
+  --sidebar-bg: #1f2733;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-item-hover-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-item-active-bg: #1677ff;
+  --sidebar-item-active-hover-bg: #4096ff;
+  --sidebar-text: #b8c0cc;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-text-active: #ffffff;
+  --sidebar-group-text: rgba(255, 255, 255, 0.45);
+  --sidebar-logo-text: #ffffff;
+  --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.24);
+  --sidebar-scrollbar-thumb-hover: rgba(255, 255, 255, 0.38);
 }
 
 html.dark {
   --app-scrollbar-thumb-color: rgba(255, 255, 255, 0.24);
   --app-scrollbar-thumb-color-hover: rgba(255, 255, 255, 0.38);
+
+  /* ===== 深色侧边栏 · 暗黑模式搭配 =====
+     比内容区 #101014 略亮一档、带蓝灰调，既与暗黑内容协调，又保持面板区分度。 */
+  --sidebar-bg: #151a24;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-item-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-item-active-bg: #1677ff;
+  --sidebar-item-active-hover-bg: #4096ff;
+  --sidebar-text: #c3c9d2;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-text-active: #ffffff;
+  --sidebar-group-text: rgba(255, 255, 255, 0.42);
+  /* 暗黑模式下 Logo 文字用更柔和的近白，避免纯白在暗底上刺眼 */
+  --sidebar-logo-text: #e6e8eb;
+  --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --sidebar-scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
 }
 
 * {

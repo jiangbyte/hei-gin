@@ -37,9 +37,9 @@ interface AuthState {
 
 const userInfoKey = 'user_info'
 const loginPath = '/auth/login'
-const userCenterPasswordPath = '/usercenter?tab=password'
-const userCenterEmailPath = '/usercenter?tab=email'
-const userCenterPhonePath = '/usercenter?tab=phone'
+const userCenterPasswordPath = '/profile?tab=password'
+const userCenterEmailPath = '/profile?tab=email'
+const userCenterPhonePath = '/profile?tab=phone'
 
 function getStoredUserInfo() {
   const raw = localStorage.getItem(userInfoKey)
@@ -77,10 +77,10 @@ export function isAllowedUnderSecurityWall(
 ): boolean {
   if (!user) return true
   if (user.passwordExpired) {
-    return path.startsWith('/usercenter') && queryTab === 'password'
+    return path.startsWith('/profile') && queryTab === 'password'
   }
   if (user.forceBindEmail || user.forceBindPhone) {
-    if (!path.startsWith('/usercenter')) return false
+    if (!path.startsWith('/profile')) return false
     if (user.forceBindEmail && queryTab === 'email') return true
     if (user.forceBindPhone && queryTab === 'phone') return true
     return false

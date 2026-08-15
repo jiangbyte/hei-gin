@@ -1,7 +1,7 @@
 /** Author: Charlie */
 
 import { defineStore } from 'pinia'
-import { messageApi } from '@/api'
+import { myNoticeApi } from '@/api'
 import { wireInt } from '@/utils/wire'
 
 export const useMessageUnreadStore = defineStore('message-unread-store', {
@@ -20,7 +20,7 @@ export const useMessageUnreadStore = defineStore('message-unread-store', {
     },
     async refresh() {
       try {
-        const res = await messageApi.unreadCount()
+        const res = await myNoticeApi.unreadCount()
         const raw = res.data
         const total =
           typeof raw === 'string' ? wireInt(raw) : typeof raw === 'number' ? raw : Number(raw ?? 0)

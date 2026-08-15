@@ -1,5 +1,8 @@
 <!-- Author: Charlie -->
-
+<!--
+  模块选择器：下拉菜单（n-dropdown）形式，常驻顶栏（折叠/抽屉按钮之后）。
+  跟随全局 light/dark 主题，无需深色变体。
+-->
 <script setup lang="ts">
 import type { DropdownOption } from 'naive-ui'
 import { computed } from 'vue'

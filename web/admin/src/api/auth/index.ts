@@ -24,15 +24,15 @@ export function sendLoginCode(data: any) {
 }
 
 export function sendPasswordChangeCode() {
-  return http.post<any>(`${authPrefix}/user-center/password/send-code`)
+  return http.post<any>(`${authPrefix}/profile/password/send-code`)
 }
 
 export function sendBindEmailCode(data: { target: string }) {
-  return http.post<any>(`${authPrefix}/user-center/email/send-code`, data)
+  return http.post<any>(`${authPrefix}/profile/email/send-code`, data)
 }
 
 export function sendBindPhoneCode(data: { target: string }) {
-  return http.post<any>(`${authPrefix}/user-center/phone/send-code`, data)
+  return http.post<any>(`${authPrefix}/profile/phone/send-code`, data)
 }
 
 export function captcha() {
@@ -72,26 +72,26 @@ export function me() {
   return http.get<any>(`${authPrefix}/me`)
 }
 
-export function updateUserCenterProfile(data: any) {
-  return http.post<any>(`${authPrefix}/user-center/profile/update`, data)
+export function updateProfile(data: any) {
+  return http.post<any>(`${authPrefix}/profile/update`, data)
 }
 
-export function uploadUserCenterAvatar(file: File) {
+export function uploadAvatar(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return http.post<any>(`${authPrefix}/user-center/avatar/upload`, formData)
+  return http.post<any>(`${authPrefix}/profile/avatar/upload`, formData)
 }
 
-export function updateUserCenterPassword(data: any) {
-  return http.post<any>(`${authPrefix}/user-center/password/update`, data)
+export function updatePassword(data: any) {
+  return http.post<any>(`${authPrefix}/profile/password/update`, data)
 }
 
-export function updateUserCenterPhone(data: any) {
-  return http.post<any>(`${authPrefix}/user-center/phone/update`, data)
+export function updatePhone(data: any) {
+  return http.post<any>(`${authPrefix}/profile/phone/update`, data)
 }
 
-export function updateUserCenterEmail(data: any) {
-  return http.post<any>(`${authPrefix}/user-center/email/update`, data)
+export function updateEmail(data: any) {
+  return http.post<any>(`${authPrefix}/profile/email/update`, data)
 }
 
 export function oauthAuthorize(provider: string, params?: { intent?: string; redirect?: string }) {

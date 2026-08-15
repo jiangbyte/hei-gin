@@ -11,8 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
-	adminuser "hei-gin/internal/modules/user/admin"
-	portaluser "hei-gin/internal/modules/user/portal"
+	"hei-gin/internal/modules/profile"
 )
 
 // accountRow sys_account 行投影（仅回显所需字段）。
@@ -74,8 +73,11 @@ func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]Account
 			identByAccount[it.AccountID] = it.Identifier
 		}
 	}
-	adminRepo := adminuser.NewRepo(db)
-	portalRepo := portaluser.NewRepo(db)
+	adminRepo := profile.AdminRepo(db)
+	portalRepo := profile.PortalRepo(db)
+	// 批量加载双端资料，避免逐行 GetProfile（N+1）。
+	adminProfiles, _ := adminRepo.ListByAccountIDs(ctx, ids)
+	portalProfiles, _ := portalRepo.ListByAccountIDs(ctx, ids)
 	for _, id := range ids {
 		row, ok := byID[id]
 		if !ok {
@@ -92,11 +94,11 @@ func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]Account
 		}
 		v.Account = identByAccount[id]
 		if row.AccountType == string(security.AccountAdmin) {
-			if p, err := adminRepo.GetProfile(ctx, id); err == nil {
+			if p := adminProfiles[id]; p != nil {
 				v.Name, v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email, v.Remark =
 					p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
 			}
-		} else if p, err := portalRepo.GetProfile(ctx, id); err == nil {
+		} else if p := portalProfiles[id]; p != nil {
 			v.Name, v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email =
 				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
 		}

@@ -18,6 +18,7 @@ import {
   UserCenter,
 } from './components'
 import Content from './Content.vue'
+import SidebarMenuProvider from './components/common/SidebarMenuProvider.vue'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
@@ -69,6 +70,7 @@ const showMobileDrawer = ref(false)
           <CommonWrapper @click="showMobileDrawer = true">
             <NovaIcon icon="icon-park-outline:hamburger-button" />
           </CommonWrapper>
+          <ModuleSwitch />
         </div>
       </template>
       <template v-else>
@@ -99,12 +101,14 @@ const showMobileDrawer = ref(false)
     </template>
 
     <template #sidebar>
-      <n-scrollbar class="sidebar-menu-scrollbar">
-        <n-menu
-          v-bind="layout.verticalMenuProps"
-          :collapsed-width="64"
-        />
-      </n-scrollbar>
+      <SidebarMenuProvider>
+        <n-scrollbar class="sidebar-menu-scrollbar">
+          <n-menu
+            v-bind="layout.verticalMenuProps"
+            :collapsed-width="64"
+          />
+        </n-scrollbar>
+      </SidebarMenuProvider>
     </template>
 
     <template #sidebar-extra>
@@ -124,12 +128,6 @@ const showMobileDrawer = ref(false)
     <BackTop class="z-999" />
 
     <MobileDrawer v-model:show="showMobileDrawer">
-      <div class="mt-3 mb-2 px-3">
-        <ModuleSwitch
-          force-label
-          block
-        />
-      </div>
       <n-menu
         v-bind="layout.verticalMenuProps"
         :collapsed="false"
@@ -144,8 +142,22 @@ const showMobileDrawer = ref(false)
   overflow: hidden;
 }
 
+/* 滚动容器：SidebarMenuProvider 已撑满 sidebar，这里让 scrollbar 占满并滚动 */
 .sidebar-menu-scrollbar {
   min-height: 0;
   flex: 1 1 0;
+}
+
+/*
+ * 深色侧边栏：仅作用于侧边栏容器（aside），不影响顶栏/内容区。
+ * --pro-layout-color 同时用于顶栏背景，因此在此作用域内单独覆盖。
+ * 配色引用 style.css 中的模式感知变量：浅色模式深蓝灰、暗黑模式更深一档并与内容协调。
+ */
+:deep(.n-pro-layout__aside) {
+  --pro-layout-color: var(--sidebar-bg);
+  --pro-layout-border-color: var(--sidebar-border);
+  /* 侧边栏内滚动条浅色滑块（深底） */
+  --app-scrollbar-thumb-color: var(--sidebar-scrollbar-thumb);
+  --app-scrollbar-thumb-color-hover: var(--sidebar-scrollbar-thumb-hover);
 }
 </style>

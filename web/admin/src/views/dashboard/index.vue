@@ -120,7 +120,7 @@ const pulseItems = computed(() => [
     key: 'feedback',
     label: '待处理反馈',
     value: Number(state.overview.ops_today.feedback_pending ?? 0),
-    path: '/message/feedback',
+    path: '/sys/feedback',
   },
 ])
 

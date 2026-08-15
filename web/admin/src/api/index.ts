@@ -16,7 +16,7 @@ export * as positionApi from './iam/position'
 export * as resourceApi from './iam/resource'
 export * as resourceModuleApi from './iam/resource_module'
 export * as roleApi from './iam/role'
-export * as messageApi from './message'
+export * as myNoticeApi from './sys/my-notice'
 // 由 HEI 代码生成器生成。 Author: Charlie. 生成时间：2026-07-19 09:36:52.
 export * as cgTestActivityApi from './biz/cg-test-activity'
 // 由 HEI 代码生成器生成。 Author: Charlie. 生成时间：2026-07-19 09:40:19.
@@ -26,6 +26,6 @@ export * as cgTestOrderApi from './biz/cg-test-order'
 // 由 HEI 代码生成器生成。 Author: Charlie. 生成时间：2026-07-19 09:49:09.
 export * as cgTestKnowledgeCategoryApi from './biz/cg-test-knowledge-category'
 
-export * as msgNoticeApi from './message/notice'
-export * as msgFeedbackApi from './message/feedback'
+export * as sysNoticeApi from './sys/notice'
+export * as sysFeedbackApi from './sys/feedback'
 export * as weakPasswordApi from './sys/weakPassword'

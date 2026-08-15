@@ -353,7 +353,7 @@ func (s *Service) profileNames(c *gin.Context, accountID string) (*string, *stri
 		return nil, nil, nil
 	}
 	var name, nickname, avatar *string
-	_ = s.db.WithContext(c.Request.Context()).Table("admin_user_profile").
+	_ = s.db.WithContext(c.Request.Context()).Table("profile_user_admin").
 		Select("name, nickname, avatar").
 		Where("account_id = ?", accountID).Limit(1).
 		Scan(&struct {

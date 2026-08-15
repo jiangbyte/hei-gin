@@ -15,11 +15,11 @@ const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
 
 const innerAppRoutes: RouteRecordRaw[] = [
   {
-    path: '/usercenter',
-    name: 'usercenter',
-    component: () => import('@/views/usercenter/index.vue'),
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/profile/index.vue'),
     meta: {
-      code: 'usercenter',
+      code: 'profile',
       name: '个人中心',
       resource_type: 'PAGE',
       is_visible: false,

@@ -28,6 +28,7 @@ const state = reactive({
     secretKey: '',
     sdkAppId: '',
     signName: '',
+    region: '',
   },
   snapshot: '',
 })
@@ -48,6 +49,7 @@ async function reload() {
     state.tencent.secretKey = map.SMS_TENCENT_SECRET_KEY || ''
     state.tencent.sdkAppId = map.SMS_TENCENT_SDK_APP_ID || ''
     state.tencent.signName = map.SMS_TENCENT_SIGN_NAME || ''
+    state.tencent.region = map.SMS_TENCENT_REGION || ''
     state.snapshot = JSON.stringify({
       defaultEngine: state.defaultEngine,
       aliyun: state.aliyun,
@@ -108,6 +110,11 @@ async function save() {
       {
         config_key: 'SMS_TENCENT_SIGN_NAME',
         config_value: state.tencent.signName,
+        category: CATEGORY,
+      },
+      {
+        config_key: 'SMS_TENCENT_REGION',
+        config_value: state.tencent.region,
         category: CATEGORY,
       },
     ])
@@ -228,6 +235,11 @@ async function save() {
           <NGi :span="12">
             <NFormItem label="短信签名">
               <NInput v-model:value="state.tencent.signName" />
+            </NFormItem>
+          </NGi>
+          <NGi :span="24">
+            <NFormItem label="区域（留空默认 ap-guangzhou）">
+              <NInput v-model:value="state.tencent.region" placeholder="ap-guangzhou" />
             </NFormItem>
           </NGi>
         </NGrid>

@@ -1,15 +1,14 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-09 21:39:41
+  生成时间：2026-08-15 14:38:50
 -->
 
 <script setup lang="tsx">
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { cgTestCatalogApi } from '@/api'
-import { readPageMeta } from '@/utils/wire'
-import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { dictList, createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -42,7 +41,14 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: 'code', path: 'code', field: 'input' },
   { title: 'name', path: 'name', field: 'input' },
   { title: 'category', path: 'category', field: 'input' },
-  { title: 'status', path: 'status', field: 'input' },
+  {
+    title: 'status',
+    path: 'status',
+    field: 'select',
+    fieldProps: {
+      options: dictList('COMMON_STATUS'),
+    },
+  },
 ])
 
 

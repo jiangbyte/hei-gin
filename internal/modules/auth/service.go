@@ -225,11 +225,26 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		return nil, err
 	}
 	return &LoginResult{
-		Token:           token,
-		AccountID:       accountID,
-		AccountType:     accountType,
-		PasswordExpired: false,
+		Token:                     token,
+		AccountID:                 accountID,
+		AccountType:               accountType,
+		PasswordExpired:           false,
+		ForceBindEmail:            s.forceBind(ctx, accountType, "EMAIL"),
+		ForceBindPhone:            s.forceBind(ctx, accountType, "PHONE"),
+		PasswordExpiryWarningDays: 0,
 	}, nil
+}
+
+// forceBind 读取 AUTH_FORCE_BIND_{TYPE}_{CHANNEL} 运行时配置。
+func (s *Service) forceBind(ctx context.Context, accountType security.AccountType, channel string) bool {
+	key := "AUTH_FORCE_BIND_" + strings.ToUpper(string(accountType)) + "_" + channel
+	if s.notify != nil {
+		v := s.notify.GetRuntimeString(ctx, key, "")
+		if v != "" {
+			return strings.EqualFold(v, "true") || v == "1"
+		}
+	}
+	return false
 }
 
 // Logout 登出。

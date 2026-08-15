@@ -17,9 +17,8 @@ import (
 	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/iam/resource"
 	"hei-gin/internal/modules/iam/role"
+	"hei-gin/internal/modules/profile"
 	"hei-gin/internal/modules/shared"
-	adminuser "hei-gin/internal/modules/user/admin"
-	portaluser "hei-gin/internal/modules/user/portal"
 )
 
 // Lookup 供 auth 按身份或 ID 解析账号。
@@ -35,8 +34,8 @@ type Lookup interface {
 // Author: Charlie
 type Service struct {
 	repo      *Repo
-	admin     *adminuser.Repo
-	portal    *portaluser.Repo
+	admin     *profile.Repo
+	portal    *profile.Repo
 	rel       *relation.Service
 	roles     *role.Repo
 	groups    *group.Repo
@@ -48,8 +47,8 @@ type Service struct {
 func NewService(db *gorm.DB) *Service {
 	return &Service{
 		repo:      NewRepo(db),
-		admin:     adminuser.NewRepo(db),
-		portal:    portaluser.NewRepo(db),
+		admin:     profile.AdminRepo(db),
+		portal:    profile.PortalRepo(db),
 		rel:       relation.NewService(db),
 		roles:     role.NewRepo(db),
 		groups:    group.NewRepo(db),
@@ -168,12 +167,12 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		return err
 	}
 	if req.AccountType == string(security.AccountAdmin) {
-		return s.admin.UpsertProfile(ctx, &adminuser.Profile{
+		return s.admin.UpsertProfile(ctx, &profile.Profile{
 			AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
 		})
 	}
-	return s.portal.UpsertProfile(ctx, &portaluser.Profile{
+	return s.portal.UpsertProfile(ctx, &profile.Profile{
 		AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
 	})
@@ -197,12 +196,12 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		return err
 	}
 	if req.AccountType == string(security.AccountAdmin) {
-		return s.admin.UpsertProfile(ctx, &adminuser.Profile{
+		return s.admin.UpsertProfile(ctx, &profile.Profile{
 			AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
 		})
 	}
-	return s.portal.UpsertProfile(ctx, &portaluser.Profile{
+	return s.portal.UpsertProfile(ctx, &profile.Profile{
 		AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
 		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
 	})
@@ -224,20 +223,46 @@ func (s *Service) Detail(ctx context.Context, id string) (*AccountResult, error)
 	return s.loadDetail(ctx, id)
 }
 
-// Page 分页；sess 可选，传入时按数据范围过滤。
+// Page 分页；sess 可选，传入时按数据范围过滤。批量加载身份与资料，避免 N+1。
 func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (records []AccountResult, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err := s.repo.PageAccounts(ctx, p, sess)
 	if err != nil {
 		return nil, 0, current, size, err
 	}
-	records = make([]AccountResult, 0, len(rows))
+	if len(rows) == 0 {
+		return []AccountResult{}, total, current, size, nil
+	}
+	ids := make([]string, 0, len(rows))
 	for _, a := range rows {
-		vo, err := s.loadDetail(ctx, a.ID)
-		if err != nil {
-			continue
+		ids = append(ids, a.ID)
+	}
+	idents, _ := s.repo.FindAccountIdentities(ctx, ids)
+	adminProfiles, _ := s.admin.ListByAccountIDs(ctx, ids)
+	portalProfiles, _ := s.portal.ListByAccountIDs(ctx, ids)
+
+	records = make([]AccountResult, 0, len(rows))
+	for i := range rows {
+		a := &rows[i]
+		vo := AccountResult{
+			ID: a.ID, AccountType: a.AccountType, AccountStatus: a.AccountStatus,
+			CancelledAt: a.CancelledAt, CancelledBy: a.CancelledBy, CancelReason: a.CancelReason,
+			LastLoginIP: a.LastLoginIP, LastLoginAddress: a.LastLoginAddress, LastLoginTime: a.LastLoginTime,
+			LastLoginDevice: a.LastLoginDevice, LatestLoginIP: a.LatestLoginIP, LatestLoginAddress: a.LatestLoginAddress,
+			LatestLoginTime: a.LatestLoginTime, LatestLoginDevice: a.LatestLoginDevice,
+			CreatedAt: a.CreatedAt, CreatedBy: a.CreatedBy, UpdatedAt: a.UpdatedAt, UpdatedBy: a.UpdatedBy,
 		}
-		records = append(records, *vo)
+		vo.Account = idents[a.ID]
+		if a.AccountType == string(security.AccountAdmin) {
+			if p := adminProfiles[a.ID]; p != nil {
+				vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email, vo.Remark =
+					p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
+			}
+		} else if p := portalProfiles[a.ID]; p != nil {
+			vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
+				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
+		}
+		records = append(records, vo)
 	}
 	return records, total, current, size, nil
 }

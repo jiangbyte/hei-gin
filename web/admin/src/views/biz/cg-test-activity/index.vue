@@ -1,7 +1,7 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-09 21:39:38
+  生成时间：2026-08-15 14:38:49
 -->
 
 <script setup lang="tsx">
@@ -10,7 +10,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { cgTestActivityApi } from '@/api'
 import { readPageMeta } from '@/utils/wire'
-import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { dictList, createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -23,10 +23,10 @@ const state = reactive({
   rows: [] as any[],
   total: 0,
   loading: false,
-  searchValues: {} as any,
-  checkedRowKeys: [] as string[],
   page: 1,
   pageSize: 20,
+  searchValues: {} as any,
+  checkedRowKeys: [] as string[],
 })
 
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
@@ -50,7 +50,14 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: 'name', path: 'name', field: 'input' },
   { title: 'category', path: 'category', field: 'input' },
   { title: 'type', path: 'type', field: 'input' },
-  { title: 'status', path: 'status', field: 'input' },
+  {
+    title: 'status',
+    path: 'status',
+    field: 'select',
+    fieldProps: {
+      options: dictList('COMMON_STATUS'),
+    },
+  },
 ])
 
 const pagination = computed<PaginationProps>(() => ({

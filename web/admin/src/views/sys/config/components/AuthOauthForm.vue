@@ -131,7 +131,7 @@ function reset() {
 
 const current = computed(() => state.byType[state.subTab])
 const visibleProviders = computed(() =>
-  PROVIDERS.filter((item) => !(item.portalOnly && state.subTab === 'ADMIN')),
+  PROVIDERS.filter((item) => !('portalOnly' in item && item.portalOnly && state.subTab === 'ADMIN')),
 )
 
 async function save() {
@@ -151,7 +151,7 @@ async function save() {
     ]
     for (const type of mapAccountTypes((t) => t)) {
       for (const provider of PROVIDERS) {
-        if (provider.portalOnly && type === 'ADMIN') continue
+        if ('portalOnly' in provider && provider.portalOnly && type === 'ADMIN') continue
         const form = state.byType[type][provider.key]
         items.push({
           config_key: providerConfigKey(type, provider.key, 'ENABLED'),

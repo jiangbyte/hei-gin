@@ -100,10 +100,13 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 		return nil, err
 	}
 	return &LoginResult{
-		Token:           sess.Token,
-		AccountID:       sess.AccountID,
-		AccountType:     sess.AccountType,
-		PasswordExpired: sess.PasswordExpired,
+		Token:                     sess.Token,
+		AccountID:                 sess.AccountID,
+		AccountType:               sess.AccountType,
+		PasswordExpired:           sess.PasswordExpired,
+		ForceBindEmail:            s.forceBind(ctx, sess.AccountType, "EMAIL"),
+		ForceBindPhone:            s.forceBind(ctx, sess.AccountType, "PHONE"),
+		PasswordExpiryWarningDays: 0,
 	}, nil
 }
 
@@ -124,10 +127,10 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 		Update("account_status", security.AccountStatusCancelled).Error; err != nil {
 		return err
 	}
-	_ = s.db.WithContext(ctx).Table("admin_user_profile").
+	_ = s.db.WithContext(ctx).Table("profile_user_admin").
 		Where("account_id = ?", accountID).
 		Update("remark", "cancelled at "+now.Format(time.RFC3339)).Error
-	_ = s.db.WithContext(ctx).Table("portal_user_profile").
+	_ = s.db.WithContext(ctx).Table("profile_user_portal").
 		Where("account_id = ?", accountID).
 		Update("remark", "cancelled at "+now.Format(time.RFC3339)).Error
 	_ = s.sessions.DeleteAllForAccount(ctx, accountID)

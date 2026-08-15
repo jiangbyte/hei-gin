@@ -3,8 +3,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { messageApi } from '@/api'
-import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
+import { myNoticeApi } from '@/api'
+import MessageDetailModal from '@/components/sys/MessageDetailModal.vue'
 import { useMessageUnreadStore } from '@/stores'
 import { formatDateTime, wireBool } from '@/utils'
 import NoticeList, { type BannerItem } from '../common/NoticeList.vue'
@@ -62,7 +62,7 @@ async function loadList(page = 1, mode: LoadMode = 'replace') {
   if (listState.loading) return
   listState.loading = true
   try {
-    const response = await messageApi.myPage({ current: page, size: listState.size })
+    const response = await myNoticeApi.myPage({ current: page, size: listState.size })
     const data = response.data ?? {}
     const incoming = (data.records ?? []).map((item: any) => mapHistoryItem(item))
     listState.records = mergeNoticeRecords(listState.records, incoming, mode)
@@ -94,7 +94,7 @@ function handleDetailChanged(payload: { type: string; id: string }) {
 
 async function markAllRead() {
   try {
-    await messageApi.readAll()
+    await myNoticeApi.readAll()
     listState.records.forEach((item) => {
       item.isRead = true
     })
@@ -106,7 +106,7 @@ async function markAllRead() {
 
 function goMore() {
   showPopover.value = false
-  void router.push({ path: '/usercenter', query: { tab: 'my_messages' } })
+  void router.push({ path: '/profile', query: { tab: 'my_messages' } })
 }
 
 function mergeNoticeRecords(

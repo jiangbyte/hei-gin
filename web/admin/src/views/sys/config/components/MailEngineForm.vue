@@ -45,6 +45,7 @@ const state = reactive({
     secretId: '',
     secretKey: '',
     fromEmail: '',
+    region: '',
   },
   snapshot: '',
 })
@@ -75,6 +76,7 @@ async function reload() {
     state.tencent.secretId = map.MAIL_TENCENT_SECRET_ID || ''
     state.tencent.secretKey = map.MAIL_TENCENT_SECRET_KEY || ''
     state.tencent.fromEmail = map.MAIL_TENCENT_FROM_EMAIL || ''
+    state.tencent.region = map.MAIL_TENCENT_REGION || ''
     state.snapshot = JSON.stringify({
       defaultEngine: state.defaultEngine,
       local: state.local,
@@ -173,6 +175,11 @@ async function save() {
       {
         config_key: 'MAIL_TENCENT_FROM_EMAIL',
         config_value: state.tencent.fromEmail,
+        category: CATEGORY,
+      },
+      {
+        config_key: 'MAIL_TENCENT_REGION',
+        config_value: state.tencent.region,
         category: CATEGORY,
       },
     ])
@@ -365,9 +372,14 @@ async function save() {
               />
             </NFormItem>
           </NGi>
-          <NGi :span="24">
+          <NGi :span="12">
             <NFormItem label="发件邮箱">
               <NInput v-model:value="state.tencent.fromEmail" />
+            </NFormItem>
+          </NGi>
+          <NGi :span="12">
+            <NFormItem label="区域（留空默认 ap-guangzhou）">
+              <NInput v-model:value="state.tencent.region" placeholder="ap-guangzhou" />
             </NFormItem>
           </NGi>
         </NGrid>

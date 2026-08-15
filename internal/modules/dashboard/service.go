@@ -37,9 +37,9 @@ func New(d *shared.Deps) module.Module {
 func (s *Service) Overview(ctx context.Context) OverviewResult {
 	return OverviewResult{
 		AccountTotal:    s.repo.Count(ctx, "sys_account"),
-		NoticeTotal:     s.repo.Count(ctx, "msg_notice"),
-		FeedbackTotal:   s.repo.Count(ctx, "msg_feedback"),
-		FeedbackPending: s.repo.CountWhere(ctx, "msg_feedback", "status = ?", "PENDING"),
+		NoticeTotal:     s.repo.Count(ctx, "sys_notice"),
+		FeedbackTotal:   s.repo.Count(ctx, "sys_feedback"),
+		FeedbackPending: s.repo.CountWhere(ctx, "sys_feedback", "status = ?", "PENDING"),
 		FileTotal:       s.repo.Count(ctx, "sys_file"),
 		RoleTotal:       s.repo.Count(ctx, "sys_role"),
 		DeptTotal:       s.repo.Count(ctx, "sys_dept"),

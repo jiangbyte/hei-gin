@@ -21,7 +21,7 @@ const hiddenLogoText = computed(() => sidebar && !appStore.isMobile && appStore.
 <template>
   <n-el
     tag="button"
-    class="h-12 min-w-0 inline-flex items-center gap-3 border-0 bg-transparent p-0 text-left text-[var(--text-color-base)] cursor-pointer"
+    class="h-12 min-w-0 inline-flex items-center gap-3 border-0 bg-transparent p-0 text-left text-[var(--sidebar-logo-text)] cursor-pointer"
     :class="sidebar ? 'w-full items-center h-full justify-center px-3' : ''"
     type="button"
     @click="router.push(homePath)"

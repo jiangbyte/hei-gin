@@ -1,7 +1,7 @@
 <!-- Author: Charlie -->
 
 <script setup lang="ts">
-import { msgFeedbackApi } from '@/api'
+import { sysFeedbackApi } from '@/api'
 import {
   createTagColor,
   dictTypeColor,
@@ -52,7 +52,7 @@ async function fetchDetail(id: string) {
   state.loading = true
   state.notFound = false
   try {
-    const response = await msgFeedbackApi.myDetail(id)
+    const response = await sysFeedbackApi.myDetail(id)
     state.detail = response.data ?? null
     if (!state.detail) state.notFound = true
   } catch {

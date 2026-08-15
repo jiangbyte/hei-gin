@@ -26,6 +26,8 @@ type ScopeForm = {
   allowAccount: boolean
   allowEmail: boolean
   allowPhone: boolean
+  requireEmail: boolean
+  requirePhone: boolean
   forceBindEmail: boolean
   forceBindPhone: boolean
   defaultRoleId: string
@@ -40,6 +42,8 @@ function emptyScope(): ScopeForm {
     allowAccount: true,
     allowEmail: true,
     allowPhone: false,
+    requireEmail: false,
+    requirePhone: false,
     forceBindEmail: false,
     forceBindPhone: false,
     defaultRoleId: '',
@@ -90,6 +94,8 @@ async function fillScope(registerMap: Record<string, string>, forceMap: Record<s
   target.allowAccount = parseBool(registerMap[accountConfigKey(PREFIX, type, 'ALLOW_ACCOUNT')] ?? 'TRUE')
   target.allowEmail = parseBool(registerMap[accountConfigKey(PREFIX, type, 'ALLOW_EMAIL')] ?? 'TRUE')
   target.allowPhone = parseBool(registerMap[accountConfigKey(PREFIX, type, 'ALLOW_PHONE')] ?? 'FALSE')
+  target.requireEmail = parseBool(registerMap[accountConfigKey(PREFIX, type, 'REQUIRE_EMAIL')] ?? 'FALSE')
+  target.requirePhone = parseBool(registerMap[accountConfigKey(PREFIX, type, 'REQUIRE_PHONE')] ?? 'FALSE')
   target.forceBindEmail = parseBool(forceMap[accountConfigKey(FORCE_PREFIX, type, 'EMAIL')])
   target.forceBindPhone = parseBool(forceMap[accountConfigKey(FORCE_PREFIX, type, 'PHONE')])
   target.defaultRoleId = registerMap[accountConfigKey(PREFIX, type, 'DEFAULT_ROLE_ID')] || ''
@@ -160,6 +166,16 @@ function saveItems(type: AccountType, form: ScopeForm) {
       {
         config_key: accountConfigKey(PREFIX, 'PORTAL', 'ALLOW_PHONE'),
         config_value: toBoolStr(form.allowPhone),
+        category: CATEGORY,
+      },
+      {
+        config_key: accountConfigKey(PREFIX, 'PORTAL', 'REQUIRE_EMAIL'),
+        config_value: toBoolStr(form.requireEmail),
+        category: CATEGORY,
+      },
+      {
+        config_key: accountConfigKey(PREFIX, 'PORTAL', 'REQUIRE_PHONE'),
+        config_value: toBoolStr(form.requirePhone),
         category: CATEGORY,
       },
       {
@@ -278,6 +294,12 @@ function onDeptConfirm(items: Array<{ id: string; name: string }>) {
           </NFormItem>
           <NFormItem label="允许手机注册">
             <NSwitch v-model:value="current.allowPhone" />
+          </NFormItem>
+          <NFormItem label="注册必填邮箱">
+            <NSwitch v-model:value="current.requireEmail" />
+          </NFormItem>
+          <NFormItem label="注册必填手机号">
+            <NSwitch v-model:value="current.requirePhone" />
           </NFormItem>
           <NFormItem label="默认角色">
             <NInput

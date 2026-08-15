@@ -93,6 +93,77 @@ const brandMark = computed(() => String(appTitle).slice(0, 1).toUpperCase())
             class="admin-auth__scan"
             aria-hidden="true"
           />
+          <svg
+            class="admin-auth__art"
+            viewBox="0 0 420 300"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="330"
+              cy="150"
+              r="96"
+              stroke="rgba(255,255,255,0.45)"
+              stroke-width="1"
+            />
+            <circle
+              cx="330"
+              cy="150"
+              r="62"
+              stroke="rgba(255,255,255,0.25)"
+              stroke-width="1"
+            />
+            <circle
+              cx="330"
+              cy="150"
+              r="10"
+              fill="rgba(255,255,255,0.75)"
+            />
+            <path
+              d="M330 150 L330 42"
+              stroke="rgba(255,255,255,0.3)"
+              stroke-width="1"
+            />
+            <path
+              d="M330 150 L418 196"
+              stroke="rgba(255,255,255,0.3)"
+              stroke-width="1"
+            />
+            <path
+              d="M330 150 L246 198"
+              stroke="rgba(255,255,255,0.3)"
+              stroke-width="1"
+            />
+            <circle
+              cx="330"
+              cy="42"
+              r="4"
+              fill="rgba(255,255,255,0.65)"
+            />
+            <circle
+              cx="418"
+              cy="196"
+              r="4"
+              fill="rgba(255,255,255,0.65)"
+            />
+            <circle
+              cx="246"
+              cy="198"
+              r="4"
+              fill="rgba(255,255,255,0.65)"
+            />
+            <path
+              d="M24 262 C 110 204, 178 302, 268 240 C 316 212, 352 236, 396 210"
+              stroke="rgba(255,255,255,0.38)"
+              stroke-width="1.2"
+            />
+            <circle
+              cx="24"
+              cy="262"
+              r="5"
+              fill="rgba(255,255,255,0.5)"
+            />
+          </svg>
           <div class="admin-auth__brand-inner">
             <RouterLink
               class="admin-auth__brand-link admin-auth__brand-link--on-dark"

@@ -1,7 +1,7 @@
 <!--
   由 HEI 代码生成器生成。
   Author: Charlie
-  生成时间：2026-08-09 21:39:42
+  生成时间：2026-08-15 14:38:50
 -->
 
 <script setup lang="tsx">
@@ -10,7 +10,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { cgTestOrderApi } from '@/api'
 import { readPageMeta } from '@/utils/wire'
-import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { dictList, createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -27,10 +27,10 @@ const state = reactive({
   rows: [] as any[],
   total: 0,
   loading: false,
-  searchValues: {} as any,
-  checkedRowKeys: [] as string[],
   page: 1,
   pageSize: 20,
+  searchValues: {} as any,
+  checkedRowKeys: [] as string[],
   childRows: [] as any[],
   childTotal: 0,
   childLoading: false,
@@ -64,7 +64,14 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: 'order_no', path: 'order_no', field: 'input' },
   { title: 'name', path: 'name', field: 'input' },
   { title: 'customer_name', path: 'customer_name', field: 'input' },
-  { title: 'status', path: 'status', field: 'input' },
+  {
+    title: 'status',
+    path: 'status',
+    field: 'select',
+    fieldProps: {
+      options: dictList('COMMON_STATUS'),
+    },
+  },
   { title: 'type', path: 'type', field: 'input' },
 ])
 
@@ -104,7 +111,14 @@ const childSearchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: 'order_id', path: 'order_id', field: 'input' },
   { title: 'sku_code', path: 'sku_code', field: 'input' },
   { title: 'name', path: 'name', field: 'input' },
-  { title: 'status', path: 'status', field: 'input' },
+  {
+    title: 'status',
+    path: 'status',
+    field: 'select',
+    fieldProps: {
+      options: dictList('COMMON_STATUS'),
+    },
+  },
 ])
 
 const childPagination = computed<PaginationProps>(() => ({

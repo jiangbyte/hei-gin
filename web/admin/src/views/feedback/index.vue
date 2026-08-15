@@ -1,7 +1,7 @@
 <!-- Author: Charlie -->
 
 <script setup lang="ts">
-import { msgFeedbackApi } from '@/api'
+import { sysFeedbackApi } from '@/api'
 import { createTagColor, dictTypeColor, dictTypeData, formatDateTime } from '@/utils'
 import { readPageMeta } from '@/utils/wire'
 import { onMounted, reactive } from 'vue'
@@ -29,7 +29,7 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await msgFeedbackApi.myPage({
+    const response = await sysFeedbackApi.myPage({
       current: state.page,
       size: state.pageSize,
     })
