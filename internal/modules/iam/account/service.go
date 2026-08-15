@@ -106,10 +106,14 @@ func (s *Service) FindEnabledByIdentity(ctx context.Context, accountType securit
 	return acc.ID, acc.PasswordHash, nil
 }
 
-// EnsureSuperPermissions 从 sys_iam_relation 解析角色权限键与授权。
+// EnsureSuperPermissions 从 sys_iam_relation 解析角色权限键与授权，并展开资源授权（按钮）权限键。
 // 超管（内置 superadmin 账号或持有 SUPER_ADMIN 角色）补通配 *:*:*，对齐 hei-boot IamRelationServiceImpl。
 func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) (keys []string, grants []security.PermissionGrant, err error) {
 	roleIDs, err := s.repo.ListRoleIDs(ctx, accountID)
+	if err != nil {
+		return nil, nil, err
+	}
+	groupIDs, err := s.repo.ListGroupIDs(ctx, accountID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,6 +133,21 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 			DataScope:     security.DataScope(r.DataScope),
 			SourceType:    "ROLE",
 			SourceID:      r.SourceID,
+		})
+	}
+	// 展开资源授权（角色/用户组/账号直接授权的按钮权限键）。
+	grantKeys, _ := s.repo.ListGrantedResourcePermissionKeys(ctx, accountID, roleIDs, groupIDs)
+	for _, k := range grantKeys {
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+		keys = append(keys, k)
+		grants = append(grants, security.PermissionGrant{
+			PermissionKey: k,
+			DataScope:     security.DataScopeAll,
+			SourceType:    "RESOURCE_GRANT",
+			SourceID:      accountID,
 		})
 	}
 	if s.isSuperAdmin(ctx, accountID, roleIDs) {

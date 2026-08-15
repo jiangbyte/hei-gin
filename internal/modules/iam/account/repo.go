@@ -157,6 +157,25 @@ func (r *Repo) CreateIdentity(ctx context.Context, row *Identity) error {
 	return r.with(ctx).Create(row).Error
 }
 
+// ListGroupIDs 查账号已加入的用户组 ID。
+func (r *Repo) ListGroupIDs(ctx context.Context, accountID string) ([]string, error) {
+	var rows []struct {
+		TargetID string `gorm:"column:target_id"`
+	}
+	if err := r.with(ctx).Table("sys_iam_relation").
+		Select("target_id").
+		Where("subject_type = ? AND subject_id = ? AND relation_type = ? AND status = ?",
+			"ACCOUNT", accountID, "ACCOUNT_GROUP", "ENABLED").
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, row.TargetID)
+	}
+	return out, nil
+}
+
 // ListRoleIDs 查账号已启用角色 ID。
 func (r *Repo) ListRoleIDs(ctx context.Context, accountID string) ([]string, error) {
 	var roleRels []struct {
@@ -179,6 +198,37 @@ type permRow struct {
 	TargetKey string `gorm:"column:target_key"`
 	DataScope string `gorm:"column:data_scope"`
 	SourceID  string `gorm:"column:subject_id"`
+}
+
+// ListGrantedResourcePermissionKeys 展开资源授权（ACCOUNT/GROUP/ROLE 主体）中的权限键。
+func (r *Repo) ListGrantedResourcePermissionKeys(ctx context.Context, accountID string, roleIDs, groupIDs []string) ([]string, error) {
+	var keys []string
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("DISTINCT target_key").
+		Where("target_key <> '' AND status = ?", "ENABLED").
+		Where("relation_type IN ?", []string{
+			"ACCOUNT_RESOURCE", "ACCOUNT_CLIENT_RESOURCE",
+			"ROLE_RESOURCE", "ROLE_CLIENT_RESOURCE",
+			"GROUP_RESOURCE", "GROUP_CLIENT_RESOURCE",
+		})
+	cond := "((subject_type = ? AND subject_id = ?)"
+	args := []any{"ACCOUNT", accountID}
+	if len(groupIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "GROUP", groupIDs)
+	}
+	if len(roleIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "ROLE", roleIDs)
+	}
+	cond += ")"
+	if err := q.Where(cond, args...).Scan(&keys).Error; err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		keys = []string{}
+	}
+	return keys, nil
 }
 
 // ListRolePermissions 按角色列出权限键。

@@ -4,20 +4,18 @@
 
 package relation
 
-// DeptGrantInfo 账号-部门授予明细（授权入参与已拥有结果共用）。
+// DeptGrantInfo 账号-部门授予明细（对齐 hei-boot SysDeptGrantResult：dept_id + is_primary）。
 //
 // Author: Charlie
 type DeptGrantInfo struct {
-	DeptID             string   `json:"dept_id" binding:"required"`
-	DataScope          string   `json:"data_scope"`
-	CustomScopeDeptIDs []string `json:"custom_scope_dept_ids"`
+	DeptID    string `json:"dept_id" binding:"required"`
+	IsPrimary bool   `json:"is_primary"`
 }
 
-// ResourceGrantInfo 主体-资源授予明细（授权入参与已拥有结果共用）。
+// ResourceGrantInfo 主体-资源授予明细（对齐 hei-boot SysResourceGrantResult：resource_id + permission_keys）。
 //
 // Author: Charlie
 type ResourceGrantInfo struct {
-	ResourceID string `json:"resource_id" binding:"required"`
-	GrantMode  string `json:"grant_mode"`
-	DataScope  string `json:"data_scope"`
+	ResourceID     string   `json:"resource_id" binding:"required"`
+	PermissionKeys []string `json:"permission_keys"`
 }

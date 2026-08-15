@@ -54,40 +54,6 @@ func (s *Service) ListTargetIDs(ctx context.Context, subjectType, subjectID, rel
 	return out, nil
 }
 
-// ListDeptGrants 列出账号已拥有部门授予明细。
-func (s *Service) ListDeptGrants(ctx context.Context, accountID, accountType string) ([]DeptGrantInfo, error) {
-	rows, err := s.repo.ListRelations(ctx, SubjectAccount, accountID, RelAccountDept, accountType)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]DeptGrantInfo, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, DeptGrantInfo{
-			DeptID:             r.TargetID,
-			DataScope:          r.DataScope,
-			CustomScopeDeptIDs: parseStringList(r.CustomScopeDeptIDs),
-		})
-	}
-	return out, nil
-}
-
-// ListResourceGrants 列出主体已拥有资源授予明细（管理端/客户端）。
-func (s *Service) ListResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string) ([]ResourceGrantInfo, error) {
-	rows, err := s.repo.ListRelations(ctx, subjectType, subjectID, relationType, accountType)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]ResourceGrantInfo, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, ResourceGrantInfo{
-			ResourceID: r.TargetID,
-			GrantMode:  r.GrantMode,
-			DataScope:  r.DataScope,
-		})
-	}
-	return out, nil
-}
-
 // ReplaceTargetIDs 先删后插全量替换主体-目标简单关系（角色/用户组等）。
 func (s *Service) ReplaceTargetIDs(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, targetIDs []string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
@@ -113,7 +79,7 @@ func (s *Service) ReplaceTargetIDs(ctx context.Context, subjectType, subjectID, 
 	})
 }
 
-// ReplaceDeptGrants 先删后插全量替换账号-部门授予。
+// ReplaceDeptGrants 先删后插全量替换账号-部门授予（is_primary 落库）。
 func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType string, grants []DeptGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, SubjectAccount, accountID, RelAccountDept, accountType); err != nil {
@@ -125,8 +91,7 @@ func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType 
 				continue
 			}
 			rel := newRelation(SubjectAccount, accountID, accountType, RelAccountDept, TargetDept, g.DeptID)
-			rel.DataScope = orDef(g.DataScope, string(security.DataScopeAll))
-			rel.CustomScopeDeptIDs = jsonList(g.CustomScopeDeptIDs)
+			rel.IsPrimary = g.IsPrimary
 			rows = append(rows, rel)
 		}
 		if len(rows) == 0 {
@@ -136,27 +101,79 @@ func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType 
 	})
 }
 
-// ReplaceResourceGrants 先删后插全量替换主体-资源授予（管理端/客户端）。
+// ReplaceResourceGrants 先删后插全量替换主体-资源授予（permission_keys 逐键落库，DIRECT；整菜单授权落 CASCADE 空键）。
 func (s *Service) ReplaceResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, grants []ResourceGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
 			return err
 		}
-		rows := make([]Relation, 0, len(grants))
+		rows := make([]Relation, 0, len(grants)*3)
 		for _, g := range grants {
 			if g.ResourceID == "" {
 				continue
 			}
-			rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, g.ResourceID)
-			rel.GrantMode = orDef(g.GrantMode, GrantCascade)
-			rel.DataScope = orDef(g.DataScope, string(security.DataScopeAll))
-			rows = append(rows, rel)
+			if len(g.PermissionKeys) == 0 {
+				rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, g.ResourceID)
+				rel.GrantMode = GrantCascade
+				rel.DataScope = string(security.DataScopeAll)
+				rows = append(rows, rel)
+				continue
+			}
+			for _, key := range g.PermissionKeys {
+				if key == "" {
+					continue
+				}
+				rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, g.ResourceID)
+				rel.TargetKey = key
+				rel.GrantMode = GrantDirect
+				rel.DataScope = string(security.DataScopeAll)
+				rows = append(rows, rel)
+			}
 		}
 		if len(rows) == 0 {
 			return nil
 		}
 		return s.repo.CreateInBatches(tx, rows)
 	})
+}
+
+// ListDeptGrants 账号已拥有部门授予明细。
+func (s *Service) ListDeptGrants(ctx context.Context, accountID, accountType string) ([]DeptGrantInfo, error) {
+	rows, err := s.repo.ListRelations(ctx, SubjectAccount, accountID, RelAccountDept, accountType)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]DeptGrantInfo, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, DeptGrantInfo{DeptID: r.TargetID, IsPrimary: r.IsPrimary})
+	}
+	return out, nil
+}
+
+// ListResourceGrants 主体已拥有资源授予明细（按键分组回填 permission_keys）。
+func (s *Service) ListResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string) ([]ResourceGrantInfo, error) {
+	rows, err := s.repo.ListRelations(ctx, subjectType, subjectID, relationType, accountType)
+	if err != nil {
+		return nil, err
+	}
+	byResource := map[string][]string{}
+	order := []string{}
+	for _, r := range rows {
+		if r.TargetID == "" {
+			continue
+		}
+		if _, ok := byResource[r.TargetID]; !ok {
+			order = append(order, r.TargetID)
+		}
+		if r.TargetKey != "" {
+			byResource[r.TargetID] = append(byResource[r.TargetID], r.TargetKey)
+		}
+	}
+	out := make([]ResourceGrantInfo, 0, len(order))
+	for _, id := range order {
+		out = append(out, ResourceGrantInfo{ResourceID: id, PermissionKeys: byResource[id]})
+	}
+	return out, nil
 }
 
 // ReplaceSubjectAccounts 先删后插全量替换主体-账号成员（GROUP_USER/ROLE_USER）。
