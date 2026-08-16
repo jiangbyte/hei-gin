@@ -20,16 +20,18 @@ import (
 	"hei-gin/internal/framework/core/config"
 )
 
-// S3 兼容对象存储（AWS S3 / MinIO / OSS）。
+// S3 兼容对象存储（AWS S3 / MinIO / OSS / RustFS）。
 //
 // Author: Charlie
 type S3 struct {
-	client  *s3.Client
-	bucket  string
-	baseURL string
+	client   *s3.Client
+	bucket   string
+	baseURL  string // 显式 BASE_URL（公开访问主机前缀；空则 PublicURL 走预签名）
+	fallback string // endpoint+bucket 或 {bucket}.s3.amazonaws.com（预签名失败兜底）
+	presign  time.Duration
 }
 
-// NewS3 创建 S3 兼容 Provider；endpoint 非空时使用 path-style（MinIO）。
+// NewS3 创建 S3 兼容 Provider；endpoint 非空时使用 path-style（MinIO/RustFS）。
 func NewS3(cfg config.StorageConfig) (*S3, error) {
 	if cfg.Bucket == "" {
 		return nil, fmt.Errorf("storage: bucket is required for provider %q", cfg.Provider)
@@ -69,8 +71,13 @@ func NewS3(cfg config.StorageConfig) (*S3, error) {
 	}
 
 	client := s3.NewFromConfig(awsCfg, clientOpts...)
-	base := strings.TrimRight(cfg.BaseURL, "/")
-	if base == "" && endpoint != "" {
+	presign := time.Duration(cfg.PresignExpireSeconds) * time.Second
+	if presign <= 0 {
+		presign = 3600 * time.Second
+	}
+	baseURL := strings.TrimRight(cfg.BaseURL, "/")
+	fallback := ""
+	if endpoint != "" {
 		ep := endpoint
 		if !strings.HasPrefix(ep, "http://") && !strings.HasPrefix(ep, "https://") {
 			if cfg.UseSSL {
@@ -79,12 +86,15 @@ func NewS3(cfg config.StorageConfig) (*S3, error) {
 				ep = "http://" + ep
 			}
 		}
-		base = strings.TrimRight(ep, "/") + "/" + cfg.Bucket
+		fallback = strings.TrimRight(ep, "/") + "/" + cfg.Bucket
 	}
-	return &S3{client: client, bucket: cfg.Bucket, baseURL: base}, nil
+	if fallback == "" {
+		fallback = (&url.URL{Scheme: "https", Host: cfg.Bucket + ".s3.amazonaws.com", Path: "/"}).String()
+	}
+	return &S3{client: client, bucket: cfg.Bucket, baseURL: baseURL, fallback: fallback, presign: presign}, nil
 }
 
-// Put 上传对象并返回公开 URL。
+// Put 上传对象并返回访问 URL（BASE_URL 配置时返回公开 URL，否则预签名）。
 func (s *S3) Put(ctx context.Context, objectName string, r io.Reader, size int64, contentType string) (string, error) {
 	key := strings.TrimLeft(objectName, "/")
 	in := &s3.PutObjectInput{
@@ -101,7 +111,7 @@ func (s *S3) Put(ctx context.Context, objectName string, r io.Reader, size int64
 	if _, err := s.client.PutObject(ctx, in); err != nil {
 		return "", err
 	}
-	return s.PublicURL(key), nil
+	return s.PublicURL(ctx, key), nil
 }
 
 // Get 下载对象流。
@@ -127,14 +137,21 @@ func (s *S3) Delete(ctx context.Context, objectName string) error {
 	return err
 }
 
-// PublicURL 拼出对象公开访问 URL。
-func (s *S3) PublicURL(objectName string) string {
+// BucketName 返回对象存储桶名（元数据落库用）。
+func (s *S3) BucketName() string { return s.bucket }
+
+// PublicURL 拼出对象访问 URL（对齐 hei-boot S3StorageService.publicUrl）：
+// 配置了 BASE_URL → 公开 URL {base_url}/{key}；否则生成预签名 GET URL（有效期 presignExpireSeconds）。
+func (s *S3) PublicURL(ctx context.Context, objectName string) string {
 	key := strings.TrimLeft(objectName, "/")
 	if s.baseURL != "" {
 		return s.baseURL + "/" + key
 	}
-	u := url.URL{Scheme: "https", Host: s.bucket + ".s3.amazonaws.com", Path: "/" + key}
-	return u.String()
+	u, err := s.PresignedURL(ctx, key, s.presign)
+	if err == nil && u != "" {
+		return u
+	}
+	return s.fallback + key
 }
 
 // PresignedURL 生成 S3 预签名 GET URL（有效期由调用方传入）。

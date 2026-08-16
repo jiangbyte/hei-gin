@@ -43,6 +43,7 @@ type Service struct {
 	rdb            *redis.Client
 	notify         *notify.Facade
 	storage        *storage.Manager
+	files          *file.Service
 	runtime        *runtimecfg.Settings
 	passwordPolicy *shared.PasswordPolicy
 	auditReg       *audit.Registry
@@ -51,13 +52,14 @@ type Service struct {
 }
 
 // NewService 构造按账户类型绑定的用户中心服务。
-func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, storage *storage.Manager,
+func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, st *storage.Manager, fs *file.Service,
 	rt *runtimecfg.Settings, reg *audit.Registry, accountType security.AccountType, table, avatarPrefix string) *Service {
 	return &Service{
 		repo:           NewRepo(db, table),
 		rdb:            rdb,
 		notify:         nf,
-		storage:        storage,
+		storage:        st,
+		files:          fs,
 		runtime:        rt,
 		passwordPolicy: shared.NewPasswordPolicy(db, rt),
 		auditReg:       reg,
@@ -79,7 +81,7 @@ func (s *Service) Me(ctx context.Context, sess *security.SessionPayload) (*MeRes
 		Account:         account,
 		Name:            profile.Name,
 		Nickname:        profile.Nickname,
-		Avatar:          profile.Avatar,
+		Avatar:          s.resolveAvatar(ctx, profile.Avatar),
 		RoleIDs:         sess.RoleIDs,
 		DeptIDs:         sess.DeptIDs,
 		GroupIDs:        sess.GroupIDs,
@@ -113,11 +115,14 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, req Profi
 	return s.repo.UpdateProfile(ctx, accountID, updates)
 }
 
-// UploadAvatar 上传头像并更新资料（替换旧头像时清理原文件，对齐 hei-boot deleteByObjectName）。
+// UploadAvatar 上传头像并更新资料（走 file 服务建托管行、落库存 object_name、返回可访问 URL；对齐 hei-boot fileApi.upload）。
 func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename string, r io.Reader, size int64, contentType string) (string, error) {
 	ext := path.Ext(filename)
 	object := storage.ObjectKey("avatar/"+s.avatarPrefix, idgen.Next()+ext)
-	url, err := s.storage.Provider().Put(ctx, object, r, size, contentType)
+	if s.files == nil {
+		return "", fmt.Errorf("file service unavailable")
+	}
+	row, err := s.files.CreateFromStream(ctx, object, filename, "", contentType, size, r, accountID)
 	if err != nil {
 		return "", err
 	}
@@ -125,8 +130,20 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	if p.Avatar != nil && *p.Avatar != "" {
 		_ = file.CleanupManaged(ctx, s.repo.DB(), s.storage, *p.Avatar)
 	}
-	_ = s.repo.UpdateProfile(ctx, accountID, map[string]any{"avatar": url, "updated_by": accountID})
-	return url, nil
+	_ = s.repo.UpdateProfile(ctx, accountID, map[string]any{"avatar": row.ObjectName, "updated_by": accountID})
+	return s.storage.ResolveURL(ctx, row.ObjectName), nil
+}
+
+// resolveAvatar 头像引用 → 访问 URL（外部 URL 原样返回，对象名/路径拼 /api/v1/files 公开路径；空返回 nil）。
+func (s *Service) resolveAvatar(ctx context.Context, value *string) *string {
+	if value == nil || *value == "" {
+		return nil
+	}
+	u := s.storage.ResolveURL(ctx, *value)
+	if u == "" {
+		return nil
+	}
+	return &u
 }
 
 // UpdatePassword 更新密码（RSA 解密新旧密码 + 旧密码或 OTP 校验 + 密码策略校验 + 历史记录；对齐 hei-boot updateCurrentPassword）。

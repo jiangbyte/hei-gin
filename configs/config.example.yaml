@@ -137,6 +137,8 @@ otel:
   endpoint: ""
 
 crypto:
-  fernet_key: ""
+  # 与 hei-boot 一致的缺省 Fernet 密钥：用于解密 sys_config 中加密的敏感值
+  # （STORAGE_*_ACCESS_KEY / SECRET_KEY 等，见 scripts/db.sql 种子）。生产务必替换并同步加密数据。
+  fernet_key: "XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck="
   vault_addr: ""
   vault_token: ""

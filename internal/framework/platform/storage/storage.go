@@ -26,7 +26,16 @@ type Provider interface {
 	Put(ctx context.Context, objectName string, r io.Reader, size int64, contentType string) (url string, err error)
 	Get(ctx context.Context, objectName string) (io.ReadCloser, error)
 	Delete(ctx context.Context, objectName string) error
-	PublicURL(objectName string) string
+	// PublicURL 返回对象可访问 URL。local 为 path-style 公开路径；
+	// S3 在未配置 BASE_URL 时返回预签名 URL（对齐 hei-boot S3StorageService.publicUrl）。
+	PublicURL(ctx context.Context, objectName string) string
+}
+
+// BucketHolder 可选接口：暴露对象存储桶名（local 无桶；供元数据落库）。
+//
+// Author: Charlie
+type BucketHolder interface {
+	BucketName() string
 }
 
 // Manager 持有可热切换的存储 Provider。
@@ -68,8 +77,31 @@ func (m *Manager) ProviderName() string {
 	}
 }
 
+// DefaultProviderName 缺省上传引擎名（对齐 hei-boot StorageSettingsResolverImpl）：
+// 运行时 DEFAULT_FILE_ENGINE 优先（LOCAL/MINIO/RUSTFS/ALIYUN/TENCENT → 引擎名），回退 yaml provider。
+func (m *Manager) DefaultProviderName(ctx context.Context) string {
+	m.mu.RLock()
+	rt := m.runtime
+	m.mu.RUnlock()
+	if rt != nil {
+		switch strings.ToUpper(strings.TrimSpace(rt.GetString(ctx, "DEFAULT_FILE_ENGINE", ""))) {
+		case "LOCAL":
+			return "local"
+		case "MINIO":
+			return "minio"
+		case "RUSTFS":
+			return "rustfs"
+		case "ALIYUN":
+			return "oss"
+		case "TENCENT":
+			return "s3"
+		}
+	}
+	return m.ProviderName()
+}
+
 // ResolveURL 对象引用 → 访问 URL（对齐 hei-boot FileAccessUrls.resolveFileUrl）：
-// 外部 http(s) URL 原样返回；否则拼 path-style 公开路径 {publicPath}/{key}。
+// 外部 http(s) URL 原样返回；已带公开路径前缀（/api/v1/files/...）的引用先去前缀，再拼 path-style 公开路径 {publicPath}/{key}。
 func (m *Manager) ResolveURL(ctx context.Context, value string) string {
 	_ = ctx
 	value = strings.TrimSpace(value)
@@ -79,7 +111,12 @@ func (m *Manager) ResolveURL(ctx context.Context, value string) string {
 	if u, err := url.Parse(value); err == nil && u.Scheme != "" {
 		return value
 	}
+	prefix := strings.TrimRight(m.PublicPath(), "/") + "/"
 	pathOnly := strings.ReplaceAll(value, "\\", "/")
+	pathOnly = strings.TrimLeft(pathOnly, "/")
+	if strings.HasPrefix(pathOnly, strings.TrimLeft(prefix, "/")) {
+		pathOnly = pathOnly[len(strings.TrimLeft(prefix, "/")):]
+	}
 	pathOnly = strings.TrimLeft(pathOnly, "/")
 	if pathOnly == "" {
 		return ""
@@ -272,7 +309,7 @@ func NewLocal(root, publicPath, baseURL string) *Local {
 func (l *Local) Root() string { return l.root }
 
 // Put 写入对象并返回公开 URL。
-func (l *Local) Put(_ context.Context, objectName string, r io.Reader, _ int64, _ string) (string, error) {
+func (l *Local) Put(ctx context.Context, objectName string, r io.Reader, _ int64, _ string) (string, error) {
 	path := filepath.Join(l.root, filepath.FromSlash(objectName))
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
@@ -285,7 +322,7 @@ func (l *Local) Put(_ context.Context, objectName string, r io.Reader, _ int64, 
 	if _, err := io.Copy(f, r); err != nil {
 		return "", err
 	}
-	return l.PublicURL(objectName), nil
+	return l.PublicURL(ctx, objectName), nil
 }
 
 // Get 打开对象只读流。
@@ -299,7 +336,7 @@ func (l *Local) Delete(_ context.Context, objectName string) error {
 }
 
 // PublicURL 拼出对象公开访问路径（可带 baseURL）。
-func (l *Local) PublicURL(objectName string) string {
+func (l *Local) PublicURL(_ context.Context, objectName string) string {
 	p := strings.TrimRight(l.publicPath, "/") + "/" + strings.TrimLeft(objectName, "/")
 	if l.baseURL != "" {
 		return l.baseURL + p
@@ -308,8 +345,8 @@ func (l *Local) PublicURL(objectName string) string {
 }
 
 // PresignedURL 本地存储直接返回公开 URL（预签名无意义）。
-func (l *Local) PresignedURL(_ context.Context, objectName string, _ time.Duration) (string, error) {
-	return l.PublicURL(objectName), nil
+func (l *Local) PresignedURL(ctx context.Context, objectName string, _ time.Duration) (string, error) {
+	return l.PublicURL(ctx, objectName), nil
 }
 
 // ObjectKey 用前缀与文件名拼对象键。

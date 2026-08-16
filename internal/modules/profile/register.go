@@ -8,11 +8,13 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/modules/sys/file"
 )
 
 // NewAdmin 构建 profile.admin 模块。
 func NewAdmin(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, d.AuditReg, security.AccountAdmin, ProfileTableAdmin, "admin")
+	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, file.NewService(d.DB, d.Storage, d.Runtime), d.Runtime,
+		d.AuditReg, security.AccountAdmin, ProfileTableAdmin, "admin")
 	return module.Module{
 		Name:   "profile.admin",
 		Order:  70,
@@ -23,7 +25,8 @@ func NewAdmin(d *shared.Deps) module.Module {
 
 // NewPortal 构建 profile.portal 模块。
 func NewPortal(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, d.AuditReg, security.AccountPortal, ProfileTablePortal, "portal")
+	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, file.NewService(d.DB, d.Storage, d.Runtime), d.Runtime,
+		d.AuditReg, security.AccountPortal, ProfileTablePortal, "portal")
 	return module.Module{
 		Name:   "profile.portal",
 		Order:  71,

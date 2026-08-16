@@ -66,24 +66,56 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageP
 	originalName := safeOriginalName(fh.Filename)
 	objectName := s.buildObjectName(ctx, originalName, "uploads")
 	ct := sanitizeContentType(fh.Header.Get("Content-Type"))
-	// 按传入 storage_provider 解析引擎（缺省活动引擎；对齐 hei-boot storageSettingsResolver.resolve）。
-	prov := s.sto.Provider()
-	provider := s.sto.ProviderName()
-	if strings.TrimSpace(storageProvider) != "" {
-		p := s.sto.ProviderByName(ctx, storageProvider)
-		if p != nil {
-			prov = p
-			provider = strings.ToLower(strings.TrimSpace(storageProvider))
-		}
+	// 按传入 storage_provider 解析引擎；缺省走运行时 DEFAULT_FILE_ENGINE（对齐 hei-boot storageSettingsResolver.resolve）。
+	provName := strings.ToLower(strings.TrimSpace(storageProvider))
+	if provName == "" {
+		provName = s.sto.DefaultProviderName(ctx)
 	}
+	prov := s.sto.ProviderByName(ctx, provName)
 	urlVal, err := prov.Put(ctx, objectName, f, fh.Size, ct)
 	if err != nil {
 		return nil, err
 	}
-	bucket := s.sto.Bucket()
+	bucket := ""
+	if bh, ok := prov.(storage.BucketHolder); ok {
+		bucket = bh.BucketName()
+	}
 	row := File{
 		ID: idgen.Next(), ObjectName: objectName, OriginalName: originalName,
-		StorageProvider: provider, ContentType: ct, Size: fh.Size, URL: urlVal,
+		StorageProvider: provName, ContentType: ct, Size: fh.Size, URL: urlVal,
+	}
+	if bucket != "" {
+		row.Bucket = &bucket
+	}
+	if accountID != "" {
+		row.CreatedBy = &accountID
+		row.UpdatedBy = &accountID
+	}
+	if err := s.repo.Create(ctx, &row); err != nil {
+		return nil, err
+	}
+	return s.withResolvedURL(ctx, &row), nil
+}
+
+// CreateFromStream 从流创建文件记录（头像等非 multipart 场景；对齐 hei-boot fileApi.upload）。
+// 引擎解析与 Upload 一致（缺省 DEFAULT_FILE_ENGINE），写读同一 Provider 保证 URL 可解析。
+func (s *Service) CreateFromStream(ctx context.Context, objectName, originalName, storageProvider, contentType string, size int64, r io.Reader, accountID string) (*File, error) {
+	provName := strings.ToLower(strings.TrimSpace(storageProvider))
+	if provName == "" {
+		provName = s.sto.DefaultProviderName(ctx)
+	}
+	prov := s.sto.ProviderByName(ctx, provName)
+	urlVal, err := prov.Put(ctx, objectName, r, size, contentType)
+	if err != nil {
+		return nil, err
+	}
+	bucket := ""
+	if bh, ok := prov.(storage.BucketHolder); ok {
+		bucket = bh.BucketName()
+	}
+	row := File{
+		ID: idgen.Next(), ObjectName: objectName, OriginalName: originalName,
+		StorageProvider: provName, ContentType: contentType, Size: size, URL: urlVal,
 	}
 	if bucket != "" {
 		row.Bucket = &bucket
@@ -201,7 +233,7 @@ func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error
 	if err != nil {
 		return nil, fmt.Errorf("file not found")
 	}
-	return &URLResult{ObjectName: key, URL: s.providerFor(ctx, row).PublicURL(key)}, nil
+	return &URLResult{ObjectName: key, URL: s.providerFor(ctx, row).PublicURL(ctx, key)}, nil
 }
 
 // PresignedURL 获取对象预签名 URL（本地返回公开 URL；S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
@@ -223,7 +255,7 @@ func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResu
 		}
 		return &URLResult{ObjectName: key, URL: u}, nil
 	}
-	return &URLResult{ObjectName: key, URL: p.PublicURL(key)}, nil
+	return &URLResult{ObjectName: key, URL: p.PublicURL(ctx, key)}, nil
 }
 
 // OpenByObjectName 按对象名打开文件（公开访问：先校验元数据存在，避免越权读取存储对象）。
@@ -266,7 +298,7 @@ func (s *Service) withResolvedURL(ctx context.Context, row *File) *File {
 	if key == "" {
 		return row
 	}
-	if u := s.providerFor(ctx, row).PublicURL(key); u != "" {
+	if u := s.providerFor(ctx, row).PublicURL(ctx, key); u != "" {
 		row.URL = u
 	}
 	return row

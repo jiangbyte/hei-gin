@@ -4,7 +4,7 @@
 ![Gin](https://img.shields.io/badge/Gin-1.12-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 
 HEI Gin 是 HEI 项目的 Go / Gin 轻量级后端脚手架：**一个 Go 单体进程同时提供管理端（Admin）与门户（Portal）两套 API**，配合同仓维护的三个前端工程，覆盖账号认证、组织权限（RBAC）、系统管理、消息反馈与运营工作台等常用能力，开箱即用、可按需裁剪。
 
@@ -19,7 +19,7 @@ HEI Gin 是 HEI 项目的 Go / Gin 轻量级后端脚手架：**一个 Go 单体
 | 项目 | 说明 | 协议 |
 | :--- | :--- | :--- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
-| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | MIT |
+| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
 | [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT |
 
 ## 功能特性
@@ -266,7 +266,8 @@ hei-gin
 ├── scripts
 │   ├── db.sql                    # 权威建表 + seed（与 hei-boot schema 对齐；无迁移步骤）
 │   └── smoke                     # 开发辅助：登录链路冒烟（验证码 → RSA → 登录 → /me）
-└── storage                       # 本地文件存储（.gitignore）
+├── storage                       # 本地文件存储（.gitignore）
+└── LICENSE                       # Apache License 2.0
 ```
 
 ## 主要 API
@@ -307,7 +308,7 @@ hei-gin
 | `security` | HSTS 开关与时长 | 关 |
 | `notify` | 邮件 / 短信 / 推送门面 | 默认关闭 |
 | `otel` | OpenTelemetry 开关与 endpoint | 关 |
-| `crypto` | 敏感配置 Fernet 密钥（`fernet_key`，无默认值）与可选 Vault | 开发内置默认 |
+| `crypto` | 敏感配置 Fernet 密钥（`fernet_key`，示例内置 hei-boot 同款开发密钥）与可选 Vault | 开发内置默认 |
 
 ## 生产部署
 
@@ -326,14 +327,14 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o hei-gin ./cmd/api
 | 变量 / 配置 | 说明 |
 | :--- | :--- |
 | `db.url` / `redis.url` | 生产数据库 / 缓存连接 |
-| `crypto.fernet_key` | 敏感配置 Fernet 密钥（无默认值，首次上线必须设置） |
+| `crypto.fernet_key` | 敏感配置 Fernet 密钥（示例为开发缺省，生产必须替换并重加密存量敏感配置） |
 | `storage` | 本地目录 → S3 兼容对象存储；收紧 `public_path` |
 | `auth.session_cookie_secure` | 仅在 HTTPS 下开启（配合 `hsts_enabled`） |
 | `app.debug` | 关闭 debug 日志与 Gin DebugMode |
 
 ### 上线检查清单
 
-- 修改 `superadmin` / `user` 默认密码，设置 `crypto.fernet_key`
+- 修改 `superadmin` / `user` 默认密码，替换 `crypto.fernet_key` 为生产密钥并重加密存量敏感配置
 - 关闭 debug、收紧 CORS 白名单与门户公开白名单
 - 仅在可信反向代理 + TLS 后开启 Cookie Secure / HSTS
 - 定时任务按 `sys_job` 表启停；生产按需关闭非必要任务，审计告警建议保持开启
@@ -385,6 +386,10 @@ job.go        # 可选：module.Job 定时任务
 - 模板在 `internal/modules/sys/codegen/templates.go`，渲染逻辑在 `internal/modules/sys/codegen/emit.go`；与 hei-boot 的 Java 模板一一对应但改为 Go 风格
 
 开发约定：业务表继承通用审计字段（id / created_at / updated_at / created_by / updated_by）；领域服务 `XxxService`；权限用 `security.PermissionRegistry` 注册 + `security.HasPermission` 校验（`*:*:*` 通配）；联表查询用 GORM（`Preload` / `Joins`）。
+
+## 开源协议
+
+[Apache License 2.0](LICENSE)（与姊妹项目 [hei-boot](https://github.com/jiangbyte/hei-boot) 保持一致）。完整条款见 [LICENSE](LICENSE)。
 
 ## 代码贡献
 
