@@ -25,14 +25,6 @@ import (
 	"hei-gin/internal/modules/shared"
 )
 
-// Lookup 供 auth 按身份或 ID 解析账号。
-//
-// Author: Charlie
-type Lookup interface {
-	FindByIdentity(ctx context.Context, identityType, identifier string) (*Account, *Identity, error)
-	GetByID(ctx context.Context, id string) (*Account, error)
-}
-
 // Service 账号服务（资料经 user 模块 Repo，授权经 relation 模块）。
 //
 // Author: Charlie
@@ -82,9 +74,6 @@ func (s *Service) invalidateSessions(ctx context.Context, accountID string) {
 	}
 	_ = s.sessions.DeleteAllForAccount(ctx, accountID)
 }
-
-// AsLookup 返回 auth 查找接口。
-func (s *Service) AsLookup() Lookup { return s }
 
 // FindByIdentity 按身份类型与标识查找账号。
 func (s *Service) FindByIdentity(ctx context.Context, identityType, identifier string) (*Account, *Identity, error) {

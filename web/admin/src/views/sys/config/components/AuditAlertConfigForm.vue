@@ -291,7 +291,7 @@ async function testWebhook() {
 <template>
   <NSpin :show="state.loading">
     <ConfigSectionLayout
-      description="配置审计告警开关、通知渠道与已实现规则。保存后下次 SnailJob 执行即生效。"
+      description="配置审计告警开关、通知渠道与已实现规则。保存后下次任务调度执行即生效。"
       :saving="state.saving"
       @save="save"
       @reset="reset"

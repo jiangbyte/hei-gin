@@ -1,4 +1,4 @@
-/*
+﻿/*
  Navicat Premium Dump SQL
 
  Source Server         : dev-postgres
@@ -2561,3 +2561,77 @@ CREATE INDEX IF NOT EXISTS "idx_sys_notice_target_account_ids_gin" ON "public"."
 CREATE INDEX IF NOT EXISTS "idx_sys_notice_read_account" ON "public"."sys_notice_read" USING btree ("account_type", "account_id");
 -- ==================== 对齐 V6 剩余索引（原库缺失，补齐） ====================
 CREATE INDEX IF NOT EXISTS "idx_sys_account_identity_account_id" ON "public"."sys_account_identity" USING btree ("account_id");
+
+
+-- ==================== go-job task scheduling (sys_job / sys_job_log) ====================
+-- ----------------------------
+-- Table structure for sys_job
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job";
+CREATE TABLE "public"."sys_job" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "handler_key" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "cron_expr" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "params" text COLLATE "pg_catalog"."default",
+  "status" varchar(16) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'ENABLED',
+  "description" text COLLATE "pg_catalog"."default",
+  "last_run_at" timestamptz(6),
+  "next_run_at" timestamptz(6),
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+-- ----------------------------
+-- Records of sys_job (default scheduled jobs)
+-- ----------------------------
+INSERT INTO "public"."sys_job" VALUES ('100001', 'accountPurgeCancelledJob', '应用注销已取消账户清理', '0 0 2 * * *', '', 'ENABLED', '每天 02:00 物理清理已注销的账户过期数据', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('100002', 'auditAlertJob', '审计告警分析', '0 * * * * *', '', 'ENABLED', '每分钟扫描审计告警规则并发送告警', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('100003', 'bannerStatusJob', '展示图状态同步', '0 0 * * * *', '', 'ENABLED', '每小时按 start_at/end_at 激活或过期 Banner', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('100004', 'bannerFlushInteractions', '展示图互动刷库', '0 * * * * *', '', 'ENABLED', '每分钟将 Redis 互动增量刷入数据库', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('100005', 'sysFileCleanupLocalOrphans', '本地存储孤儿文件清理', '0 0 3 * * *', '', 'ENABLED', '每天 03:00 清理本地存储中无对应 sys_file 元数据的孤儿文件', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
+
+-- ----------------------------
+-- Table structure for sys_job_log
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job_log";
+CREATE TABLE "public"."sys_job_log" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_id" varchar(64) COLLATE "pg_catalog"."default",
+  "handler_key" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "status" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
+  "message" text COLLATE "pg_catalog"."default",
+  "duration_ms" int8 NOT NULL DEFAULT 0,
+  "started_at" timestamptz(6) NOT NULL,
+  "finished_at" timestamptz(6) NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now()
+)
+;
+-- ----------------------------
+-- Indexes structure for sys_job
+-- ----------------------------
+CREATE UNIQUE INDEX "idx_sys_job_handler_key" ON "public"."sys_job" USING btree ("handler_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
+ALTER TABLE "public"."sys_job" ADD CONSTRAINT "pk_sys_job" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for sys_job_log
+-- ----------------------------
+CREATE INDEX "idx_sys_job_log_job_id" ON "public"."sys_job_log" USING btree ("job_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
+CREATE INDEX "idx_sys_job_log_handler_key" ON "public"."sys_job_log" USING btree ("handler_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
+CREATE INDEX "idx_sys_job_log_created_at" ON "public"."sys_job_log" USING btree ("created_at");
+ALTER TABLE "public"."sys_job_log" ADD CONSTRAINT "pk_sys_job_log" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Records of sys_resource (job management menu + buttons)
+-- ----------------------------
+INSERT INTO "public"."sys_resource" VALUES ('203050','200003','sys-job','任务管理','MENU','210001','/sys/job','/sys/job/index.vue',NULL,'icon-park-outline:calendar',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203051','203050','sys-job-page','查看任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203052','203050','sys-job-create','新建任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203053','203050','sys-job-update','编辑任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203054','203050','sys-job-delete','删除任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203055','203050','sys-job-detail','查看任务详情','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203056','203050','sys-job-trigger','立即触发','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203057','203050','sys-job-logs','查看执行日志','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);

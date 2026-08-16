@@ -15,10 +15,38 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 )
 
 func (s *Service) registerRoutes(api *gin.RouterGroup) {
 	rdb := s.repo.rdb
+
+	// 操作审计登记（对齐 hei-boot @OperationAudit：auth 相关写接口）
+	s.auditReg.RegisterSpecs(
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/send-login-code", ResourceType: "auth", Action: "send_login_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/send-login-code", ResourceType: "auth", Action: "send_login_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/login", ResourceType: "auth", Action: "login"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/login", ResourceType: "auth", Action: "login"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/auth/refresh", ResourceType: "auth", Action: "refresh"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/auth/refresh", ResourceType: "auth", Action: "refresh"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/logout", ResourceType: "auth", Action: "logout"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/logout", ResourceType: "auth", Action: "logout"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/forgot-password", ResourceType: "auth", Action: "forgot_password"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/forgot-password", ResourceType: "auth", Action: "forgot_password"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/reset-password", ResourceType: "auth", Action: "reset_password"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/reset-password", ResourceType: "auth", Action: "reset_password"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/cancel", ResourceType: "auth", Action: "cancel"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/cancel", ResourceType: "auth", Action: "cancel"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/register", ResourceType: "auth", Action: "register"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/register/send-code", ResourceType: "auth", Action: "send_register_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/oauth/*/bind/authorize", ResourceType: "auth", Action: "oauth_bind_authorize"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/oauth/*/bind/authorize", ResourceType: "auth", Action: "oauth_bind_authorize"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/oauth/*/unbind", ResourceType: "auth", Action: "oauth_unbind"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/oauth/*/unbind", ResourceType: "auth", Action: "oauth_unbind"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/oauth/unbind", ResourceType: "iam_account", Action: "oauth_unbind"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/auth/sessions/exit", ResourceType: "auth_session", Action: "exit"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/auth/sessions/token/exit", ResourceType: "auth_session", Action: "token_exit"},
+	)
 
 	api.GET("/v1/admin/captcha", middleware.RateLimit(rdb, "admin:captcha", 30, 60), s.captcha)
 	api.GET("/v1/portal/captcha", middleware.RateLimit(rdb, "portal:captcha", 30, 60), s.captcha)

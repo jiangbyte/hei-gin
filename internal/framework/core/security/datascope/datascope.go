@@ -5,7 +5,6 @@ package datascope
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -187,12 +186,4 @@ SELECT DISTINCT id FROM tree`
 		return roots
 	}
 	return unique(ids)
-}
-
-// FormatDeny 返回带上下文的拒绝错误（可选）。
-func FormatDeny(detail string) error {
-	if detail == "" {
-		return ErrDenied
-	}
-	return fmt.Errorf("%w: %s", ErrDenied, detail)
 }

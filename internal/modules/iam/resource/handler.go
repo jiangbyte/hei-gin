@@ -15,6 +15,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
@@ -22,6 +23,20 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
+		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_resource / iam_resourcemodule / iam_clientresource）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/create", ResourceType: "iam_resource", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/update", ResourceType: "iam_resource", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/delete", ResourceType: "iam_resource", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/create", ResourceType: "iam_resourcemodule", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/update", ResourceType: "iam_resourcemodule", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/delete", ResourceType: "iam_resourcemodule", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/resource-permissions", ResourceType: "iam_resource", Action: "grant"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/client-resource-permissions", ResourceType: "iam_clientresource", Action: "grant"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/create", ResourceType: "iam_resource", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/update", ResourceType: "iam_resource", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/delete", ResourceType: "iam_resource", Action: "delete"},
+		)
 		api.POST("/v1/admin/sys/resources/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), s.create)
 		api.POST("/v1/admin/sys/resources/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), s.update)
 		api.POST("/v1/admin/sys/resources/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), s.delete)

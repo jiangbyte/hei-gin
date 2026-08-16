@@ -14,6 +14,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
@@ -21,6 +22,15 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
+		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_config）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/create", ResourceType: "sys_config", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/update", ResourceType: "sys_config", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/delete", ResourceType: "sys_config", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/batch-save", ResourceType: "sys_config", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/audit-alert/test-webhook", ResourceType: "sys_config", Action: "test_webhook"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/audit-alert/test-push", ResourceType: "sys_config", Action: "test_push"},
+		)
 		api.POST("/v1/admin/sys/config/create", admin, middleware.RequirePermission(d.Perms, "sys:config:create", "配置创建"), s.create)
 		api.POST("/v1/admin/sys/config/update", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置更新"), s.update)
 		api.POST("/v1/admin/sys/config/delete", admin, middleware.RequirePermission(d.Perms, "sys:config:delete", "配置删除"), s.delete)

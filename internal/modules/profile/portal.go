@@ -14,10 +14,22 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 )
 
 // registerRoutes 门户端 /v1/portal/* 用户中心路由。
 func (s *Service) registerRoutes(api *gin.RouterGroup) {
+	// 操作审计登记（对齐 hei-boot @OperationAudit：profile_center 门户端）
+	s.auditReg.RegisterSpecs(
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/update", ResourceType: "profile_center", Action: "update_profile"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/avatar/upload", ResourceType: "profile_center", Action: "upload_avatar"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/password/send-code", ResourceType: "profile_center", Action: "send_password_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/password/update", ResourceType: "profile_center", Action: "update_password"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/phone/send-code", ResourceType: "profile_center", Action: "send_bind_phone_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/phone/update", ResourceType: "profile_center", Action: "update_phone"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/email/send-code", ResourceType: "profile_center", Action: "send_bind_email_code"},
+		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/email/update", ResourceType: "profile_center", Action: "update_email"},
+	)
 	g := api.Group("/v1/portal", middleware.RequireAccountType(security.AccountPortal))
 	g.GET("/me", s.portalMe)
 	profile := g.Group("/profile")

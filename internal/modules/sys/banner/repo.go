@@ -93,10 +93,11 @@ func (r *Repo) List(ctx context.Context, position, category, typ, accountType, s
 	return rows, err
 }
 
-// IncrementInteraction 互动计数 +1，返回受影响行数（0 表示 Banner 不存在）。
-func (r *Repo) IncrementInteraction(ctx context.Context, id string) (int64, error) {
+// IncrementInteractionBy 互动计数增加 delta（供 bannerFlushInteractions 批量刷入），
+// 返回受影响行数（0 表示 Banner 不存在）。
+func (r *Repo) IncrementInteractionBy(ctx context.Context, id string, delta int64) (int64, error) {
 	res := r.with(ctx).Model(&Banner{}).Where("id = ?", id).
-		UpdateColumn("interaction_count", gorm.Expr("interaction_count + 1"))
+		UpdateColumn("interaction_count", gorm.Expr("interaction_count + ?", delta))
 	return res.RowsAffected, res.Error
 }
 

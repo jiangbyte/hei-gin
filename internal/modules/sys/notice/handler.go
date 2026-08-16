@@ -17,12 +17,26 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
 
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
+		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_notice，含门户 read/read-all）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/create", ResourceType: "sys_notice", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/update", ResourceType: "sys_notice", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/delete", ResourceType: "sys_notice", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/publish", ResourceType: "sys_notice", Action: "publish"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/revoke", ResourceType: "sys_notice", Action: "revoke"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/pin", ResourceType: "sys_notice", Action: "pin"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/read", ResourceType: "sys_notice", Action: "read"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/notices/read-all", ResourceType: "sys_notice", Action: "read_all"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/sys/notices/read", ResourceType: "sys_notice", Action: "read"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/sys/notices/read-all", ResourceType: "sys_notice", Action: "read_all"},
+		)
 		admin := api.Group("/v1/admin/sys/notices", middleware.RequireAccountType(security.AccountAdmin))
 		admin.POST("/create", middleware.RequirePermission(d.Perms, "sys:notice:create", "创建 notice"), s.create)
 		admin.POST("/update", middleware.RequirePermission(d.Perms, "sys:notice:update", "Update notice"), s.update)

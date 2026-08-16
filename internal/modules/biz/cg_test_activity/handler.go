@@ -15,11 +15,18 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/modules/shared"
 )
 
 func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
+		// 操作审计登记（对齐 hei-boot @OperationAudit：biz_cgtestactivity）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-activity/create", ResourceType: "biz_cgtestactivity", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-activity/update", ResourceType: "biz_cgtestactivity", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-activity/delete", ResourceType: "biz_cgtestactivity", Action: "delete"},
+		)
 		g := api.Group("/v1/admin/biz/cg-test-activity", middleware.RequireAccountType(security.AccountAdmin))
 		g.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestactivity:create", "Create activity"), s.create)
 		g.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestactivity:update", "Update activity"), s.update)

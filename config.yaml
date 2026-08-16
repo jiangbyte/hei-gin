@@ -34,7 +34,6 @@ auth:
   session_cookie_name: Authorization
   session_cookie_secure: false
   session_cookie_samesite: lax
-  session_cookie_path: /
   default_password: "123456"
   auth_whitelist:
     - /api/v1/portal/sys/banners/list
@@ -66,16 +65,6 @@ cors:
     - Origin
     - X-Requested-With
     - X-HEI-CSRF
-
-snail_job:
-  enabled: true
-  server_host: 127.0.0.1
-  server_port: "17888"
-  host_ip: 127.0.0.1
-  host_port: "17889"
-  namespace: 764d604ec6fc45f68cd92514c40e9e1a
-  group_name: GIN
-  token: SJ_Wyz3dmsdbDOkDujOTSSoBjGQP1BMsVnj
 
 storage:
   provider: local

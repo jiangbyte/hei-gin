@@ -51,7 +51,7 @@ func (s *Service) accountPurgeCancelledJobHandler(ctx context.Context, param str
 	return nil
 }
 
-// withJobs 附加 SnailJob handlers。
+// withJobs 附加任务处理器（gojob 调度器收集）。
 func (s *Service) withJobs(m module.Module) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "accountPurgeCancelledJob",

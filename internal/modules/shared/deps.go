@@ -10,6 +10,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/audit"
+	"hei-gin/internal/framework/platform/gojob"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
@@ -27,8 +28,10 @@ type Deps struct {
 	Perms    *security.PermissionRegistry
 	Storage  *storage.Manager
 	Audit    *audit.Queue
+	AuditReg *audit.Registry
 	Notify   *notify.Facade
 	Runtime  *runtimecfg.Settings
+	Jobs     *gojob.Manager
 }
 
 // FromModule 从 framework 注册表 Deps 转换。
@@ -41,8 +44,10 @@ func FromModule(d *module.Deps) *Deps {
 		Perms:    d.Perms,
 		Storage:  d.Storage,
 		Audit:    d.Audit,
+		AuditReg: d.AuditReg,
 		Notify:   d.Notify,
 		Runtime:  d.Runtime,
+		Jobs:     d.Jobs,
 	}
 }
 

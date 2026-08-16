@@ -17,6 +17,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
@@ -24,6 +25,16 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
+		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_group）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/create", ResourceType: "iam_group", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/update", ResourceType: "iam_group", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/delete", ResourceType: "iam_group", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-user", ResourceType: "iam_group", Action: "grant_user"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-role", ResourceType: "iam_group", Action: "grant_role"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-resource", ResourceType: "iam_group", Action: "grant_resource"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-client-resource", ResourceType: "iam_group", Action: "grant_client_resource"},
+		)
 		api.POST("/v1/admin/sys/groups/create", admin, middleware.RequirePermission(d.Perms, "iam:group:create", "用户组创建"), s.create)
 		api.POST("/v1/admin/sys/groups/update", admin, middleware.RequirePermission(d.Perms, "iam:group:update", "用户组更新"), s.update)
 		api.POST("/v1/admin/sys/groups/delete", admin, middleware.RequirePermission(d.Perms, "iam:group:delete", "用户组删除"), s.delete)

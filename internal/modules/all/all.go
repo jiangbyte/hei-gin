@@ -19,7 +19,6 @@ import (
 	_ "hei-gin/internal/modules/iam/client"
 	_ "hei-gin/internal/modules/iam/dept"
 	_ "hei-gin/internal/modules/iam/group"
-	_ "hei-gin/internal/modules/iam/permission"
 	_ "hei-gin/internal/modules/iam/position"
 	_ "hei-gin/internal/modules/iam/relation"
 	_ "hei-gin/internal/modules/iam/resource"
@@ -32,6 +31,7 @@ import (
 	_ "hei-gin/internal/modules/sys/dict"
 	_ "hei-gin/internal/modules/sys/feedback"
 	_ "hei-gin/internal/modules/sys/file"
+	_ "hei-gin/internal/modules/sys/job"
 	_ "hei-gin/internal/modules/sys/notice"
 	_ "hei-gin/internal/modules/sys/weak_password"
 )

@@ -284,37 +284,3 @@ func newRelation(subjectType, subjectID, accountType, relationType, targetType, 
 		Extra:              datatypes.JSON([]byte("{}")),
 	}
 }
-
-func orDef(s, d string) string {
-	if s == "" {
-		return d
-	}
-	return s
-}
-
-// parseStringList 解析 jsonb 字符串数组。
-func parseStringList(raw datatypes.JSON) []string {
-	var out []string
-	if len(raw) == 0 {
-		return []string{}
-	}
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return []string{}
-	}
-	if out == nil {
-		out = []string{}
-	}
-	return out
-}
-
-// jsonList 将字符串数组编码为 jsonb。
-func jsonList(items []string) datatypes.JSON {
-	if items == nil {
-		items = []string{}
-	}
-	raw, err := json.Marshal(items)
-	if err != nil {
-		return datatypes.JSON([]byte("[]"))
-	}
-	return datatypes.JSON(raw)
-}

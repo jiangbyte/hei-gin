@@ -7,12 +7,11 @@ package auth
 import (
 	"context"
 	"fmt"
-	"hei-gin/internal/modules/auth/oauth"
-	"strings"
 	"time"
 
 	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/modules/auth/oauth"
 )
 
 // AuthOptions 登录页公开配置（对齐 hei-boot AuthOptionsResult）。
@@ -138,7 +137,6 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 		Where("account_id = ?", accountID).
 		Update("remark", "cancelled at "+now.Format(time.RFC3339)).Error
 	_ = s.sessions.DeleteAllForAccount(ctx, accountID)
-	s.publishAudit(ctx, "cancel", true, accountID, string(accountType), clientIP, userAgent, reasonString(reason))
 	return nil
 }
 
@@ -171,11 +169,4 @@ func (s *Service) sendRegisterCode(ctx context.Context, req SendLoginCodeParam) 
 		}
 	}
 	return nil
-}
-
-func reasonString(reason *string) string {
-	if reason == nil || strings.TrimSpace(*reason) == "" {
-		return "cancel account"
-	}
-	return "cancel account: " + *reason
 }

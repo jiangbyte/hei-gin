@@ -15,6 +15,7 @@ import (
 	"hei-gin/internal/framework/core/config"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/audit"
+	"hei-gin/internal/framework/platform/gojob"
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
@@ -25,18 +26,7 @@ import (
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Schedule 保留字段名兼容；新任务请用 Jobs（SnailJob Handler）。
-//
-// Deprecated: 使用 Jobs。
-//
-// Author: Charlie
-type Schedule struct {
-	Name     string
-	Interval string
-	Run      func(ctx context.Context) error
-}
-
-// Job 是 SnailJob 执行器 Handler（Name 须与控制台 executor_info 一致）。
+// Job 是任务处理器 Handler（Name 为 gojob 调度器收集的 handler key）。
 //
 // Author: Charlie
 type Job struct {
@@ -44,27 +34,17 @@ type Job struct {
 	Run  func(ctx context.Context, param string) error
 }
 
-// EventHandler 订阅平台生命周期 / 领域事件。
-//
-// Author: Charlie
-type EventHandler struct {
-	Event   string
-	Handler func(ctx context.Context, payload any) error
-}
-
 // Module 为插件契约。官方模块经 Register 注册；勿做扫盘发现。
 //
 // Author: Charlie
 type Module struct {
-	Name          string
-	Order         int
-	Routes        []RouteRegistrar
-	Models        []any
-	Jobs          []Job
-	Schedules     []Schedule // Deprecated: 请用 Jobs
-	OnStart       []func(ctx context.Context) error
-	OnStop        []func(ctx context.Context) error
-	EventHandlers []EventHandler
+	Name    string
+	Order   int
+	Routes  []RouteRegistrar
+	Models  []any
+	Jobs    []Job
+	OnStart []func(ctx context.Context) error
+	OnStop  []func(ctx context.Context) error
 }
 
 // Deps 是传给各模块构造器的运行时依赖图。
@@ -79,7 +59,9 @@ type Deps struct {
 	Storage  *storage.Manager
 	Notify   *notify.Facade
 	Audit    *audit.Queue
+	AuditReg *audit.Registry
 	Runtime  *runtimecfg.Settings
+	Jobs     *gojob.Manager
 	services map[string]any
 }
 
@@ -189,15 +171,6 @@ func NewRegistry(mods []Module, disabled, enabledOnly []string) *Registry {
 		}
 	}
 	return &Registry{Modules: out}
-}
-
-// AllModels 汇总全部模块的 GORM 模型。
-func (r *Registry) AllModels() []any {
-	var models []any
-	for _, m := range r.Modules {
-		models = append(models, m.Models...)
-	}
-	return models
 }
 
 // MountRoutes 依次挂载各模块路由。

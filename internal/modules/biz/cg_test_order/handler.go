@@ -15,11 +15,21 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/modules/shared"
 )
 
 func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
+		// 操作审计登记（对齐 hei-boot @OperationAudit：biz_cgtestorder）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/create", ResourceType: "biz_cgtestorder", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/update", ResourceType: "biz_cgtestorder", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/delete", ResourceType: "biz_cgtestorder", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/children/create", ResourceType: "biz_cgtestorder", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/children/update", ResourceType: "biz_cgtestorder", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-order/children/delete", ResourceType: "biz_cgtestorder", Action: "delete"},
+		)
 		g := api.Group("/v1/admin/biz/cg-test-order", middleware.RequireAccountType(security.AccountAdmin))
 		g.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestorder:create", "Create order"), s.create)
 		g.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestorder:update", "Update order"), s.update)

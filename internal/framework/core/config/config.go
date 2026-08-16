@@ -20,7 +20,6 @@ type Config struct {
 	Redis    RedisConfig    `mapstructure:"redis"`
 	Auth     AuthConfig     `mapstructure:"auth"`
 	CORS     CORSConfig     `mapstructure:"cors"`
-	SnailJob SnailJobConfig `mapstructure:"snail_job"`
 	Storage  StorageConfig  `mapstructure:"storage"`
 	IDGen    IDGenConfig    `mapstructure:"id_generator"`
 	Modules  ModulesConfig  `mapstructure:"modules"`
@@ -84,7 +83,6 @@ type AuthConfig struct {
 	SessionCookieName           string   `mapstructure:"session_cookie_name"`
 	SessionCookieSecure         bool     `mapstructure:"session_cookie_secure"`
 	SessionCookieSameSite       string   `mapstructure:"session_cookie_samesite"`
-	SessionCookiePath           string   `mapstructure:"session_cookie_path"`
 	DefaultPassword             string   `mapstructure:"default_password"`
 	AuthWhitelist               []string `mapstructure:"auth_whitelist"`
 }
@@ -97,20 +95,6 @@ type CORSConfig struct {
 	AllowCredentials bool     `mapstructure:"allow_credentials"`
 	AllowMethods     []string `mapstructure:"allow_methods"`
 	AllowHeaders     []string `mapstructure:"allow_headers"`
-}
-
-// SnailJobConfig SnailJob Go 客户端（嵌在 API 进程）。
-//
-// Author: Charlie
-type SnailJobConfig struct {
-	Enabled    bool   `mapstructure:"enabled"`
-	ServerHost string `mapstructure:"server_host"`
-	ServerPort string `mapstructure:"server_port"`
-	HostIP     string `mapstructure:"host_ip"`
-	HostPort   string `mapstructure:"host_port"`
-	Namespace  string `mapstructure:"namespace"`
-	GroupName  string `mapstructure:"group_name"`
-	Token      string `mapstructure:"token"`
 }
 
 // NotifyConfig 邮件 / 短信 / 推送 / Webhook。
@@ -288,14 +272,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cors.allow_credentials", true)
 	v.SetDefault("cors.allow_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
 	v.SetDefault("cors.allow_headers", []string{"Authorization", "Content-Type", "X-Request-Id", "Accept", "Origin", "X-Requested-With", "X-HEI-CSRF"})
-	v.SetDefault("snail_job.enabled", true)
-	v.SetDefault("snail_job.server_host", "127.0.0.1")
-	v.SetDefault("snail_job.server_port", "17888")
-	v.SetDefault("snail_job.host_ip", "127.0.0.1")
-	v.SetDefault("snail_job.host_port", "17889")
-	v.SetDefault("snail_job.namespace", "c8f1a2b3d4e5461789abcdef01234567")
-	v.SetDefault("snail_job.group_name", "hei_gin_admin")
-	v.SetDefault("snail_job.token", "SJ_heiGinAdminToken1234567890abcd")
 	v.SetDefault("notify.mail.enabled", false)
 	v.SetDefault("notify.mail.port", 587)
 	v.SetDefault("notify.sms.enabled", false)

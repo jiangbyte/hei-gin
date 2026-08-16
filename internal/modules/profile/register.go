@@ -12,7 +12,7 @@ import (
 
 // NewAdmin 构建 profile.admin 模块。
 func NewAdmin(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, security.AccountAdmin, ProfileTableAdmin, "admin")
+	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, d.AuditReg, security.AccountAdmin, ProfileTableAdmin, "admin")
 	return module.Module{
 		Name:   "profile.admin",
 		Order:  70,
@@ -23,7 +23,7 @@ func NewAdmin(d *shared.Deps) module.Module {
 
 // NewPortal 构建 profile.portal 模块。
 func NewPortal(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, security.AccountPortal, ProfileTablePortal, "portal")
+	s := NewService(d.DB, d.Redis, d.Notify, d.Storage, d.Runtime, d.AuditReg, security.AccountPortal, ProfileTablePortal, "portal")
 	return module.Module{
 		Name:   "profile.portal",
 		Order:  71,

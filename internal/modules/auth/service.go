@@ -37,7 +37,7 @@ type Service struct {
 	sessions       *security.SessionStore
 	accounts       AccountFinder
 	notify         *notify.Facade
-	audit          *audit.Queue
+	auditReg       *audit.Registry
 	runtime        *runtimecfg.Settings
 	passwordPolicy *shared.PasswordPolicy
 	oauth          *oauth.Service
@@ -53,7 +53,7 @@ func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 		sessions:       d.Sessions,
 		accounts:       accounts,
 		notify:         d.Notify,
-		audit:          d.Audit,
+		auditReg:       d.AuditReg,
 		runtime:        d.Runtime,
 		passwordPolicy: shared.NewPasswordPolicy(d.DB, d.Runtime),
 		perms:          d.Perms,
@@ -137,7 +137,6 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 	defer func() {
 		if err != nil {
 			s.repo.RecordLoginFailure(ctx, s.protectCfg(ctx), accountType, req.Account, clientIP)
-			s.publishAudit(ctx, "login", false, "", string(accountType), clientIP, userAgent, err.Error())
 		}
 	}()
 
@@ -190,7 +189,6 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 	}
 	err = nil
 	s.repo.ClearLoginFailures(ctx, accountType, req.Account, clientIP)
-	s.publishAudit(ctx, "login", true, accountID, string(accountType), clientIP, userAgent, "")
 	return out, nil
 }
 
@@ -255,13 +253,12 @@ func (s *Service) forceBind(ctx context.Context, accountType security.AccountTyp
 	return s.runtimeBool(ctx, key, false)
 }
 
-// Logout 登出。
+// Logout 登出（审计由 middleware 按注册表记录）。
 func (s *Service) Logout(ctx context.Context, token, accountID, accountType, clientIP, userAgent string) error {
 	var err error
 	if token != "" {
 		err = s.sessions.Delete(ctx, token)
 	}
-	s.publishAudit(ctx, "logout", err == nil, accountID, accountType, clientIP, userAgent, errString(err))
 	return err
 }
 
@@ -547,24 +544,6 @@ func (s *Service) runtimeBool(ctx context.Context, key string, def bool) bool {
 		return s.runtime.GetBool(ctx, key, def)
 	}
 	return def
-}
-
-func (s *Service) publishAudit(ctx context.Context, action string, success bool, accountID, accountType, ip, ua, errMsg string) {
-	if s.audit == nil {
-		return
-	}
-	s.audit.Publish(audit.Event{
-		Module:       "auth",
-		ResourceType: "auth",
-		Action:       action,
-		AccountID:    accountID,
-		AccountType:  accountType,
-		RequestID:    contextx.RequestID(ctx),
-		IP:           ip,
-		UserAgent:    ua,
-		Success:      success,
-		ErrorMessage: errMsg,
-	})
 }
 
 func resolveOTPTarget(req SendLoginCodeParam) (channel, target string) {

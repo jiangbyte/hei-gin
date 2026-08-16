@@ -38,7 +38,9 @@ type Event struct {
 	Success      bool           `json:"success"`
 	ErrorMessage string         `json:"error_message"`
 	Extra        map[string]any `json:"extra"`
-	OutboxID     string         `json:"outbox_id,omitempty"`
+	// OccurredAt 为事件发生时间（UTC）；persist 优先采用，避免异步积压把行挪过当日边界（对齐 hei-boot occurredAt）。
+	OccurredAt time.Time `json:"occurred_at,omitempty"`
+	OutboxID   string    `json:"outbox_id,omitempty"`
 }
 
 // LogRow 对应 sys_operation_audit_log 表。
@@ -292,12 +294,16 @@ func (q *Queue) markOutboxDone(ctx context.Context, id string) {
 func (q *Queue) persist(ctx context.Context, ev Event) error {
 	before, _ := json.Marshal(ev.BeforeData)
 	after, _ := json.Marshal(ev.AfterData)
+	createdAt := ev.OccurredAt
+	if createdAt.IsZero() {
+		createdAt = time.Now().UTC()
+	}
 	row := LogRow{
 		ID:        idgen.Next(),
 		Module:    ev.Module,
 		Action:    ev.Action,
 		Success:   ev.Success,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt: createdAt,
 	}
 	if ev.ResourceType != "" {
 		row.ResourceType = &ev.ResourceType

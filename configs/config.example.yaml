@@ -34,7 +34,6 @@ auth:
   session_cookie_name: Authorization
   session_cookie_secure: false
   session_cookie_samesite: lax
-  session_cookie_path: /
   default_password: "123456"
   # 门户公开接口（匿名可访问）：banner 列表/互动、字典树、公告列表
   auth_whitelist:
@@ -68,16 +67,6 @@ cors:
     - X-Requested-With
     - X-HEI-CSRF
 
-
-snail_job:
-  enabled: true
-  server_host: 127.0.0.1
-  server_port: "17888"
-  host_ip: 127.0.0.1
-  host_port: "17889"
-  namespace: c8f1a2b3d4e5461789abcdef01234567
-  group_name: hei_gin_admin
-  token: SJ_heiGinAdminToken1234567890abcd
 
 storage:
   provider: local

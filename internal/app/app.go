@@ -1,4 +1,4 @@
-// Package app 是应用装配根：基础设施、自注册模块、HTTP 与 SnailJob 执行器。
+// Package app 是应用装配根：基础设施、自注册模块、HTTP 与内嵌任务调度器。
 //
 // 默认 blank import internal/modules/all；复杂场景可直接改 framework。
 //
@@ -25,13 +25,12 @@ import (
 	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/cache"
 	"hei-gin/internal/framework/platform/db"
-	"hei-gin/internal/framework/platform/events"
+	"hei-gin/internal/framework/platform/gojob"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/otel"
 	"hei-gin/internal/framework/platform/runtimecfg"
-	"hei-gin/internal/framework/platform/snailjob"
 	"hei-gin/internal/framework/platform/storage"
 )
 
@@ -45,22 +44,23 @@ type Deps struct {
 	Sessions *security.SessionStore
 	Perms    *security.PermissionRegistry
 	Storage  *storage.Manager
-	Events   *events.Bus
 	Audit    *audit.Queue
+	AuditReg *audit.Registry
 	Notify   *notify.Facade
 	Runtime  *runtimecfg.Settings
 	Modules  *module.Registry
+	Jobs     *gojob.Manager
 }
 
-// API 单体进程：HTTP + 模块钩子 + SnailJob 执行器。
+// API 单体进程：HTTP + 模块钩子 + 内嵌任务调度器。
 //
 // Author: Charlie
 type API struct {
-	Deps     *Deps
-	Engine   *gin.Engine
-	Server   *http.Server
-	Audit    *audit.Queue
-	SnailJob *snailjob.Manager
+	Deps   *Deps
+	Engine *gin.Engine
+	Server *http.Server
+	Audit  *audit.Queue
+	Jobs   *gojob.Manager
 }
 
 // OpenInfra 连接 DB/Redis/存储，准备空 Deps（随后 AttachRegisteredModules）。
@@ -99,10 +99,12 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		Sessions: security.NewSessionStore(rdb),
 		Perms:    security.NewPermissionRegistry(rdb),
 		Storage:  store,
-		Events:   events.NewBus(),
 		Audit:    audit.NewQueue(gdb, rdb, cfg.Audit),
+		AuditReg: audit.NewRegistry(),
 		Notify:   nf,
 		Runtime:  rt,
+		// 任务调度器（handlers 在 NewAPI 装配完成后填充）
+		Jobs: gojob.NewManager(gdb, nil),
 	}, nil
 }
 
@@ -135,6 +137,8 @@ func NewAPI(d *Deps) *API {
 	}
 
 	api := r.Group("/api")
+	// 操作审计：请求成功后按路由注册表发布审计（对齐 hei-boot @OperationAudit 覆盖）
+	api.Use(middleware.Audit(d.AuditReg, d.Audit))
 	d.Modules.MountRoutes(api)
 
 	srv := &http.Server{
@@ -142,33 +146,48 @@ func NewAPI(d *Deps) *API {
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
+	// 模块装配完成后填充任务处理器
+	if d.Jobs != nil {
+		d.Jobs.SetHandlers(collectHandlers(d.Modules))
+	}
 	return &API{
-		Deps:     d,
-		Engine:   r,
-		Server:   srv,
-		Audit:    d.Audit,
-		SnailJob: snailjob.NewManager(d.Cfg.SnailJob, d.Modules),
+		Deps:   d,
+		Engine: r,
+		Server: srv,
+		Audit:  d.Audit,
+		Jobs:   d.Jobs,
 	}
 }
 
-// Start 启动审计队列、模块钩子、SnailJob 执行器与 HTTP 监听。
+// collectHandlers 从模块注册表提取任务处理器（module.Job → gojob.HandlerDef）。
+func collectHandlers(regs *module.Registry) []gojob.HandlerDef {
+	if regs == nil {
+		return nil
+	}
+	var handlers []gojob.HandlerDef
+	for _, mod := range regs.Modules {
+		for _, j := range mod.Jobs {
+			j := j
+			handlers = append(handlers, gojob.HandlerDef{Key: j.Name, Name: j.Name, Run: j.Run})
+		}
+	}
+	return handlers
+}
+
+// Start 启动审计队列、模块钩子、任务调度器与 HTTP 监听。
 func (a *API) Start(ctx context.Context) error {
 	a.Audit.Start(ctx)
 	if err := a.Deps.Modules.RunStart(ctx); err != nil {
 		return err
 	}
-	if err := a.Deps.Events.Emit(ctx, events.OnDBReady, nil); err != nil {
-		return err
-	}
 	if err := a.Deps.Perms.Sync(ctx); err != nil {
 		logger.L.Warn("权限注册表同步失败", zap.Error(err))
-	} else {
-		_ = a.Deps.Events.Emit(ctx, events.OnPermissionsSynced, nil)
 	}
-	if a.Deps.Cfg.SnailJob.Enabled {
-		if err := a.SnailJob.Start(); err != nil {
+	if a.Jobs != nil {
+		if err := a.Jobs.Start(ctx); err != nil {
 			return err
 		}
+		logger.L.Info("任务调度器已启动")
 	}
 	logger.L.Info("api 正在启动", zap.String("addr", a.Server.Addr))
 	errCh := make(chan error, 1)
@@ -193,8 +212,8 @@ func (a *API) Start(ctx context.Context) error {
 
 // Stop 优雅关闭。
 func (a *API) Stop(ctx context.Context) error {
-	if a.SnailJob != nil {
-		_ = a.SnailJob.Stop(ctx)
+	if a.Jobs != nil {
+		_ = a.Jobs.Stop(ctx)
 	}
 	_ = a.Deps.Modules.RunStop(ctx)
 	a.Audit.Stop()

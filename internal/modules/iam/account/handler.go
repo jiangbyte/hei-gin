@@ -15,6 +15,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
@@ -22,6 +23,17 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
+		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_account）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/create", ResourceType: "iam_account", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/update", ResourceType: "iam_account", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/delete", ResourceType: "iam_account", Action: "delete"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-role", ResourceType: "iam_account", Action: "grant_role"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-group", ResourceType: "iam_account", Action: "grant_group"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-dept", ResourceType: "iam_account", Action: "grant_dept"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-resource", ResourceType: "iam_account", Action: "grant_resource"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-client-resource", ResourceType: "iam_account", Action: "grant_client_resource"},
+		)
 		api.POST("/v1/admin/sys/accounts/create", admin, middleware.RequirePermission(d.Perms, "iam:account:create", "账户创建"), s.create)
 		api.POST("/v1/admin/sys/accounts/update", admin, middleware.RequirePermission(d.Perms, "iam:account:update", "账户更新"), s.update)
 		api.POST("/v1/admin/sys/accounts/delete", admin, middleware.RequirePermission(d.Perms, "iam:account:delete", "账户删除"), s.delete)

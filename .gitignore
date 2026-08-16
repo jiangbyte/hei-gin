@@ -48,3 +48,6 @@ lerna-debug.log*
 .gomodcache/
 .gocache/
 .gotmp/
+
+# --- 工具会话产物 ---
+.zcode/

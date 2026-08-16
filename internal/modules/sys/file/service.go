@@ -46,6 +46,10 @@ func New(d *shared.Deps) module.Module {
 		Name:   "sys.file",
 		Models: []any{&File{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
+		Jobs: []module.Job{{
+			Name: "sysFileCleanupLocalOrphans",
+			Run:  s.sysFileCleanupLocalOrphansHandler,
+		}},
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 
 	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
@@ -44,13 +45,14 @@ type Service struct {
 	storage        *storage.Manager
 	runtime        *runtimecfg.Settings
 	passwordPolicy *shared.PasswordPolicy
+	auditReg       *audit.Registry
 	avatarPrefix   string
 	accountType    security.AccountType
 }
 
 // NewService 构造按账户类型绑定的用户中心服务。
 func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, storage *storage.Manager,
-	rt *runtimecfg.Settings, accountType security.AccountType, table, avatarPrefix string) *Service {
+	rt *runtimecfg.Settings, reg *audit.Registry, accountType security.AccountType, table, avatarPrefix string) *Service {
 	return &Service{
 		repo:           NewRepo(db, table),
 		rdb:            rdb,
@@ -58,6 +60,7 @@ func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, storage *stor
 		storage:        storage,
 		runtime:        rt,
 		passwordPolicy: shared.NewPasswordPolicy(db, rt),
+		auditReg:       reg,
 		avatarPrefix:   avatarPrefix,
 		accountType:    accountType,
 	}

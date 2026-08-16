@@ -14,6 +14,7 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/shared"
 )
@@ -21,6 +22,12 @@ import (
 func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
+		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_weakpassword）
+		d.AuditReg.RegisterSpecs(
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/create", ResourceType: "sys_weakpassword", Action: "create"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/update", ResourceType: "sys_weakpassword", Action: "update"},
+			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/delete", ResourceType: "sys_weakpassword", Action: "delete"},
+		)
 		api.POST("/v1/admin/sys/weak-password/create", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:create", "弱密码创建"), s.create)
 		api.POST("/v1/admin/sys/weak-password/update", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:update", "弱密码更新"), s.update)
 		api.POST("/v1/admin/sys/weak-password/delete", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:delete", "弱密码删除"), s.delete)

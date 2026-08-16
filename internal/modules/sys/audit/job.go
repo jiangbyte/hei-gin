@@ -49,7 +49,7 @@ const (
 // sensitiveActions 凌晨非常时段 / 短窗口敏感操作判定动作集。
 var sensitiveActions = []string{"role_create", "role_grant", "permission_change", "permission_grant"}
 
-// withJobs 附加 SnailJob handlers。
+// withJobs 附加任务处理器（gojob 调度器收集）。
 func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "auditAlertJob",

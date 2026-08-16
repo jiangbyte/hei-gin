@@ -240,19 +240,7 @@ func (m *Manager) buildProvider(ctx context.Context, name string, rt *runtimecfg
 	return p
 }
 
-// Reconfigure 用新配置重建并替换 Provider。
-func (m *Manager) Reconfigure(cfg config.StorageConfig) error {
-	p, err := newProvider(cfg)
-	if err != nil {
-		return err
-	}
-	m.mu.Lock()
-	m.provider = p
-	m.cfg = cfg
-	m.mu.Unlock()
-	return nil
-}
-
+// newProvider 按配置创建存储 Provider。
 func newProvider(cfg config.StorageConfig) (Provider, error) {
 	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
 	case "", "local":
@@ -273,11 +261,15 @@ type Local struct {
 	baseURL    string
 }
 
-// NewLocal 创建本地存储并确保根目录存在。
+// NewLocal 创建本地存储 Provider。
+// 注意：不在构造时创建根目录（避免应用启动即产生空 storage/ 目录）；
+// 根目录由 Put 写入时惰性创建。
 func NewLocal(root, publicPath, baseURL string) *Local {
-	_ = os.MkdirAll(root, 0o755)
 	return &Local{root: root, publicPath: publicPath, baseURL: strings.TrimRight(baseURL, "/")}
 }
+
+// Root 返回本地存储根目录（供孤立文件清理等维护任务使用）。
+func (l *Local) Root() string { return l.root }
 
 // Put 写入对象并返回公开 URL。
 func (l *Local) Put(_ context.Context, objectName string, r io.Reader, _ int64, _ string) (string, error) {
