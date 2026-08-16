@@ -267,7 +267,8 @@ hei-gin
 │   ├── db.sql                    # 权威建表 + seed（与 hei-boot schema 对齐；无迁移步骤）
 │   └── smoke                     # 开发辅助：登录链路冒烟（验证码 → RSA → 登录 → /me）
 ├── storage                       # 本地文件存储（.gitignore）
-└── LICENSE                       # Apache License 2.0
+├── LICENSE                       # Apache License 2.0
+└── NOTICE                        # 版权归属声明（jiangbyte）
 ```
 
 ## 主要 API
@@ -389,7 +390,7 @@ job.go        # 可选：module.Job 定时任务
 
 ## 开源协议
 
-[Apache License 2.0](LICENSE)（与姊妹项目 [hei-boot](https://github.com/jiangbyte/hei-boot) 保持一致）。完整条款见 [LICENSE](LICENSE)。
+[Apache License 2.0](LICENSE)（与姊妹项目 [hei-boot](https://github.com/jiangbyte/hei-boot) 保持一致）。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
 
 ## 代码贡献
 
