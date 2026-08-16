@@ -20,7 +20,7 @@ HEI Gin 是 HEI 项目的 Go / Gin 轻量级后端脚手架：**一个 Go 单体
 | :--- | :--- | :--- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
 | [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | Apache License 2.0 |
 
 ## 功能特性
 
@@ -390,7 +390,7 @@ job.go        # 可选：module.Job 定时任务
 
 ## 开源协议
 
-[Apache License 2.0](LICENSE)（与姊妹项目 [hei-boot](https://github.com/jiangbyte/hei-boot) 保持一致）。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
+[Apache License 2.0](LICENSE)（三个姊妹项目 hei-boot / hei-gin / hei-fastapi 协议一致）。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
 
 ## 代码贡献
 
