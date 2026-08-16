@@ -388,10 +388,6 @@ job.go        # 可选：module.Job 定时任务
 
 开发约定：业务表继承通用审计字段（id / created_at / updated_at / created_by / updated_by）；领域服务 `XxxService`；权限用 `security.PermissionRegistry` 注册 + `security.HasPermission` 校验（`*:*:*` 通配）；联表查询用 GORM（`Preload` / `Joins`）。
 
-## 开源协议
-
-[Apache License 2.0](LICENSE)（三个姊妹项目 hei-boot / hei-gin / hei-fastapi 协议一致）。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
-
 ## 代码贡献
 
 欢迎 Issue 与 PR。提交前请确认：
@@ -406,6 +402,6 @@ go build ./... && go vet ./...
 git commit -m "feat: describe your change"
 ```
 
-## 许可证
+## 开源协议
 
-本项目使用 MIT 开源协议（与姊妹项目 hei-boot 的 Apache License 2.0 不同）。
+本项目使用 [Apache License 2.0](LICENSE) 开源协议，三个姊妹项目（hei-boot / hei-gin / hei-fastapi）协议一致。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
