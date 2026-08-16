@@ -4,19 +4,26 @@
 ![Gin](https://img.shields.io/badge/Gin-1.12-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
+![Vue](https://img.shields.io/badge/Admin-Vue%203-4FC08D?logo=vuedotjs&logoColor=white)
+![React](https://img.shields.io/badge/Portal-React-61DAFB?logo=react&logoColor=black)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0--beta-orange)
 
-**HEI Gin** 是一个 Go / Gin 后端脚手架：一个进程同时提供**管理端（Admin）**与**门户（Portal）**双端 API，覆盖账号认证、组织权限（RBAC）、系统管理、消息反馈与运营工作台等常用能力。配合同仓维护的 Vue 3 / React / uni-app 三套前端，开箱即用、可按需裁剪。
+**HEI Gin** 是一套开箱即用的 Go / Gin 工程化脚手架：单个后端进程同时提供 **Admin** 与 **Portal** 双端 API，同仓维护 Vue 3 / React / uni-app 前端，覆盖认证授权、组织权限、系统运维、消息通知与运营看板等常见后台能力。与 [hei-boot](https://github.com/jiangbyte/hei-boot)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 保持 API 契约与前端对齐。
 
-## 特性
+> 当前版本：`1.0.0-beta` · 协议：[Apache License 2.0](LICENSE)
 
-- **双端账号体系**：ADMIN / PORTAL 独立会话；密码 RSA 加密传输、验证码登录、登录锁定与限流、OAuth 三方登录
-- **RBAC 权限**：账号 / 角色 / 部门 / 用户组 / 岗位，菜单与资源多层授权，数据范围过滤
-- **系统管理**：字典、配置（敏感加密）、Banner、文件存储（S3 兼容对象存储）、公告通知、意见反馈、弱口令清单
-- **运维能力**：操作审计与告警、运营工作台概览与 7 日趋势、内嵌任务调度（DB 扫描 + Redis 锁，`sys_job` / CRON|FIXED，对齐 hei-boot）
-- **操作审计**：路由级 `middleware.OperationAudit(resourceType, action)` 传参（对齐 hei-boot `@OperationAudit`）
-- **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
-- **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
+## 目录
+
+- [界面预览](#界面预览)
+- [功能特性](#功能特性)
+- [技术栈](#技术栈)
+- [工程结构](#工程结构)
+- [快速开始](#快速开始)
+- [默认账号](#默认账号)
+- [相关文档](#相关文档)
+- [姊妹项目](#姊妹项目)
+- [License](#license)
 
 ## 界面预览
 
@@ -58,12 +65,28 @@
     <td align="center">角色管理</td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/admin-iam-resource.png" alt="资源授权" /></td>
-    <td></td>
+    <td width="50%"><img src="docs/images/admin-iam-dept.png" alt="部门管理" /></td>
+    <td width="50%"><img src="docs/images/admin-iam-group.png" alt="用户组管理" /></td>
   </tr>
   <tr>
+    <td align="center">部门管理</td>
+    <td align="center">用户组管理</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-iam-position.png" alt="岗位管理" /></td>
+    <td width="50%"><img src="docs/images/admin-iam-resource.png" alt="资源授权" /></td>
+  </tr>
+  <tr>
+    <td align="center">岗位管理</td>
     <td align="center">资源授权</td>
-    <td></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-iam-resource-module.png" alt="资源模块" /></td>
+    <td width="50%"><img src="docs/images/admin-iam-client-resource.png" alt="客户端资源" /></td>
+  </tr>
+  <tr>
+    <td align="center">资源模块</td>
+    <td align="center">客户端资源</td>
   </tr>
 </table>
 
@@ -85,6 +108,14 @@
   <tr>
     <td align="center">操作审计</td>
     <td align="center">代码生成</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-sys-session.png" alt="在线会话" /></td>
+    <td width="50%"><img src="docs/images/admin-sys-login-log.png" alt="登录日志" /></td>
+  </tr>
+  <tr>
+    <td align="center">在线会话</td>
+    <td align="center">登录日志</td>
   </tr>
 </table>
 
@@ -109,59 +140,129 @@
   </tr>
 </table>
 
+### 管理端 · 业务示例
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-biz-order.png" alt="订单示例" /></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">订单示例</td>
+    <td></td>
+  </tr>
+</table>
+
+## 功能特性
+
+- **双端账号体系**：ADMIN / PORTAL 独立会话（Redis 不透明 Token，键对齐 fastapi `login:*`）；密码 RSA 传输、验证码登录、失败锁定与限流；可配置三方 OAuth 登录
+- **RBAC 权限**：账号 / 角色 / 部门 / 用户组 / 岗位；菜单、按钮与 API 资源授权；在线会话踢出
+- **系统管理**：字典、动态配置（`sys_config`，敏感项可加密）、Banner、公告 / 通知、意见反馈、弱口令库
+- **对象存储**：S3 兼容存储（MinIO / RustFS / 阿里云 OSS 等），引擎与凭证走运行时配置，直链或预签名访问
+- **运维能力**：操作审计与告警、登录日志、运营工作台（概览与近 7 日趋势）、内嵌任务调度（`sys_job`；DB 扫描 + Redis 锁 + cron）
+- **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
+- **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
+
+## 技术栈
+
+| 层级 | 技术 |
+| --- | --- |
+| 后端 | Go 1.25+ · Gin · 单 module 单体（`cmd/api`） |
+| 持久化 | PostgreSQL · GORM |
+| 缓存 / 会话 | Redis（go-redis）· 不透明会话 Token |
+| 配置 | Viper（`config.yaml`）+ 运行时 `sys_config` |
+| 其他 | AWS SDK v2（S3）· zap · robfig/cron · snowflake |
+| 管理端 | Vue 3 · Vite · TypeScript · Naive UI · Pinia · UnoCSS |
+| 门户 | React 19 · Vite · TypeScript · Ant Design · Zustand · UnoCSS |
+| 移动端 | uni-app 3 · Vue 3 · TypeScript · uview-pro |
+
+## 工程结构
+
+```text
+hei-gin
+├── cmd/api                   # 唯一可启动入口
+├── internal/
+│   ├── app/                  # 装配根（基础设施 + 模块钩子）
+│   ├── framework/            # 可修改运行时（config / security / middleware / storage / gojob …）
+│   └── modules/              # 业务模块（auth / iam / sys / profile / dashboard / biz …）
+├── web/
+│   ├── admin                 # 管理端（Vue 3）
+│   ├── portal                # 门户（React）
+│   └── admin-uniapp          # 管理端 uni-app
+├── configs/config.example.yaml
+├── scripts/db.sql            # 数据库结构 + 种子数据（对齐 hei-boot）
+└── docs/images               # README 截图
+```
+
 ## 快速开始
 
 ### 环境要求
 
-- Go 1.25+、PostgreSQL、Redis
-- Node.js 22+ 与 pnpm 9+（前端）
+- Go **1.25+**
+- PostgreSQL、Redis
+- Node.js **22+**、pnpm **9+**（前端）
 
-### 初始化数据库
+### 1. 初始化数据库
 
 ```bash
 createdb -U postgres -h 127.0.0.1 hei_gin
 psql -U postgres -h 127.0.0.1 -d hei_gin -f scripts/db.sql
 ```
 
-### 启动后端
+> 本地 / 演示环境以 [`scripts/db.sql`](scripts/db.sql) 全量重建库表与种子数据。
+
+### 2. 启动后端
 
 ```bash
 cp configs/config.example.yaml config.yaml
+# 按需修改 db / redis / app 等
 go run ./cmd/api
 ```
 
-启动后 API 位于 `http://127.0.0.1:8000`。
+| 项 | 地址 |
+| --- | --- |
+| API | http://127.0.0.1:8000 |
 
-### 启动前端
+### 3. 启动前端
 
 ```bash
-cd web/admin && pnpm install && pnpm dev   # http://127.0.0.1:5173
-cd web/portal && pnpm install && pnpm dev  # http://127.0.0.1:5174
+# 管理端 → http://127.0.0.1:5173
+cd web/admin && pnpm install && pnpm dev
+
+# 门户 → http://127.0.0.1:5174
+cd web/portal && pnpm install && pnpm dev
 ```
 
-### 默认账号
+uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
+
+## 默认账号
 
 | 端 | 地址 | 账号 | 密码 |
 | --- | --- | --- | --- |
 | Admin | http://localhost:5173 | `superadmin` | `123456` |
 | Portal | http://localhost:5174 | `user` | `123456` |
 
-> 生产环境首次启动后请立即修改默认密码。
+> 仅供本地演示。部署到非本机环境后请立即修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。
 
-## 文档
+## 相关文档
 
-- [docs/README.md](docs/README.md) — 架构与二次开发指南
-- [configs/config.example.yaml](configs/config.example.yaml) — 配置样例
-- [scripts/db.sql](scripts/db.sql) — 数据库 schema 与种子数据
+| 文档 | 说明 |
+| --- | --- |
+| [`docs/README.md`](docs/README.md) | 架构约定与二次开发索引 |
+| [`web/admin/README.md`](web/admin/README.md) | 管理端前端说明与环境变量 |
+| [`web/portal/README.md`](web/portal/README.md) | 门户前端说明与环境变量 |
+| [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md) | uni-app 端说明 |
+| [`configs/config.example.yaml`](configs/config.example.yaml) | 后端配置样例 |
+| [`scripts/db.sql`](scripts/db.sql) | 数据库结构与种子数据 |
 
 ## 姊妹项目
 
 | 项目 | 说明 | 协议 |
 | --- | --- | --- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
-| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | Apache License 2.0 |
+| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架（本仓库） | Apache License 2.0 |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 异步脚手架 | Apache License 2.0 |
 
 ## License
 
-本项目使用 [Apache License 2.0](LICENSE) 开源协议，三个姊妹项目协议一致。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
+本项目基于 [Apache License 2.0](LICENSE) 开源。完整条款见 [LICENSE](LICENSE)，版权声明见 [NOTICE](NOTICE)。
