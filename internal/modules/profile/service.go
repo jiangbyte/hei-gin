@@ -28,7 +28,6 @@ import (
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
-	"hei-gin/internal/modules/shared"
 	"hei-gin/internal/modules/sys/file"
 )
 
@@ -45,15 +44,15 @@ type Service struct {
 	storage        *storage.Manager
 	files          *file.Service
 	runtime        *runtimecfg.Settings
-	passwordPolicy *shared.PasswordPolicy
-	auditReg       *audit.Registry
+	passwordPolicy *security.PasswordPolicy
+	audit          *audit.Queue
 	avatarPrefix   string
 	accountType    security.AccountType
 }
 
 // NewService 构造按账户类型绑定的用户中心服务。
 func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, st *storage.Manager, fs *file.Service,
-	rt *runtimecfg.Settings, reg *audit.Registry, accountType security.AccountType, table, avatarPrefix string) *Service {
+	rt *runtimecfg.Settings, aq *audit.Queue, accountType security.AccountType, table, avatarPrefix string) *Service {
 	return &Service{
 		repo:           NewRepo(db, table),
 		rdb:            rdb,
@@ -61,8 +60,8 @@ func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, st *storage.M
 		storage:        st,
 		files:          fs,
 		runtime:        rt,
-		passwordPolicy: shared.NewPasswordPolicy(db, rt),
-		auditReg:       reg,
+		passwordPolicy: security.NewPasswordPolicy(db, rt),
+		audit:          aq,
 		avatarPrefix:   avatarPrefix,
 		accountType:    accountType,
 	}
@@ -134,7 +133,7 @@ func (s *Service) UploadAvatar(ctx context.Context, accountID string, filename s
 	return s.storage.ResolveURL(ctx, row.ObjectName), nil
 }
 
-// resolveAvatar 头像引用 → 访问 URL（外部 URL 原样返回，对象名/路径拼 /api/v1/files 公开路径；空返回 nil）。
+// resolveAvatar 头像引用 → 访问 URL（外部 URL 原样返回，对象名走对象存储 ResolveURL；空返回 nil）。
 func (s *Service) resolveAvatar(ctx context.Context, value *string) *string {
 	if value == nil || *value == "" {
 		return nil

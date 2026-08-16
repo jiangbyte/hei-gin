@@ -16,33 +16,21 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 )
 
-// adminRoutes 管理端 /v1/admin/* 用户中心路由。
-func (s *Service) adminRoutes(api *gin.RouterGroup) {
-	// 操作审计登记（对齐 hei-boot @OperationAudit：profile_center 管理端）
-	s.auditReg.RegisterSpecs(
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/update", ResourceType: "profile_center", Action: "update_profile"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/avatar/upload", ResourceType: "profile_center", Action: "upload_avatar"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/password/send-code", ResourceType: "profile_center", Action: "send_password_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/password/update", ResourceType: "profile_center", Action: "update_password"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/phone/send-code", ResourceType: "profile_center", Action: "send_bind_phone_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/phone/update", ResourceType: "profile_center", Action: "update_phone"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/email/send-code", ResourceType: "profile_center", Action: "send_bind_email_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/profile/email/update", ResourceType: "profile_center", Action: "update_email"},
-	)
+// AdminRoutes 管理端 /v1/admin/* 用户中心路由。
+func (s *Service) AdminRoutes(api *gin.RouterGroup) {
 	g := api.Group("/v1/admin", middleware.RequireAccountType(security.AccountAdmin))
 	g.GET("/me", s.adminMe)
 	profile := g.Group("/profile")
-	profile.POST("/update", s.adminUpdateProfile)
-	profile.POST("/avatar/upload", s.adminUploadAvatar)
-	profile.POST("/password/send-code", s.adminSendPasswordCode)
-	profile.POST("/password/update", s.adminUpdatePassword)
-	profile.POST("/phone/send-code", s.adminSendPhoneCode)
-	profile.POST("/phone/update", s.adminUpdatePhone)
-	profile.POST("/email/send-code", s.adminSendEmailCode)
-	profile.POST("/email/update", s.adminUpdateEmail)
+	profile.POST("/update", middleware.OperationAudit(s.audit, "profile_center", "update_profile"), s.adminUpdateProfile)
+	profile.POST("/avatar/upload", middleware.OperationAudit(s.audit, "profile_center", "upload_avatar"), s.adminUploadAvatar)
+	profile.POST("/password/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_password_code"), s.adminSendPasswordCode)
+	profile.POST("/password/update", middleware.OperationAudit(s.audit, "profile_center", "update_password"), s.adminUpdatePassword)
+	profile.POST("/phone/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_bind_phone_code"), s.adminSendPhoneCode)
+	profile.POST("/phone/update", middleware.OperationAudit(s.audit, "profile_center", "update_phone"), s.adminUpdatePhone)
+	profile.POST("/email/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_bind_email_code"), s.adminSendEmailCode)
+	profile.POST("/email/update", middleware.OperationAudit(s.audit, "profile_center", "update_email"), s.adminUpdateEmail)
 	profile.GET("/org-info", s.adminOrgInfo)
 }
 

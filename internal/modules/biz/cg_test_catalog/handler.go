@@ -15,18 +15,11 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/module"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
+func (s *Service) registerRoutes(d *module.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
-		// 操作审计登记（对齐 hei-boot @OperationAudit：biz_cgtestcatalog）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-catalog/create", ResourceType: "biz_cgtestcatalog", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-catalog/update", ResourceType: "biz_cgtestcatalog", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-catalog/delete", ResourceType: "biz_cgtestcatalog", Action: "delete"},
-		)
 		g := api.Group("/v1/admin/biz/cg-test-catalog", middleware.RequireAccountType(security.AccountAdmin))
 		g.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestcatalog:create", "Create catalog"), s.create)
 		g.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestcatalog:update", "Update catalog"), s.update)

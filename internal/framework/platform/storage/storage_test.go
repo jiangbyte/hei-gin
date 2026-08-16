@@ -1,25 +1,65 @@
+// internal/framework/platform/storage/storage_test.go
 package storage
 
-import (
-	"bytes"
-	"context"
-	"os"
-	"path/filepath"
-	"testing"
-)
+import "testing"
 
-// TestNewLocal_NoEagerDir 构造本地存储不应立即创建根目录（避免启动产生空 storage/）。
-func TestNewLocal_NoEagerDir(t *testing.T) {
-	root := filepath.Join(t.TempDir(), "storage")
-	local := NewLocal(root, "/api/v1/files", "")
-	if _, err := os.Stat(local.Root()); !os.IsNotExist(err) {
-		t.Fatalf("root dir should NOT exist after NewLocal, stat err = %v", err)
+func TestEngineToProvider(t *testing.T) {
+	cases := map[string]string{
+		"MINIO":   ProviderMinIO,
+		"RUSTFS":  ProviderRustFS,
+		"ALIYUN":  ProviderOSS,
+		"TENCENT": ProviderS3,
+		"local":   "",
+		"LOCAL":   "",
 	}
-	// Put 写入后应惰性创建目录
-	if _, err := local.Put(context.Background(), "uploads/2024/01/01/x.txt", bytes.NewBufferString("hi"), 2, "text/plain"); err != nil {
-		t.Fatalf("put: %v", err)
+	for in, want := range cases {
+		if got := EngineToProvider(in); got != want {
+			t.Fatalf("EngineToProvider(%q)=%q want %q", in, got, want)
+		}
 	}
-	if st, err := os.Stat(filepath.Join(root, "uploads")); err != nil || !st.IsDir() {
-		t.Fatalf("dir should exist after Put, stat=%v err=%v", st, err)
+}
+
+func TestResolveProvider(t *testing.T) {
+	if got := ResolveProvider("RUSTFS"); got != ProviderRustFS {
+		t.Fatalf("got %q", got)
+	}
+	if got := ResolveProvider("minio"); got != ProviderMinIO {
+		t.Fatalf("got %q", got)
+	}
+	if got := ResolveProvider("LOCAL"); got != "" {
+		t.Fatalf("LOCAL should be rejected, got %q", got)
+	}
+	if !IsS3Compatible("oss") {
+		t.Fatal("oss should be s3 compatible")
+	}
+	if IsS3Compatible("local") {
+		t.Fatal("local must not be s3 compatible")
+	}
+}
+
+func TestStripToObjectKey(t *testing.T) {
+	cases := map[string]string{
+		"uploads/a.txt":                "uploads/a.txt",
+		"/api/v1/files/uploads/a.txt":  "uploads/a.txt",
+		"api/v1/files/uploads/a.txt":   "uploads/a.txt",
+		"https://cdn.example/x/y.png":  "x/y.png",
+		"http://127.0.0.1:9000/vms/uploads/a.png": "uploads/a.png",
+	}
+	for in, want := range cases {
+		if got := StripToObjectKey(in); got != want {
+			t.Fatalf("StripToObjectKey(%q)=%q want %q", in, got, want)
+		}
+	}
+}
+
+func TestProviderConfigKeyPrefix(t *testing.T) {
+	if got := ProviderConfigKeyPrefix("rustfs"); got != "STORAGE_RUSTFS" {
+		t.Fatalf("got %q", got)
+	}
+	if got := ProviderConfigKeyPrefix("ALIYUN"); got != "STORAGE_ALIYUN" {
+		t.Fatalf("got %q", got)
+	}
+	if got := ProviderConfigKeyPrefix("local"); got != "" {
+		t.Fatalf("local prefix should be empty, got %q", got)
 	}
 }

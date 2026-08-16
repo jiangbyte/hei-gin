@@ -49,6 +49,18 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Position, error) {
 	return &row, nil
 }
 
+// GetByIDs 按主键批量查询。
+func (r *Repo) GetByIDs(ctx context.Context, ids []string) ([]Position, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var rows []Position
+	if err := r.with(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
 // Page 分页查询（sess 非空时按数据范围过滤；对齐 hei-boot applyOwnerOrDept）。
 func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Position, total int64, err error) {
 	cur, size := p.Normalize()

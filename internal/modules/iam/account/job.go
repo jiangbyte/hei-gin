@@ -36,25 +36,35 @@ func (s *Service) PurgeExpiredCancelled(ctx context.Context, retentionDays int) 
 	return int64(len(ids)), nil
 }
 
-func (s *Service) accountPurgeCancelledJobHandler(ctx context.Context, param string) error {
+func (s *Service) accountPurgeCancelledJobHandler(ctx context.Context, param string) (string, error) {
 	days := 15
 	if p := strings.TrimSpace(param); p != "" {
+		// 支持纯数字或 {"retentionDays":15}
 		if n, err := strconv.Atoi(p); err == nil && n > 0 {
 			days = n
+		} else if strings.Contains(p, "retentionDays") {
+			p = strings.TrimSpace(p)
+			for _, part := range strings.FieldsFunc(p, func(r rune) bool {
+				return r == '{' || r == '}' || r == ',' || r == '"' || r == ':'
+			}) {
+				if n, err := strconv.Atoi(strings.TrimSpace(part)); err == nil && n > 0 {
+					days = n
+					break
+				}
+			}
 		}
 	}
 	n, err := s.PurgeExpiredCancelled(ctx, days)
 	if err != nil {
-		return err
+		return "", err
 	}
-	_ = fmt.Sprintf("purged=%d", n)
-	return nil
+	return fmt.Sprintf("purged=%d", n), nil
 }
 
 // withJobs 附加任务处理器（gojob 调度器收集）。
 func (s *Service) withJobs(m module.Module) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
-		Name: "accountPurgeCancelledJob",
+		Name: "iam_account_purge_cancelled",
 		Run:  s.accountPurgeCancelledJobHandler,
 	})
 	return m

@@ -17,23 +17,15 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_position）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/positions/create", ResourceType: "iam_position", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/positions/update", ResourceType: "iam_position", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/positions/delete", ResourceType: "iam_position", Action: "delete"},
-		)
-		api.POST("/v1/admin/sys/positions/create", admin, middleware.RequirePermission(d.Perms, "iam:position:create", "职位创建"), s.create)
-		api.POST("/v1/admin/sys/positions/update", admin, middleware.RequirePermission(d.Perms, "iam:position:update", "职位更新"), s.update)
-		api.POST("/v1/admin/sys/positions/delete", admin, middleware.RequirePermission(d.Perms, "iam:position:delete", "职位删除"), s.delete)
+		api.POST("/v1/admin/sys/positions/create", admin, middleware.RequirePermission(d.Perms, "iam:position:create", "职位创建"), middleware.OperationAudit(d.Audit, "iam_position", "create"), s.create)
+		api.POST("/v1/admin/sys/positions/update", admin, middleware.RequirePermission(d.Perms, "iam:position:update", "职位更新"), middleware.OperationAudit(d.Audit, "iam_position", "update"), s.update)
+		api.POST("/v1/admin/sys/positions/delete", admin, middleware.RequirePermission(d.Perms, "iam:position:delete", "职位删除"), middleware.OperationAudit(d.Audit, "iam_position", "delete"), s.delete)
 		api.GET("/v1/admin/sys/positions/detail", admin, middleware.RequirePermission(d.Perms, "iam:position:detail", "职位详情"), s.detail)
 		api.GET("/v1/admin/sys/positions/page", admin, middleware.RequirePermission(d.Perms, "iam:position:page", "职位分页"), s.page)
 	}

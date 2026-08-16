@@ -29,16 +29,15 @@ func withSession(sess *security.SessionPayload) gin.HandlerFunc {
 	}
 }
 
-func TestAuditMiddlewarePublishOnSuccess(t *testing.T) {
+func TestOperationAuditPublishOnSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	reg := audit.NewRegistry()
-	reg.Register("POST", "/api/v1/admin/sys/banners/create", "sys_banner", "create")
 	pub := &fakePublisher{}
 
 	r := gin.New()
 	r.Use(withSession(&security.SessionPayload{AccountID: "1", AccountType: security.AccountAdmin}))
-	r.Use(Audit(reg, pub))
-	r.POST("/api/v1/admin/sys/banners/create", func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.POST("/api/v1/admin/sys/banners/create", OperationAudit(pub, "sys_banner", "create"), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/admin/sys/banners/create", nil))
@@ -64,16 +63,15 @@ func TestAuditMiddlewarePublishOnSuccess(t *testing.T) {
 	}
 }
 
-func TestAuditMiddlewareSkipsFailure(t *testing.T) {
+func TestOperationAuditSkipsFailure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	reg := audit.NewRegistry()
-	reg.Register("POST", "/api/v1/admin/sys/banners/create", "sys_banner", "create")
 	pub := &fakePublisher{}
 
 	r := gin.New()
 	r.Use(withSession(&security.SessionPayload{AccountID: "1", AccountType: security.AccountAdmin}))
-	r.Use(Audit(reg, pub))
-	r.POST("/api/v1/admin/sys/banners/create", func(c *gin.Context) { c.Status(http.StatusBadRequest) })
+	r.POST("/api/v1/admin/sys/banners/create", OperationAudit(pub, "sys_banner", "create"), func(c *gin.Context) {
+		c.Status(http.StatusBadRequest)
+	})
 
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/admin/sys/banners/create", nil))
 	if len(pub.events) != 0 {
@@ -81,34 +79,30 @@ func TestAuditMiddlewareSkipsFailure(t *testing.T) {
 	}
 }
 
-func TestAuditMiddlewareSkipsUnregistered(t *testing.T) {
+func TestOperationAuditSkipsWithoutMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	reg := audit.NewRegistry()
-	reg.Register("POST", "/api/v1/admin/sys/banners/create", "sys_banner", "create")
 	pub := &fakePublisher{}
 
 	r := gin.New()
 	r.Use(withSession(&security.SessionPayload{AccountID: "1", AccountType: security.AccountAdmin}))
-	r.Use(Audit(reg, pub))
 	r.GET("/api/v1/admin/sys/banners/page", func(c *gin.Context) { c.Status(http.StatusOK) })
 	r.POST("/api/v1/admin/sys/other", func(c *gin.Context) { c.Status(http.StatusOK) })
 
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/api/v1/admin/sys/banners/page", nil))
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/admin/sys/other", nil))
 	if len(pub.events) != 0 {
-		t.Fatalf("published %d events for unregistered paths, want 0", len(pub.events))
+		t.Fatalf("published %d events for unaudited paths, want 0", len(pub.events))
 	}
 }
 
-func TestAuditMiddlewareAnonymous(t *testing.T) {
+func TestOperationAuditAnonymous(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	reg := audit.NewRegistry()
-	reg.Register("POST", "/api/v1/admin/login", "auth", "login")
 	pub := &fakePublisher{}
 
 	r := gin.New()
-	r.Use(Audit(reg, pub))
-	r.POST("/api/v1/admin/login", func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.POST("/api/v1/admin/login", OperationAudit(pub, "auth", "login"), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/admin/login", nil))
 	if len(pub.events) != 1 {
@@ -122,15 +116,9 @@ func TestAuditMiddlewareAnonymous(t *testing.T) {
 	}
 }
 
-func TestAuditMiddlewareNilSafe(t *testing.T) {
+func TestOperationAuditNilSafe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	var reg *audit.Registry
-	pub := &fakePublisher{}
 	r := gin.New()
-	r.Use(Audit(reg, pub))
-	r.POST("/api/v1/x", func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.POST("/api/v1/x", OperationAudit(nil, "x", "y"), func(c *gin.Context) { c.Status(http.StatusOK) })
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/x", nil))
-	if len(pub.events) != 0 {
-		t.Fatalf("nil registry should not publish, got %d", len(pub.events))
-	}
 }

@@ -1,4 +1,4 @@
-// Package otel 提供可选 OpenTelemetry 初始化桩。
+// Package otel 提供可选 OpenTelemetry 初始化占位（尚未接入真实 OTLP exporter）。
 //
 // Author: Charlie
 package otel
@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Init 在 otel.enabled=false 时 no-op；启用时记录 endpoint 并返回 nil（避免强依赖 OTLP SDK）。
-// 后续可在此接入 otlptracehttp exporter。
+// Init 占位初始化：otel.enabled=false 时 no-op；启用时仅打日志，不导出 traces/metrics。
+// 真正接入 otlptracehttp / otlpmetric 时在此替换实现，勿在业务模块直接依赖本包之外的 OTel SDK。
 //
 // Author: Charlie
 func Init(cfg config.OTelConfig) error {
@@ -22,6 +22,6 @@ func Init(cfg config.OTelConfig) error {
 	if endpoint == "" {
 		endpoint = "localhost:4317"
 	}
-	logger.L.Info("otel enabled (stub; no exporter wired)", zap.String("endpoint", endpoint))
+	logger.L.Info("otel enabled (placeholder; no exporter wired)", zap.String("endpoint", endpoint))
 	return nil
 }

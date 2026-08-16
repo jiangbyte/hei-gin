@@ -1,13 +1,11 @@
-// internal/modules/sys/file/handler.go HTTP 处理器（对齐 hei-boot Admin/Portal/PublicFileController）。
+// internal/modules/sys/file/handler.go HTTP 处理器（对齐 hei-boot Admin/Portal FileController）。
 //
 // Author: Charlie
 
 package file
 
 import (
-	"io"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -17,35 +15,24 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_file；url/presigned_url/list_by_ids 不审计）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/file/upload", ResourceType: "sys_file", Action: "upload"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/file/delete", ResourceType: "sys_file", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/file/update", ResourceType: "sys_file", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/sys/file/upload", ResourceType: "sys_file", Action: "upload"},
-		)
-		api.POST("/v1/admin/sys/file/upload", admin, middleware.RequirePermission(d.Perms, "sys:file:upload", "文件上传"), s.upload)
-		api.POST("/v1/admin/sys/file/delete", admin, middleware.RequirePermission(d.Perms, "sys:file:delete", "文件删除"), s.delete)
-		api.POST("/v1/admin/sys/file/update", admin, middleware.RequirePermission(d.Perms, "sys:file:update", "文件更新"), s.update)
+		api.POST("/v1/admin/sys/file/upload", admin, middleware.RequirePermission(d.Perms, "sys:file:upload", "文件上传"), middleware.OperationAudit(d.Audit, "sys_file", "upload"), s.upload)
+		api.POST("/v1/admin/sys/file/delete", admin, middleware.RequirePermission(d.Perms, "sys:file:delete", "文件删除"), middleware.OperationAudit(d.Audit, "sys_file", "delete"), s.delete)
+		api.POST("/v1/admin/sys/file/update", admin, middleware.RequirePermission(d.Perms, "sys:file:update", "文件更新"), middleware.OperationAudit(d.Audit, "sys_file", "update"), s.update)
 		api.GET("/v1/admin/sys/file/detail", admin, middleware.RequirePermission(d.Perms, "sys:file:detail", "文件详情"), s.detail)
 		api.GET("/v1/admin/sys/file/page", admin, middleware.RequirePermission(d.Perms, "sys:file:page", "文件分页"), s.page)
 		api.POST("/v1/admin/sys/file/list_by_ids", admin, middleware.RequirePermission(d.Perms, "sys:file:detail", "文件批量查询"), s.listByIDs)
 		api.GET("/v1/admin/sys/file/download", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件下载"), s.download)
 		api.POST("/v1/admin/sys/file/url", admin, middleware.RequirePermission(d.Perms, "sys:file:url", "文件URL"), s.url)
 		api.POST("/v1/admin/sys/file/presigned_url", admin, middleware.RequirePermission(d.Perms, "sys:file:presignedurl", "文件预签名URL"), s.presignedURL)
-		api.GET("/v1/files", s.publicGet)
-		api.GET("/v1/files/*object_name", s.publicGet)
 
 		portal := middleware.RequireAccountType(security.AccountPortal)
-		api.POST("/v1/portal/sys/file/upload", portal, s.portalUpload)
+		api.POST("/v1/portal/sys/file/upload", portal, middleware.OperationAudit(d.Audit, "sys_file", "upload"), s.portalUpload)
 		api.GET("/v1/portal/sys/file/detail", portal, s.portalDetail)
 		api.POST("/v1/portal/sys/file/list_by_ids", portal, s.portalListByIDs)
 		api.GET("/v1/portal/sys/file/download", portal, s.portalDownload)
@@ -149,31 +136,6 @@ func (s *Service) download(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, row.Size, row.ContentType, rc, nil)
 }
 
-// publicGet 公开文件访问：/v1/files?object_name= 或 /v1/files/**（校验元数据存在，防越权读存储）。
-func (s *Service) publicGet(c *gin.Context) {
-	objectName := strings.TrimPrefix(c.Param("object_name"), "/")
-	if objectName == "" {
-		objectName = c.Query("object_name")
-	}
-	if objectName == "" {
-		response.Fail(c, http.StatusBadRequest, 400, "object_name required")
-		return
-	}
-	ct, rc, err := s.OpenByObjectName(c.Request.Context(), objectName)
-	if err != nil {
-		response.Fail(c, http.StatusNotFound, 404, "not found")
-		return
-	}
-	defer rc.Close()
-	filename := objectName
-	if idx := strings.LastIndex(filename, "/"); idx >= 0 {
-		filename = filename[idx+1:]
-	}
-	c.Header("Content-Disposition", `inline; filename="`+filename+`"`)
-	c.Header("Content-Type", ct)
-	_, _ = io.Copy(c.Writer, rc)
-}
-
 func (s *Service) url(c *gin.Context) {
 	var req ObjectNameParam
 	if err := bind.JSON(c, &req); err != nil {
@@ -272,7 +234,7 @@ func (s *Service) portalDownload(c *gin.Context) {
 		response.Fail(c, http.StatusForbidden, 403, err.Error())
 		return
 	}
-	rc, err := s.providerFor(c.Request.Context(), row).Get(c.Request.Context(), toObjectKey(row.ObjectName, s.publicPath()))
+	rc, err := s.providerFor(c.Request.Context(), row).Get(c.Request.Context(), toObjectKey(row.ObjectName))
 	if err != nil {
 		response.Fail(c, http.StatusNotFound, 404, "not found")
 		return
@@ -301,7 +263,7 @@ func (s *Service) portalObjectName(c *gin.Context, fn func(ctx *gin.Context, obj
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	key := toObjectKey(req.ObjectName, s.publicPath())
+	key := toObjectKey(req.ObjectName)
 	if key == "" {
 		response.Fail(c, http.StatusNotFound, 404, "file not found")
 		return

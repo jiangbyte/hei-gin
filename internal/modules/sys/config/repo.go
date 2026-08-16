@@ -27,6 +27,14 @@ func (r *Repo) Create(ctx context.Context, row *Config) error {
 	return r.with(ctx).Create(row).Error
 }
 
+// CreateInBatches 批量创建配置。
+func (r *Repo) CreateInBatches(ctx context.Context, rows []Config) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	return r.with(ctx).CreateInBatches(rows, 100).Error
+}
+
 // Update 按 ID 更新。
 func (r *Repo) Update(ctx context.Context, id string, updates map[string]any) error {
 	return r.with(ctx).Model(&Config{}).Where("id = ?", id).Updates(updates).Error

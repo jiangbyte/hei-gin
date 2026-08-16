@@ -14,32 +14,21 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_config）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/create", ResourceType: "sys_config", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/update", ResourceType: "sys_config", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/delete", ResourceType: "sys_config", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/batch-save", ResourceType: "sys_config", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/audit-alert/test-webhook", ResourceType: "sys_config", Action: "test_webhook"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/config/audit-alert/test-push", ResourceType: "sys_config", Action: "test_push"},
-		)
-		api.POST("/v1/admin/sys/config/create", admin, middleware.RequirePermission(d.Perms, "sys:config:create", "配置创建"), s.create)
-		api.POST("/v1/admin/sys/config/update", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置更新"), s.update)
-		api.POST("/v1/admin/sys/config/delete", admin, middleware.RequirePermission(d.Perms, "sys:config:delete", "配置删除"), s.delete)
+		api.POST("/v1/admin/sys/config/create", admin, middleware.RequirePermission(d.Perms, "sys:config:create", "配置创建"), middleware.OperationAudit(d.Audit, "sys_config", "create"), s.create)
+		api.POST("/v1/admin/sys/config/update", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置更新"), middleware.OperationAudit(d.Audit, "sys_config", "update"), s.update)
+		api.POST("/v1/admin/sys/config/delete", admin, middleware.RequirePermission(d.Perms, "sys:config:delete", "配置删除"), middleware.OperationAudit(d.Audit, "sys_config", "delete"), s.delete)
 		api.GET("/v1/admin/sys/config/detail", admin, middleware.RequirePermission(d.Perms, "sys:config:detail", "配置详情"), s.detail)
 		api.GET("/v1/admin/sys/config/page", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置分页"), s.page)
 		api.GET("/v1/admin/sys/config/list", admin, middleware.RequirePermission(d.Perms, "sys:config:page", "配置列表"), s.list)
-		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置批量保存"), s.batchSave)
-		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, s.testWebhook)
-		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, s.testPush)
+		api.POST("/v1/admin/sys/config/batch-save", admin, middleware.RequirePermission(d.Perms, "sys:config:update", "配置批量保存"), middleware.OperationAudit(d.Audit, "sys_config", "update"), s.batchSave)
+		api.POST("/v1/admin/sys/config/audit-alert/test-webhook", admin, middleware.OperationAudit(d.Audit, "sys_config", "test_webhook"), s.testWebhook)
+		api.POST("/v1/admin/sys/config/audit-alert/test-push", admin, middleware.OperationAudit(d.Audit, "sys_config", "test_push"), s.testPush)
 	}
 }
 

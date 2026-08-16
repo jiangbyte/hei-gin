@@ -17,23 +17,15 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_dept）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/depts/create", ResourceType: "iam_dept", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/depts/update", ResourceType: "iam_dept", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/depts/delete", ResourceType: "iam_dept", Action: "delete"},
-		)
-		api.POST("/v1/admin/sys/depts/create", admin, middleware.RequirePermission(d.Perms, "iam:dept:create", "部门创建"), s.create)
-		api.POST("/v1/admin/sys/depts/update", admin, middleware.RequirePermission(d.Perms, "iam:dept:update", "部门更新"), s.update)
-		api.POST("/v1/admin/sys/depts/delete", admin, middleware.RequirePermission(d.Perms, "iam:dept:delete", "部门删除"), s.delete)
+		api.POST("/v1/admin/sys/depts/create", admin, middleware.RequirePermission(d.Perms, "iam:dept:create", "部门创建"), middleware.OperationAudit(d.Audit, "iam_dept", "create"), s.create)
+		api.POST("/v1/admin/sys/depts/update", admin, middleware.RequirePermission(d.Perms, "iam:dept:update", "部门更新"), middleware.OperationAudit(d.Audit, "iam_dept", "update"), s.update)
+		api.POST("/v1/admin/sys/depts/delete", admin, middleware.RequirePermission(d.Perms, "iam:dept:delete", "部门删除"), middleware.OperationAudit(d.Audit, "iam_dept", "delete"), s.delete)
 		api.GET("/v1/admin/sys/depts/detail", admin, middleware.RequirePermission(d.Perms, "iam:dept:detail", "部门详情"), s.detail)
 		api.GET("/v1/admin/sys/depts/page", admin, middleware.RequirePermission(d.Perms, "iam:dept:page", "部门分页"), s.page)
 		api.GET("/v1/admin/sys/depts/tree", admin, middleware.RequirePermission(d.Perms, "iam:dept:tree", "部门树"), s.tree)

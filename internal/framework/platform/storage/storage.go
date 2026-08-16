@@ -1,4 +1,7 @@
-// Package storage 抽象对象存储（local 默认；S3 兼容可后续接入）。
+// Package storage 抽象对象存储（仅 S3 兼容：minio/rustfs/oss/s3，对齐 hei-boot）。
+//
+// 运行时权威配置来自 sys_config（DEFAULT_FILE_ENGINE + STORAGE_{ENGINE}_*），
+// 与 hei-boot StorageSettingsResolver / hei-fastapi config_reader 一致；不再使用 yaml 存储段。
 //
 // Author: Charlie
 package storage
@@ -8,216 +11,203 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"hei-gin/internal/framework/core/config"
 	"hei-gin/internal/framework/platform/runtimecfg"
 )
 
-// Provider 抽象对象存储（local / S3 兼容）。
+// Provider 抽象对象存储（S3 兼容）。
 //
 // Author: Charlie
 type Provider interface {
 	Put(ctx context.Context, objectName string, r io.Reader, size int64, contentType string) (url string, err error)
 	Get(ctx context.Context, objectName string) (io.ReadCloser, error)
 	Delete(ctx context.Context, objectName string) error
-	// PublicURL 返回对象可访问 URL。local 为 path-style 公开路径；
-	// S3 在未配置 BASE_URL 时返回预签名 URL（对齐 hei-boot S3StorageService.publicUrl）。
+	// PublicURL 返回对象可访问 URL：公开桶走直链，私有桶走预签名。
 	PublicURL(ctx context.Context, objectName string) string
 }
 
-// BucketHolder 可选接口：暴露对象存储桶名（local 无桶；供元数据落库）。
+// BucketHolder 可选接口：暴露对象存储桶名（供元数据落库）。
 //
 // Author: Charlie
 type BucketHolder interface {
 	BucketName() string
 }
 
-// Manager 持有可热切换的存储 Provider。
-//
-// Author: Charlie
-type Manager struct {
-	mu       sync.RWMutex
-	provider Provider
-	byName   map[string]Provider
-	cfg      config.StorageConfig
-	runtime  *runtimecfg.Settings
-}
-
-// Presigner 可选接口：支持预签名 URL 的 Provider（本地返回公开 URL）。
+// Presigner 可选接口：支持预签名 URL 的 Provider。
 type Presigner interface {
 	PresignedURL(ctx context.Context, objectName string, expire time.Duration) (string, error)
 }
 
-// SetRuntime 注入运行时配置读取器（用于 STORAGE_PRESIGN_EXPIRE_SECONDS 等）。
+// ResolvedConfig 从 sys_config 解析出的对象存储配置（对齐 hei-boot ResolvedStorageConfig）。
+//
+// Author: Charlie
+type ResolvedConfig struct {
+	Provider             string
+	Bucket               string
+	Endpoint             string
+	AccessKey            string
+	SecretKey            string
+	Region               string
+	UseSSL               bool
+	BaseURL              string
+	BucketPublic         bool
+	PresignExpireSeconds int
+}
+
+// Manager 持有可热切换的存储 Provider（按 sys_config 懒加载，对齐 hei-boot StorageEngineFactory）。
+//
+// Author: Charlie
+type Manager struct {
+	mu      sync.RWMutex
+	byName  map[string]Provider
+	runtime *runtimecfg.Settings
+	version int64
+}
+
+// NewManager 创建空管理器（引擎在首次使用时按 RuntimeSettings 构建）。
+func NewManager() *Manager {
+	return &Manager{byName: map[string]Provider{}}
+}
+
+// SetRuntime 注入运行时配置读取器。
 func (m *Manager) SetRuntime(s *runtimecfg.Settings) {
 	m.mu.Lock()
 	m.runtime = s
 	m.mu.Unlock()
+	m.Refresh()
 }
 
-// ProviderName 当前生效的存储引擎名（对齐 web STORAGE_PROVIDER_OPTIONS 词汇）。
-func (m *Manager) ProviderName() string {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	switch strings.ToLower(strings.TrimSpace(m.cfg.Provider)) {
-	case "s3":
-		return "s3"
-	case "minio":
-		return "minio"
-	case "oss":
-		return "oss"
-	default:
-		return "local"
-	}
+// Refresh 清空引擎缓存（sys_config 变更后调用，对齐 hei-boot / hei-fastapi clear_storage_cache）。
+func (m *Manager) Refresh() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.byName = map[string]Provider{}
+	m.version++
 }
 
 // DefaultProviderName 缺省上传引擎名（对齐 hei-boot StorageSettingsResolverImpl）：
-// 运行时 DEFAULT_FILE_ENGINE 优先（LOCAL/MINIO/RUSTFS/ALIYUN/TENCENT → 引擎名），回退 yaml provider。
+// 运行时 DEFAULT_FILE_ENGINE，缺省 rustfs。
 func (m *Manager) DefaultProviderName(ctx context.Context) string {
 	m.mu.RLock()
 	rt := m.runtime
 	m.mu.RUnlock()
 	if rt != nil {
-		switch strings.ToUpper(strings.TrimSpace(rt.GetString(ctx, "DEFAULT_FILE_ENGINE", ""))) {
-		case "LOCAL":
-			return "local"
-		case "MINIO":
-			return "minio"
-		case "RUSTFS":
-			return "rustfs"
-		case "ALIYUN":
-			return "oss"
-		case "TENCENT":
-			return "s3"
+		if eng := strings.TrimSpace(rt.GetString(ctx, "DEFAULT_FILE_ENGINE", "")); eng != "" {
+			if p := EngineToProvider(eng); p != "" {
+				return p
+			}
 		}
 	}
-	return m.ProviderName()
+	return ProviderRustFS
 }
 
-// ResolveURL 对象引用 → 访问 URL（对齐 hei-boot FileAccessUrls.resolveFileUrl）：
-// 外部 http(s) URL 原样返回；已带公开路径前缀（/api/v1/files/...）的引用先去前缀，再拼 path-style 公开路径 {publicPath}/{key}。
+// ResolveURL 对象引用 → 访问 URL（外部 http(s) 原样返回；历史 /api/v1/files/ 前缀剥离后按默认引擎拼 URL）。
 func (m *Manager) ResolveURL(ctx context.Context, value string) string {
-	_ = ctx
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if u, err := url.Parse(value); err == nil && (u.Scheme == "http" || u.Scheme == "https") {
+		return value
+	}
+	key := StripToObjectKey(value)
+	if key == "" {
+		return ""
+	}
+	return m.ProviderByName(ctx, m.DefaultProviderName(ctx)).PublicURL(ctx, key)
+}
+
+// StripToObjectKey 把任意对象引用（纯 key / /api/v1/files/... / 完整 URL path）转成存储纯 key。
+func StripToObjectKey(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return ""
 	}
 	if u, err := url.Parse(value); err == nil && u.Scheme != "" {
-		return value
+		value = u.Path
 	}
-	prefix := strings.TrimRight(m.PublicPath(), "/") + "/"
 	pathOnly := strings.ReplaceAll(value, "\\", "/")
 	pathOnly = strings.TrimLeft(pathOnly, "/")
-	if strings.HasPrefix(pathOnly, strings.TrimLeft(prefix, "/")) {
-		pathOnly = pathOnly[len(strings.TrimLeft(prefix, "/")):]
+	for _, prefix := range []string{"api/v1/files/", "v1/files/"} {
+		if strings.HasPrefix(pathOnly, prefix) {
+			pathOnly = pathOnly[len(prefix):]
+			break
+		}
 	}
-	pathOnly = strings.TrimLeft(pathOnly, "/")
-	if pathOnly == "" {
-		return ""
+	// path-style URL 常为 /{bucket}/{key}：若第二段起像业务 key（uploads/），去掉首段 bucket。
+	if slash := strings.Index(pathOnly, "/"); slash > 0 {
+		rest := pathOnly[slash+1:]
+		if strings.HasPrefix(rest, "uploads/") {
+			pathOnly = rest
+		}
 	}
-	return strings.TrimRight(m.PublicPath(), "/") + "/" + pathOnly
+	return strings.TrimLeft(pathOnly, "/")
 }
 
-// PublicPath 公开访问路径前缀（yaml storage.public_path，缺省 /api/v1/files）。
-func (m *Manager) PublicPath() string {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	if m.cfg.PublicPath != "" {
-		return m.cfg.PublicPath
-	}
-	return "/api/v1/files"
-}
-
-// PresignExpireSeconds 预签名有效期（秒）：运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 优先，回退 yaml。
+// PresignExpireSeconds 预签名有效期（秒）：运行时 STORAGE_PRESIGN_EXPIRE_SECONDS，缺省 3600。
 func (m *Manager) PresignExpireSeconds(ctx context.Context) int {
 	m.mu.RLock()
 	rt := m.runtime
-	def := m.cfg.PresignExpireSeconds
 	m.mu.RUnlock()
+	def := 3600
 	if rt != nil {
 		if v := rt.GetInt(ctx, "STORAGE_PRESIGN_EXPIRE_SECONDS", def); v > 0 {
 			return v
 		}
 	}
-	if def <= 0 {
-		return 3600
-	}
 	return def
 }
 
-// NewManager 按配置创建存储管理器。
-func NewManager(cfg config.StorageConfig) (*Manager, error) {
-	p, err := newProvider(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &Manager{provider: p, cfg: cfg}, nil
+// Provider 返回默认引擎（DEFAULT_FILE_ENGINE）。
+func (m *Manager) Provider(ctx context.Context) Provider {
+	return m.ProviderByName(ctx, m.DefaultProviderName(ctx))
 }
 
-// Provider 返回当前 Provider。
-func (m *Manager) Provider() Provider {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.provider
-}
-
-// providerConfigKeyPrefix 提供商 → 运行时配置键前缀（对齐 hei-boot FileEngines）。
-func providerConfigKeyPrefix(provider string) string {
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "minio":
-		return "STORAGE_MINIO"
-	case "rustfs":
-		return "STORAGE_RUSTFS"
-	case "oss":
-		return "STORAGE_ALIYUN"
-	case "s3":
-		return "STORAGE_TENCENT"
-	default:
-		return "STORAGE_LOCAL"
-	}
-}
-
-// Bucket 当前活动引擎的存储桶（local 为空）。
-func (m *Manager) Bucket() string {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.cfg.Bucket
-}
-
-// ProviderByName 按提供商名解析引擎（对齐 hei-boot StorageEngineFactory + RuntimeSettings）：
-// 运行时 STORAGE_{PREFIX}_* 优先，回退 yaml。构建结果按名缓存。
+// ProviderByName 按提供商名解析引擎（对齐 hei-boot StorageEngineFactory + RuntimeSettings）。
+// name 可为 provider（minio/rustfs/oss/s3）或引擎（MINIO/…）；未知回退默认引擎。
 func (m *Manager) ProviderByName(ctx context.Context, name string) Provider {
-	name = strings.ToLower(strings.TrimSpace(name))
-	if name == "" {
-		return m.Provider()
+	resolved := ResolveProvider(name)
+	if resolved == "" {
+		resolved = m.DefaultProviderName(ctx)
 	}
 	m.mu.RLock()
-	if p, ok := m.byName[name]; ok {
+	if p, ok := m.byName[resolved]; ok {
 		m.mu.RUnlock()
 		return p
 	}
 	rt := m.runtime
-	cfg := m.cfg
 	m.mu.RUnlock()
 
-	p := m.buildProvider(ctx, name, rt, cfg)
+	p, err := m.buildProvider(ctx, resolved, rt)
+	if err != nil {
+		return &errProvider{err: err}
+	}
 	m.mu.Lock()
 	if m.byName == nil {
 		m.byName = map[string]Provider{}
 	}
-	m.byName[name] = p
+	m.byName[resolved] = p
 	m.mu.Unlock()
 	return p
 }
 
-func (m *Manager) buildProvider(ctx context.Context, name string, rt *runtimecfg.Settings, cfg config.StorageConfig) Provider {
-	prefix := providerConfigKeyPrefix(name)
+func (m *Manager) buildProvider(ctx context.Context, name string, rt *runtimecfg.Settings) (Provider, error) {
+	cfg, err := resolveConfig(ctx, name, rt, m.PresignExpireSeconds(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return NewS3(cfg)
+}
+
+// resolveConfig 仅从 sys_config 组装配置（对齐 hei-boot StorageSettingsResolverImpl.buildForProvider）。
+func resolveConfig(ctx context.Context, name string, rt *runtimecfg.Settings, presignExpire int) (ResolvedConfig, error) {
+	prefix := ProviderConfigKeyPrefix(name)
+	if prefix == "" {
+		return ResolvedConfig{}, fmt.Errorf("storage: unsupported provider %q", name)
+	}
 	get := func(suffix, def string) string {
 		if rt != nil {
 			if v := rt.GetString(ctx, prefix+"_"+suffix, ""); v != "" {
@@ -229,127 +219,44 @@ func (m *Manager) buildProvider(ctx context.Context, name string, rt *runtimecfg
 	getBool := func(suffix string, def bool) bool {
 		if rt != nil {
 			if v := rt.GetString(ctx, prefix+"_"+suffix, ""); v != "" {
-				return strings.EqualFold(v, "true") || v == "1"
+				return strings.EqualFold(v, "true") || v == "1" || strings.EqualFold(v, "yes")
 			}
 		}
 		return def
 	}
-
-	if name == "local" || name == "" {
-		root := get("LOCAL_ROOT", cfg.LocalRoot)
-		if root == "" {
-			root = "./storage"
-		}
-		if runtime.GOOS == "windows" {
-			if w := get("WINDOWS_ROOT", ""); w != "" {
-				root = w
-			}
-		}
-		publicPath := get("PUBLIC_PATH", cfg.PublicPath)
-		if publicPath == "" {
-			publicPath = "/api/v1/files"
-		}
-		baseURL := get("BASE_URL", cfg.BaseURL)
-		return NewLocal(root, publicPath, baseURL)
+	region := get("REGION", "us-east-1")
+	if region == "" {
+		region = "us-east-1"
 	}
-
-	// S3 兼容：minio / rustfs / oss / s3
-	sc := config.StorageConfig{
-		Provider:  name,
-		Bucket:    get("BUCKET", cfg.Bucket),
-		Endpoint:  get("ENDPOINT", cfg.Endpoint),
-		AccessKey: get("ACCESS_KEY", cfg.AccessKey),
-		SecretKey: get("SECRET_KEY", cfg.SecretKey),
-		Region:    get("REGION", cfg.Region),
-		UseSSL:    getBool("USE_SSL", cfg.UseSSL),
-		BaseURL:   get("BASE_URL", cfg.BaseURL),
+	cfg := ResolvedConfig{
+		Provider:             name,
+		Bucket:               get("BUCKET", ""),
+		Endpoint:             get("ENDPOINT", ""),
+		AccessKey:            get("ACCESS_KEY", ""),
+		SecretKey:            get("SECRET_KEY", ""),
+		Region:               region,
+		UseSSL:               getBool("USE_SSL", false),
+		BaseURL:              get("BASE_URL", ""),
+		BucketPublic:         getBool("BUCKET_PUBLIC", false),
+		PresignExpireSeconds: presignExpire,
 	}
-	if sc.Bucket == "" {
-		sc.Bucket = "defaultbucket"
+	if cfg.Bucket == "" {
+		return ResolvedConfig{}, fmt.Errorf("storage: %s_BUCKET is required（请在系统配置中填写）", prefix)
 	}
-	if sc.Region == "" {
-		sc.Region = "us-east-1"
-	}
-	p, err := NewS3(sc)
-	if err != nil {
-		return m.Provider()
-	}
-	return p
-}
-
-// newProvider 按配置创建存储 Provider。
-func newProvider(cfg config.StorageConfig) (Provider, error) {
-	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
-	case "", "local":
-		return NewLocal(cfg.LocalRoot, cfg.PublicPath, cfg.BaseURL), nil
-	case "s3", "minio", "oss":
-		return NewS3(cfg)
-	default:
-		return nil, fmt.Errorf("storage: unsupported provider %q (use local|s3|minio|oss)", cfg.Provider)
-	}
-}
-
-// Local 基于本地目录的对象存储实现。
-//
-// Author: Charlie
-type Local struct {
-	root       string
-	publicPath string
-	baseURL    string
-}
-
-// NewLocal 创建本地存储 Provider。
-// 注意：不在构造时创建根目录（避免应用启动即产生空 storage/ 目录）；
-// 根目录由 Put 写入时惰性创建。
-func NewLocal(root, publicPath, baseURL string) *Local {
-	return &Local{root: root, publicPath: publicPath, baseURL: strings.TrimRight(baseURL, "/")}
-}
-
-// Root 返回本地存储根目录（供孤立文件清理等维护任务使用）。
-func (l *Local) Root() string { return l.root }
-
-// Put 写入对象并返回公开 URL。
-func (l *Local) Put(ctx context.Context, objectName string, r io.Reader, _ int64, _ string) (string, error) {
-	path := filepath.Join(l.root, filepath.FromSlash(objectName))
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return "", err
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	if _, err := io.Copy(f, r); err != nil {
-		return "", err
-	}
-	return l.PublicURL(ctx, objectName), nil
-}
-
-// Get 打开对象只读流。
-func (l *Local) Get(_ context.Context, objectName string) (io.ReadCloser, error) {
-	return os.Open(filepath.Join(l.root, filepath.FromSlash(objectName)))
-}
-
-// Delete 删除本地对象文件。
-func (l *Local) Delete(_ context.Context, objectName string) error {
-	return os.Remove(filepath.Join(l.root, filepath.FromSlash(objectName)))
-}
-
-// PublicURL 拼出对象公开访问路径（可带 baseURL）。
-func (l *Local) PublicURL(_ context.Context, objectName string) string {
-	p := strings.TrimRight(l.publicPath, "/") + "/" + strings.TrimLeft(objectName, "/")
-	if l.baseURL != "" {
-		return l.baseURL + p
-	}
-	return p
-}
-
-// PresignedURL 本地存储直接返回公开 URL（预签名无意义）。
-func (l *Local) PresignedURL(ctx context.Context, objectName string, _ time.Duration) (string, error) {
-	return l.PublicURL(ctx, objectName), nil
+	return cfg, nil
 }
 
 // ObjectKey 用前缀与文件名拼对象键。
 func ObjectKey(prefix, name string) string {
 	return fmt.Sprintf("%s/%s", strings.Trim(prefix, "/"), name)
 }
+
+// errProvider 配置缺失时的占位引擎（所有操作返回明确错误）。
+type errProvider struct{ err error }
+
+func (p *errProvider) Put(context.Context, string, io.Reader, int64, string) (string, error) {
+	return "", p.err
+}
+func (p *errProvider) Get(context.Context, string) (io.ReadCloser, error) { return nil, p.err }
+func (p *errProvider) Delete(context.Context, string) error               { return p.err }
+func (p *errProvider) PublicURL(context.Context, string) string           { return "" }

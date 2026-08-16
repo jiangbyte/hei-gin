@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/redis/go-redis/v9"
@@ -18,7 +19,6 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/storage"
-	"hei-gin/internal/modules/shared"
 	"hei-gin/internal/modules/sys/file"
 )
 
@@ -41,7 +41,7 @@ func NewService(db *gorm.DB, sto *storage.Manager, rdb *redis.Client) *Service {
 }
 
 // New 构建 sys.banner 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB, d.Storage, d.Redis)
 	return module.Module{
 		Name:   "sys.banner",
@@ -49,11 +49,11 @@ func New(d *shared.Deps) module.Module {
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
 		Jobs: []module.Job{
 			{
-				Name: "bannerStatusJob",
+				Name: "sys_banner_status_sync",
 				Run:  s.bannerStatusJobHandler,
 			},
 			{
-				Name: "bannerFlushInteractions",
+				Name: "sys_banner_flush_interactions",
 				Run:  s.bannerFlushInteractionsHandler,
 			},
 		},
@@ -84,7 +84,7 @@ func (s *Service) normalizeImage(image string) string {
 	if image == "" {
 		return ""
 	}
-	return file.NormalizeObjectName(image, s.sto.PublicPath())
+	return file.NormalizeObjectName(image)
 }
 
 // Update 更新 Banner。
@@ -212,9 +212,12 @@ func (s *Service) FlushInteractionDeltas(ctx context.Context) (int64, error) {
 }
 
 // bannerFlushInteractionsHandler 任务 Handler（对齐 hei-fastapi bannerFlushInteractions）。
-func (s *Service) bannerFlushInteractionsHandler(ctx context.Context, _ string) error {
-	_, err := s.FlushInteractionDeltas(ctx)
-	return err
+func (s *Service) bannerFlushInteractionsHandler(ctx context.Context, _ string) (string, error) {
+	n, err := s.FlushInteractionDeltas(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("flushed=%d", n), nil
 }
 
 // PortalList 门户端有效 Banner 列表。

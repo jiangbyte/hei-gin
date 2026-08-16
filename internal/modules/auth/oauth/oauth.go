@@ -24,9 +24,10 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/runtimecfg"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/module"
 )
 
 const (
@@ -47,16 +48,18 @@ type Service struct {
 	db      *gorm.DB
 	rdb     *redis.Client
 	runtime *runtimecfg.Settings
+	audit   *audit.Queue
 	issue   IssueSessionFunc
 }
 
 // NewService 构造 OAuth 服务。
-func NewService(d *shared.Deps, issue IssueSessionFunc) *Service {
+func NewService(d *module.Deps, issue IssueSessionFunc) *Service {
 	return &Service{
 		cfg:     d.Cfg,
 		db:      d.DB,
 		rdb:     d.Redis,
 		runtime: d.Runtime,
+		audit:   d.Audit,
 		issue:   issue,
 	}
 }
@@ -117,6 +120,18 @@ func (s *Service) RegisterRoutes(api *gin.RouterGroup) {
 		api.GET(p.base+"/:provider/callback", middleware.RateLimit(rdb, p.rl+"-callback", 30, 60), s.callback(p.typ))
 		api.POST(p.base+"/exchange", middleware.RateLimit(rdb, p.rl+"-exchange", 30, 60), s.exchange(p.typ))
 	}
+	// 微信小程序 code2session 登录（对齐 hei-boot PortalOauthController.wechatMpLogin）
+	api.POST("/v1/portal/oauth/wechat-mp/login",
+		middleware.RateLimit(rdb, "portal:oauth-wechat-mp", 30, 60),
+		middleware.OperationAudit(s.audit, "auth", "oauth_wechat_mp_login"),
+		s.wechatMpLogin)
+}
+
+// WechatMpLoginParam 微信小程序登录入参。
+//
+// Author: Charlie
+type WechatMpLoginParam struct {
+	Code string `json:"code" binding:"required"`
 }
 
 // AuthorizeResult 授权跳转结果。
@@ -277,6 +292,44 @@ func (s *Service) exchange(accountType security.AccountType) gin.HandlerFunc {
 	}
 }
 
+// wechatMpLogin 微信小程序 code2session 登录并签发会话。
+func (s *Service) wechatMpLogin(c *gin.Context) {
+	var req WechatMpLoginParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	pc, err := s.providerConfig("wechat_mp")
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	profile, err := exchangeWechatMp(c.Request.Context(), pc, req.Code)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	accountID, err := s.resolveOrBindAccount(c.Request.Context(), security.AccountPortal, "wechat_mp", profile)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if s.issue == nil {
+		response.Fail(c, http.StatusInternalServerError, 500, "session issuer not configured")
+		return
+	}
+	token, err := s.issue(c.Request.Context(), security.AccountPortal, accountID, c.ClientIP(), c.Request.UserAgent(), true)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, LoginResult{
+		Token:       token,
+		AccountID:   accountID,
+		AccountType: security.AccountPortal,
+	})
+}
+
 // frontendCallback 前端 OAuth 回调页：优先运行时 AUTH_OAUTH_FRONTEND_CALLBACK_{TYPE}，缺省同源路径（对齐 hei-boot）。
 func (s *Service) frontendCallback(ctx context.Context, accountType security.AccountType) string {
 	key := "AUTH_OAUTH_FRONTEND_CALLBACK_ADMIN"
@@ -309,7 +362,16 @@ func (s *Service) providerConfig(provider string) (providerCfg, error) {
 			ClientSecret: o.GitHub.ClientSecret,
 			RedirectURL:  o.GitHub.RedirectURL,
 		}, nil
-	case "gitee", "wechat", "wechat_open", "wechat_mp", "qq":
+	case "wechat_mp", "wechat-mp":
+		if o.WeChatMP.ClientID == "" || o.WeChatMP.ClientSecret == "" {
+			return providerCfg{}, fmt.Errorf("OAuth 提供商 wechat_mp 未配置")
+		}
+		return providerCfg{
+			ClientID:     o.WeChatMP.ClientID,
+			ClientSecret: o.WeChatMP.ClientSecret,
+			RedirectURL:  o.WeChatMP.RedirectURL,
+		}, nil
+	case "gitee", "wechat", "wechat_open", "qq":
 		return providerCfg{}, fmt.Errorf("OAuth 提供商 %s 未配置", provider)
 	default:
 		return providerCfg{}, fmt.Errorf("不支持的 OAuth 提供商: %s", provider)
@@ -405,6 +467,54 @@ func exchangeCode(ctx context.Context, provider string, pc providerCfg, code str
 		Nickname: nick,
 		Avatar:   user.AvatarURL,
 		Raw:      string(ubody),
+	}, nil
+}
+
+func exchangeWechatMp(ctx context.Context, pc providerCfg, code string) (*oauthProfile, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil, fmt.Errorf("缺少 code")
+	}
+	q := url.Values{}
+	q.Set("appid", pc.ClientID)
+	q.Set("secret", pc.ClientSecret)
+	q.Set("js_code", code)
+	q.Set("grant_type", "authorization_code")
+	u := "https://api.weixin.qq.com/sns/jscode2session?" + q.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var data struct {
+		OpenID     string `json:"openid"`
+		UnionID    string `json:"unionid"`
+		ErrCode    int    `json:"errcode"`
+		ErrMsg     string `json:"errmsg"`
+		SessionKey string `json:"session_key"`
+	}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	if data.ErrCode != 0 {
+		msg := data.ErrMsg
+		if msg == "" {
+			msg = fmt.Sprintf("%d", data.ErrCode)
+		}
+		return nil, fmt.Errorf("微信小程序登录失败: %s", msg)
+	}
+	if data.OpenID == "" {
+		return nil, fmt.Errorf("微信小程序登录失败: 未返回 openid")
+	}
+	return &oauthProfile{
+		OpenID:  data.OpenID,
+		UnionID: data.UnionID,
+		Raw:     string(body),
 	}, nil
 }
 

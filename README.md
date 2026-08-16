@@ -12,8 +12,9 @@
 
 - **双端账号体系**：ADMIN / PORTAL 独立会话；密码 RSA 加密传输、验证码登录、登录锁定与限流、OAuth 三方登录
 - **RBAC 权限**：账号 / 角色 / 部门 / 用户组 / 岗位，菜单与资源多层授权，数据范围过滤
-- **系统管理**：字典、配置（敏感加密）、Banner、文件存储（本地 / S3 兼容）、公告通知、意见反馈、弱口令清单
-- **运维能力**：操作审计与告警、运营工作台概览与 7 日趋势、内嵌任务调度（`sys_job` 管理台）
+- **系统管理**：字典、配置（敏感加密）、Banner、文件存储（S3 兼容对象存储）、公告通知、意见反馈、弱口令清单
+- **运维能力**：操作审计与告警、运营工作台概览与 7 日趋势、内嵌任务调度（DB 扫描 + Redis 锁，`sys_job` / CRON|FIXED，对齐 hei-boot）
+- **操作审计**：路由级 `middleware.OperationAudit(resourceType, action)` 传参（对齐 hei-boot `@OperationAudit`）
 - **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
 - **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
 

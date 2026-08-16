@@ -7,7 +7,6 @@ package feedback
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 	"strings"
 	"time"
 
@@ -17,7 +16,7 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/storage"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/modules/sys/file"
 )
 
 // Service 反馈业务服务。
@@ -35,7 +34,7 @@ func NewService(db *gorm.DB, sto *storage.Manager) *Service {
 }
 
 // New 构建 sys.feedback 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB, d.Storage)
 	return module.Module{
 		Name:   "sys.feedback",
@@ -124,7 +123,7 @@ func (s *Service) normalizeAttachNames(ctx context.Context, raw []string) []stri
 	names := make([]string, 0, len(raw))
 	seen := map[string]struct{}{}
 	for _, v := range raw {
-		n := fileNormalize(v, s.publicPath())
+		n := file.NormalizeObjectName(v)
 		if n == "" {
 			continue
 		}
@@ -253,66 +252,10 @@ func (s *Service) resolveURL(ctx context.Context, objectName string) string {
 	return s.sto.ResolveURL(ctx, objectName)
 }
 
-// publicPath 公开路径前缀。
-func (s *Service) publicPath() string {
-	if s.sto != nil {
-		if p := s.sto.PublicPath(); p != "" {
-			return p
-		}
-	}
-	return "/api/v1/files"
-}
-
 func toPtrs(rows []Feedback) []*Feedback {
 	out := make([]*Feedback, len(rows))
 	for i := range rows {
 		out[i] = &rows[i]
 	}
 	return out
-}
-
-// fileNormalize 规范化对象名（外部 URL 原样返回，其余去公开路径前缀）。
-func fileNormalize(value, publicPath string) string {
-	raw := strings.TrimSpace(value)
-	if raw == "" {
-		return ""
-	}
-	if isExternalURL(raw) {
-		return raw
-	}
-	key := toObjectKey2(raw, publicPath)
-	return key
-}
-
-func toObjectKey2(raw, publicPath string) string {
-	pathOnly := raw
-	if strings.Contains(raw, "://") {
-		if u, err := url.Parse(raw); err == nil {
-			pathOnly = u.Path
-		}
-	}
-	pathOnly = strings.ReplaceAll(pathOnly, "\\", "/")
-	prefix := strings.TrimRight(publicPath, "/") + "/"
-	if strings.HasPrefix(pathOnly, prefix) {
-		pathOnly = pathOnly[len(prefix):]
-	} else if strings.TrimRight(pathOnly, "/") == strings.TrimRight(publicPath, "/") {
-		return ""
-	}
-	key := strings.TrimLeft(pathOnly, "/")
-	if key == "" || strings.Contains(key, "..") {
-		return ""
-	}
-	return key
-}
-
-func isExternalURL(value string) bool {
-	u, err := url.Parse(strings.TrimSpace(value))
-	if err != nil || u.Scheme == "" {
-		return false
-	}
-	switch strings.ToLower(u.Scheme) {
-	case "http", "https", "data", "blob":
-		return true
-	}
-	return false
 }

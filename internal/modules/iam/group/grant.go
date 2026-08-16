@@ -9,12 +9,12 @@ import (
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/modules/iam/relation"
-	"hei-gin/internal/modules/iam/result"
+	"hei-gin/internal/modules/iam/view"
 	"hei-gin/internal/modules/iam/role"
 )
 
 // OwnUsers 用户组已关联账号成员。
-func (s *Service) OwnUsers(ctx context.Context, id string) (*result.OwnUserResult, error) {
+func (s *Service) OwnUsers(ctx context.Context, id string) (*view.OwnUserResult, error) {
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
@@ -22,11 +22,11 @@ func (s *Service) OwnUsers(ctx context.Context, id string) (*result.OwnUserResul
 	if err != nil {
 		return nil, err
 	}
-	users, err := result.LoadAccountViews(ctx, s.db, accountIDs)
+	users, err := view.LoadAccountViews(ctx, s.db, accountIDs)
 	if err != nil {
 		return nil, err
 	}
-	return &result.OwnUserResult{ID: id, Users: users, AccountIDs: accountIDs}, nil
+	return &view.OwnUserResult{ID: id, Users: users, AccountIDs: accountIDs}, nil
 }
 
 // GrantUsers 全量替换用户组成员账号。
@@ -34,7 +34,7 @@ func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	if _, err := s.repo.GetByID(ctx, req.ID); err != nil {
 		return err
 	}
-	accountTypes, err := result.LoadAccountTypes(ctx, s.db, req.AccountIDs)
+	accountTypes, err := view.LoadAccountTypes(ctx, s.db, req.AccountIDs)
 	if err != nil {
 		return err
 	}

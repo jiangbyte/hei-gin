@@ -14,7 +14,6 @@ import (
 
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 通知业务服务。
@@ -26,7 +25,7 @@ type Service struct{ repo *Repo }
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
 // New 构建 sys.notice 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
 		Name:   "sys.notice",
@@ -159,20 +158,45 @@ func (s *Service) MarkRead(ctx context.Context, rec ReadRecord) error {
 	return s.repo.FirstOrCreateRead(ctx, row)
 }
 
+// MarkReads 批量标记已读（先查已存在再批次插入，避免 N 次 FirstOrCreate）。
+func (s *Service) MarkReads(ctx context.Context, accountType, accountID string, noticeIDs []string, readAt time.Time) error {
+	if len(noticeIDs) == 0 {
+		return nil
+	}
+	existing, err := s.repo.ListExistingReadNoticeIDs(ctx, accountType, accountID, noticeIDs)
+	if err != nil {
+		return err
+	}
+	rows := make([]NoticeRead, 0, len(noticeIDs))
+	for _, id := range noticeIDs {
+		if id == "" {
+			continue
+		}
+		if _, ok := existing[id]; ok {
+			continue
+		}
+		rows = append(rows, NoticeRead{
+			ID: idgen.Next(), NoticeID: id, AccountType: accountType,
+			AccountID: accountID, ReadAt: readAt,
+		})
+	}
+	return s.repo.CreateReadsInBatches(ctx, rows)
+}
+
 // MarkAllRead 全部标记已读。
 func (s *Service) MarkAllRead(ctx context.Context, accountType, accountID string, readAt time.Time) error {
 	ids, err := s.repo.ListUnreadIDs(ctx, accountType, accountID)
 	if err != nil {
 		return err
 	}
+	rows := make([]NoticeRead, 0, len(ids))
 	for _, id := range ids {
-		row := NoticeRead{
+		rows = append(rows, NoticeRead{
 			ID: idgen.Next(), NoticeID: id, AccountType: accountType,
 			AccountID: accountID, ReadAt: readAt,
-		}
-		_ = s.repo.CreateRead(ctx, &row)
+		})
 	}
-	return nil
+	return s.repo.CreateReadsInBatches(ctx, rows)
 }
 
 // visibleTo 校验通知对当前用户可见（与 applyVisibility 逻辑一致）。

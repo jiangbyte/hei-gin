@@ -15,40 +15,27 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_account）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/create", ResourceType: "iam_account", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/update", ResourceType: "iam_account", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/delete", ResourceType: "iam_account", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-role", ResourceType: "iam_account", Action: "grant_role"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-group", ResourceType: "iam_account", Action: "grant_group"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-dept", ResourceType: "iam_account", Action: "grant_dept"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-resource", ResourceType: "iam_account", Action: "grant_resource"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/accounts/grant-client-resource", ResourceType: "iam_account", Action: "grant_client_resource"},
-		)
-		api.POST("/v1/admin/sys/accounts/create", admin, middleware.RequirePermission(d.Perms, "iam:account:create", "账户创建"), s.create)
-		api.POST("/v1/admin/sys/accounts/update", admin, middleware.RequirePermission(d.Perms, "iam:account:update", "账户更新"), s.update)
-		api.POST("/v1/admin/sys/accounts/delete", admin, middleware.RequirePermission(d.Perms, "iam:account:delete", "账户删除"), s.delete)
+		api.POST("/v1/admin/sys/accounts/create", admin, middleware.RequirePermission(d.Perms, "iam:account:create", "账户创建"), middleware.OperationAudit(d.Audit, "iam_account", "create"), s.create)
+		api.POST("/v1/admin/sys/accounts/update", admin, middleware.RequirePermission(d.Perms, "iam:account:update", "账户更新"), middleware.OperationAudit(d.Audit, "iam_account", "update"), s.update)
+		api.POST("/v1/admin/sys/accounts/delete", admin, middleware.RequirePermission(d.Perms, "iam:account:delete", "账户删除"), middleware.OperationAudit(d.Audit, "iam_account", "delete"), s.delete)
 		api.GET("/v1/admin/sys/accounts/detail", admin, middleware.RequirePermission(d.Perms, "iam:account:detail", "账户详情"), s.detail)
 		api.GET("/v1/admin/sys/accounts/page", admin, middleware.RequirePermission(d.Perms, "iam:account:page", "账户分页"), s.page)
 		api.GET("/v1/admin/sys/accounts/own-role", admin, middleware.RequirePermission(d.Perms, "iam:account:ownrole", "账号已拥有角色"), s.ownRole)
-		api.POST("/v1/admin/sys/accounts/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:account:grantrole", "账号角色授权"), s.grantRole)
+		api.POST("/v1/admin/sys/accounts/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:account:grantrole", "账号角色授权"), middleware.OperationAudit(d.Audit, "iam_account", "grant_role"), s.grantRole)
 		api.GET("/v1/admin/sys/accounts/own-group", admin, middleware.RequirePermission(d.Perms, "iam:account:owngroup", "账号已拥有用户组"), s.ownGroup)
-		api.POST("/v1/admin/sys/accounts/grant-group", admin, middleware.RequirePermission(d.Perms, "iam:account:grantgroup", "账号用户组授权"), s.grantGroup)
+		api.POST("/v1/admin/sys/accounts/grant-group", admin, middleware.RequirePermission(d.Perms, "iam:account:grantgroup", "账号用户组授权"), middleware.OperationAudit(d.Audit, "iam_account", "grant_group"), s.grantGroup)
 		api.GET("/v1/admin/sys/accounts/own-dept", admin, middleware.RequirePermission(d.Perms, "iam:account:owndept", "账号已拥有部门"), s.ownDept)
-		api.POST("/v1/admin/sys/accounts/grant-dept", admin, middleware.RequirePermission(d.Perms, "iam:account:grantdept", "账号部门授权"), s.grantDept)
+		api.POST("/v1/admin/sys/accounts/grant-dept", admin, middleware.RequirePermission(d.Perms, "iam:account:grantdept", "账号部门授权"), middleware.OperationAudit(d.Audit, "iam_account", "grant_dept"), s.grantDept)
 		api.GET("/v1/admin/sys/accounts/own-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:ownresource", "账号已拥有资源"), s.ownResource)
-		api.POST("/v1/admin/sys/accounts/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantresource", "账号资源授权"), s.grantResource)
+		api.POST("/v1/admin/sys/accounts/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantresource", "账号资源授权"), middleware.OperationAudit(d.Audit, "iam_account", "grant_resource"), s.grantResource)
 		api.GET("/v1/admin/sys/accounts/own-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:ownclientresource", "账号已拥有客户端资源"), s.ownClientResource)
-		api.POST("/v1/admin/sys/accounts/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantclientresource", "账号客户端资源授权"), s.grantClientResource)
+		api.POST("/v1/admin/sys/accounts/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:account:grantclientresource", "账号客户端资源授权"), middleware.OperationAudit(d.Audit, "iam_account", "grant_client_resource"), s.grantClientResource)
 	}
 }
 

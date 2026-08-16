@@ -1,4 +1,4 @@
-﻿/*
+/*
  Navicat Premium Dump SQL
 
  Source Server         : dev-postgres
@@ -12,46 +12,9 @@
  Target Server Version : 150017 (150017)
  File Encoding         : 65001
 
- Date: 15/08/2026 08:43:26
+ Date: 16/08/2026 18:28:38
 */
 
-
--- ----------------------------
--- Table structure for profile_user_admin
--- ----------------------------
-DROP TABLE IF EXISTS "public"."profile_user_admin";
-CREATE TABLE "public"."profile_user_admin" (
-  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "name" varchar(64) COLLATE "pg_catalog"."default",
-  "nickname" varchar(64) COLLATE "pg_catalog"."default",
-  "avatar" text COLLATE "pg_catalog"."default",
-  "signature" text COLLATE "pg_catalog"."default",
-  "phone" varchar(32) COLLATE "pg_catalog"."default",
-  "email" varchar(128) COLLATE "pg_catalog"."default",
-  "remark" text COLLATE "pg_catalog"."default",
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "public"."profile_user_admin"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."profile_user_admin"."name" IS '姓名';
-COMMENT ON COLUMN "public"."profile_user_admin"."nickname" IS '昵称';
-COMMENT ON COLUMN "public"."profile_user_admin"."avatar" IS '头像';
-COMMENT ON COLUMN "public"."profile_user_admin"."signature" IS '个性签名';
-COMMENT ON COLUMN "public"."profile_user_admin"."phone" IS '手机号';
-COMMENT ON COLUMN "public"."profile_user_admin"."email" IS '邮箱';
-COMMENT ON COLUMN "public"."profile_user_admin"."remark" IS '备注';
-COMMENT ON COLUMN "public"."profile_user_admin"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."profile_user_admin"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."profile_user_admin"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."profile_user_admin"."updated_by" IS '更新人';
-
--- ----------------------------
--- Records of profile_user_admin
--- ----------------------------
-INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
 
 -- ----------------------------
 -- Table structure for cg_test_activity
@@ -350,158 +313,41 @@ INSERT INTO "public"."cg_test_order_item" VALUES ('900000000000000211', '9000000
 INSERT INTO "public"."cg_test_order_item" VALUES ('900000000000000212', '900000000000000201', 'SKU-002', '测试商品B', 'COURSE', 'ENABLED', 1, 200.00, '2026-07-19 02:30:00+00', 'f', '{"duration": 30}', '赠品明细', '{"line": 2}', '2026-08-08 13:09:50.732542+00', '1', '2026-08-08 13:09:50.732542+00', '1');
 
 -- ----------------------------
--- Table structure for sys_feedback
+-- Table structure for profile_user_admin
 -- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_feedback";
-CREATE TABLE "public"."sys_feedback" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "content" text COLLATE "pg_catalog"."default" NOT NULL,
-  "category" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "contact" varchar(255) COLLATE "pg_catalog"."default",
-  "attach_object_names" json NOT NULL,
-  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "reply" text COLLATE "pg_catalog"."default",
-  "replied_by" varchar(64) COLLATE "pg_catalog"."default",
-  "replied_at" timestamptz(6),
-  "submitter_account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "submitter_account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "public"."sys_feedback"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_feedback"."title" IS '反馈标题';
-COMMENT ON COLUMN "public"."sys_feedback"."content" IS '反馈内容';
-COMMENT ON COLUMN "public"."sys_feedback"."category" IS '反馈分类';
-COMMENT ON COLUMN "public"."sys_feedback"."contact" IS '联系方式';
-COMMENT ON COLUMN "public"."sys_feedback"."attach_object_names" IS '附件 object_name 列表';
-COMMENT ON COLUMN "public"."sys_feedback"."status" IS '状态';
-COMMENT ON COLUMN "public"."sys_feedback"."reply" IS '管理员回复';
-COMMENT ON COLUMN "public"."sys_feedback"."replied_by" IS '回复人ID';
-COMMENT ON COLUMN "public"."sys_feedback"."replied_at" IS '回复时间';
-COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_type" IS '提交者账户类型';
-COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_id" IS '提交者账户ID';
-COMMENT ON COLUMN "public"."sys_feedback"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_feedback"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."sys_feedback"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_feedback"."updated_by" IS '更新人';
-
--- ----------------------------
--- Records of sys_feedback
--- ----------------------------
-INSERT INTO "public"."sys_feedback" VALUES ('7491849375090675712', '哈哈哈', '撒擦三次', 'SUGGESTION', '擦拭擦拭', '["uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png"]', 'RESOLVED', 'ok', '1', '2026-08-08 13:40:49.757811+00', 'PORTAL', '7491847383584804864', '2026-08-08 13:34:42.831539+00', '7491847383584804864', '2026-08-08 13:40:49.742207+00', '1');
-
--- ----------------------------
--- Table structure for sys_notice
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_notice";
-CREATE TABLE "public"."sys_notice" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "kind" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "content" text COLLATE "pg_catalog"."default" NOT NULL,
-  "content_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "category" varchar(32) COLLATE "pg_catalog"."default",
-  "severity" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "target_scope" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "target_account_types" json NOT NULL,
-  "target_account_ids" json NOT NULL,
-  "target_dept_ids" json NOT NULL,
-  "target_role_ids" json NOT NULL,
-  "publish_locations" json NOT NULL,
-  "is_pinned" bool NOT NULL,
-  "pinned_until" timestamptz(6),
-  "sender_account_type" varchar(32) COLLATE "pg_catalog"."default",
-  "sender_account_id" varchar(64) COLLATE "pg_catalog"."default",
-  "source_type" varchar(64) COLLATE "pg_catalog"."default",
-  "source_id" varchar(64) COLLATE "pg_catalog"."default",
-  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "publish_at" timestamptz(6),
-  "revoked_at" timestamptz(6),
-  "expire_at" timestamptz(6),
-  "view_count" int4 NOT NULL,
-  "extra" json NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "public"."sys_notice"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_notice"."kind" IS '类型：NOTIFICATION|ANNOUNCEMENT';
-COMMENT ON COLUMN "public"."sys_notice"."title" IS '标题';
-COMMENT ON COLUMN "public"."sys_notice"."content" IS '内容';
-COMMENT ON COLUMN "public"."sys_notice"."content_type" IS '内容格式';
-COMMENT ON COLUMN "public"."sys_notice"."category" IS '分类（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."severity" IS '等级';
-COMMENT ON COLUMN "public"."sys_notice"."target_scope" IS '目标范围';
-COMMENT ON COLUMN "public"."sys_notice"."target_account_types" IS '目标账户类型列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_account_ids" IS '目标账户ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_dept_ids" IS '目标部门ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."target_role_ids" IS '目标角色ID列表';
-COMMENT ON COLUMN "public"."sys_notice"."publish_locations" IS '发布位置（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."is_pinned" IS '是否置顶（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."pinned_until" IS '置顶截止时间';
-COMMENT ON COLUMN "public"."sys_notice"."sender_account_type" IS '发送者账户类型';
-COMMENT ON COLUMN "public"."sys_notice"."sender_account_id" IS '发送者账户ID';
-COMMENT ON COLUMN "public"."sys_notice"."source_type" IS '来源模块（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."source_id" IS '来源业务ID（通知）';
-COMMENT ON COLUMN "public"."sys_notice"."status" IS '状态';
-COMMENT ON COLUMN "public"."sys_notice"."publish_at" IS '发布时间';
-COMMENT ON COLUMN "public"."sys_notice"."revoked_at" IS '撤回时间';
-COMMENT ON COLUMN "public"."sys_notice"."expire_at" IS '过期时间（公告）';
-COMMENT ON COLUMN "public"."sys_notice"."view_count" IS '查看次数';
-COMMENT ON COLUMN "public"."sys_notice"."extra" IS '扩展信息';
-COMMENT ON COLUMN "public"."sys_notice"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_notice"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."sys_notice"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_notice"."updated_by" IS '更新人';
-
--- ----------------------------
--- Records of sys_notice
--- ----------------------------
-INSERT INTO "public"."sys_notice" VALUES ('7491842112464527360', 'NOTIFICATION', '急急急', '哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:05:46+00', NULL, NULL, 0, '{}', '2026-08-08 13:05:51.295643+00', '1', '2026-08-08 13:05:51.295643+00', '1');
-INSERT INTO "public"."sys_notice" VALUES ('7491842211315884032', 'NOTIFICATION', '哈哈哈', '哈哈哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:06:10+00', NULL, NULL, 0, '{}', '2026-08-08 13:06:14.871274+00', '1', '2026-08-08 13:06:14.871274+00', '1');
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291905', 'ANNOUNCEMENT', '系统维护预告', '本周日 02:00-04:00 将进行例行维护，期间门户可能短暂不可用，请提前做好安排。', 'markdown', 'SYSTEM', 'WARNING', 'ALL', '["PORTAL", "ADMIN"]', '[]', '[]', '[]', '{"center": true, "popup": true, "dashboard": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 12:52:19.890496+00', NULL, '2026-08-22 13:52:19.890496+00', 1, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:11:23.438139+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291906', 'ANNOUNCEMENT', '意见反馈功能上线', '现已支持在线提交意见反馈并查看处理进度。登录后打开用户菜单中的「我的反馈」即可使用。', 'text', 'SYSTEM', 'SUCCESS', 'ACCOUNT_TYPE', '["PORTAL"]', '[]', '[]', '[]', '{"center": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:22:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652032', 'NOTIFICATION', '账号安全提醒', '建议定期修改密码，并确保绑定的手机号与邮箱可用，以便找回账号。', 'text', 'SECURITY', 'WARNING', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:32:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652033', 'NOTIFICATION', '新功能提示：消息中心', '右上角铃铛可查看未读通知与公告，支持一键全部已读。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:42:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809044652034', 'NOTIFICATION', '管理端测试通知', '这是一条仅面向 ADMIN 的通知，用于验证账户类型过滤。', 'text', 'SYSTEM', 'INFO', 'ACCOUNT_TYPE', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:47:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
-INSERT INTO "public"."sys_notice" VALUES ('7491853809015291904', 'ANNOUNCEMENT', '欢迎使用 HEI 门户', '门户账号体系、个人中心与消息中心已就绪。如有问题可通过「我的反馈」提交。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{"center":true,"dashboard":true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 11:52:19.890496+00', NULL, '2026-11-06 13:52:19.890496+00', 6, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:56:51.531823+00', '7491847383584804864');
-
--- ----------------------------
--- Table structure for sys_notice_read
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_notice_read";
-CREATE TABLE "public"."sys_notice_read" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "notice_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+DROP TABLE IF EXISTS "public"."profile_user_admin";
+CREATE TABLE "public"."profile_user_admin" (
   "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "read_at" timestamptz(6) NOT NULL DEFAULT now()
+  "name" varchar(64) COLLATE "pg_catalog"."default",
+  "nickname" varchar(64) COLLATE "pg_catalog"."default",
+  "avatar" text COLLATE "pg_catalog"."default",
+  "signature" text COLLATE "pg_catalog"."default",
+  "phone" varchar(32) COLLATE "pg_catalog"."default",
+  "email" varchar(128) COLLATE "pg_catalog"."default",
+  "remark" text COLLATE "pg_catalog"."default",
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
 )
 ;
-COMMENT ON COLUMN "public"."sys_notice_read"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_notice_read"."notice_id" IS '消息ID';
-COMMENT ON COLUMN "public"."sys_notice_read"."account_type" IS '账户类型';
-COMMENT ON COLUMN "public"."sys_notice_read"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."sys_notice_read"."read_at" IS '阅读时间';
+COMMENT ON COLUMN "public"."profile_user_admin"."account_id" IS '账户ID';
+COMMENT ON COLUMN "public"."profile_user_admin"."name" IS '姓名';
+COMMENT ON COLUMN "public"."profile_user_admin"."nickname" IS '昵称';
+COMMENT ON COLUMN "public"."profile_user_admin"."avatar" IS '头像';
+COMMENT ON COLUMN "public"."profile_user_admin"."signature" IS '个性签名';
+COMMENT ON COLUMN "public"."profile_user_admin"."phone" IS '手机号';
+COMMENT ON COLUMN "public"."profile_user_admin"."email" IS '邮箱';
+COMMENT ON COLUMN "public"."profile_user_admin"."remark" IS '备注';
+COMMENT ON COLUMN "public"."profile_user_admin"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."profile_user_admin"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."profile_user_admin"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."profile_user_admin"."updated_by" IS '更新人';
 
 -- ----------------------------
--- Records of sys_notice_read
+-- Records of profile_user_admin
 -- ----------------------------
-INSERT INTO "public"."sys_notice_read" VALUES ('7491843548694908928', '7491842211315884032', 'ADMIN', '1', '2026-08-08 13:11:33.720396+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491847557782638592', '7491842112464527360', 'PORTAL', '7491847383584804864', '2026-08-08 13:27:29.554552+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853876019257344', '7491853809015291904', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:35.928972+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853918088126464', '7491853809044652033', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:45.966126+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377344', '7491853809015291905', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377345', '7491853809015291906', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377346', '7491853809044652032', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695936', '7491853809015291905', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
-INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695937', '7491853809044652034', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
+INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
 
 -- ----------------------------
 -- Table structure for profile_user_portal
@@ -1092,198 +938,194 @@ COMMENT ON COLUMN "public"."sys_config"."updated_by" IS '更新人';
 -- ----------------------------
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193480', 'STORAGE_MINIO_ACCESS_KEY', 'gAAAAABqd2UjQzg7UyUYFbmdQe6DHLXzJI7dO2Ql7IH_dmCaWvHkCfsmkFOfhGyXG_Q3kAWCsYEoWWZz0kaqgn9XSHGZDoZB8Q==', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 17:19:31.423597+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193481', 'STORAGE_MINIO_SECRET_KEY', 'gAAAAABqd2Uj8lcg6wI7znRSZmoU7WRxiPFY1ZQ9nU5O2kIyQHwbp0xPbRkrP7ww153nsWr-szThKe07RGmeicdbkHLFl4eSmA==', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 17:19:31.423597+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_0540565620e0467f', 'COPYRIGHT_TEXT', 'hei-fastapi', 'SYS', '版权文案', 1, 'STRING', '版权文案', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_0680575e52e15d07', 'PUSH_WECHAT_WORK_WEBHOOK', '', 'PUSH', '企业微信 Webhook', 30, 'STRING', '企业微信 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1d568c38d7ec2f23', 'PUSH_LARK_SECRET', '', 'PUSH', '飞书加签密钥', 21, 'STRING', '飞书加签密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1da3474838da8c34', 'PASSWORD_CUSTOM_WEAK_WORDS', '', 'AUTH_PASSWORD', '自定义弱密码词（逗号分隔）', 20, 'STRING', '自定义弱密码词（逗号分隔）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1e8e0e5c42c8f7ab', 'PASSWORD_HISTORY_CHECK_COUNT', '5', 'AUTH_PASSWORD', '历史密码检查条数', 16, 'INT', '历史密码检查条数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1fb16a022bd1ee13', 'AUDIT_ALERT_WEBHOOK_URL', '', 'AUDIT_ALERT', 'Webhook 地址', 5, 'STRING', 'Webhook 地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_21da174072a0f0bb', 'PASSWORD_MIN_LENGTH', '8', 'AUTH_PASSWORD', '密码最小长度', 10, 'INT', '密码最小长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_2299a1e718af6f56', 'AUDIT_ALERT_NOTIFY_EMAIL', 'TRUE', 'AUDIT_ALERT', '邮件通知', 2, 'BOOL', '邮件通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_2370fd3a6f2f8c68', 'AUDIT_ALERT_ANALYSIS_INTERVAL_SECONDS', '60', 'AUDIT_ALERT', '分析周期(秒)', 7, 'INT', '分析周期(秒)', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_276a9cb536b95fbc', 'AUTH_REGISTER_ADMIN_DEFAULT_ROLE_ID', '', 'AUTH_REGISTER', 'ADMIN 注册默认角色', 4, 'STRING', 'ADMIN 注册默认角色', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_27be176dc9266dcc', 'MAIL_LOCAL_USE_STARTTLS', 'FALSE', 'MAIL', 'SMTP 使用 STARTTLS', 18, 'BOOL', 'SMTP 使用 STARTTLS', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_295649e7a593148c', 'AUDIT_ALERT_WEBHOOK_SECRET', '', 'AUDIT_ALERT', 'Webhook 签名密钥', 6, 'STRING', 'Webhook 签名密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_2a5bdbb1576b09a6', 'AUTH_REGISTER_ADMIN_DEFAULT_DEPT_ID', '', 'AUTH_REGISTER', 'ADMIN 注册默认部门', 5, 'STRING', 'ADMIN 注册默认部门', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_2acb1f201faa512d', 'MAIL_LOCAL_HOST', 'localhost', 'MAIL', 'SMTP 服务器地址', 10, 'STRING', 'SMTP 服务器地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_2e41eb9efc88c078', 'PASSWORD_MAX_LENGTH', '128', 'AUTH_PASSWORD', '密码最大长度', 11, 'INT', '密码最大长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_3091f8900b127ff5', 'AUDIT_ALERT_ALERT_COOLDOWN_SECONDS', '1800', 'AUDIT_ALERT', '告警冷却(秒)', 8, 'INT', '告警冷却(秒)', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_363c1bd765b8f5be', 'PASSWORD_MAX_CONSECUTIVE_CHARS', '3', 'AUTH_PASSWORD', '最大连续相同字符数', 13, 'INT', '最大连续相同字符数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_3c98bcca99e448cd', 'AUTH_PASSWORD_RESET_URL_ADMIN', 'http://localhost:5173/auth/forgot-password', 'AUTH_TOKEN', 'ADMIN 密码重置页完整 URL', 3, 'STRING', 'ADMIN 密码重置页完整 URL', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_474cf1635e2d65d9', 'MAIL_TENCENT_SECRET_KEY', '', 'MAIL', '腾讯云邮件 SecretKey', 31, 'STRING', '腾讯云邮件 SecretKey', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1be5b5a733cdb21b', 'AUDIT_ALERT_RULE_BULK_DELETE', 'TRUE', 'AUDIT_ALERT', '批量删除检测', 13, 'BOOL', '批量删除检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_28c8a4a855e9fad1', 'AUDIT_ALERT_IP_ANOMALY_THRESHOLD', '3', 'AUDIT_ALERT', 'IP异常阈值', 22, 'INT', 'IP异常阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_452a32888fa5d2f8', 'AUDIT_ALERT_RULE_IP_ANOMALY', 'TRUE', 'AUDIT_ALERT', 'IP 异常检测', 14, 'BOOL', 'IP 异常检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_3cf4009b79c4cdc0', 'AUTH_LOGIN_ADMIN_ALLOW_PHONE', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许手机号登录', 13, 'BOOL', 'ADMIN 允许手机号登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_412ec5ff8977bee1', 'AUTH_LOGIN_PORTAL_MAX_FAILURES', '5', 'AUTH_LOGIN', 'PORTAL 最大失败次数', 19, 'INT', 'PORTAL 最大失败次数', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_397798808bce4338', 'AUTH_LOGIN_IP_MAX_FAILURES', '30', 'AUTH_LOGIN', '单 IP 最大登录失败次数', 3, 'INT', '单 IP 最大登录失败次数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_3ec435822ae2d002', 'AUTH_REGISTER_PORTAL_REQUIRE_EMAIL', 'TRUE', 'AUTH_REGISTER', 'PORTAL 注册要求邮箱', 8, 'BOOL', 'PORTAL 注册要求邮箱', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_1b209b614b7b162c', 'AUTH_REGISTER_PORTAL_DEFAULT_DEPT_ID', '', 'AUTH_REGISTER', 'PORTAL 注册默认部门', 10, 'STRING', 'PORTAL 注册默认部门', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_4b0b045351490c90', 'SMS_ALIYUN_ACCESS_KEY_ID', '', 'SMS', '阿里云短信 AccessKeyId', 10, 'STRING', '阿里云短信 AccessKeyId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_57e28945f48834a9', 'DEFAULT_MESSAGE_PUSH_ENGINE', 'DINGTALK', 'PUSH', '默认消息推送引擎', 1, 'STRING', '默认消息推送引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_58414339bc280bd6', 'DEFAULT_EMAIL_ENGINE', 'LOCAL', 'MAIL', '默认邮件引擎', 1, 'STRING', '默认邮件引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_5ab4365d79759a36', 'AUDIT_ALERT_NOTIFY_CUSTOM_WEBHOOK', 'FALSE', 'AUDIT_ALERT', '自定义 Webhook 通知', 4, 'BOOL', '自定义 Webhook 通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_5fb99add24efb532', 'PASSWORD_VALIDITY_DAYS', '90', 'AUTH_PASSWORD', '密码有效期（天）', 18, 'INT', '密码有效期（天）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_6028a8f49ab077ba', 'SMS_TENCENT_SECRET_KEY', '', 'SMS', '腾讯云短信 SecretKey', 21, 'STRING', '腾讯云短信 SecretKey', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_6cff7e453fe2304e', 'MAIL_LOCAL_FROM_EMAIL', 'test@hei-fastapi.local', 'MAIL', '发件人邮箱', 14, 'STRING', '发件人邮箱', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_6d571cb0b08380d9', 'PUSH_DINGTALK_SECRET', '', 'PUSH', '钉钉加签密钥', 11, 'STRING', '钉钉加签密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_717b2404165e2b0a', 'MAIL_LOCAL_PASSWORD', '', 'MAIL', 'SMTP 密码', 13, 'STRING', 'SMTP 密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_75f3eafaf65e3cab', 'MAIL_TENCENT_SECRET_ID', '', 'MAIL', '腾讯云邮件 SecretId', 30, 'STRING', '腾讯云邮件 SecretId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_77632725699872aa', 'PASSWORD_FORBID_WEAK_LIST', 'TRUE', 'AUTH_PASSWORD', '禁止弱密码库命中', 17, 'BOOL', '禁止弱密码库命中', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_7c7536455a677234', 'AUTH_REGISTER_ADMIN_ENABLED', 'FALSE', 'AUTH_REGISTER', 'ADMIN 开放注册', 1, 'BOOL', 'ADMIN 开放注册', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_802f8c2f3efd8536', 'MAIL_LOCAL_USE_SSL', 'FALSE', 'MAIL', 'SMTP 使用 SSL', 17, 'BOOL', 'SMTP 使用 SSL', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_813571013d71784d', 'MAIL_LOCAL_USERNAME', '', 'MAIL', 'SMTP 用户名', 12, 'STRING', 'SMTP 用户名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_84d3de8cd967733a', 'DEFAULT_SMS_ENGINE', 'ALIYUN', 'SMS', '默认短信引擎', 1, 'STRING', '默认短信引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_84f70e8cc74e7e9b', 'MAIL_LOCAL_PORT', '1025', 'MAIL', 'SMTP 端口', 11, 'INT', 'SMTP 端口', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_879c74e0d724800e', 'PUSH_LARK_WEBHOOK', '', 'PUSH', '飞书 Webhook', 20, 'STRING', '飞书 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_88c6b448c4e8042e', 'PASSWORD_COMPLEXITY', 'DIGITS_UPPER_LOWER_SPECIAL', 'AUTH_PASSWORD', '密码复杂度', 12, 'STRING', '密码复杂度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_89b4b2fd016928e6', 'PUSH_DINGTALK_WEBHOOK', '', 'PUSH', '钉钉 Webhook', 10, 'STRING', '钉钉 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_95047010c8cffed4', 'PASSWORD_FORBID_USER_INFO', 'TRUE', 'AUTH_PASSWORD', '禁止包含用户信息', 14, 'BOOL', '禁止包含用户信息', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_972fbb9f8c160446', 'MAIL_ALIYUN_ACCOUNT_NAME', '', 'MAIL', '阿里云发信地址', 22, 'STRING', '阿里云发信地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_99dabb0bc6e4a331', 'SMS_ALIYUN_SIGN_NAME', '', 'SMS', '阿里云短信签名', 12, 'STRING', '阿里云短信签名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_9c870cffa8867b07', 'PASSWORD_CHANGE_VERIFY_METHOD', 'OLD_PASSWORD', 'AUTH_PASSWORD', '自助改密验证方式', 2, 'STRING', '自助改密验证方式', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_9db853784cc408aa', 'SMS_TEMPLATE_CHANGE_PASSWORD_CODE', '{"code": "", "content": "改密验证码 {{code}}"}', 'SMS_TEMPLATE', '修改密码短信模板', 2, 'JSON', '修改密码短信模板', NULL, 'CHANGE_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_9f4ba41bf4cec420', 'AUTH_PASSWORD_RESET_TOKEN_TTL_SECONDS', '600', 'AUTH_TOKEN', '密码重置 Token 有效期（秒）', 2, 'INT', '密码重置 Token 有效期（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_a2be24a3a6abeff0', 'AUDIT_ALERT_ENABLED', 'TRUE', 'AUDIT_ALERT', '审计告警总开关', 1, 'BOOL', '审计告警总开关', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_a319c9d83ece6ada', 'AUTH_REGISTER_PORTAL_ENABLED', 'TRUE', 'AUTH_REGISTER', 'PORTAL 开放注册', 6, 'BOOL', 'PORTAL 开放注册', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_9288450cadd9127c', 'AUTH_LOGIN_ADMIN_FAILURE_WINDOW_SECONDS', '300', 'AUTH_LOGIN', 'ADMIN 登录失败窗口（秒）', 10, 'INT', 'ADMIN 登录失败窗口（秒）', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_521ad6a05b3b4ee2', 'AUTH_LOGIN_ADMIN_MAX_FAILURES', '5', 'AUTH_LOGIN', 'ADMIN 最大失败次数', 11, 'INT', 'ADMIN 最大失败次数', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_7135b647c2b3c035', 'AUTH_REGISTER_PORTAL_REQUIRE_PHONE', 'FALSE', 'AUTH_REGISTER', 'PORTAL 注册要求手机号', 7, 'BOOL', 'PORTAL 注册要求手机号', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_4c6acf8e5e9275d9', 'AUTH_REGISTER_ADMIN_REQUIRE_PHONE', 'FALSE', 'AUTH_REGISTER', 'ADMIN 注册要求手机号', 2, 'BOOL', 'ADMIN 注册要求手机号', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_6706c37cfca883e5', 'AUTH_REGISTER_ADMIN_REQUIRE_EMAIL', 'FALSE', 'AUTH_REGISTER', 'ADMIN 注册要求邮箱', 3, 'BOOL', 'ADMIN 注册要求邮箱', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_gitee_sec', 'AUTH_OAUTH_PORTAL_GITEE_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户 Gitee ClientSecret', 13, 'STRING', 'Client Secret', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.427549+00', NULL, '2026-08-12 15:57:59.427549+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_qq_sec', 'AUTH_OAUTH_PORTAL_QQ_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户 QQ ClientSecret', 23, 'STRING', 'Client Secret', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.443762+00', NULL, '2026-08-12 15:57:59.443762+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_gitee_cid', 'AUTH_OAUTH_PORTAL_GITEE_CLIENT_ID', '', 'AUTH_OAUTH', '门户 Gitee ClientId', 12, 'STRING', 'Client ID', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.421381+00', NULL, '2026-08-12 15:57:59.421381+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_gitee_ru', 'AUTH_OAUTH_PORTAL_GITEE_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 Gitee 回调', 14, 'STRING', 'Redirect URI', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.431808+00', NULL, '2026-08-12 15:57:59.431808+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_qq_en', 'AUTH_OAUTH_PORTAL_QQ_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户 QQ 登录', 21, 'BOOL', '启用', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.435873+00', NULL, '2026-08-12 15:57:59.435873+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_qq_cid', 'AUTH_OAUTH_PORTAL_QQ_CLIENT_ID', '', 'AUTH_OAUTH', '门户 QQ ClientId', 22, 'STRING', 'Client ID', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.439704+00', NULL, '2026-08-12 15:57:59.439704+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_a488dc18ffd25b5d', 'MAIL_TEMPLATE_REGISTER_SUCCESS', '{"subject": "欢迎注册 {{app_name}}", "body": "账号 {{account}} 注册成功。"}', 'MAIL_TEMPLATE', '注册成功邮件模板', 4, 'JSON', '注册成功邮件模板', NULL, 'REGISTER_SUCCESS', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_acct_cancel_ret_01', 'ACCOUNT_CANCEL_RETENTION_DAYS', '15', 'OTHER', '注销账号保留天数', 10, 'INT', '注销账号保留天数', NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_ad5e5c81c4766435', 'AUDIT_ALERT_BRUTE_FORCE_THRESHOLD', '10', 'AUDIT_ALERT', '暴力破解阈值', 20, 'INT', '暴力破解阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_b2da3fee87e0dd1f', 'MAIL_LOCAL_AUTH_REQUIRED', 'FALSE', 'MAIL', 'SMTP 是否需要认证', 16, 'BOOL', 'SMTP 是否需要认证', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_b36d23e6047971bb', 'SMS_TENCENT_SECRET_ID', '', 'SMS', '腾讯云短信 SecretId', 20, 'STRING', '腾讯云短信 SecretId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_b43e7757a174ca18', 'COPYRIGHT_URL', '', 'SYS', '版权链接', 2, 'STRING', '版权链接', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_b97b4627d571e9e9', 'MAIL_ALIYUN_ACCESS_KEY_ID', '', 'MAIL', '阿里云邮件 AccessKeyId', 20, 'STRING', '阿里云邮件 AccessKeyId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_bdd06a9ecd9561a0', 'AUDIT_ALERT_NOTIFY_PUSH', 'TRUE', 'AUDIT_ALERT', '推送通知', 3, 'BOOL', '推送通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_c00733c0055182cb', 'MAIL_TEMPLATE_RESET_PASSWORD_CODE', '{"subject": "{{app_name}} 密码重置", "body": "请点击以下链接重置密码，该链接将在 {{expire_minutes}} 分钟内有效。\n\n{{reset_link}}"}', 'MAIL_TEMPLATE', '重置密码邮件模板', 1, 'JSON', '重置密码邮件模板', NULL, 'RESET_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_cd29b96922a8b478', 'AUTH_PASSWORD_RESET_URL_PORTAL', 'http://localhost:5174/auth/forgot-password', 'AUTH_TOKEN', 'PORTAL 密码重置页完整 URL', 4, 'STRING', 'PORTAL 密码重置页完整 URL', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_ce9bc36c9f61f79f', 'SMS_TEMPLATE_LOGIN_CODE', '{"code": "", "content": "登录验证码 {{code}}"}', 'SMS_TEMPLATE', '登录验证码短信模板', 1, 'JSON', '登录验证码短信模板', NULL, 'LOGIN_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_cf505abfcea42e3c', 'PASSWORD_FORBID_HISTORICAL', 'TRUE', 'AUTH_PASSWORD', '禁止复用历史密码', 15, 'BOOL', '禁止复用历史密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_d61b9f0c91d4d7d0', 'MAIL_TEMPLATE_LOGIN_CODE', '{"subject": "{{app_name}} 登录验证码", "body": "您的登录验证码是 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '登录验证码邮件模板', 2, 'JSON', '登录验证码邮件模板', NULL, 'LOGIN_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_d759b943eb3eba43', 'PASSWORD_EXPIRY_WARNING_DAYS', '7', 'AUTH_PASSWORD', '密码过期提前提醒（天）', 19, 'INT', '密码过期提前提醒（天）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_dcf0f111fb004344', 'AUTH_DEFAULT_PASSWORD', '', 'AUTH_PASSWORD', '新建账户默认密码', 1, 'STRING', '新建账户默认密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_dd0fc126a107b79e', 'MAIL_ALIYUN_ACCESS_KEY_SECRET', '', 'MAIL', '阿里云邮件 AccessKeySecret', 21, 'STRING', '阿里云邮件 AccessKeySecret', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_df34085b029aedc6', 'AUTH_TOKEN_TTL_SECONDS', '2592000', 'AUTH_TOKEN', 'Token 过期时间（秒），默认 30 天', 1, 'INT', 'Token 过期时间（秒），默认 30 天', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_e099681b11c0ee4f', 'MAIL_LOCAL_FROM_NAME', 'hei-fastapi', 'MAIL', '发件人显示名称', 15, 'STRING', '发件人显示名称', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_e2bc3adc53a793ff', 'SMS_ALIYUN_ACCESS_KEY_SECRET', '', 'SMS', '阿里云短信 AccessKeySecret', 11, 'STRING', '阿里云短信 AccessKeySecret', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_e8fb8e521a365dc2', 'SMS_TENCENT_SIGN_NAME', '', 'SMS', '腾讯云短信签名', 23, 'STRING', '腾讯云短信签名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_sms_tencent_region', 'SMS_TENCENT_REGION', '', 'SMS', '腾讯云短信区域', 90, 'STRING', '腾讯云短信区域', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_eb6ff89b0555300f', 'MAIL_TENCENT_FROM_EMAIL', '', 'MAIL', '腾讯云发件邮箱', 32, 'STRING', '腾讯云发件邮箱', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_mail_tencent_region', 'MAIL_TENCENT_REGION', '', 'MAIL', '腾讯云邮件区域', 90, 'STRING', '腾讯云邮件区域', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_ec651dd2afd644bc', 'SMS_TENCENT_SDK_APP_ID', '', 'SMS', '腾讯云短信 SdkAppId', 22, 'STRING', '腾讯云短信 SdkAppId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_f7804b0c3e90d4d0', 'MAIL_TEMPLATE_CHANGE_PASSWORD_CODE', '{"subject": "{{app_name}} 修改密码验证码", "body": "验证码 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '修改密码邮件模板', 3, 'JSON', '修改密码邮件模板', NULL, 'CHANGE_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_f7f86f743c41c302', 'AUDIT_ALERT_RULE_BRUTE_FORCE', 'TRUE', 'AUDIT_ALERT', '暴力破解检测', 10, 'BOOL', '暴力破解检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_mail_acct_cancel_01', 'MAIL_TEMPLATE_ACCOUNT_CANCELLED', '{"subject": "{{app_name}} 账号注销确认", "body": "您好，您的账号已申请注销。\n\n我们将在 {{retention_days}} 天内保留账号数据；到期且期间未再登录使用后，系统将彻底删除账号及相关数据。\n\n预计清理时间：{{purge_at}}\n如非本人操作，请尽快联系管理员。"}', 'MAIL_TEMPLATE', '账号注销确认邮件模板', 20, 'JSON', '账号注销确认邮件模板', NULL, 'ACCOUNT_CANCELLED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_mail_acct_purge_01', 'MAIL_TEMPLATE_ACCOUNT_PURGED', '{"subject": "{{app_name}} 账号已彻底删除", "body": "您好，您此前注销的账号已完成保留期清理，账号及相关个人数据已彻底删除。\n\n清理时间：{{purged_at}}\n感谢您曾使用 {{app_name}}。"}', 'MAIL_TEMPLATE', '账号彻底删除邮件模板', 21, 'JSON', '账号彻底删除邮件模板', NULL, 'ACCOUNT_PURGED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_sms_acct_cancel_01', 'SMS_TEMPLATE_ACCOUNT_CANCELLED', '{"code": "", "content": "账号已申请注销，将于{{retention_days}}天后彻底删除。"}', 'SMS_TEMPLATE', '账号注销确认短信模板', 20, 'JSON', '账号注销确认短信模板', NULL, 'ACCOUNT_CANCELLED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_df87e86056b8b640', 'AUTH_REGISTER_PORTAL_DEFAULT_ROLE_ID', '', 'AUTH_REGISTER', 'PORTAL 注册默认角色', 9, 'STRING', 'PORTAL 注册默认角色', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_df6a5b9741f63718', 'AUTH_LOGIN_ADMIN_EMAIL_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'ADMIN 邮箱无用户策略', 16, 'STRING', 'ADMIN 邮箱无用户策略', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxopen_sec', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户微信开放平台 Secret', 33, 'STRING', 'AppSecret', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.458015+00', NULL, '2026-08-12 15:57:59.458015+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_qq_ru', 'AUTH_OAUTH_PORTAL_QQ_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 QQ 回调', 24, 'STRING', 'Redirect URI', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.447608+00', NULL, '2026-08-12 15:57:59.447608+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sms_acct_purge_01', 'SMS_TEMPLATE_ACCOUNT_PURGED', '{"code": "", "content": "您的账号已完成注销清理并彻底删除。"}', 'SMS_TEMPLATE', '账号彻底删除短信模板', 21, 'JSON', '账号彻底删除短信模板', NULL, 'ACCOUNT_PURGED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_01', 'STORAGE_UPLOAD_MAX_BYTES', '10485760', 'UPLOAD', '上传文件大小上限（字节）', 1, 'INT', '上传文件大小上限（字节）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_03', 'STORAGE_PRESIGN_EXPIRE_SECONDS', '3600', 'UPLOAD', '预签名 URL 有效期（秒）', 3, 'INT', '预签名 URL 有效期（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sys_01', 'DEFAULT_FILE_ENGINE', 'RUSTFS', 'STORAGE', '默认文件引擎', 1, 'STRING', '默认文件引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 17:19:31.423597+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_local_01', 'STORAGE_LOCAL_LOCAL_ROOT', '.runtime/storage', 'STORAGE', 'LINUX 本地存储根目录', 10, 'STRING', 'LINUX 本地存储根目录', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_local_02', 'STORAGE_LOCAL_WINDOWS_ROOT', 'D:/defaultUploadFolder', 'STORAGE', 'WINDOWS 本地存储根目录', 11, 'STRING', 'WINDOWS 本地存储根目录', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 14:53:11.633342+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_local_03', 'STORAGE_LOCAL_PUBLIC_PATH', '/api/v1/files', 'STORAGE', '本地公开访问路径', 12, 'STRING', '本地公开访问路径', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_local_04', 'STORAGE_LOCAL_BASE_URL', '', 'STORAGE', '本地自定义基础 URL', 13, 'STRING', '本地自定义基础 URL', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7878222758007273827', 'COPYRIGHT_TEXT', 'hei-fastapi', 'SYS', '版权文案', 1, 'STRING', '版权文案', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7310793430810554097', 'PUSH_WECHAT_WORK_WEBHOOK', '', 'PUSH', '企业微信 Webhook', 30, 'STRING', '企业微信 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7131883348553291227', 'PUSH_LARK_SECRET', '', 'PUSH', '飞书加签密钥', 21, 'STRING', '飞书加签密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7384500216009438994', 'PASSWORD_CUSTOM_WEAK_WORDS', '', 'AUTH_PASSWORD', '自定义弱密码词（逗号分隔）', 20, 'STRING', '自定义弱密码词（逗号分隔）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7791661612876719423', 'PASSWORD_HISTORY_CHECK_COUNT', '5', 'AUTH_PASSWORD', '历史密码检查条数', 16, 'INT', '历史密码检查条数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7296603632888365225', 'AUDIT_ALERT_WEBHOOK_URL', '', 'AUDIT_ALERT', 'Webhook 地址', 5, 'STRING', 'Webhook 地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7128087998001730719', 'PASSWORD_MIN_LENGTH', '8', 'AUTH_PASSWORD', '密码最小长度', 10, 'INT', '密码最小长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7695727871068877789', 'AUDIT_ALERT_NOTIFY_EMAIL', 'TRUE', 'AUDIT_ALERT', '邮件通知', 2, 'BOOL', '邮件通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7545090679203476556', 'AUDIT_ALERT_ANALYSIS_INTERVAL_SECONDS', '60', 'AUDIT_ALERT', '分析周期(秒)', 7, 'INT', '分析周期(秒)', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7127821217542267803', 'AUTH_REGISTER_ADMIN_DEFAULT_ROLE_ID', '', 'AUTH_REGISTER', 'ADMIN 注册默认角色', 4, 'STRING', 'ADMIN 注册默认角色', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7932896058923796364', 'MAIL_LOCAL_USE_STARTTLS', 'FALSE', 'MAIL', 'SMTP 使用 STARTTLS', 18, 'BOOL', 'SMTP 使用 STARTTLS', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7182623752582531304', 'AUDIT_ALERT_WEBHOOK_SECRET', '', 'AUDIT_ALERT', 'Webhook 签名密钥', 6, 'STRING', 'Webhook 签名密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7121863095719606243', 'AUTH_REGISTER_ADMIN_DEFAULT_DEPT_ID', '', 'AUTH_REGISTER', 'ADMIN 注册默认部门', 5, 'STRING', 'ADMIN 注册默认部门', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7557049262663315054', 'MAIL_LOCAL_HOST', 'localhost', 'MAIL', 'SMTP 服务器地址', 10, 'STRING', 'SMTP 服务器地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7345028346771097677', 'PASSWORD_MAX_LENGTH', '128', 'AUTH_PASSWORD', '密码最大长度', 11, 'INT', '密码最大长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7337967471264658438', 'AUDIT_ALERT_ALERT_COOLDOWN_SECONDS', '1800', 'AUDIT_ALERT', '告警冷却(秒)', 8, 'INT', '告警冷却(秒)', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7915486803474335428', 'PASSWORD_MAX_CONSECUTIVE_CHARS', '3', 'AUTH_PASSWORD', '最大连续相同字符数', 13, 'INT', '最大连续相同字符数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7116199988527416451', 'AUTH_PASSWORD_RESET_URL_ADMIN', 'http://localhost:5173/auth/forgot-password', 'AUTH_TOKEN', 'ADMIN 密码重置页完整 URL', 3, 'STRING', 'ADMIN 密码重置页完整 URL', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7331249362091683364', 'MAIL_TENCENT_SECRET_KEY', '', 'MAIL', '腾讯云邮件 SecretKey', 31, 'STRING', '腾讯云邮件 SecretKey', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7667316617799595990', 'AUDIT_ALERT_RULE_BULK_DELETE', 'TRUE', 'AUDIT_ALERT', '批量删除检测', 13, 'BOOL', '批量删除检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7486049791614620352', 'AUDIT_ALERT_IP_ANOMALY_THRESHOLD', '3', 'AUDIT_ALERT', 'IP异常阈值', 22, 'INT', 'IP异常阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7564883844348625200', 'AUDIT_ALERT_RULE_IP_ANOMALY', 'TRUE', 'AUDIT_ALERT', 'IP 异常检测', 14, 'BOOL', 'IP 异常检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7965270553477718376', 'AUTH_LOGIN_ADMIN_ALLOW_PHONE', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许手机号登录', 13, 'BOOL', 'ADMIN 允许手机号登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7165407484130097877', 'AUTH_LOGIN_PORTAL_MAX_FAILURES', '5', 'AUTH_LOGIN', 'PORTAL 最大失败次数', 19, 'INT', 'PORTAL 最大失败次数', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7707546743105654318', 'AUTH_LOGIN_IP_MAX_FAILURES', '30', 'AUTH_LOGIN', '单 IP 最大登录失败次数', 3, 'INT', '单 IP 最大登录失败次数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7645847924523510728', 'AUTH_REGISTER_PORTAL_REQUIRE_EMAIL', 'TRUE', 'AUTH_REGISTER', 'PORTAL 注册要求邮箱', 8, 'BOOL', 'PORTAL 注册要求邮箱', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7110705537461490506', 'AUTH_REGISTER_PORTAL_DEFAULT_DEPT_ID', '', 'AUTH_REGISTER', 'PORTAL 注册默认部门', 10, 'STRING', 'PORTAL 注册默认部门', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7607784543080994141', 'SMS_ALIYUN_ACCESS_KEY_ID', '', 'SMS', '阿里云短信 AccessKeyId', 10, 'STRING', '阿里云短信 AccessKeyId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7350757244774876723', 'DEFAULT_MESSAGE_PUSH_ENGINE', 'DINGTALK', 'PUSH', '默认消息推送引擎', 1, 'STRING', '默认消息推送引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7858449177900745217', 'DEFAULT_EMAIL_ENGINE', 'LOCAL', 'MAIL', '默认邮件引擎', 1, 'STRING', '默认邮件引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7204221884041359188', 'AUDIT_ALERT_NOTIFY_CUSTOM_WEBHOOK', 'FALSE', 'AUDIT_ALERT', '自定义 Webhook 通知', 4, 'BOOL', '自定义 Webhook 通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7436928202175303081', 'PASSWORD_VALIDITY_DAYS', '90', 'AUTH_PASSWORD', '密码有效期（天）', 18, 'INT', '密码有效期（天）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7395157445765927617', 'SMS_TENCENT_SECRET_KEY', '', 'SMS', '腾讯云短信 SecretKey', 21, 'STRING', '腾讯云短信 SecretKey', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7440731969037919022', 'MAIL_LOCAL_FROM_EMAIL', 'test@hei-fastapi.local', 'MAIL', '发件人邮箱', 14, 'STRING', '发件人邮箱', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7774327802304558750', 'PUSH_DINGTALK_SECRET', '', 'PUSH', '钉钉加签密钥', 11, 'STRING', '钉钉加签密钥', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7840109703376148568', 'MAIL_LOCAL_PASSWORD', '', 'MAIL', 'SMTP 密码', 13, 'STRING', 'SMTP 密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7143992105573126791', 'MAIL_TENCENT_SECRET_ID', '', 'MAIL', '腾讯云邮件 SecretId', 30, 'STRING', '腾讯云邮件 SecretId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7159687456156883406', 'PASSWORD_FORBID_WEAK_LIST', 'TRUE', 'AUTH_PASSWORD', '禁止弱密码库命中', 17, 'BOOL', '禁止弱密码库命中', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7107236720876061841', 'AUTH_REGISTER_ADMIN_ENABLED', 'FALSE', 'AUTH_REGISTER', 'ADMIN 开放注册', 1, 'BOOL', 'ADMIN 开放注册', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7312697174587677983', 'MAIL_LOCAL_USE_SSL', 'FALSE', 'MAIL', 'SMTP 使用 SSL', 17, 'BOOL', 'SMTP 使用 SSL', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7279087550089826228', 'MAIL_LOCAL_USERNAME', '', 'MAIL', 'SMTP 用户名', 12, 'STRING', 'SMTP 用户名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7817231488316128319', 'DEFAULT_SMS_ENGINE', 'ALIYUN', 'SMS', '默认短信引擎', 1, 'STRING', '默认短信引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7841576503746820287', 'MAIL_LOCAL_PORT', '1025', 'MAIL', 'SMTP 端口', 11, 'INT', 'SMTP 端口', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7717547996356753442', 'PUSH_LARK_WEBHOOK', '', 'PUSH', '飞书 Webhook', 20, 'STRING', '飞书 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7148106912230055136', 'PASSWORD_COMPLEXITY', 'DIGITS_UPPER_LOWER_SPECIAL', 'AUTH_PASSWORD', '密码复杂度', 12, 'STRING', '密码复杂度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7569398987799485767', 'PUSH_DINGTALK_WEBHOOK', '', 'PUSH', '钉钉 Webhook', 10, 'STRING', '钉钉 Webhook', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7743096612050880755', 'PASSWORD_FORBID_USER_INFO', 'TRUE', 'AUTH_PASSWORD', '禁止包含用户信息', 14, 'BOOL', '禁止包含用户信息', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7297229307635338316', 'MAIL_ALIYUN_ACCOUNT_NAME', '', 'MAIL', '阿里云发信地址', 22, 'STRING', '阿里云发信地址', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7156018694924792840', 'SMS_ALIYUN_SIGN_NAME', '', 'SMS', '阿里云短信签名', 12, 'STRING', '阿里云短信签名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7961221992910853426', 'PASSWORD_CHANGE_VERIFY_METHOD', 'OLD_PASSWORD', 'AUTH_PASSWORD', '自助改密验证方式', 2, 'STRING', '自助改密验证方式', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7223837583572900295', 'SMS_TEMPLATE_CHANGE_PASSWORD_CODE', '{"code": "", "content": "改密验证码 {{code}}"}', 'SMS_TEMPLATE', '修改密码短信模板', 2, 'JSON', '修改密码短信模板', NULL, 'CHANGE_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7943155149240026436', 'AUTH_PASSWORD_RESET_TOKEN_TTL_SECONDS', '600', 'AUTH_TOKEN', '密码重置 Token 有效期（秒）', 2, 'INT', '密码重置 Token 有效期（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7640258913173401645', 'AUDIT_ALERT_ENABLED', 'TRUE', 'AUDIT_ALERT', '审计告警总开关', 1, 'BOOL', '审计告警总开关', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7259830455098789920', 'AUTH_REGISTER_PORTAL_ENABLED', 'TRUE', 'AUTH_REGISTER', 'PORTAL 开放注册', 6, 'BOOL', 'PORTAL 开放注册', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7925585644534920178', 'AUTH_LOGIN_ADMIN_FAILURE_WINDOW_SECONDS', '300', 'AUTH_LOGIN', 'ADMIN 登录失败窗口（秒）', 10, 'INT', 'ADMIN 登录失败窗口（秒）', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7371141348954395191', 'AUTH_LOGIN_ADMIN_MAX_FAILURES', '5', 'AUTH_LOGIN', 'ADMIN 最大失败次数', 11, 'INT', 'ADMIN 最大失败次数', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7616410287911469795', 'AUTH_REGISTER_PORTAL_REQUIRE_PHONE', 'FALSE', 'AUTH_REGISTER', 'PORTAL 注册要求手机号', 7, 'BOOL', 'PORTAL 注册要求手机号', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7389279063701289685', 'AUTH_REGISTER_ADMIN_REQUIRE_PHONE', 'FALSE', 'AUTH_REGISTER', 'ADMIN 注册要求手机号', 2, 'BOOL', 'ADMIN 注册要求手机号', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7680761152547899501', 'AUTH_REGISTER_ADMIN_REQUIRE_EMAIL', 'FALSE', 'AUTH_REGISTER', 'ADMIN 注册要求邮箱', 3, 'BOOL', 'ADMIN 注册要求邮箱', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7123144141092942155', 'AUTH_OAUTH_PORTAL_GITEE_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户 Gitee ClientSecret', 13, 'STRING', 'Client Secret', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.427549+00', NULL, '2026-08-12 15:57:59.427549+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7734399746267501494', 'AUTH_OAUTH_PORTAL_QQ_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户 QQ ClientSecret', 23, 'STRING', 'Client Secret', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.443762+00', NULL, '2026-08-12 15:57:59.443762+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7744551651175282801', 'AUTH_OAUTH_PORTAL_GITEE_CLIENT_ID', '', 'AUTH_OAUTH', '门户 Gitee ClientId', 12, 'STRING', 'Client ID', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.421381+00', NULL, '2026-08-12 15:57:59.421381+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7125885979202993561', 'AUTH_OAUTH_PORTAL_GITEE_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 Gitee 回调', 14, 'STRING', 'Redirect URI', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.431808+00', NULL, '2026-08-12 15:57:59.431808+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7691150031767579943', 'AUTH_OAUTH_PORTAL_QQ_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户 QQ 登录', 21, 'BOOL', '启用', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.435873+00', NULL, '2026-08-12 15:57:59.435873+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7149430200646252861', 'AUTH_OAUTH_PORTAL_QQ_CLIENT_ID', '', 'AUTH_OAUTH', '门户 QQ ClientId', 22, 'STRING', 'Client ID', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.439704+00', NULL, '2026-08-12 15:57:59.439704+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7462877140739332791', 'MAIL_TEMPLATE_REGISTER_SUCCESS', '{"subject": "欢迎注册 {{app_name}}", "body": "账号 {{account}} 注册成功。"}', 'MAIL_TEMPLATE', '注册成功邮件模板', 4, 'JSON', '注册成功邮件模板', NULL, 'REGISTER_SUCCESS', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7833544856736466882', 'ACCOUNT_CANCEL_RETENTION_DAYS', '15', 'OTHER', '注销账号保留天数', 10, 'INT', '注销账号保留天数', NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7884464514418971420', 'AUDIT_ALERT_BRUTE_FORCE_THRESHOLD', '10', 'AUDIT_ALERT', '暴力破解阈值', 20, 'INT', '暴力破解阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7780925862931981131', 'MAIL_LOCAL_AUTH_REQUIRED', 'FALSE', 'MAIL', 'SMTP 是否需要认证', 16, 'BOOL', 'SMTP 是否需要认证', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7168944809004050220', 'SMS_TENCENT_SECRET_ID', '', 'SMS', '腾讯云短信 SecretId', 20, 'STRING', '腾讯云短信 SecretId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7650241926616235479', 'COPYRIGHT_URL', '', 'SYS', '版权链接', 2, 'STRING', '版权链接', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7642474443917569970', 'MAIL_ALIYUN_ACCESS_KEY_ID', '', 'MAIL', '阿里云邮件 AccessKeyId', 20, 'STRING', '阿里云邮件 AccessKeyId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7377151897664869996', 'AUDIT_ALERT_NOTIFY_PUSH', 'TRUE', 'AUDIT_ALERT', '推送通知', 3, 'BOOL', '推送通知', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7387934960432348080', 'MAIL_TEMPLATE_RESET_PASSWORD_CODE', '{"subject": "{{app_name}} 密码重置", "body": "请点击以下链接重置密码，该链接将在 {{expire_minutes}} 分钟内有效。\n\n{{reset_link}}"}', 'MAIL_TEMPLATE', '重置密码邮件模板', 1, 'JSON', '重置密码邮件模板', NULL, 'RESET_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7639638206762559428', 'AUTH_PASSWORD_RESET_URL_PORTAL', 'http://localhost:5174/auth/forgot-password', 'AUTH_TOKEN', 'PORTAL 密码重置页完整 URL', 4, 'STRING', 'PORTAL 密码重置页完整 URL', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7491104580893387509', 'SMS_TEMPLATE_LOGIN_CODE', '{"code": "", "content": "登录验证码 {{code}}"}', 'SMS_TEMPLATE', '登录验证码短信模板', 1, 'JSON', '登录验证码短信模板', NULL, 'LOGIN_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7971733830500536612', 'PASSWORD_FORBID_HISTORICAL', 'TRUE', 'AUTH_PASSWORD', '禁止复用历史密码', 15, 'BOOL', '禁止复用历史密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7231060999533820222', 'MAIL_TEMPLATE_LOGIN_CODE', '{"subject": "{{app_name}} 登录验证码", "body": "您的登录验证码是 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '登录验证码邮件模板', 2, 'JSON', '登录验证码邮件模板', NULL, 'LOGIN_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7799955389648191999', 'PASSWORD_EXPIRY_WARNING_DAYS', '7', 'AUTH_PASSWORD', '密码过期提前提醒（天）', 19, 'INT', '密码过期提前提醒（天）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7137492378552518589', 'AUTH_DEFAULT_PASSWORD', '', 'AUTH_PASSWORD', '新建账户默认密码', 1, 'STRING', '新建账户默认密码', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7815227162417732636', 'MAIL_ALIYUN_ACCESS_KEY_SECRET', '', 'MAIL', '阿里云邮件 AccessKeySecret', 21, 'STRING', '阿里云邮件 AccessKeySecret', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7386527519961798374', 'AUTH_TOKEN_TTL_SECONDS', '2592000', 'AUTH_TOKEN', 'Token 过期时间（秒），默认 30 天', 1, 'INT', 'Token 过期时间（秒），默认 30 天', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7254222471397278270', 'MAIL_LOCAL_FROM_NAME', 'hei-fastapi', 'MAIL', '发件人显示名称', 15, 'STRING', '发件人显示名称', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7577237128270583039', 'SMS_ALIYUN_ACCESS_KEY_SECRET', '', 'SMS', '阿里云短信 AccessKeySecret', 11, 'STRING', '阿里云短信 AccessKeySecret', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7755198709300048806', 'SMS_TENCENT_SIGN_NAME', '', 'SMS', '腾讯云短信签名', 23, 'STRING', '腾讯云短信签名', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7403276917562314417', 'SMS_TENCENT_REGION', '', 'SMS', '腾讯云短信区域', 90, 'STRING', '腾讯云短信区域', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7111122815413902706', 'MAIL_TENCENT_FROM_EMAIL', '', 'MAIL', '腾讯云发件邮箱', 32, 'STRING', '腾讯云发件邮箱', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7975896582003472913', 'MAIL_TENCENT_REGION', '', 'MAIL', '腾讯云邮件区域', 90, 'STRING', '腾讯云邮件区域', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7509581770976973374', 'SMS_TENCENT_SDK_APP_ID', '', 'SMS', '腾讯云短信 SdkAppId', 22, 'STRING', '腾讯云短信 SdkAppId', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7317566250917157196', 'MAIL_TEMPLATE_CHANGE_PASSWORD_CODE', '{"subject": "{{app_name}} 修改密码验证码", "body": "验证码 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '修改密码邮件模板', 3, 'JSON', '修改密码邮件模板', NULL, 'CHANGE_PASSWORD_CODE', 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7214189881608199926', 'AUDIT_ALERT_RULE_BRUTE_FORCE', 'TRUE', 'AUDIT_ALERT', '暴力破解检测', 10, 'BOOL', '暴力破解检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7316084524318600148', 'MAIL_TEMPLATE_ACCOUNT_CANCELLED', '{"subject": "{{app_name}} 账号注销确认", "body": "您好，您的账号已申请注销。\n\n我们将在 {{retention_days}} 天内保留账号数据；到期且期间未再登录使用后，系统将彻底删除账号及相关数据。\n\n预计清理时间：{{purge_at}}\n如非本人操作，请尽快联系管理员。"}', 'MAIL_TEMPLATE', '账号注销确认邮件模板', 20, 'JSON', '账号注销确认邮件模板', NULL, 'ACCOUNT_CANCELLED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7440617985015094217', 'MAIL_TEMPLATE_ACCOUNT_PURGED', '{"subject": "{{app_name}} 账号已彻底删除", "body": "您好，您此前注销的账号已完成保留期清理，账号及相关个人数据已彻底删除。\n\n清理时间：{{purged_at}}\n感谢您曾使用 {{app_name}}。"}', 'MAIL_TEMPLATE', '账号彻底删除邮件模板', 21, 'JSON', '账号彻底删除邮件模板', NULL, 'ACCOUNT_PURGED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7932451368437798893', 'SMS_TEMPLATE_ACCOUNT_CANCELLED', '{"code": "", "content": "账号已申请注销，将于{{retention_days}}天后彻底删除。"}', 'SMS_TEMPLATE', '账号注销确认短信模板', 20, 'JSON', '账号注销确认短信模板', NULL, 'ACCOUNT_CANCELLED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7490352982435195735', 'AUTH_REGISTER_PORTAL_DEFAULT_ROLE_ID', '', 'AUTH_REGISTER', 'PORTAL 注册默认角色', 9, 'STRING', 'PORTAL 注册默认角色', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7924936151245798814', 'AUTH_LOGIN_ADMIN_EMAIL_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'ADMIN 邮箱无用户策略', 16, 'STRING', 'ADMIN 邮箱无用户策略', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7725294497454302580', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_CLIENT_SECRET', '', 'AUTH_OAUTH', '门户微信开放平台 Secret', 33, 'STRING', 'AppSecret', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.458015+00', NULL, '2026-08-12 15:57:59.458015+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7805678264902064100', 'AUTH_OAUTH_PORTAL_QQ_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 QQ 回调', 24, 'STRING', 'Redirect URI', 'PORTAL', 'QQ', 'f', '{}', '2026-08-12 15:57:59.447608+00', NULL, '2026-08-12 15:57:59.447608+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7402885978532192492', 'SMS_TEMPLATE_ACCOUNT_PURGED', '{"code": "", "content": "您的账号已完成注销清理并彻底删除。"}', 'SMS_TEMPLATE', '账号彻底删除短信模板', 21, 'JSON', '账号彻底删除短信模板', NULL, 'ACCOUNT_PURGED', 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7141145699218587845', 'STORAGE_UPLOAD_MAX_BYTES', '10485760', 'UPLOAD', '上传文件大小上限（字节）', 1, 'INT', '上传文件大小上限（字节）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7634546496447633922', 'STORAGE_PRESIGN_EXPIRE_SECONDS', '3600', 'UPLOAD', '预签名 URL 有效期（秒）', 3, 'INT', '预签名 URL 有效期（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7424366524857713971', 'DEFAULT_FILE_ENGINE', 'RUSTFS', 'STORAGE', '默认文件引擎', 1, 'STRING', '默认文件引擎', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 17:19:31.423597+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125220999168', 'STORAGE_ALIYUN_ENDPOINT', 'oss-cn-hangzhou.aliyuncs.com', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125220999169', 'STORAGE_ALIYUN_BUCKET', 'defaultbucket', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125220999170', 'STORAGE_ALIYUN_REGION', 'cn-hangzhou', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125220999171', 'STORAGE_ALIYUN_USE_SSL', 'TRUE', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193472', 'STORAGE_ALIYUN_BASE_URL', '', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('7491869125225193473', 'STORAGE_ALIYUN_PUBLIC_PATH', '/api/v1/files', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7264846649644584871', 'STORAGE_ALIYUN_BUCKET_PUBLIC', 'FALSE', 'STORAGE', '阿里云桶是否公开', 14, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193474', 'STORAGE_TENCENT_ENDPOINT', '', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193475', 'STORAGE_TENCENT_BUCKET', 'defaultbucket', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193476', 'STORAGE_TENCENT_REGION', 'ap-beijing', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193477', 'STORAGE_TENCENT_USE_SSL', 'TRUE', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193478', 'STORAGE_TENCENT_BASE_URL', '', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('7491869125225193479', 'STORAGE_TENCENT_PUBLIC_PATH', '/api/v1/files', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7362777511165276641', 'STORAGE_TENCENT_BUCKET_PUBLIC', 'FALSE', 'STORAGE', '腾讯云桶是否公开', 20, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193482', 'STORAGE_MINIO_ENDPOINT', 'http://127.0.0.1:9000', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:50.574307+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193483', 'STORAGE_MINIO_BUCKET', 'vms', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193484', 'STORAGE_MINIO_REGION', '', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193485', 'STORAGE_MINIO_USE_SSL', 'FALSE', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
 INSERT INTO "public"."sys_config" VALUES ('7491869125225193486', 'STORAGE_MINIO_BASE_URL', '', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('7491869125225193487', 'STORAGE_MINIO_PUBLIC_PATH', '/api/v1/files', 'STORAGE', NULL, 0, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-08 14:53:11.633342+00', '1', '2026-08-08 14:53:11.633342+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_03', 'STORAGE_RUSTFS_ACCESS_KEY', 'gAAAAABqeFtjtOr0lzjyRl8TPLDP5be0LWRCOizoe7P6RlqHaxasJvILz2P27NauLfjSKM71tWtwpBPZiltAP2aT5Zi5Jzr1lA', 'STORAGE', 'RustFS Access Key', 42, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 10:49:34.896059+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_07', 'STORAGE_UPLOAD_CATEGORY_MAX_LENGTH', '64', 'UPLOAD', '上传分类名最大长度', 7, 'INT', '上传分类名最大长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_04', 'STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES', '["image/jpeg","image/png","image/webp","application/pdf","text/plain","application/octet-stream"]', 'UPLOAD', '允许的 MIME 类型列表（JSON 数组）', 4, 'JSON', '允许的 MIME 类型列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_05', 'STORAGE_UPLOAD_ALLOWED_EXTENSIONS', '[".jpg",".jpeg",".png",".webp",".pdf",".txt",".ini",".xlsx"]', 'UPLOAD', '允许的文件扩展名列表（JSON 数组）', 5, 'JSON', '允许的文件扩展名列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_upload_06', 'STORAGE_UPLOAD_DENIED_EXTENSIONS', '[".exe",".bat",".cmd",".sh",".js",".html",".php",".py",".jar"]', 'UPLOAD', '禁止上传的扩展名列表（JSON 数组）', 6, 'JSON', '禁止上传的扩展名列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_04', 'STORAGE_RUSTFS_SECRET_KEY', 'gAAAAABqeFtjH6R_u459TAGXEzeQOa9GRHtG_8xkDrnY8hwiZYyxeRtHh0YqhXsuzfkY3_Nn3OWId3rStJkCQgQUdwfkLtuAyA', 'STORAGE', 'RustFS Secret Key', 43, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 10:49:34.902513+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_02', 'STORAGE_RUSTFS_ENDPOINT', 'http://127.0.0.1:9002', 'STORAGE', 'RustFS S3 API 端点', 41, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-08 17:17:14.441312+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_01', 'STORAGE_RUSTFS_BUCKET', 'defaultbucket', 'STORAGE', 'RustFS 存储桶', 40, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_05', 'STORAGE_RUSTFS_REGION', 'us-east-1', 'STORAGE', 'RustFS Region', 44, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_06', 'STORAGE_RUSTFS_USE_SSL', 'FALSE', 'STORAGE', 'RustFS 是否 SSL', 45, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_07', 'STORAGE_RUSTFS_BASE_URL', '', 'STORAGE', 'RustFS 自定义基础 URL', 46, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_sto_rustfs_08', 'STORAGE_RUSTFS_PUBLIC_PATH', '/api/v1/files', 'STORAGE', 'RustFS 公开访问路径', 47, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_audit_notify_email_to', 'AUDIT_ALERT_NOTIFY_EMAIL_TO', '', 'AUDIT_ALERT', '审计告警收件邮箱', 2, 'STRING', '告警收件邮箱', NULL, NULL, 'f', '{}', '2026-08-12 14:10:48.638877+00', NULL, '2026-08-12 14:10:48.638877+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_8394da8a8cca0551', 'AUDIT_ALERT_RULE_SENSITIVE_OPS', 'TRUE', 'AUDIT_ALERT', '敏感操作监控', 12, 'BOOL', '敏感操作监控', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_88059105f3bfd3bd', 'AUDIT_ALERT_RULE_UNUSUAL_HOURS', 'TRUE', 'AUDIT_ALERT', '异常时间操作检测', 11, 'BOOL', '异常时间操作检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_a4e7a42d3948bf0b', 'AUDIT_ALERT_BULK_DELETE_THRESHOLD', '20', 'AUDIT_ALERT', '批量删除阈值', 21, 'INT', '批量删除阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_6346132727a3f118', 'AUTH_LOGIN_ADMIN_LOCK_SECONDS', '300', 'AUTH_LOGIN', 'ADMIN 锁定时间（秒）', 12, 'INT', 'ADMIN 锁定时间（秒）', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_9801c7391e5a784b', 'AUTH_LOGIN_ADMIN_PHONE_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'ADMIN 手机号无用户策略', 14, 'STRING', 'ADMIN 手机号无用户策略', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_85da42c429c11c0d', 'AUTH_LOGIN_ADMIN_ALLOW_EMAIL', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许邮箱登录', 15, 'BOOL', 'ADMIN 允许邮箱登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_bd4d8532dd9d2c7b', 'AUTH_LOGIN_ADMIN_ALLOW_OTP', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许 OTP 登录', 17, 'BOOL', 'ADMIN 允许 OTP 登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_a3edc3fb337f0fd5', 'AUTH_LOGIN_PORTAL_FAILURE_WINDOW_SECONDS', '300', 'AUTH_LOGIN', 'PORTAL 登录失败窗口（秒）', 18, 'INT', 'PORTAL 登录失败窗口（秒）', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_c035540f2840759f', 'AUTH_LOGIN_PORTAL_LOCK_SECONDS', '300', 'AUTH_LOGIN', 'PORTAL 锁定时间（秒）', 20, 'INT', 'PORTAL 锁定时间（秒）', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_73263fd26598e245', 'AUTH_LOGIN_PORTAL_ALLOW_PHONE', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许手机号登录', 21, 'BOOL', 'PORTAL 允许手机号登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_8c93f75be4a015eb', 'AUTH_LOGIN_PORTAL_PHONE_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'PORTAL 手机号无用户策略', 22, 'STRING', 'PORTAL 手机号无用户策略', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_845bdae0cbb2866c', 'AUTH_LOGIN_PORTAL_ALLOW_EMAIL', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许邮箱登录', 23, 'BOOL', 'PORTAL 允许邮箱登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_e4a6b916ed9e923f', 'AUTH_LOGIN_PORTAL_EMAIL_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'PORTAL 邮箱无用户策略', 24, 'STRING', 'PORTAL 邮箱无用户策略', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_b48d4cced07926b7', 'AUTH_LOGIN_PORTAL_ALLOW_OTP', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许 OTP 登录', 25, 'BOOL', 'PORTAL 允许 OTP 登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_e292016eaa176cd4', 'AUTH_LOGIN_FAILURE_WINDOW_SECONDS', '900', 'AUTH_LOGIN', '登录失败统计窗口（秒）', 1, 'INT', '登录失败统计窗口（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_59196f3cfe0c791e', 'AUTH_LOGIN_ACCOUNT_MAX_FAILURES', '5', 'AUTH_LOGIN', '单账号最大登录失败次数', 2, 'INT', '单账号最大登录失败次数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_68e8e38dfe6653f4', 'AUTH_LOGIN_LOCK_SECONDS', '900', 'AUTH_LOGIN', '登录锁定时间（秒）', 4, 'INT', '登录锁定时间（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_force_bind_admin_email', 'AUTH_FORCE_BIND_ADMIN_EMAIL', 'FALSE', 'AUTH_FORCE_BIND', 'ADMIN 强制绑定邮箱', 3, 'BOOL', '强制绑定邮箱', 'ADMIN', NULL, 'f', '{}', '2026-08-12 14:36:35.252523+00', NULL, '2026-08-12 14:36:35.252523+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_force_bind_admin_phone', 'AUTH_FORCE_BIND_ADMIN_PHONE', 'FALSE', 'AUTH_FORCE_BIND', 'ADMIN 强制绑定手机', 4, 'BOOL', '强制绑定手机', 'ADMIN', NULL, 'f', '{}', '2026-08-12 14:36:35.255718+00', NULL, '2026-08-12 14:36:35.255718+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_mail_bind_email_code', 'MAIL_TEMPLATE_BIND_EMAIL_CODE', '{"subject": "{{app_name}} 绑定邮箱验证码", "body": "您的绑定验证码是 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '绑定邮箱验证码邮件模板', 20, 'JSON', '绑定邮箱验证码邮件模板', NULL, 'BIND_EMAIL_CODE', 'f', '{}', '2026-08-12 14:36:35.270099+00', NULL, '2026-08-12 14:36:35.270099+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_sms_bind_phone_code', 'SMS_TEMPLATE_BIND_PHONE_CODE', '{"code": "", "content": "绑定验证码 {{code}}，{{expire_minutes}} 分钟内有效"}', 'SMS_TEMPLATE', '绑定手机验证码短信模板', 20, 'JSON', '绑定手机验证码短信模板', NULL, 'BIND_PHONE_CODE', 'f', '{}', '2026-08-12 14:36:35.274517+00', NULL, '2026-08-12 14:36:35.274517+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_reg_portal_allow_account', 'AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许用户名注册', 11, 'BOOL', '允许账号注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.228596+00', NULL, '2026-08-12 14:36:35.228596+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_reg_portal_allow_email', 'AUTH_REGISTER_PORTAL_ALLOW_EMAIL', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许邮箱注册', 12, 'BOOL', '允许邮箱注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.234457+00', NULL, '2026-08-12 14:36:35.234457+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_github_cid', 'AUTH_OAUTH_PORTAL_GITHUB_CLIENT_ID', 'superadmin', 'AUTH_OAUTH', '门户 GitHub ClientId', 2, 'STRING', 'Client ID', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.403535+00', NULL, '2026-08-12 15:57:59.403535+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_github_sec', 'AUTH_OAUTH_PORTAL_GITHUB_CLIENT_SECRET', 'gAAAAABqfJrd_yTDy0DkEmej80F2frWaLzP6NMbZMBDyOzUwUOTnjRHn7UGI2ACEkt4EzA9zS9q1dK4T0B0yRAP_LDtVMcNs3w', 'AUTH_OAUTH', '门户 GitHub ClientSecret', 3, 'STRING', 'Client Secret', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.407874+00', NULL, '2026-08-12 15:57:59.407874+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_gitee_en', 'AUTH_OAUTH_PORTAL_GITEE_ENABLED', 'TRUE', 'AUTH_OAUTH', '门户 Gitee 登录', 11, 'BOOL', '启用', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.416643+00', NULL, '2026-08-12 15:57:59.416643+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxmp_sec', 'AUTH_OAUTH_PORTAL_WECHAT_MP_APP_SECRET', '', 'AUTH_OAUTH', '门户小程序 AppSecret', 43, 'STRING', 'AppSecret', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.472798+00', NULL, '2026-08-12 15:57:59.472798+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_gitee_sec', 'AUTH_OAUTH_ADMIN_GITEE_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 Gitee ClientSecret', 113, 'STRING', 'Client Secret', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.499737+00', NULL, '2026-08-12 15:57:59.499737+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_qq_sec', 'AUTH_OAUTH_ADMIN_QQ_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 QQ ClientSecret', 123, 'STRING', 'Client Secret', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.515748+00', NULL, '2026-08-12 15:57:59.515748+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_wxopen_sec', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端微信开放平台 Secret', 133, 'STRING', 'AppSecret', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.5331+00', NULL, '2026-08-12 15:57:59.5331+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_frontend_portal_cb', 'AUTH_OAUTH_FRONTEND_CALLBACK_PORTAL', '', 'AUTH_OAUTH', '门户 OAuth 前端回调页（空则用默认）', 200, 'STRING', '门户前端回调', NULL, NULL, 'f', '{}', '2026-08-12 15:57:59.540869+00', NULL, '2026-08-12 15:57:59.540869+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_frontend_admin_cb', 'AUTH_OAUTH_FRONTEND_CALLBACK_ADMIN', '', 'AUTH_OAUTH', '管理端 OAuth 前端回调页（空则用默认）', 201, 'STRING', '管理端前端回调', NULL, NULL, 'f', '{}', '2026-08-12 15:57:59.544738+00', NULL, '2026-08-12 15:57:59.544738+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_github_en', 'AUTH_OAUTH_ADMIN_GITHUB_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端 GitHub 登录', 101, 'BOOL', '启用', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.476901+00', NULL, '2026-08-12 15:57:59.476901+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_github_sec', 'AUTH_OAUTH_ADMIN_GITHUB_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 GitHub ClientSecret', 103, 'STRING', 'Client Secret', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.483943+00', NULL, '2026-08-12 15:57:59.483943+00', NULL);
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_github_cid', 'AUTH_OAUTH_ADMIN_GITHUB_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 GitHub ClientId', 102, 'STRING', 'Client ID', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.480274+00', NULL, '2026-08-12 15:57:59.480274+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_github_ru', 'AUTH_OAUTH_ADMIN_GITHUB_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 GitHub 回调', 104, 'STRING', 'Redirect URI', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.487901+00', NULL, '2026-08-12 15:57:59.487901+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_reg_portal_allow_phone', 'AUTH_REGISTER_PORTAL_ALLOW_PHONE', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许手机注册', 13, 'BOOL', '允许手机注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.237264+00', NULL, '2026-08-12 14:36:35.237264+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_force_bind_portal_email', 'AUTH_FORCE_BIND_PORTAL_EMAIL', 'FALSE', 'AUTH_FORCE_BIND', 'PORTAL 强制绑定邮箱', 1, 'BOOL', '强制绑定邮箱', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.239972+00', NULL, '2026-08-12 14:36:35.239972+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_force_bind_portal_phone', 'AUTH_FORCE_BIND_PORTAL_PHONE', 'FALSE', 'AUTH_FORCE_BIND', 'PORTAL 强制绑定手机', 2, 'BOOL', '强制绑定手机', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.245505+00', NULL, '2026-08-12 14:36:35.245505+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_gitee_en', 'AUTH_OAUTH_ADMIN_GITEE_ENABLED', 'TRUE', 'AUTH_OAUTH', '管理端 Gitee 登录', 111, 'BOOL', '启用', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.491641+00', NULL, '2026-08-12 15:57:59.491641+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_gitee_cid', 'AUTH_OAUTH_ADMIN_GITEE_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 Gitee ClientId', 112, 'STRING', 'Client ID', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.495992+00', NULL, '2026-08-12 15:57:59.495992+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_gitee_ru', 'AUTH_OAUTH_ADMIN_GITEE_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 Gitee 回调', 114, 'STRING', 'Redirect URI', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.503669+00', NULL, '2026-08-12 15:57:59.503669+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_qq_en', 'AUTH_OAUTH_ADMIN_QQ_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端 QQ 登录', 121, 'BOOL', '启用', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.507724+00', NULL, '2026-08-12 15:57:59.507724+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_qq_cid', 'AUTH_OAUTH_ADMIN_QQ_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 QQ ClientId', 122, 'STRING', 'Client ID', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.512033+00', NULL, '2026-08-12 15:57:59.512033+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_qq_ru', 'AUTH_OAUTH_ADMIN_QQ_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 QQ 回调', 124, 'STRING', 'Redirect URI', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.520333+00', NULL, '2026-08-12 15:57:59.520333+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_wxopen_en', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端微信网页登录', 131, 'BOOL', '启用', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.525073+00', NULL, '2026-08-12 15:57:59.525073+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_wxopen_cid', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_CLIENT_ID', '', 'AUTH_OAUTH', '管理端微信开放平台 AppId', 132, 'STRING', 'AppId', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.529053+00', NULL, '2026-08-12 15:57:59.529053+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_admin_wxopen_ru', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端微信开放平台回调', 134, 'STRING', 'Redirect URI', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.53685+00', NULL, '2026-08-12 15:57:59.53685+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_github_en', 'AUTH_OAUTH_PORTAL_GITHUB_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户 GitHub 登录', 1, 'BOOL', '启用', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.397127+00', NULL, '2026-08-12 15:57:59.397127+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_github_ru', 'AUTH_OAUTH_PORTAL_GITHUB_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 GitHub 回调', 4, 'STRING', 'Redirect URI', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.412339+00', NULL, '2026-08-12 15:57:59.412339+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxopen_en', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户微信网页登录', 31, 'BOOL', '启用', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.450854+00', NULL, '2026-08-12 15:57:59.450854+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxopen_cid', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_CLIENT_ID', '', 'AUTH_OAUTH', '门户微信开放平台 AppId', 32, 'STRING', 'AppId', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.454644+00', NULL, '2026-08-12 15:57:59.454644+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxopen_ru', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_REDIRECT_URI', '', 'AUTH_OAUTH', '门户微信开放平台回调', 34, 'STRING', 'Redirect URI', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.461291+00', NULL, '2026-08-12 15:57:59.461291+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxmp_en', 'AUTH_OAUTH_PORTAL_WECHAT_MP_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户微信小程序登录', 41, 'BOOL', '启用', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.464887+00', NULL, '2026-08-12 15:57:59.464887+00', '1');
-INSERT INTO "public"."sys_config" VALUES ('cfg_oauth_portal_wxmp_cid', 'AUTH_OAUTH_PORTAL_WECHAT_MP_APP_ID', '', 'AUTH_OAUTH', '门户小程序 AppId', 42, 'STRING', 'AppId', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.468946+00', NULL, '2026-08-12 15:57:59.468946+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7525309778220488671', 'STORAGE_MINIO_BUCKET_PUBLIC', 'FALSE', 'STORAGE', 'MinIO 桶是否公开', 26, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7247260109501730845', 'STORAGE_RUSTFS_ACCESS_KEY', 'gAAAAABqeFtjtOr0lzjyRl8TPLDP5be0LWRCOizoe7P6RlqHaxasJvILz2P27NauLfjSKM71tWtwpBPZiltAP2aT5Zi5Jzr1lA', 'STORAGE', 'RustFS Access Key', 42, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 10:49:34.896059+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7159166510497302996', 'STORAGE_UPLOAD_CATEGORY_MAX_LENGTH', '64', 'UPLOAD', '上传分类名最大长度', 7, 'INT', '上传分类名最大长度', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7236608062114386965', 'STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES', '["image/jpeg","image/png","image/webp","application/pdf","text/plain","application/octet-stream"]', 'UPLOAD', '允许的 MIME 类型列表（JSON 数组）', 4, 'JSON', '允许的 MIME 类型列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7280596390016858524', 'STORAGE_UPLOAD_ALLOWED_EXTENSIONS', '[".jpg",".jpeg",".png",".webp",".pdf",".txt",".ini",".xlsx"]', 'UPLOAD', '允许的文件扩展名列表（JSON 数组）', 5, 'JSON', '允许的文件扩展名列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7325262355928690941', 'STORAGE_UPLOAD_DENIED_EXTENSIONS', '[".exe",".bat",".cmd",".sh",".js",".html",".php",".py",".jar"]', 'UPLOAD', '禁止上传的扩展名列表（JSON 数组）', 6, 'JSON', '禁止上传的扩展名列表（JSON 数组）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7952653754833581211', 'STORAGE_RUSTFS_SECRET_KEY', 'gAAAAABqeFtjH6R_u459TAGXEzeQOa9GRHtG_8xkDrnY8hwiZYyxeRtHh0YqhXsuzfkY3_Nn3OWId3rStJkCQgQUdwfkLtuAyA', 'STORAGE', 'RustFS Secret Key', 43, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 10:49:34.902513+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7950285006814595256', 'STORAGE_RUSTFS_ENDPOINT', 'http://127.0.0.1:9002', 'STORAGE', 'RustFS S3 API 端点', 41, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-08 17:17:14.441312+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7334700335238107691', 'STORAGE_RUSTFS_BUCKET', 'defaultbucket', 'STORAGE', 'RustFS 存储桶', 40, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7175913351351122695', 'STORAGE_RUSTFS_REGION', 'us-east-1', 'STORAGE', 'RustFS Region', 44, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7618985031080401037', 'STORAGE_RUSTFS_USE_SSL', 'FALSE', 'STORAGE', 'RustFS 是否 SSL', 45, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7748406326636979011', 'STORAGE_RUSTFS_BASE_URL', '', 'STORAGE', 'RustFS 自定义基础 URL', 46, 'STRING', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7507807560036605420', 'STORAGE_RUSTFS_BUCKET_PUBLIC', 'FALSE', 'STORAGE', 'RustFS 桶是否公开', 47, 'BOOL', NULL, NULL, NULL, 'f', '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7388788716511880208', 'AUDIT_ALERT_NOTIFY_EMAIL_TO', '', 'AUDIT_ALERT', '审计告警收件邮箱', 2, 'STRING', '告警收件邮箱', NULL, NULL, 'f', '{}', '2026-08-12 14:10:48.638877+00', NULL, '2026-08-12 14:10:48.638877+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7172687233882333188', 'AUDIT_ALERT_RULE_SENSITIVE_OPS', 'TRUE', 'AUDIT_ALERT', '敏感操作监控', 12, 'BOOL', '敏感操作监控', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7260823451582098683', 'AUDIT_ALERT_RULE_UNUSUAL_HOURS', 'TRUE', 'AUDIT_ALERT', '异常时间操作检测', 11, 'BOOL', '异常时间操作检测', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7879475119693769672', 'AUDIT_ALERT_BULK_DELETE_THRESHOLD', '20', 'AUDIT_ALERT', '批量删除阈值', 21, 'INT', '批量删除阈值', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7957493498148551921', 'AUTH_LOGIN_ADMIN_LOCK_SECONDS', '300', 'AUTH_LOGIN', 'ADMIN 锁定时间（秒）', 12, 'INT', 'ADMIN 锁定时间（秒）', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7641214881822118472', 'AUTH_LOGIN_ADMIN_PHONE_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'ADMIN 手机号无用户策略', 14, 'STRING', 'ADMIN 手机号无用户策略', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7154674032244377737', 'AUTH_LOGIN_ADMIN_ALLOW_EMAIL', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许邮箱登录', 15, 'BOOL', 'ADMIN 允许邮箱登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7189190642894026372', 'AUTH_LOGIN_ADMIN_ALLOW_OTP', 'TRUE', 'AUTH_LOGIN', 'ADMIN 允许 OTP 登录', 17, 'BOOL', 'ADMIN 允许 OTP 登录', 'ADMIN', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7286296755297320815', 'AUTH_LOGIN_PORTAL_FAILURE_WINDOW_SECONDS', '300', 'AUTH_LOGIN', 'PORTAL 登录失败窗口（秒）', 18, 'INT', 'PORTAL 登录失败窗口（秒）', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7120119863717980260', 'AUTH_LOGIN_PORTAL_LOCK_SECONDS', '300', 'AUTH_LOGIN', 'PORTAL 锁定时间（秒）', 20, 'INT', 'PORTAL 锁定时间（秒）', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7961921801574207800', 'AUTH_LOGIN_PORTAL_ALLOW_PHONE', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许手机号登录', 21, 'BOOL', 'PORTAL 允许手机号登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7553572003476288661', 'AUTH_LOGIN_PORTAL_PHONE_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'PORTAL 手机号无用户策略', 22, 'STRING', 'PORTAL 手机号无用户策略', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7643758115191934361', 'AUTH_LOGIN_PORTAL_ALLOW_EMAIL', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许邮箱登录', 23, 'BOOL', 'PORTAL 允许邮箱登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7152439802015666741', 'AUTH_LOGIN_PORTAL_EMAIL_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'PORTAL 邮箱无用户策略', 24, 'STRING', 'PORTAL 邮箱无用户策略', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7219205172797610985', 'AUTH_LOGIN_PORTAL_ALLOW_OTP', 'TRUE', 'AUTH_LOGIN', 'PORTAL 允许 OTP 登录', 25, 'BOOL', 'PORTAL 允许 OTP 登录', 'PORTAL', NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7528718642174231668', 'AUTH_LOGIN_FAILURE_WINDOW_SECONDS', '900', 'AUTH_LOGIN', '登录失败统计窗口（秒）', 1, 'INT', '登录失败统计窗口（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7140248531257076308', 'AUTH_LOGIN_ACCOUNT_MAX_FAILURES', '5', 'AUTH_LOGIN', '单账号最大登录失败次数', 2, 'INT', '单账号最大登录失败次数', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7224651178645144555', 'AUTH_LOGIN_LOCK_SECONDS', '900', 'AUTH_LOGIN', '登录锁定时间（秒）', 4, 'INT', '登录锁定时间（秒）', NULL, NULL, 'f', '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7585813464464377276', 'AUTH_FORCE_BIND_ADMIN_EMAIL', 'FALSE', 'AUTH_FORCE_BIND', 'ADMIN 强制绑定邮箱', 3, 'BOOL', '强制绑定邮箱', 'ADMIN', NULL, 'f', '{}', '2026-08-12 14:36:35.252523+00', NULL, '2026-08-12 14:36:35.252523+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7137737529370775030', 'AUTH_FORCE_BIND_ADMIN_PHONE', 'FALSE', 'AUTH_FORCE_BIND', 'ADMIN 强制绑定手机', 4, 'BOOL', '强制绑定手机', 'ADMIN', NULL, 'f', '{}', '2026-08-12 14:36:35.255718+00', NULL, '2026-08-12 14:36:35.255718+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7926454604208823829', 'MAIL_TEMPLATE_BIND_EMAIL_CODE', '{"subject": "{{app_name}} 绑定邮箱验证码", "body": "您的绑定验证码是 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '绑定邮箱验证码邮件模板', 20, 'JSON', '绑定邮箱验证码邮件模板', NULL, 'BIND_EMAIL_CODE', 'f', '{}', '2026-08-12 14:36:35.270099+00', NULL, '2026-08-12 14:36:35.270099+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7191040278958713174', 'SMS_TEMPLATE_BIND_PHONE_CODE', '{"code": "", "content": "绑定验证码 {{code}}，{{expire_minutes}} 分钟内有效"}', 'SMS_TEMPLATE', '绑定手机验证码短信模板', 20, 'JSON', '绑定手机验证码短信模板', NULL, 'BIND_PHONE_CODE', 'f', '{}', '2026-08-12 14:36:35.274517+00', NULL, '2026-08-12 14:36:35.274517+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7231113269178162861', 'AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许用户名注册', 11, 'BOOL', '允许账号注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.228596+00', NULL, '2026-08-12 14:36:35.228596+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7285230910149567688', 'AUTH_REGISTER_PORTAL_ALLOW_EMAIL', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许邮箱注册', 12, 'BOOL', '允许邮箱注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.234457+00', NULL, '2026-08-12 14:36:35.234457+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7800328101940188056', 'AUTH_OAUTH_PORTAL_GITHUB_CLIENT_ID', 'superadmin', 'AUTH_OAUTH', '门户 GitHub ClientId', 2, 'STRING', 'Client ID', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.403535+00', NULL, '2026-08-12 15:57:59.403535+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7925472518021370098', 'AUTH_OAUTH_PORTAL_GITHUB_CLIENT_SECRET', 'gAAAAABqfJrd_yTDy0DkEmej80F2frWaLzP6NMbZMBDyOzUwUOTnjRHn7UGI2ACEkt4EzA9zS9q1dK4T0B0yRAP_LDtVMcNs3w', 'AUTH_OAUTH', '门户 GitHub ClientSecret', 3, 'STRING', 'Client Secret', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.407874+00', NULL, '2026-08-12 15:57:59.407874+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7407734083761585458', 'AUTH_OAUTH_PORTAL_GITEE_ENABLED', 'TRUE', 'AUTH_OAUTH', '门户 Gitee 登录', 11, 'BOOL', '启用', 'PORTAL', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.416643+00', NULL, '2026-08-12 15:57:59.416643+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7712189083486710611', 'AUTH_OAUTH_PORTAL_WECHAT_MP_APP_SECRET', '', 'AUTH_OAUTH', '门户小程序 AppSecret', 43, 'STRING', 'AppSecret', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.472798+00', NULL, '2026-08-12 15:57:59.472798+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7163571438509411369', 'AUTH_OAUTH_ADMIN_GITEE_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 Gitee ClientSecret', 113, 'STRING', 'Client Secret', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.499737+00', NULL, '2026-08-12 15:57:59.499737+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7905539512046799183', 'AUTH_OAUTH_ADMIN_QQ_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 QQ ClientSecret', 123, 'STRING', 'Client Secret', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.515748+00', NULL, '2026-08-12 15:57:59.515748+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7374162031239208376', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端微信开放平台 Secret', 133, 'STRING', 'AppSecret', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.5331+00', NULL, '2026-08-12 15:57:59.5331+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7115927954405030347', 'AUTH_OAUTH_ADMIN_GITHUB_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端 GitHub 登录', 101, 'BOOL', '启用', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.476901+00', NULL, '2026-08-12 15:57:59.476901+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7192344291042963470', 'AUTH_OAUTH_ADMIN_GITHUB_CLIENT_SECRET', '', 'AUTH_OAUTH', '管理端 GitHub ClientSecret', 103, 'STRING', 'Client Secret', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.483943+00', NULL, '2026-08-12 15:57:59.483943+00', NULL);
+INSERT INTO "public"."sys_config" VALUES ('7203040505764618021', 'AUTH_OAUTH_ADMIN_GITHUB_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 GitHub ClientId', 102, 'STRING', 'Client ID', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.480274+00', NULL, '2026-08-12 15:57:59.480274+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7125526233449487784', 'AUTH_OAUTH_ADMIN_GITHUB_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 GitHub 回调', 104, 'STRING', 'Redirect URI', 'ADMIN', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.487901+00', NULL, '2026-08-12 15:57:59.487901+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7196439739936279174', 'AUTH_REGISTER_PORTAL_ALLOW_PHONE', 'TRUE', 'AUTH_REGISTER', 'PORTAL 允许手机注册', 13, 'BOOL', '允许手机注册', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.237264+00', NULL, '2026-08-12 14:36:35.237264+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7147573270237877567', 'AUTH_FORCE_BIND_PORTAL_EMAIL', 'FALSE', 'AUTH_FORCE_BIND', 'PORTAL 强制绑定邮箱', 1, 'BOOL', '强制绑定邮箱', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.239972+00', NULL, '2026-08-12 14:36:35.239972+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7317628235066225421', 'AUTH_FORCE_BIND_PORTAL_PHONE', 'FALSE', 'AUTH_FORCE_BIND', 'PORTAL 强制绑定手机', 2, 'BOOL', '强制绑定手机', 'PORTAL', NULL, 'f', '{}', '2026-08-12 14:36:35.245505+00', NULL, '2026-08-12 14:36:35.245505+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7179891447845803919', 'AUTH_OAUTH_ADMIN_GITEE_ENABLED', 'TRUE', 'AUTH_OAUTH', '管理端 Gitee 登录', 111, 'BOOL', '启用', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.491641+00', NULL, '2026-08-12 15:57:59.491641+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7820162979363132264', 'AUTH_OAUTH_ADMIN_GITEE_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 Gitee ClientId', 112, 'STRING', 'Client ID', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.495992+00', NULL, '2026-08-12 15:57:59.495992+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7277178859125997111', 'AUTH_OAUTH_ADMIN_GITEE_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 Gitee 回调', 114, 'STRING', 'Redirect URI', 'ADMIN', 'GITEE', 'f', '{}', '2026-08-12 15:57:59.503669+00', NULL, '2026-08-12 15:57:59.503669+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7983845910800985649', 'AUTH_OAUTH_ADMIN_QQ_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端 QQ 登录', 121, 'BOOL', '启用', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.507724+00', NULL, '2026-08-12 15:57:59.507724+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7953467271865167705', 'AUTH_OAUTH_ADMIN_QQ_CLIENT_ID', '', 'AUTH_OAUTH', '管理端 QQ ClientId', 122, 'STRING', 'Client ID', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.512033+00', NULL, '2026-08-12 15:57:59.512033+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7997330304022587335', 'AUTH_OAUTH_ADMIN_QQ_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端 QQ 回调', 124, 'STRING', 'Redirect URI', 'ADMIN', 'QQ', 'f', '{}', '2026-08-12 15:57:59.520333+00', NULL, '2026-08-12 15:57:59.520333+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7566333830794456163', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_ENABLED', 'FALSE', 'AUTH_OAUTH', '管理端微信网页登录', 131, 'BOOL', '启用', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.525073+00', NULL, '2026-08-12 15:57:59.525073+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7709767367597654277', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_CLIENT_ID', '', 'AUTH_OAUTH', '管理端微信开放平台 AppId', 132, 'STRING', 'AppId', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.529053+00', NULL, '2026-08-12 15:57:59.529053+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7878128811204573416', 'AUTH_OAUTH_ADMIN_WECHAT_OPEN_REDIRECT_URI', '', 'AUTH_OAUTH', '管理端微信开放平台回调', 134, 'STRING', 'Redirect URI', 'ADMIN', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.53685+00', NULL, '2026-08-12 15:57:59.53685+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7319284294792948722', 'AUTH_OAUTH_PORTAL_GITHUB_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户 GitHub 登录', 1, 'BOOL', '启用', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.397127+00', NULL, '2026-08-12 15:57:59.397127+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7964584885414219711', 'AUTH_OAUTH_PORTAL_GITHUB_REDIRECT_URI', '', 'AUTH_OAUTH', '门户 GitHub 回调', 4, 'STRING', 'Redirect URI', 'PORTAL', 'GITHUB', 'f', '{}', '2026-08-12 15:57:59.412339+00', NULL, '2026-08-12 15:57:59.412339+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7346432777171636629', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户微信网页登录', 31, 'BOOL', '启用', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.450854+00', NULL, '2026-08-12 15:57:59.450854+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7112014435091478940', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_CLIENT_ID', '', 'AUTH_OAUTH', '门户微信开放平台 AppId', 32, 'STRING', 'AppId', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.454644+00', NULL, '2026-08-12 15:57:59.454644+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7535593666554670318', 'AUTH_OAUTH_PORTAL_WECHAT_OPEN_REDIRECT_URI', '', 'AUTH_OAUTH', '门户微信开放平台回调', 34, 'STRING', 'Redirect URI', 'PORTAL', 'WECHAT_OPEN', 'f', '{}', '2026-08-12 15:57:59.461291+00', NULL, '2026-08-12 15:57:59.461291+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7408452631572683423', 'AUTH_OAUTH_PORTAL_WECHAT_MP_ENABLED', 'FALSE', 'AUTH_OAUTH', '门户微信小程序登录', 41, 'BOOL', '启用', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.464887+00', NULL, '2026-08-12 15:57:59.464887+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7143068116163573568', 'AUTH_OAUTH_PORTAL_WECHAT_MP_APP_ID', '', 'AUTH_OAUTH', '门户小程序 AppId', 42, 'STRING', 'AppId', 'PORTAL', 'WECHAT_MP', 'f', '{}', '2026-08-12 15:57:59.468946+00', NULL, '2026-08-12 15:57:59.468946+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7499926412524933665', 'AUTH_OAUTH_FRONTEND_CALLBACK_PORTAL', 'http://localhost:5174/auth/oauth/callback', 'AUTH_OAUTH', '门户 OAuth 前端回调页（空则用默认）', 200, 'STRING', '门户前端回调', NULL, NULL, 'f', '{}', '2026-08-12 15:57:59.540869+00', NULL, '2026-08-16 10:27:33.694774+00', '1');
+INSERT INTO "public"."sys_config" VALUES ('7814530538364155449', 'AUTH_OAUTH_FRONTEND_CALLBACK_ADMIN', 'http://localhost:5173/auth/oauth/callback', 'AUTH_OAUTH', '管理端 OAuth 前端回调页（空则用默认）', 201, 'STRING', '管理端前端回调', NULL, NULL, 'f', '{}', '2026-08-12 15:57:59.544738+00', NULL, '2026-08-16 10:27:33.715381+00', '1');
 
 -- ----------------------------
 -- Table structure for sys_dept
@@ -1467,12 +1309,57 @@ INSERT INTO "public"."sys_dict" VALUES ('100212', 'NOTIFICATION_CATEGORY_APPROVA
 INSERT INTO "public"."sys_dict" VALUES ('100213', 'NOTIFICATION_CATEGORY_SYSTEM', '系统', 'SYSTEM', '#18a058', 'SYS', '100210', 'ENABLED', 3, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100214', 'NOTIFICATION_CATEGORY_SECURITY', '安全', 'SECURITY', '#d03050', 'SYS', '100210', 'ENABLED', 4, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100215', 'NOTIFICATION_CATEGORY_BIZ', '业务', 'BIZ', '#f0a020', 'SYS', '100210', 'ENABLED', 5, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_provider', 'OAUTH_PROVIDER', '三方登录提供商', 'OAUTH_PROVIDER', NULL, 'SYS', NULL, 'ENABLED', 90, '2026-08-12 15:57:59.360135+00', NULL, '2026-08-12 15:57:59.360135+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_github', 'GITHUB', 'GitHub', 'GITHUB', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 1, '2026-08-12 15:57:59.376072+00', NULL, '2026-08-12 15:57:59.376072+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_gitee', 'GITEE', 'Gitee', 'GITEE', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 2, '2026-08-12 15:57:59.380323+00', NULL, '2026-08-12 15:57:59.380323+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_qq', 'QQ', 'QQ', 'QQ', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 3, '2026-08-12 15:57:59.384444+00', NULL, '2026-08-12 15:57:59.384444+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_open', 'WECHAT_OPEN', '微信开放平台', 'WECHAT_OPEN', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 4, '2026-08-12 15:57:59.388141+00', NULL, '2026-08-12 15:57:59.388141+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_mp', 'WECHAT_MP', '微信小程序', 'WECHAT_MP', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 5, '2026-08-12 15:57:59.392548+00', NULL, '2026-08-12 15:57:59.392548+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7656105493975688393', 'OAUTH_PROVIDER', '三方登录提供商', 'OAUTH_PROVIDER', NULL, 'SYS', NULL, 'ENABLED', 90, '2026-08-12 15:57:59.360135+00', NULL, '2026-08-12 15:57:59.360135+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7587538474363101234', 'GITHUB', 'GitHub', 'GITHUB', NULL, 'SYS', '7656105493975688393', 'ENABLED', 1, '2026-08-12 15:57:59.376072+00', NULL, '2026-08-12 15:57:59.376072+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7351536453246655198', 'GITEE', 'Gitee', 'GITEE', NULL, 'SYS', '7656105493975688393', 'ENABLED', 2, '2026-08-12 15:57:59.380323+00', NULL, '2026-08-12 15:57:59.380323+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7399371307733482375', 'QQ', 'QQ', 'QQ', NULL, 'SYS', '7656105493975688393', 'ENABLED', 3, '2026-08-12 15:57:59.384444+00', NULL, '2026-08-12 15:57:59.384444+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7211108434702344271', 'WECHAT_OPEN', '微信开放平台', 'WECHAT_OPEN', NULL, 'SYS', '7656105493975688393', 'ENABLED', 4, '2026-08-12 15:57:59.388141+00', NULL, '2026-08-12 15:57:59.388141+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7260287663522585806', 'WECHAT_MP', '微信小程序', 'WECHAT_MP', NULL, 'SYS', '7656105493975688393', 'ENABLED', 5, '2026-08-12 15:57:59.392548+00', NULL, '2026-08-12 15:57:59.392548+00', NULL);
+
+-- ----------------------------
+-- Table structure for sys_feedback
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_feedback";
+CREATE TABLE "public"."sys_feedback" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "content" text COLLATE "pg_catalog"."default" NOT NULL,
+  "category" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "contact" varchar(255) COLLATE "pg_catalog"."default",
+  "attach_object_names" json NOT NULL,
+  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "reply" text COLLATE "pg_catalog"."default",
+  "replied_by" varchar(64) COLLATE "pg_catalog"."default",
+  "replied_at" timestamptz(6),
+  "submitter_account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "submitter_account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_feedback"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_feedback"."title" IS '反馈标题';
+COMMENT ON COLUMN "public"."sys_feedback"."content" IS '反馈内容';
+COMMENT ON COLUMN "public"."sys_feedback"."category" IS '反馈分类';
+COMMENT ON COLUMN "public"."sys_feedback"."contact" IS '联系方式';
+COMMENT ON COLUMN "public"."sys_feedback"."attach_object_names" IS '附件 object_name 列表';
+COMMENT ON COLUMN "public"."sys_feedback"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_feedback"."reply" IS '管理员回复';
+COMMENT ON COLUMN "public"."sys_feedback"."replied_by" IS '回复人ID';
+COMMENT ON COLUMN "public"."sys_feedback"."replied_at" IS '回复时间';
+COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_type" IS '提交者账户类型';
+COMMENT ON COLUMN "public"."sys_feedback"."submitter_account_id" IS '提交者账户ID';
+COMMENT ON COLUMN "public"."sys_feedback"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_feedback"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_feedback"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_feedback"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_feedback
+-- ----------------------------
+INSERT INTO "public"."sys_feedback" VALUES ('7491849375090675712', '哈哈哈', '撒擦三次', 'SUGGESTION', '擦拭擦拭', '["uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png"]', 'RESOLVED', 'ok', '1', '2026-08-08 13:40:49.757811+00', 'PORTAL', '7491847383584804864', '2026-08-08 13:34:42.831539+00', '7491847383584804864', '2026-08-08 13:40:49.742207+00', '1');
 
 -- ----------------------------
 -- Table structure for sys_file
@@ -1496,7 +1383,7 @@ CREATE TABLE "public"."sys_file" (
 COMMENT ON COLUMN "public"."sys_file"."id" IS '主键';
 COMMENT ON COLUMN "public"."sys_file"."object_name" IS '对象存储路径';
 COMMENT ON COLUMN "public"."sys_file"."original_name" IS '原始文件名';
-COMMENT ON COLUMN "public"."sys_file"."storage_provider" IS '存储服务商：local/minio/rustfs/oss/s3';
+COMMENT ON COLUMN "public"."sys_file"."storage_provider" IS '存储服务商：minio/rustfs/oss/s3';
 COMMENT ON COLUMN "public"."sys_file"."bucket" IS '存储桶';
 COMMENT ON COLUMN "public"."sys_file"."content_type" IS '文件类型';
 COMMENT ON COLUMN "public"."sys_file"."size" IS '文件大小';
@@ -1509,14 +1396,13 @@ COMMENT ON COLUMN "public"."sys_file"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_file
 -- ----------------------------
-INSERT INTO "public"."sys_file" VALUES ('7491849365624131584', 'uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png', 'QR2026080700024_1786146767761.png', 'local', NULL, 'image/png', 38636, '/api/v1/files/uploads/2026/08/08/be3515e142974cf08b46e348d1c3d8d3.png', '2026-08-08 13:34:40.495087+00', '7491847383584804864', '2026-08-08 13:34:40.495087+00', '7491847383584804864');
-INSERT INTO "public"."sys_file" VALUES ('7491852911639715840', '2026/08/08/f95d248d7a0249978b5a5fda8ae66602.png', 'f95d248d7a0249978b5a5fda8ae66602.png', 'local', NULL, 'image/png', 207780, '/api/v1/files/2026/08/08/f95d248d7a0249978b5a5fda8ae66602.png', '2026-08-08 13:48:45.931196+00', '7491847383584804864', '2026-08-08 13:48:45.931196+00', '7491847383584804864');
-INSERT INTO "public"."sys_file" VALUES ('7491869364283744256', 'uploads/2026/08/08/93c4b0dba86f483bb1905ba079550521.png', 'QR2026080700024_1786146767761.png', 'minio', 'vms', 'image/png', 38636, 'http://127.0.0.1:9000/vms/uploads/2026/08/08/93c4b0dba86f483bb1905ba079550521.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=admin%2F20260808%2F%2Fs3%2Faws4_request&X-Amz-Date=20260808T145408Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=7c2ee60df7d9ea59fa6e6576c75ff63edc420d9e84962645eeb106c1d02c8471', '2026-08-08 14:54:08.592047+00', '1', '2026-08-08 14:54:08.592047+00', '1');
-INSERT INTO "public"."sys_file" VALUES ('7491906012023353344', 'uploads/2026/08/08/0e535c4dc69241eab526c5e94d9eb19b.png', 'QR2026080700024_1786146767761.png', 'rustfs', 'defaultbucket', 'image/png', 38636, 'http://127.0.0.1:9002/defaultbucket/uploads/2026/08/08/0e535c4dc69241eab526c5e94d9eb19b.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=admin%2F20260808%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260808T171946Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=3e5fce1aaf787edbe03408f05fa1885b05a29ae41f47ea0b73a15891ffd91b2a', '2026-08-08 17:19:46.108576+00', '1', '2026-08-08 17:19:46.108576+00', '1');
 INSERT INTO "public"."sys_file" VALUES ('2086404723008208898', 'uploads/2026/08/09/48af08ca31e346d3a75139fa84eb0282.png', 'QR2026080700024_1786146767761.png', 'rustfs', 'defaultbucket', 'image/png', 38636, 'uploads/2026/08/09/48af08ca31e346d3a75139fa84eb0282.png', '2026-08-09 10:50:24.153462+00', '1', '2026-08-09 10:50:24.153462+00', '1');
-INSERT INTO "public"."sys_file" VALUES ('2086408061170970625', 'uploads/2026/08/09/3dbf7f27b66f4023a0736bdccaa9596b.png', 'QR2026080700024_1786146767761.png', 'rustfs', 'defaultbucket', 'image/png', 38636, 'http://127.0.0.1:9002/defaultbucket/uploads/2026/08/09/3dbf7f27b66f4023a0736bdccaa9596b.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260809T110339Z&X-Amz-SignedHeaders=host&X-Amz-Credential=admin%2F20260809%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=3600&X-Amz-Signature=94bcec094369bff06b0e1f0b4262d98f2dbb2458725d437d98864523f28a2b2e', '2026-08-09 11:03:40.030025+00', '1', '2026-08-09 11:03:40.030025+00', '1');
-INSERT INTO "public"."sys_file" VALUES ('2086410328867565570', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', 'avatar.png', 'rustfs', 'defaultbucket', 'image/png', 193387, 'http://127.0.0.1:9002/defaultbucket/uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260809T111240Z&X-Amz-SignedHeaders=host&X-Amz-Credential=admin%2F20260809%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=3600&X-Amz-Signature=9b1460de4e9f82eaf5d01fdac7895db7795bbd8eaf10c74a340dcef9e808bf6e', '2026-08-09 11:12:40.692242+00', '1', '2026-08-09 11:12:40.692242+00', '1');
-INSERT INTO "public"."sys_file" VALUES ('2086415187620601857', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', '120153703_touxiang_bobopic (1).jpg', 'rustfs', 'defaultbucket', 'image/jpeg', 65451, 'http://127.0.0.1:9002/defaultbucket/uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260809T113159Z&X-Amz-SignedHeaders=host&X-Amz-Credential=admin%2F20260809%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=3600&X-Amz-Signature=59de3f61b036aaf3627add830b5b8986752bf5012c8822b7c281012e1bf787fc', '2026-08-09 11:31:59.117567+00', '1', '2026-08-09 11:31:59.117567+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('7491869364283744256', 'uploads/2026/08/08/93c4b0dba86f483bb1905ba079550521.png', 'QR2026080700024_1786146767761.png', 'minio', 'vms', 'image/png', 38636, 'uploads/2026/08/08/93c4b0dba86f483bb1905ba079550521.png', '2026-08-08 14:54:08.592047+00', '1', '2026-08-16 10:27:45.912235+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('7491906012023353344', 'uploads/2026/08/08/0e535c4dc69241eab526c5e94d9eb19b.png', 'QR2026080700024_1786146767761.png', 'rustfs', 'defaultbucket', 'image/png', 38636, 'uploads/2026/08/08/0e535c4dc69241eab526c5e94d9eb19b.png', '2026-08-08 17:19:46.108576+00', '1', '2026-08-16 10:27:45.912235+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('2086408061170970625', 'uploads/2026/08/09/3dbf7f27b66f4023a0736bdccaa9596b.png', 'QR2026080700024_1786146767761.png', 'rustfs', 'defaultbucket', 'image/png', 38636, 'uploads/2026/08/09/3dbf7f27b66f4023a0736bdccaa9596b.png', '2026-08-09 11:03:40.030025+00', '1', '2026-08-16 10:27:45.912235+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('2086410328867565570', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', 'avatar.png', 'rustfs', 'defaultbucket', 'image/png', 193387, 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', '2026-08-09 11:12:40.692242+00', '1', '2026-08-16 10:27:45.912235+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('2086415187620601857', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', '120153703_touxiang_bobopic (1).jpg', 'rustfs', 'defaultbucket', 'image/jpeg', 65451, 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', '2026-08-09 11:31:59.117567+00', '1', '2026-08-16 10:27:45.912235+00', '1');
+INSERT INTO "public"."sys_file" VALUES ('2088928636523130882', 'uploads/2026/08/16/947e530849e245d3bcb873354da8f113.txt', 'PyPI-Recovery-Codes-charliebyte-2026-06-14T07_19_21.473015.txt', 'rustfs', 'defaultbucket', 'text/plain', 135, 'uploads/2026/08/16/947e530849e245d3bcb873354da8f113.txt', '2026-08-16 09:59:32.021932+00', '1', '2026-08-16 10:27:45.912235+00', '1');
 
 -- ----------------------------
 -- Table structure for sys_group
@@ -1606,40 +1492,358 @@ COMMENT ON COLUMN "public"."sys_iam_relation"."updated_by" IS '更新人';
 -- Records of sys_iam_relation
 -- ----------------------------
 INSERT INTO "public"."sys_iam_relation" VALUES ('1', 'ACCOUNT', '1', 'ADMIN', 'ACCOUNT_ROLE', 'ROLE', '1', '', 'CASCADE', 'SELF', '[]', 'f', 99, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 11:56:13.747886+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_audit_btn_audit_detail', 'RESOURCE', '201061', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_audit_btn_login_log_detail', 'RESOURCE', '201060', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_audit_menu_audit', 'RESOURCE', '200029', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_audit_menu_login_log', 'RESOURCE', '200028', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203011', 'RESOURCE', '203011', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203012', 'RESOURCE', '203012', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203013', 'RESOURCE', '203013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203014', 'RESOURCE', '203014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203015', 'RESOURCE', '203015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203021', 'RESOURCE', '203021', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203022', 'RESOURCE', '203022', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203023', 'RESOURCE', '203023', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203024', 'RESOURCE', '203024', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203025', 'RESOURCE', '203025', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203026', 'RESOURCE', '203026', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:list', 'CASCADE', 'ALL', '[]', 'f', 90, 'ENABLED', '树列表目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203031', 'RESOURCE', '203031', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203032', 'RESOURCE', '203032', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203033', 'RESOURCE', '203033', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203034', 'RESOURCE', '203034', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203035', 'RESOURCE', '203035', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203041', 'RESOURCE', '203041', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203042', 'RESOURCE', '203042', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203043', 'RESOURCE', '203043', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203044', 'RESOURCE', '203044', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203045', 'RESOURCE', '203045', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_cgtest_203046', 'RESOURCE', '203046', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:list', 'CASCADE', 'ALL', '[]', 'f', 90, 'ENABLED', '树列表知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202201', 'RESOURCE', '202201', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '分页消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202202', 'RESOURCE', '202202', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:create', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '新增消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202203', 'RESOURCE', '202203', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '详情消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202204', 'RESOURCE', '202204', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:update', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '编辑消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202205', 'RESOURCE', '202205', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:delete', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '删除消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202209', 'RESOURCE', '202209', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:publish', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '发布消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202240', 'RESOURCE', '202240', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:revoke', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '撤回消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
-INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202241', 'RESOURCE', '202241', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:pin', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '置顶消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7859474578876774469', 'RESOURCE', '201061', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7109538496802851524', 'RESOURCE', '201060', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7606481288132251344', 'RESOURCE', '200029', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7232506669573029115', 'RESOURCE', '200028', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7639169641875772298', 'RESOURCE', '203011', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7611870955633752502', 'RESOURCE', '203012', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7654259910312149696', 'RESOURCE', '203013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7223792660518235132', 'RESOURCE', '203014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7567716937788130247', 'RESOURCE', '203015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestactivity:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除活动', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7986838434768267433', 'RESOURCE', '203021', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7768912188750692632', 'RESOURCE', '203022', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7159667080064467923', 'RESOURCE', '203023', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7660302211516474641', 'RESOURCE', '203024', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7624773106003991812', 'RESOURCE', '203025', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7822968206741092129', 'RESOURCE', '203026', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestcatalog:list', 'CASCADE', 'ALL', '[]', 'f', 90, 'ENABLED', '树列表目录', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7837316234393882458', 'RESOURCE', '203031', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7518444451967536602', 'RESOURCE', '203032', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7112731414735234196', 'RESOURCE', '203033', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7304374671311844075', 'RESOURCE', '203034', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7334894311555546200', 'RESOURCE', '203035', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestorder:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除订单', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7453524161449865528', 'RESOURCE', '203041', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:page', 'CASCADE', 'ALL', '[]', 'f', 10, 'ENABLED', '分页知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7601824633419714671', 'RESOURCE', '203042', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:create', 'CASCADE', 'ALL', '[]', 'f', 20, 'ENABLED', '新增知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7574875650561833761', 'RESOURCE', '203043', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:detail', 'CASCADE', 'ALL', '[]', 'f', 30, 'ENABLED', '详情知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7990168508290078017', 'RESOURCE', '203044', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:update', 'CASCADE', 'ALL', '[]', 'f', 40, 'ENABLED', '编辑知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7845666016635732956', 'RESOURCE', '203045', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:delete', 'CASCADE', 'ALL', '[]', 'f', 50, 'ENABLED', '删除知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7133323711340623180', 'RESOURCE', '203046', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'biz:cgtestknowledgecategory:list', 'CASCADE', 'ALL', '[]', 'f', 90, 'ENABLED', '树列表知识分类', NULL, NULL, '{}', '2026-08-08 13:06:56.015503+00', NULL, '2026-08-08 13:06:56.015503+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7569914124743592951', 'RESOURCE', '202201', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '分页消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7575458644059959564', 'RESOURCE', '202202', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:create', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '新增消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7927293661818445174', 'RESOURCE', '202203', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:detail', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '详情消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7742840047784749526', 'RESOURCE', '202204', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:update', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '编辑消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7174771647983316441', 'RESOURCE', '202205', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:delete', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '删除消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7624067801880049144', 'RESOURCE', '202209', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:publish', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '发布消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7122813088692955083', 'RESOURCE', '202240', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:revoke', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '撤回消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7380222627904177407', 'RESOURCE', '202241', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:pin', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '置顶消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7284368855990246834', 'RESOURCE', '204001', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '分页任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7939060249732762857', 'RESOURCE', '204011', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:create', 'CASCADE', 'ALL', '[]', 'f', 1, 'ENABLED', '新增任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7212116468775288981', 'RESOURCE', '204012', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:update', 'CASCADE', 'ALL', '[]', 'f', 2, 'ENABLED', '编辑任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7560408972191285564', 'RESOURCE', '204013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:delete', 'CASCADE', 'ALL', '[]', 'f', 3, 'ENABLED', '删除任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7873407408257995473', 'RESOURCE', '204014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:detail', 'CASCADE', 'ALL', '[]', 'f', 4, 'ENABLED', '任务详情', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7792386902249912041', 'RESOURCE', '204015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:run', 'CASCADE', 'ALL', '[]', 'f', 5, 'ENABLED', '立即执行', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('7740028803530587951', 'RESOURCE', '204016', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:joblog:page', 'CASCADE', 'ALL', '[]', 'f', 6, 'ENABLED', '执行日志', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+
+-- ----------------------------
+-- Table structure for sys_job
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job";
+CREATE TABLE "public"."sys_job" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_class" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_type" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
+  "trigger_config" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_param" json,
+  "last_run_time" timestamptz(6),
+  "next_run_time" timestamptz(6) NOT NULL,
+  "last_execute_result" varchar(500) COLLATE "pg_catalog"."default",
+  "enabled" bool NOT NULL,
+  "description" varchar(500) COLLATE "pg_catalog"."default",
+  "sort" int4 NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_job"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_job"."job_name" IS '任务名称';
+COMMENT ON COLUMN "public"."sys_job"."execute_class" IS '任务处理器标识（JobHandler 注册 key）';
+COMMENT ON COLUMN "public"."sys_job"."execute_type" IS '触发类型：CRON（表达式）/ FIXED（固定间隔）';
+COMMENT ON COLUMN "public"."sys_job"."trigger_config" IS '触发配置：CRON 表达式或固定间隔秒数';
+COMMENT ON COLUMN "public"."sys_job"."execute_param" IS '执行参数（JSON）';
+COMMENT ON COLUMN "public"."sys_job"."last_run_time" IS '上次执行时间';
+COMMENT ON COLUMN "public"."sys_job"."next_run_time" IS '下次执行时间';
+COMMENT ON COLUMN "public"."sys_job"."last_execute_result" IS '上次执行结果摘要';
+COMMENT ON COLUMN "public"."sys_job"."enabled" IS '启用状态';
+COMMENT ON COLUMN "public"."sys_job"."description" IS '任务描述';
+COMMENT ON COLUMN "public"."sys_job"."sort" IS '排序';
+COMMENT ON COLUMN "public"."sys_job"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_job"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_job"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_job"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_job
+-- ----------------------------
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000007', '任务执行日志清理', 'sys_job_log_cleanup', 'CRON', '0 30 3 * * *', '{"retentionDays": 30, "batchSize": 1000}', '2026-08-16 09:53:27.104743+00', '2026-08-16 19:30:00+00', 'deleted=0,retentionDays=30,batchSize=1000', 'f', '按保留天数批量清理过期 sys_job_log', 7, '2026-08-16 09:53:26.903237+00', NULL, '2026-08-16 09:53:27.146058+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000006', '注销账号清理', 'iam_account_purge_cancelled', 'CRON', '0 0 3 * * *', '{"retentionDays": 15}', '2026-08-16 09:53:27.108262+00', '2026-08-16 19:00:00+00', 'purged=0', 'f', '每日清理已取消且超过保留期的账号数据', 6, '2026-08-16 09:53:26.897926+00', NULL, '2026-08-16 09:53:27.152576+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000004', '审计告警', 'sys_audit_alert', 'FIXED', '300', '{}', '2026-08-16 10:25:56.244268+00', '2026-08-16 10:30:56.283976+00', 'done fired=0', 'f', '按配置规则扫描审计日志并发送告警', 4, '2026-08-16 09:53:26.892521+00', NULL, '2026-08-16 10:25:56.289499+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000001', '示例任务', 'sys_job_sample', 'FIXED', '60', '{}', '2026-08-16 10:27:57.95913+00', '2026-08-16 10:28:57.960251+00', 'echo: (无参数)', 'f', '演示调度链路：回显执行参数', 1, '2026-08-16 09:53:26.876522+00', NULL, '2026-08-16 10:27:57.960251+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000003', 'Banner 互动计数刷库', 'sys_banner_flush_interactions', 'FIXED', '60', '{}', '2026-08-16 10:27:57.95913+00', '2026-08-16 10:28:57.962143+00', 'flushed=0', 'f', '将 Redis 互动增量写入 sys_banner.interaction_count', 3, '2026-08-16 09:53:26.887732+00', NULL, '2026-08-16 10:27:57.963134+00', NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000002', 'Banner 状态同步', 'sys_banner_status_sync', 'FIXED', '60', '{}', '2026-08-16 10:27:57.95913+00', '2026-08-16 10:28:57.970142+00', 'expired=0,activated=0', 'f', '按 start_at / end_at 激活或过期 Banner', 2, '2026-08-16 09:53:26.882777+00', NULL, '2026-08-16 10:27:57.970142+00', NULL);
+
+-- ----------------------------
+-- Table structure for sys_job_log
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job_log";
+CREATE TABLE "public"."sys_job_log" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_param" json,
+  "execute_time" timestamptz(6) NOT NULL,
+  "execute_duration_ms" int8,
+  "success" bool NOT NULL,
+  "execute_result" text COLLATE "pg_catalog"."default",
+  "executor" varchar(64) COLLATE "pg_catalog"."default",
+  "ip" varchar(64) COLLATE "pg_catalog"."default",
+  "process_id" varchar(32) COLLATE "pg_catalog"."default",
+  "app_dir" varchar(500) COLLATE "pg_catalog"."default",
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_job_log"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_job_log"."job_id" IS '任务ID';
+COMMENT ON COLUMN "public"."sys_job_log"."job_name" IS '任务名称';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_param" IS '执行参数快照（JSON）';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_time" IS '执行开始时间';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_duration_ms" IS '执行用时（毫秒）';
+COMMENT ON COLUMN "public"."sys_job_log"."success" IS '执行结果：是否成功';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_result" IS '执行结果摘要 / 错误信息';
+COMMENT ON COLUMN "public"."sys_job_log"."executor" IS '执行人（人工触发为账号 id，调度触发为 system）';
+COMMENT ON COLUMN "public"."sys_job_log"."ip" IS '执行实例 IP';
+COMMENT ON COLUMN "public"."sys_job_log"."process_id" IS '执行实例进程 ID';
+COMMENT ON COLUMN "public"."sys_job_log"."app_dir" IS '执行实例程序目录';
+COMMENT ON COLUMN "public"."sys_job_log"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_job_log"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_job_log"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_job_log"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_job_log
+-- ----------------------------
+INSERT INTO "public"."sys_job_log" VALUES ('2088927105711222785', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:53:27.057194+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.063199+00', NULL, '2026-08-16 09:53:27.063199+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927105841246210', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:53:27.057194+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.08054+00', NULL, '2026-08-16 09:53:27.08054+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681666', '7541000000000000004', '审计告警', '{}', '2026-08-16 09:53:27.059189+00', 78, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.143059+00', NULL, '2026-08-16 09:53:27.143059+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681668', '7541000000000000006', '注销账号清理', '{"retentionDays":15}', '2026-08-16 09:53:27.108262+00', 43, 'f', 'purged=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.156571+00', NULL, '2026-08-16 09:53:27.156571+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681667', '7541000000000000007', '任务执行日志清理', '{"retentionDays":30,"batchSize":1000}', '2026-08-16 09:53:27.104743+00', 24, 'f', 'deleted=0,retentionDays=30,batchSize=1000', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.149059+00', NULL, '2026-08-16 09:53:27.149059+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927107363778562', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:53:27.055208+00', 393, 'f', '执行失败: 
+### Error updating database.  Cause: org.postgresql.util.PSQLException: ERROR: relation "sys_banner" does not exist
+  Position: 9
+### The error may exist in github/jiangbyte/io/sys/modules/banner/mapper/SysBannerMapper.java (best guess)
+### The error may involve github.jiangbyte.io.sys.modules.banner.mapper.SysBannerMapper.update-Inline
+### The error occurred while setting parameters
+### SQL: UPDATE  sys_banner   SET status=?,updated_at=?         WHERE  (status = ? AND end_at IS NOT NULL AND end_at < ?)
+### Cause: org.postgresql.util.PSQLException: ERROR: relation "sys_banner" does not exist
+  Position: 9
+; bad SQL grammar []', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.452823+00', NULL, '2026-08-16 09:53:27.452823+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815489', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:54:27.891935+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.900684+00', NULL, '2026-08-16 09:54:27.900684+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815490', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:54:27.895819+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.904202+00', NULL, '2026-08-16 09:54:27.904202+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360984952833', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:54:27.895819+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.912183+00', NULL, '2026-08-16 09:54:27.912183+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545538', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:55:28.752201+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.762236+00', NULL, '2026-08-16 09:55:28.762236+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545537', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:55:28.752201+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.761184+00', NULL, '2026-08-16 09:55:28.761184+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616246099970', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:55:28.750203+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.7684+00', NULL, '2026-08-16 09:55:28.7684+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989441', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:56:29.281856+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.288857+00', NULL, '2026-08-16 09:56:29.288857+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989442', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:56:29.285852+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.289371+00', NULL, '2026-08-16 09:56:29.289371+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989443', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:56:29.284857+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.297382+00', NULL, '2026-08-16 09:56:29.297382+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124180508674', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.884391+00', NULL, '2026-08-16 09:57:29.884391+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617537', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.885615+00', NULL, '2026-08-16 09:57:29.885615+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617538', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:57:29.879395+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.887615+00', NULL, '2026-08-16 09:57:29.887615+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928365785001986', '7541000000000000004', '审计告警', '{}', '2026-08-16 09:58:27.458677+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:27.476045+00', NULL, '2026-08-16 09:58:27.476045+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378409857025', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:58:30.49088+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378460188673', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:58:30.49188+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378464382977', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:58:30.49188+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.498381+00', NULL, '2026-08-16 09:58:30.498381+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933889', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:59:31.244234+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933890', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:59:31.244234+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933891', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:59:31.242237+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.257338+00', NULL, '2026-08-16 09:59:31.257338+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906946', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:00:31.961377+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.966934+00', NULL, '2026-08-16 10:00:31.966934+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906947', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:00:31.964457+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.970929+00', NULL, '2026-08-16 10:00:31.970929+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928888001015810', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:00:31.964457+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.978208+00', NULL, '2026-08-16 10:00:31.978208+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543297', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:01:32.701165+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.708191+00', NULL, '2026-08-16 10:01:32.708191+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543298', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:01:32.702203+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.709678+00', NULL, '2026-08-16 10:01:32.709678+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142750457858', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:01:32.703456+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.717355+00', NULL, '2026-08-16 10:01:32.717355+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397172744194', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:02:33.383666+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.388188+00', NULL, '2026-08-16 10:02:33.388188+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853058', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:02:33.384973+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.393205+00', NULL, '2026-08-16 10:02:33.393205+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853059', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:02:33.384973+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.395612+00', NULL, '2026-08-16 10:02:33.395612+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929626609561601', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:03:28.055669+00', 18, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:28.079276+00', NULL, '2026-08-16 10:03:28.079276+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432451', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:03:34.140859+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467523', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:04:34.8138+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.820209+00', NULL, '2026-08-16 10:04:34.820209+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098818', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:05:35.576894+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043393', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:06:36.305621+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.306939+00', NULL, '2026-08-16 10:06:36.306939+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736707', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:07:37.023242+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932547', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:08:37.737872+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.749604+00', NULL, '2026-08-16 10:08:37.749604+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432452', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:03:34.13769+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.150764+00', NULL, '2026-08-16 10:03:34.150764+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467522', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:04:34.807801+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.816192+00', NULL, '2026-08-16 10:04:34.816192+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098819', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:05:35.580523+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043395', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:06:36.306939+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.315414+00', NULL, '2026-08-16 10:06:36.315414+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736706', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:07:37.022249+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932546', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:08:37.740066+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.744113+00', NULL, '2026-08-16 10:08:37.744113+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739777', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:09:38.440697+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.447166+00', NULL, '2026-08-16 10:09:38.447166+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495107', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:10:39.12234+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.130045+00', NULL, '2026-08-16 10:10:39.130045+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804866', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:11:39.828285+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.831652+00', NULL, '2026-08-16 10:11:39.831652+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459588', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:12:40.625177+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.637277+00', NULL, '2026-08-16 10:12:40.637277+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932147981856770', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:13:29.213709+00', 14, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:29.23146+00', NULL, '2026-08-16 10:13:29.23146+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095937', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:13:41.35542+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424067', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:14:42.125253+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708277956610', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:15:42.797756+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.80824+00', NULL, '2026-08-16 10:15:42.80824+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048641', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:16:43.460235+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.466772+00', NULL, '2026-08-16 10:16:43.466772+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410305', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:17:44.175377+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890946', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395011', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:19:45.529981+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.536951+00', NULL, '2026-08-16 10:19:45.536951+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739778', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:09:38.440697+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.448163+00', NULL, '2026-08-16 10:09:38.448163+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495106', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:10:39.12234+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.128031+00', NULL, '2026-08-16 10:10:39.128031+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804867', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:11:39.826288+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.83265+00', NULL, '2026-08-16 10:11:39.83265+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459586', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:12:40.622833+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.628181+00', NULL, '2026-08-16 10:12:40.628181+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095939', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:13:41.358507+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.372395+00', NULL, '2026-08-16 10:13:41.372395+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424068', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:14:42.125253+00', 2, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.130252+00', NULL, '2026-08-16 10:14:42.130252+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042051', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:15:42.797756+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048642', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:16:43.463127+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.467775+00', NULL, '2026-08-16 10:16:43.467775+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410306', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:17:44.177343+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471846805505', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:18:44.847336+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395012', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:19:45.527979+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.540749+00', NULL, '2026-08-16 10:19:45.540749+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739779', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:09:38.439683+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.45217+00', NULL, '2026-08-16 10:09:38.45217+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434505580545', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:10:39.12133+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.125343+00', NULL, '2026-08-16 10:10:39.125343+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804865', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:11:39.828285+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.829485+00', NULL, '2026-08-16 10:11:39.829485+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459587', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:12:40.629287+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.63219+00', NULL, '2026-08-16 10:12:40.63219+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095938', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:13:41.357445+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424066', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:14:42.124254+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042050', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:15:42.797756+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048643', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:16:43.463127+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.47477+00', NULL, '2026-08-16 10:16:43.47477+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410307', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:17:44.177343+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.185609+00', NULL, '2026-08-16 10:17:44.185609+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933408345042945', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:18:29.691565+00', 26, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:29.722212+00', NULL, '2026-08-16 10:18:29.722212+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890945', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395010', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:19:45.528984+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.530984+00', NULL, '2026-08-16 10:19:45.530984+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281412177921', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:25:56.241705+00', 38, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.286976+00', NULL, '2026-08-16 10:25:56.286976+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348801', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:25:56.241705+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281437343746', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:25:56.244268+00', 39, 'f', 'done fired=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.293494+00', NULL, '2026-08-16 10:25:56.293494+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050370', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:26:57.11642+00', 2, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.129211+00', NULL, '2026-08-16 10:26:57.129211+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050371', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:26:57.119242+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.132257+00', NULL, '2026-08-16 10:26:57.132257+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536648159234', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:26:57.11642+00', 18, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.141369+00', NULL, '2026-08-16 10:26:57.141369+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562689', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:27:57.95913+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.965126+00', NULL, '2026-08-16 10:27:57.965126+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562690', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:27:57.95913+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.968132+00', NULL, '2026-08-16 10:27:57.968132+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791791865857', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:27:57.95913+00', 11, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.976625+00', NULL, '2026-08-16 10:27:57.976625+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348802', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:25:56.244268+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432450', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:03:34.140859+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906558382081', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:04:34.810807+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.823206+00', NULL, '2026-08-16 10:04:34.823206+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161328795649', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:05:35.575834+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.57943+00', NULL, '2026-08-16 10:05:35.57943+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043394', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:06:36.305621+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.310887+00', NULL, '2026-08-16 10:06:36.310887+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736708', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:07:37.023242+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.035507+00', NULL, '2026-08-16 10:07:37.035507+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930887169880066', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:08:28.610841+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:28.621044+00', NULL, '2026-08-16 10:08:28.621044+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932545', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:08:37.736858+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.743081+00', NULL, '2026-08-16 10:08:37.743081+00', NULL);
+
+-- ----------------------------
+-- Table structure for sys_notice
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_notice";
+CREATE TABLE "public"."sys_notice" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "kind" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "title" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "content" text COLLATE "pg_catalog"."default" NOT NULL,
+  "content_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "category" varchar(32) COLLATE "pg_catalog"."default",
+  "severity" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_scope" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_account_types" json NOT NULL,
+  "target_account_ids" json NOT NULL,
+  "target_dept_ids" json NOT NULL,
+  "target_role_ids" json NOT NULL,
+  "publish_locations" json NOT NULL,
+  "is_pinned" bool NOT NULL,
+  "pinned_until" timestamptz(6),
+  "sender_account_type" varchar(32) COLLATE "pg_catalog"."default",
+  "sender_account_id" varchar(64) COLLATE "pg_catalog"."default",
+  "source_type" varchar(64) COLLATE "pg_catalog"."default",
+  "source_id" varchar(64) COLLATE "pg_catalog"."default",
+  "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "publish_at" timestamptz(6),
+  "revoked_at" timestamptz(6),
+  "expire_at" timestamptz(6),
+  "view_count" int4 NOT NULL,
+  "extra" json NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_notice"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_notice"."kind" IS '类型：NOTIFICATION|ANNOUNCEMENT';
+COMMENT ON COLUMN "public"."sys_notice"."title" IS '标题';
+COMMENT ON COLUMN "public"."sys_notice"."content" IS '内容';
+COMMENT ON COLUMN "public"."sys_notice"."content_type" IS '内容格式';
+COMMENT ON COLUMN "public"."sys_notice"."category" IS '分类（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."severity" IS '等级';
+COMMENT ON COLUMN "public"."sys_notice"."target_scope" IS '目标范围';
+COMMENT ON COLUMN "public"."sys_notice"."target_account_types" IS '目标账户类型列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_account_ids" IS '目标账户ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_dept_ids" IS '目标部门ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."target_role_ids" IS '目标角色ID列表';
+COMMENT ON COLUMN "public"."sys_notice"."publish_locations" IS '发布位置（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."is_pinned" IS '是否置顶（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."pinned_until" IS '置顶截止时间';
+COMMENT ON COLUMN "public"."sys_notice"."sender_account_type" IS '发送者账户类型';
+COMMENT ON COLUMN "public"."sys_notice"."sender_account_id" IS '发送者账户ID';
+COMMENT ON COLUMN "public"."sys_notice"."source_type" IS '来源模块（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."source_id" IS '来源业务ID（通知）';
+COMMENT ON COLUMN "public"."sys_notice"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_notice"."publish_at" IS '发布时间';
+COMMENT ON COLUMN "public"."sys_notice"."revoked_at" IS '撤回时间';
+COMMENT ON COLUMN "public"."sys_notice"."expire_at" IS '过期时间（公告）';
+COMMENT ON COLUMN "public"."sys_notice"."view_count" IS '查看次数';
+COMMENT ON COLUMN "public"."sys_notice"."extra" IS '扩展信息';
+COMMENT ON COLUMN "public"."sys_notice"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_notice"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_notice"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_notice"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_notice
+-- ----------------------------
+INSERT INTO "public"."sys_notice" VALUES ('7491842112464527360', 'NOTIFICATION', '急急急', '哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:05:46+00', NULL, NULL, 0, '{}', '2026-08-08 13:05:51.295643+00', '1', '2026-08-08 13:05:51.295643+00', '1');
+INSERT INTO "public"."sys_notice" VALUES ('7491842211315884032', 'NOTIFICATION', '哈哈哈', '哈哈哈哈哈', 'text', 'SYSTEM', 'INFO', 'ALL', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:06:10+00', NULL, NULL, 0, '{}', '2026-08-08 13:06:14.871274+00', '1', '2026-08-08 13:06:14.871274+00', '1');
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291905', 'ANNOUNCEMENT', '系统维护预告', '本周日 02:00-04:00 将进行例行维护，期间门户可能短暂不可用，请提前做好安排。', 'markdown', 'SYSTEM', 'WARNING', 'ALL', '["PORTAL", "ADMIN"]', '[]', '[]', '[]', '{"center": true, "popup": true, "dashboard": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 12:52:19.890496+00', NULL, '2026-08-22 13:52:19.890496+00', 1, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:11:23.438139+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291906', 'ANNOUNCEMENT', '意见反馈功能上线', '现已支持在线提交意见反馈并查看处理进度。登录后打开用户菜单中的「我的反馈」即可使用。', 'text', 'SYSTEM', 'SUCCESS', 'ACCOUNT_TYPE', '["PORTAL"]', '[]', '[]', '[]', '{"center": true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 13:22:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652032', 'NOTIFICATION', '账号安全提醒', '建议定期修改密码，并确保绑定的手机号与邮箱可用，以便找回账号。', 'text', 'SECURITY', 'WARNING', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:32:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652033', 'NOTIFICATION', '新功能提示：消息中心', '右上角铃铛可查看未读通知与公告，支持一键全部已读。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:42:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809044652034', 'NOTIFICATION', '管理端测试通知', '这是一条仅面向 ADMIN 的通知，用于验证账户类型过滤。', 'text', 'SYSTEM', 'INFO', 'ACCOUNT_TYPE', '["ADMIN"]', '[]', '[]', '[]', '{}', 'f', NULL, NULL, NULL, 'SYSTEM', NULL, 'PUBLISHED', '2026-08-08 13:47:19.890496+00', NULL, NULL, 0, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 13:52:19.983927+00', NULL);
+INSERT INTO "public"."sys_notice" VALUES ('7491853809015291904', 'ANNOUNCEMENT', '欢迎使用 HEI 门户', '门户账号体系、个人中心与消息中心已就绪。如有问题可通过「我的反馈」提交。', 'text', 'SYSTEM', 'INFO', 'ALL', '["PORTAL"]', '[]', '[]', '[]', '{"center":true,"dashboard":true}', 'f', NULL, NULL, NULL, NULL, NULL, 'PUBLISHED', '2026-08-08 11:52:19.890496+00', NULL, '2026-11-06 13:52:19.890496+00', 6, '{}', '2026-08-08 13:52:19.983927+00', NULL, '2026-08-08 14:56:51.531823+00', '7491847383584804864');
+
+-- ----------------------------
+-- Table structure for sys_notice_read
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_notice_read";
+CREATE TABLE "public"."sys_notice_read" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "notice_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "account_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "read_at" timestamptz(6) NOT NULL DEFAULT now()
+)
+;
+COMMENT ON COLUMN "public"."sys_notice_read"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_notice_read"."notice_id" IS '消息ID';
+COMMENT ON COLUMN "public"."sys_notice_read"."account_type" IS '账户类型';
+COMMENT ON COLUMN "public"."sys_notice_read"."account_id" IS '账户ID';
+COMMENT ON COLUMN "public"."sys_notice_read"."read_at" IS '阅读时间';
+
+-- ----------------------------
+-- Records of sys_notice_read
+-- ----------------------------
+INSERT INTO "public"."sys_notice_read" VALUES ('7491843548694908928', '7491842211315884032', 'ADMIN', '1', '2026-08-08 13:11:33.720396+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491847557782638592', '7491842112464527360', 'PORTAL', '7491847383584804864', '2026-08-08 13:27:29.554552+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853876019257344', '7491853809015291904', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:35.928972+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853918088126464', '7491853809044652033', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:45.966126+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377344', '7491853809015291905', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377345', '7491853809015291906', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491853936312377346', '7491853809044652032', 'PORTAL', '7491847383584804864', '2026-08-08 13:52:50.326041+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695936', '7491853809015291905', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
+INSERT INTO "public"."sys_notice_read" VALUES ('7491856130134695937', '7491853809044652034', 'ADMIN', '1', '2026-08-08 14:01:33.364809+00');
 
 -- ----------------------------
 -- Table structure for sys_operation_audit_log
@@ -1901,163 +2105,173 @@ COMMENT ON COLUMN "public"."sys_resource"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_resource
 -- ----------------------------
-INSERT INTO "public"."sys_resource" VALUES ('200001',NULL,'dashboard','运营工作台','MENU','210001','/dashboard','/dashboard/index.vue',NULL,'icon-park-outline:analysis',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-06-30 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200003',NULL,'ops','系统运维','CATALOG','210001','/sys',NULL,NULL,'icon-park-outline:setting-two',NULL,NULL,25,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200004','200003','sys-dict','字典管理','MENU','210001','/sys/dict','/sys/dict/index.vue',NULL,'icon-park-outline:file-search',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200005','200019','content-banner','展示图管理','MENU','210001','/sys/banner','/sys/banner/index.vue',NULL,'icon-park-outline:ad-product',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200006',NULL,'org','组织权限','CATALOG','210001','/iam',NULL,NULL,'icon-park-outline:people',NULL,NULL,10,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200007','200006','iam-account','账号管理','MENU','210001','/iam/account','/iam/account/index.vue',NULL,'icon-park-outline:people',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200008','200006','iam-dept','部门管理','MENU','210001','/iam/dept','/iam/dept/index.vue',NULL,'icon-park-outline:tree-diagram',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200009','200006','iam-group','用户组管理','MENU','210001','/iam/group','/iam/group/index.vue',NULL,'icon-park-outline:group',NULL,NULL,3,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200010','200006','iam-position','岗位管理','MENU','210001','/iam/position','/iam/position/index.vue',NULL,'icon-park-outline:people-bottom',NULL,NULL,4,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200011','200006','iam-role','角色管理','MENU','210001','/iam/role','/iam/role/index.vue',NULL,'icon-park-outline:peoples',NULL,NULL,5,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200012','200040','iam-resource','资源管理','MENU','210001','/iam/resource','/iam/resource/index.vue',NULL,'icon-park-outline:all-application',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200018','200040','iam-resourcemodule','资源模块管理','MENU','210001','/iam/resource_module','/iam/resource_module/index.vue',NULL,'icon-park-outline:blocks-and-arrows',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200019',NULL,'content','内容运营','CATALOG','210001','/content',NULL,'/sys/notice','icon-park-outline:picture-album',NULL,NULL,20,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200023','200003','sys-file','文件管理','MENU','210001','/sys/file','/sys/file/index.vue',NULL,'icon-park-outline:file-code',NULL,NULL,3,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200025','200003','sys-session','在线会话','MENU','210001','/sys/session','/auth/session/index.vue',NULL,'icon-park-outline:connection',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200027','200003','sys-audit-api','操作审计接口','API_GROUP','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED','操作审计后端权限组',NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200028','200003','sys-login-log','登录日志','MENU','210001','/sys/login-log','/sys/login-log/index.vue',NULL,'icon-park-outline:log',NULL,NULL,5,'t','f','f','ENABLED','登录成功/失败历史记录',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200029','200003','sys-audit','操作审计','MENU','210001','/sys/audit','/sys/audit/index.vue',NULL,'icon-park-outline:audit',NULL,NULL,7,'t','f','f','ENABLED','系统操作审计日志',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200031','200041','iam-clientmodule','客户端模块管理','MENU','210001','/iam/client_module','/iam/client_module/index.vue',NULL,'icon-park-outline:application-one',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200032','200041','iam-clientresource','客户端资源管理','MENU','210001','/iam/client_resource','/iam/client_resource/index.vue',NULL,'icon-park-outline:page-template',NULL,NULL,2,'t','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200040',NULL,'resource-auth','资源授权','CATALOG','210001','/resource-auth',NULL,NULL,'icon-park-outline:all-application',NULL,NULL,15,'t','f','f','ENABLED','菜单资源与资源模块授权配置',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('200041',NULL,'client-resource-auth','客户端资源授权','CATALOG','210001','/client-resource-auth',NULL,NULL,'icon-park-outline:application-one',NULL,NULL,16,'t','f','f','ENABLED','客户端模块与客户端资源授权配置',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201011','200004','sys-dict-create','新增字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201012','200004','sys-dict-detail','查看字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201013','200004','sys-dict-update','编辑字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201014','200004','sys-dict-delete','删除字典','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201021','200005','sys-banner-create','新增展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201022','200005','sys-banner-detail','查看展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201023','200005','sys-banner-update','编辑展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201024','200005','sys-banner-delete','删除展示图','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201025','200005','sys-banner-create-page','新增展示图页','PAGE','210001','/sys/banner/create','/sys/banner/form.vue',NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201026','200005','sys-banner-edit-page','编辑展示图页','PAGE','210001','/sys/banner/edit','/sys/banner/form.vue',NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201027','200005','sys-banner-detail-page','展示图详情页','PAGE','210001','/sys/banner/detail','/sys/banner/detail.vue',NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201031','200023','sys-file-upload','上传文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201032','200023','sys-file-detail','查看文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201033','200023','sys-file-update','编辑文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201034','200023','sys-file-url','打开文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201035','200023','sys-file-delete','删除文件','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201041','200025','sys-session-tokenlist','查看令牌','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201042','200025','sys-session-exit','强退账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201043','200025','sys-session-tokenexit','强退令牌','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201051','202015','sys-codegen-create','新增生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201052','202015','sys-codegen-detail','查看生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201053','202015','sys-codegen-update','编辑生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201054','202015','sys-codegen-delete','删除生成方案','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201055','202015','sys-codegen-tables','读取数据库表','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201056','202015','sys-codegen-preview','预览代码','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201057','202015','sys-codegen-download','下载代码','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,70,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-07-18 16:10:45+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201060','200028','sys-login-log-detail','查看登录日志','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201061','200029','sys-audit-detail','查看审计详情','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201101','200007','iam-account-create','新增账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201102','200007','iam-account-detail','查看账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201103','200007','iam-account-update','编辑账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201104','200007','iam-account-delete','删除账号','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201105','200007','iam-account-grant-role','分配角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201106','200007','iam-account-grant-group','分配用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201107','200007','iam-account-grant-dept','分配部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201108','200007','iam-account-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201109','200007','iam-account-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,9,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201121','200008','iam-dept-create','新增部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201122','200008','iam-dept-detail','查看部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201123','200008','iam-dept-update','编辑部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201124','200008','iam-dept-delete','删除部门','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201131','200009','iam-group-create','新增用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201132','200009','iam-group-detail','查看用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201133','200009','iam-group-update','编辑用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201134','200009','iam-group-delete','删除用户组','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201135','200009','iam-group-grant-user','分配用户','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201136','200009','iam-group-grant-role','分配角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201137','200009','iam-group-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201138','200009','iam-group-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201151','200010','iam-position-create','新增岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201152','200010','iam-position-detail','查看岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201153','200010','iam-position-update','编辑岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201154','200010','iam-position-delete','删除岗位','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201161','200011','iam-role-create','新增角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201162','200011','iam-role-detail','查看角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201163','200011','iam-role-update','编辑角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201164','200011','iam-role-delete','删除角色','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201165','200011','iam-role-grant-resource','分配资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201167','200011','iam-role-grant-user','分配用户','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201168','200011','iam-role-grant-client-resource','分配客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201181','200012','iam-resource-create','新增资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201182','200012','iam-resource-detail','查看资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201183','200012','iam-resource-update','编辑资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201184','200012','iam-resource-delete','删除资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201185','200012','iam-resource-grant','绑定权限','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201191','200018','iam-resourcemodule-create','新增资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201192','200018','iam-resourcemodule-detail','查看资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201193','200018','iam-resourcemodule-update','编辑资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201194','200018','iam-resourcemodule-delete','删除资源模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-03 00:00:00+00',NULL,'2026-07-03 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201311','200031','iam-clientmodule-create','新增客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201312','200031','iam-clientmodule-detail','查看客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201313','200031','iam-clientmodule-update','编辑客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201314','200031','iam-clientmodule-delete','删除客户端模块','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201321','200032','iam-clientresource-create','新增客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201322','200032','iam-clientresource-detail','查看客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201323','200032','iam-clientresource-update','编辑客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201324','200032','iam-clientresource-delete','删除客户端资源','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201325','200032','iam-clientresource-list','客户端资源树','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('201326','200032','iam-clientresource-grant','绑定客户端资源权限','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202001',NULL,'devtools','开发工具','CATALOG','210001','/test',NULL,'/sys/codegen','icon-park-outline:code',NULL,NULL,90,'t','f','f','ENABLED','系统模块测试页面目录',NULL,'{}','2026-07-18 12:39:16+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202002','202001','system-test-editor','编辑器测试','MENU','210001','/test/editor','/test/editor/index.vue',NULL,'icon-park-outline:edit',NULL,NULL,2,'t','f','f','ENABLED','Markdown、富文本和代码编辑器组件测试页面',NULL,'{}','2026-07-18 12:39:16+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202003','202001','system-test-icon','图标选择器测试','MENU','210001','/test/icon','/test/icon/index.vue',NULL,'icon-park-outline:all-application',NULL,NULL,3,'t','f','f','ENABLED','Iconify 离线图标选择器测试页面',NULL,'{}','2026-07-18 12:49:42+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202004','202030','biz-cgtestactivity','代码生成测试-活动','MENU','210001','/biz/cg-test-activity','/biz/cg-test-activity/index.vue',NULL,'icon-park-outline:calendar',NULL,NULL,1,'t','f','f','ENABLED','代码生成 CRUD 样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202005','202030','biz-cgtestcatalog','代码生成测试-目录树','MENU','210001','/biz/cg-test-catalog','/biz/cg-test-catalog/index.vue',NULL,'icon-park-outline:tree-list',NULL,NULL,2,'t','f','f','ENABLED','代码生成树表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202006','202030','biz-cgtestorder','代码生成测试-订单','MENU','210001','/biz/cg-test-order','/biz/cg-test-order/index.vue',NULL,'icon-park-outline:transaction-order',NULL,NULL,3,'t','f','f','ENABLED','代码生成主子表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202007','202030','biz-cgtestknowledgecategory','代码生成测试-知识分类','MENU','210001','/biz/cg-test-knowledge-category','/biz/cg-test-knowledge-category/index.vue',NULL,'icon-park-outline:book-open',NULL,NULL,4,'t','f','f','ENABLED','代码生成左树右表样例',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202010','200003','system-config','系统配置','MENU','210001','/sys/config','/sys/config/index.vue',NULL,'icon-park-outline:setting-config',NULL,NULL,4,'t','f','f','ENABLED','系统配置管理页面',NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202011','202010','sys:config:create','新增系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202012','202010','sys:config:detail','查看系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202013','202010','sys:config:update','编辑系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202014','202010','sys:config:delete','删除系统配置','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-18 14:07:48+00',NULL,'2026-07-18 14:07:48+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202015','202001','sys-codegen','代码生成','MENU','210001','/sys/codegen','/sys/codegen/index.vue',NULL,'icon-park-outline:code',NULL,NULL,1,'t','f','f','ENABLED','代码生成管理',NULL,'{}','2026-07-18 16:10:45+00',NULL,'2026-08-09 00:00:00+00','1');
-INSERT INTO "public"."sys_resource" VALUES ('202030',NULL,'biz-demo','业务示例','CATALOG','210001','/biz',NULL,NULL,'icon-park-outline:application-one',NULL,NULL,40,'t','f','f','ENABLED','代码生成业务示例页面',NULL,'{}','2026-08-09 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202200','200019','content-notice','通知消息','MENU','210001','/sys/notice','/sys/notice/index.vue',NULL,'icon-park-outline:message',NULL,NULL,2,'t','f','f','ENABLED','消息管理',NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202201','202200','sys-notice-page','分页消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202202','202200','sys-notice-create','新增消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202203','202200','sys-notice-detail','详情消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202204','202200','sys-notice-update','编辑消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202205','202200','sys-notice-delete','删除消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202206','202200','sys-notice-create-page','新增消息页','PAGE','210001','/sys/notice/create','/sys/notice/form.vue',NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202207','202200','sys-notice-edit-page','编辑消息页','PAGE','210001','/sys/notice/edit','/sys/notice/form.vue',NULL,NULL,NULL,NULL,70,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202208','202200','sys-notice-detail-page','消息详情页','PAGE','210001','/sys/notice/detail','/sys/notice/detail.vue',NULL,NULL,NULL,NULL,80,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202209','202200','sys-notice-publish','发布消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,55,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202220','200019','content-feedback','反馈管理','MENU','210001','/sys/feedback','/sys/feedback/index.vue',NULL,'icon-park-outline:write',NULL,NULL,3,'t','f','f','ENABLED','意见反馈管理',NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202221','202220','sys-feedback-page','分页反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202222','202220','sys-feedback-detail','查看反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202223','202220','sys-feedback-update','处理反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202224','202220','sys-feedback-delete','删除反馈','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202225','202220','sys-feedback-edit-page','处理反馈页','PAGE','210001','/sys/feedback/edit','/sys/feedback/form.vue',NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202226','202220','sys-feedback-detail-page','反馈详情页','PAGE','210001','/sys/feedback/detail','/sys/feedback/detail.vue',NULL,NULL,NULL,NULL,60,'f','f','f','ENABLED',NULL,NULL,'{}','2026-07-24 00:00:00+00',NULL,'2026-07-24 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202230','200019','content-manage','消息管理','CATALOG','210001','/sys/manage',NULL,NULL,'icon-park-outline:list-view',NULL,NULL,6,'t','f','f','ENABLED','消息管理',NULL,'{}','2026-06-30 00:00:00+00',NULL,'2026-08-09 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202240','202200','sys-notice-revoke','撤回消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,56,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('202241','202200','sys-notice-pin','置顶消息','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,57,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203011','202004','biz-cgtestactivity-page','分页活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203012','202004','biz-cgtestactivity-create','新增活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203013','202004','biz-cgtestactivity-detail','详情活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203014','202004','biz-cgtestactivity-update','编辑活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203015','202004','biz-cgtestactivity-delete','删除活动','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203021','202005','biz-cgtestcatalog-page','分页目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203022','202005','biz-cgtestcatalog-create','新增目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203023','202005','biz-cgtestcatalog-detail','详情目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203024','202005','biz-cgtestcatalog-update','编辑目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203025','202005','biz-cgtestcatalog-delete','删除目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203026','202005','biz-cgtestcatalog-list','树列表目录','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,90,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203031','202006','biz-cgtestorder-page','分页订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203032','202006','biz-cgtestorder-create','新增订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203033','202006','biz-cgtestorder-detail','详情订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203034','202006','biz-cgtestorder-update','编辑订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203035','202006','biz-cgtestorder-delete','删除订单','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203041','202007','biz-cgtestknowledgecategory-page','分页知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,10,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203042','202007','biz-cgtestknowledgecategory-create','新增知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,20,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203043','202007','biz-cgtestknowledgecategory-detail','详情知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,30,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203044','202007','biz-cgtestknowledgecategory-update','编辑知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203045','202007','biz-cgtestknowledgecategory-delete','删除知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203046','202007','biz-cgtestknowledgecategory-list','树列表知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,90,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200001', NULL, 'dashboard', '运营工作台', 'MENU', '210001', '/dashboard', '/dashboard/index.vue', NULL, 'icon-park-outline:analysis', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200003', NULL, 'ops', '系统运维', 'CATALOG', '210001', '/sys', NULL, NULL, 'icon-park-outline:setting-two', NULL, NULL, 25, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200004', '200003', 'sys-dict', '字典管理', 'MENU', '210001', '/sys/dict', '/sys/dict/index.vue', NULL, 'icon-park-outline:file-search', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200005', '200019', 'content-banner', '展示图管理', 'MENU', '210001', '/sys/banner', '/sys/banner/index.vue', NULL, 'icon-park-outline:ad-product', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200006', NULL, 'org', '组织权限', 'CATALOG', '210001', '/iam', NULL, NULL, 'icon-park-outline:people', NULL, NULL, 10, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200007', '200006', 'iam-account', '账号管理', 'MENU', '210001', '/iam/account', '/iam/account/index.vue', NULL, 'icon-park-outline:people', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200008', '200006', 'iam-dept', '部门管理', 'MENU', '210001', '/iam/dept', '/iam/dept/index.vue', NULL, 'icon-park-outline:tree-diagram', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200009', '200006', 'iam-group', '用户组管理', 'MENU', '210001', '/iam/group', '/iam/group/index.vue', NULL, 'icon-park-outline:group', NULL, NULL, 3, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200010', '200006', 'iam-position', '岗位管理', 'MENU', '210001', '/iam/position', '/iam/position/index.vue', NULL, 'icon-park-outline:people-bottom', NULL, NULL, 4, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200011', '200006', 'iam-role', '角色管理', 'MENU', '210001', '/iam/role', '/iam/role/index.vue', NULL, 'icon-park-outline:peoples', NULL, NULL, 5, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200012', '200040', 'iam-resource', '资源管理', 'MENU', '210001', '/iam/resource', '/iam/resource/index.vue', NULL, 'icon-park-outline:all-application', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200018', '200040', 'iam-resourcemodule', '资源模块管理', 'MENU', '210001', '/iam/resource_module', '/iam/resource_module/index.vue', NULL, 'icon-park-outline:blocks-and-arrows', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200019', NULL, 'content', '内容运营', 'CATALOG', '210001', '/content', NULL, '/sys/notice', 'icon-park-outline:picture-album', NULL, NULL, 20, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200023', '200003', 'sys-file', '文件管理', 'MENU', '210001', '/sys/file', '/sys/file/index.vue', NULL, 'icon-park-outline:file-code', NULL, NULL, 3, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200025', '200003', 'sys-session', '在线会话', 'MENU', '210001', '/sys/session', '/auth/session/index.vue', NULL, 'icon-park-outline:connection', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-06-30 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200027', '200003', 'sys-audit-api', '操作审计接口', 'API_GROUP', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', '操作审计后端权限组', NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200028', '200003', 'sys-login-log', '登录日志', 'MENU', '210001', '/sys/login-log', '/sys/login-log/index.vue', NULL, 'icon-park-outline:log', NULL, NULL, 5, 't', 'f', 'f', 'ENABLED', '登录成功/失败历史记录', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200029', '200003', 'sys-audit', '操作审计', 'MENU', '210001', '/sys/audit', '/sys/audit/index.vue', NULL, 'icon-park-outline:audit', NULL, NULL, 7, 't', 'f', 'f', 'ENABLED', '系统操作审计日志', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200031', '200041', 'iam-clientmodule', '客户端模块管理', 'MENU', '210001', '/iam/client_module', '/iam/client_module/index.vue', NULL, 'icon-park-outline:application-one', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200032', '200041', 'iam-clientresource', '客户端资源管理', 'MENU', '210001', '/iam/client_resource', '/iam/client_resource/index.vue', NULL, 'icon-park-outline:page-template', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200040', NULL, 'resource-auth', '资源授权', 'CATALOG', '210001', '/resource-auth', NULL, NULL, 'icon-park-outline:all-application', NULL, NULL, 15, 't', 'f', 'f', 'ENABLED', '菜单资源与资源模块授权配置', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('200041', NULL, 'client-resource-auth', '客户端资源授权', 'CATALOG', '210001', '/client-resource-auth', NULL, NULL, 'icon-park-outline:application-one', NULL, NULL, 16, 't', 'f', 'f', 'ENABLED', '客户端模块与客户端资源授权配置', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201011', '200004', 'sys-dict-create', '新增字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201012', '200004', 'sys-dict-detail', '查看字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201013', '200004', 'sys-dict-update', '编辑字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201014', '200004', 'sys-dict-delete', '删除字典', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201021', '200005', 'sys-banner-create', '新增展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201022', '200005', 'sys-banner-detail', '查看展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201023', '200005', 'sys-banner-update', '编辑展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201024', '200005', 'sys-banner-delete', '删除展示图', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201025', '200005', 'sys-banner-create-page', '新增展示图页', 'PAGE', '210001', '/sys/banner/create', '/sys/banner/form.vue', NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201026', '200005', 'sys-banner-edit-page', '编辑展示图页', 'PAGE', '210001', '/sys/banner/edit', '/sys/banner/form.vue', NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201027', '200005', 'sys-banner-detail-page', '展示图详情页', 'PAGE', '210001', '/sys/banner/detail', '/sys/banner/detail.vue', NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201031', '200023', 'sys-file-upload', '上传文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201032', '200023', 'sys-file-detail', '查看文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201033', '200023', 'sys-file-update', '编辑文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201034', '200023', 'sys-file-url', '打开文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201035', '200023', 'sys-file-delete', '删除文件', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201041', '200025', 'sys-session-tokenlist', '查看令牌', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201042', '200025', 'sys-session-exit', '强退账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201043', '200025', 'sys-session-tokenexit', '强退令牌', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201051', '202015', 'sys-codegen-create', '新增生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201052', '202015', 'sys-codegen-detail', '查看生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201053', '202015', 'sys-codegen-update', '编辑生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201054', '202015', 'sys-codegen-delete', '删除生成方案', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201055', '202015', 'sys-codegen-tables', '读取数据库表', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201056', '202015', 'sys-codegen-preview', '预览代码', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201057', '202015', 'sys-codegen-download', '下载代码', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 70, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-07-18 16:10:45+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201060', '200028', 'sys-login-log-detail', '查看登录日志', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201061', '200029', 'sys-audit-detail', '查看审计详情', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201101', '200007', 'iam-account-create', '新增账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201102', '200007', 'iam-account-detail', '查看账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201103', '200007', 'iam-account-update', '编辑账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201104', '200007', 'iam-account-delete', '删除账号', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201105', '200007', 'iam-account-grant-role', '分配角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201106', '200007', 'iam-account-grant-group', '分配用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201107', '200007', 'iam-account-grant-dept', '分配部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201108', '200007', 'iam-account-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201109', '200007', 'iam-account-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 9, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201121', '200008', 'iam-dept-create', '新增部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201122', '200008', 'iam-dept-detail', '查看部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201123', '200008', 'iam-dept-update', '编辑部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201124', '200008', 'iam-dept-delete', '删除部门', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201131', '200009', 'iam-group-create', '新增用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201132', '200009', 'iam-group-detail', '查看用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201133', '200009', 'iam-group-update', '编辑用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201134', '200009', 'iam-group-delete', '删除用户组', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201135', '200009', 'iam-group-grant-user', '分配用户', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201136', '200009', 'iam-group-grant-role', '分配角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201137', '200009', 'iam-group-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201138', '200009', 'iam-group-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201151', '200010', 'iam-position-create', '新增岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201152', '200010', 'iam-position-detail', '查看岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201153', '200010', 'iam-position-update', '编辑岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201154', '200010', 'iam-position-delete', '删除岗位', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201161', '200011', 'iam-role-create', '新增角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201162', '200011', 'iam-role-detail', '查看角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201163', '200011', 'iam-role-update', '编辑角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201164', '200011', 'iam-role-delete', '删除角色', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201165', '200011', 'iam-role-grant-resource', '分配资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201167', '200011', 'iam-role-grant-user', '分配用户', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201168', '200011', 'iam-role-grant-client-resource', '分配客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201181', '200012', 'iam-resource-create', '新增资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201182', '200012', 'iam-resource-detail', '查看资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201183', '200012', 'iam-resource-update', '编辑资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201184', '200012', 'iam-resource-delete', '删除资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201185', '200012', 'iam-resource-grant', '绑定权限', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201191', '200018', 'iam-resourcemodule-create', '新增资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201192', '200018', 'iam-resourcemodule-detail', '查看资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201193', '200018', 'iam-resourcemodule-update', '编辑资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201194', '200018', 'iam-resourcemodule-delete', '删除资源模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201311', '200031', 'iam-clientmodule-create', '新增客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201312', '200031', 'iam-clientmodule-detail', '查看客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201313', '200031', 'iam-clientmodule-update', '编辑客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201314', '200031', 'iam-clientmodule-delete', '删除客户端模块', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201321', '200032', 'iam-clientresource-create', '新增客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201322', '200032', 'iam-clientresource-detail', '查看客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201323', '200032', 'iam-clientresource-update', '编辑客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201324', '200032', 'iam-clientresource-delete', '删除客户端资源', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201325', '200032', 'iam-clientresource-list', '客户端资源树', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('201326', '200032', 'iam-clientresource-grant', '绑定客户端资源权限', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202001', NULL, 'devtools', '开发工具', 'CATALOG', '210001', '/test', NULL, '/sys/codegen', 'icon-park-outline:code', NULL, NULL, 90, 't', 'f', 'f', 'ENABLED', '系统模块测试页面目录', NULL, '{}', '2026-07-18 12:39:16+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202002', '202001', 'system-test-editor', '编辑器测试', 'MENU', '210001', '/test/editor', '/test/editor/index.vue', NULL, 'icon-park-outline:edit', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', 'Markdown、富文本和代码编辑器组件测试页面', NULL, '{}', '2026-07-18 12:39:16+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202003', '202001', 'system-test-icon', '图标选择器测试', 'MENU', '210001', '/test/icon', '/test/icon/index.vue', NULL, 'icon-park-outline:all-application', NULL, NULL, 3, 't', 'f', 'f', 'ENABLED', 'Iconify 离线图标选择器测试页面', NULL, '{}', '2026-07-18 12:49:42+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202004', '202030', 'biz-cgtestactivity', '代码生成测试-活动', 'MENU', '210001', '/biz/cg-test-activity', '/biz/cg-test-activity/index.vue', NULL, 'icon-park-outline:calendar', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', '代码生成 CRUD 样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202005', '202030', 'biz-cgtestcatalog', '代码生成测试-目录树', 'MENU', '210001', '/biz/cg-test-catalog', '/biz/cg-test-catalog/index.vue', NULL, 'icon-park-outline:tree-list', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', '代码生成树表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202006', '202030', 'biz-cgtestorder', '代码生成测试-订单', 'MENU', '210001', '/biz/cg-test-order', '/biz/cg-test-order/index.vue', NULL, 'icon-park-outline:transaction-order', NULL, NULL, 3, 't', 'f', 'f', 'ENABLED', '代码生成主子表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202007', '202030', 'biz-cgtestknowledgecategory', '代码生成测试-知识分类', 'MENU', '210001', '/biz/cg-test-knowledge-category', '/biz/cg-test-knowledge-category/index.vue', NULL, 'icon-park-outline:book-open', NULL, NULL, 4, 't', 'f', 'f', 'ENABLED', '代码生成左树右表样例', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202010', '200003', 'system-config', '系统配置', 'MENU', '210001', '/sys/config', '/sys/config/index.vue', NULL, 'icon-park-outline:setting-config', NULL, NULL, 4, 't', 'f', 'f', 'ENABLED', '系统配置管理页面', NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202011', '202010', 'sys:config:create', '新增系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202012', '202010', 'sys:config:detail', '查看系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202013', '202010', 'sys:config:update', '编辑系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202014', '202010', 'sys:config:delete', '删除系统配置', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-18 14:07:48+00', NULL, '2026-07-18 14:07:48+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202015', '202001', 'sys-codegen', '代码生成', 'MENU', '210001', '/sys/codegen', '/sys/codegen/index.vue', NULL, 'icon-park-outline:code', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', '代码生成管理', NULL, '{}', '2026-07-18 16:10:45+00', NULL, '2026-08-09 00:00:00+00', '1');
+INSERT INTO "public"."sys_resource" VALUES ('202030', NULL, 'biz-demo', '业务示例', 'CATALOG', '210001', '/biz', NULL, NULL, 'icon-park-outline:application-one', NULL, NULL, 40, 't', 'f', 'f', 'ENABLED', '代码生成业务示例页面', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202200', '200019', 'content-notice', '通知消息', 'MENU', '210001', '/sys/notice', '/sys/notice/index.vue', NULL, 'icon-park-outline:message', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', '消息管理', NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202201', '202200', 'sys-notice-page', '分页消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202202', '202200', 'sys-notice-create', '新增消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202203', '202200', 'sys-notice-detail', '详情消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202204', '202200', 'sys-notice-update', '编辑消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202205', '202200', 'sys-notice-delete', '删除消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202206', '202200', 'sys-notice-create-page', '新增消息页', 'PAGE', '210001', '/sys/notice/create', '/sys/notice/form.vue', NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202207', '202200', 'sys-notice-edit-page', '编辑消息页', 'PAGE', '210001', '/sys/notice/edit', '/sys/notice/form.vue', NULL, NULL, NULL, NULL, 70, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202208', '202200', 'sys-notice-detail-page', '消息详情页', 'PAGE', '210001', '/sys/notice/detail', '/sys/notice/detail.vue', NULL, NULL, NULL, NULL, 80, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202209', '202200', 'sys-notice-publish', '发布消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 55, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202220', '200019', 'content-feedback', '反馈管理', 'MENU', '210001', '/sys/feedback', '/sys/feedback/index.vue', NULL, 'icon-park-outline:write', NULL, NULL, 3, 't', 'f', 'f', 'ENABLED', '意见反馈管理', NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202221', '202220', 'sys-feedback-page', '分页反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202222', '202220', 'sys-feedback-detail', '查看反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202223', '202220', 'sys-feedback-update', '处理反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202224', '202220', 'sys-feedback-delete', '删除反馈', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202225', '202220', 'sys-feedback-edit-page', '处理反馈页', 'PAGE', '210001', '/sys/feedback/edit', '/sys/feedback/form.vue', NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202226', '202220', 'sys-feedback-detail-page', '反馈详情页', 'PAGE', '210001', '/sys/feedback/detail', '/sys/feedback/detail.vue', NULL, NULL, NULL, NULL, 60, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-07-24 00:00:00+00', NULL, '2026-07-24 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202240', '202200', 'sys-notice-revoke', '撤回消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 56, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202241', '202200', 'sys-notice-pin', '置顶消息', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 57, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203011', '202004', 'biz-cgtestactivity-page', '分页活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203012', '202004', 'biz-cgtestactivity-create', '新增活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203013', '202004', 'biz-cgtestactivity-detail', '详情活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203014', '202004', 'biz-cgtestactivity-update', '编辑活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203015', '202004', 'biz-cgtestactivity-delete', '删除活动', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203021', '202005', 'biz-cgtestcatalog-page', '分页目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203022', '202005', 'biz-cgtestcatalog-create', '新增目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203023', '202005', 'biz-cgtestcatalog-detail', '详情目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203024', '202005', 'biz-cgtestcatalog-update', '编辑目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203025', '202005', 'biz-cgtestcatalog-delete', '删除目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203026', '202005', 'biz-cgtestcatalog-list', '树列表目录', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 90, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203031', '202006', 'biz-cgtestorder-page', '分页订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203032', '202006', 'biz-cgtestorder-create', '新增订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203033', '202006', 'biz-cgtestorder-detail', '详情订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203034', '202006', 'biz-cgtestorder-update', '编辑订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203035', '202006', 'biz-cgtestorder-delete', '删除订单', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203041', '202007', 'biz-cgtestknowledgecategory-page', '分页知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203042', '202007', 'biz-cgtestknowledgecategory-create', '新增知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 20, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203043', '202007', 'biz-cgtestknowledgecategory-detail', '详情知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 30, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203044', '202007', 'biz-cgtestknowledgecategory-update', '编辑知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 40, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203045', '202007', 'biz-cgtestknowledgecategory-delete', '删除知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 50, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('203046', '202007', 'biz-cgtestknowledgecategory-list', '树列表知识分类', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 90, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204001', '200003', 'sys-job', '任务管理', 'MENU', '210001', '/sys/job', '/sys/job/index.vue', NULL, 'icon-park-outline:timer', NULL, NULL, 4, 't', 'f', 'f', 'ENABLED', '任务调度管理（CRON / 固定间隔，Redis 锁防多实例重复执行）', NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204011', '204001', 'sys-job-create', '新增任务', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204012', '204001', 'sys-job-update', '编辑任务', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 2, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204013', '204001', 'sys-job-delete', '删除任务', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 3, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204014', '204001', 'sys-job-detail', '任务详情', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 4, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204015', '204001', 'sys-job-run', '立即执行', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 5, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204016', '204001', 'sys-job-log', '执行日志', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204021', '204001', 'sys-job-create-page', '新增任务页', 'PAGE', '210001', '/sys/job/create', '/sys/job/form.vue', NULL, NULL, NULL, NULL, 7, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204022', '204001', 'sys-job-edit-page', '编辑任务页', 'PAGE', '210001', '/sys/job/edit', '/sys/job/form.vue', NULL, NULL, NULL, NULL, 8, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204023', '204001', 'sys-job-detail-page', '任务详情页', 'PAGE', '210001', '/sys/job/detail', '/sys/job/detail.vue', NULL, NULL, NULL, NULL, 9, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204024', '204001', 'sys-job-log-page', '任务执行记录页', 'PAGE', '210001', '/sys/job/log', '/sys/job/log.vue', NULL, NULL, NULL, NULL, 10, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_resource_module
@@ -2098,7 +2312,7 @@ COMMENT ON COLUMN "public"."sys_resource_module"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_resource_module
 -- ----------------------------
-INSERT INTO "public"."sys_resource_module" VALUES ('210001','管理端','admin','ADMIN','icon-park-outline:all-application','#2080f0',1,'ENABLED','管理端菜单与权限资源模块','{}','2026-06-30 00:00:00+00',NULL,'2026-06-30 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource_module" VALUES ('210001', '管理端', 'admin', 'ADMIN', 'icon-park-outline:all-application', '#2080f0', 1, 'ENABLED', '管理端菜单与权限资源模块', '{}', '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -2166,16 +2380,11 @@ COMMENT ON COLUMN "public"."sys_weak_password"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_weak_password
 -- ----------------------------
-INSERT INTO "public"."sys_weak_password" VALUES ('wp_01', '123456', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_weak_password" VALUES ('wp_02', 'password', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_weak_password" VALUES ('wp_03', 'admin123', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_weak_password" VALUES ('wp_04', 'qwerty', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_weak_password" VALUES ('wp_05', '111111', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-
--- ----------------------------
--- Primary Key structure for table profile_user_admin
--- ----------------------------
-ALTER TABLE "public"."profile_user_admin" ADD CONSTRAINT "pk_profile_user_admin" PRIMARY KEY ("account_id");
+INSERT INTO "public"."sys_weak_password" VALUES ('7267772085910261393', '123456', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_weak_password" VALUES ('7661438436788304682', 'password', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_weak_password" VALUES ('7404805181363764417', 'admin123', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_weak_password" VALUES ('7142597855705676121', 'qwerty', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
+INSERT INTO "public"."sys_weak_password" VALUES ('7411256677926569870', '111111', '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 
 -- ----------------------------
 -- Indexes structure for table cg_test_activity
@@ -2236,24 +2445,9 @@ ALTER TABLE "public"."cg_test_order" ADD CONSTRAINT "pk_cg_test_order" PRIMARY K
 ALTER TABLE "public"."cg_test_order_item" ADD CONSTRAINT "pk_cg_test_order_item" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Primary Key structure for table sys_feedback
+-- Primary Key structure for table profile_user_admin
 -- ----------------------------
-ALTER TABLE "public"."sys_feedback" ADD CONSTRAINT "pk_sys_feedback" PRIMARY KEY ("id");
-
--- ----------------------------
--- Primary Key structure for table sys_notice
--- ----------------------------
-ALTER TABLE "public"."sys_notice" ADD CONSTRAINT "pk_sys_notice" PRIMARY KEY ("id");
-
--- ----------------------------
--- Uniques structure for table sys_notice_read
--- ----------------------------
-ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "uq_sys_notice_read_account" UNIQUE ("notice_id", "account_type", "account_id");
-
--- ----------------------------
--- Primary Key structure for table sys_notice_read
--- ----------------------------
-ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "pk_sys_notice_read" PRIMARY KEY ("id");
+ALTER TABLE "public"."profile_user_admin" ADD CONSTRAINT "pk_profile_user_admin" PRIMARY KEY ("account_id");
 
 -- ----------------------------
 -- Primary Key structure for table profile_user_portal
@@ -2264,6 +2458,13 @@ ALTER TABLE "public"."profile_user_portal" ADD CONSTRAINT "pk_profile_user_porta
 -- Primary Key structure for table sys_account
 -- ----------------------------
 ALTER TABLE "public"."sys_account" ADD CONSTRAINT "pk_sys_account" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for table sys_account_identity
+-- ----------------------------
+CREATE INDEX "idx_sys_account_identity_account_id" ON "public"."sys_account_identity" USING btree (
+  "account_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
 
 -- ----------------------------
 -- Uniques structure for table sys_account_identity
@@ -2431,6 +2632,11 @@ CREATE INDEX "idx_sys_dict_parent_id" ON "public"."sys_dict" USING btree (
 ALTER TABLE "public"."sys_dict" ADD CONSTRAINT "pk_sys_dict" PRIMARY KEY ("id");
 
 -- ----------------------------
+-- Primary Key structure for table sys_feedback
+-- ----------------------------
+ALTER TABLE "public"."sys_feedback" ADD CONSTRAINT "pk_sys_feedback" PRIMARY KEY ("id");
+
+-- ----------------------------
 -- Uniques structure for table sys_file
 -- ----------------------------
 ALTER TABLE "public"."sys_file" ADD CONSTRAINT "uq_sys_file_object_name" UNIQUE ("object_name");
@@ -2477,6 +2683,56 @@ ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "uq_sys_iam_relation_subj
 -- Primary Key structure for table sys_iam_relation
 -- ----------------------------
 ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "pk_sys_iam_relation" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for table sys_job_log
+-- ----------------------------
+CREATE INDEX "idx_sys_job_log_execute_time" ON "public"."sys_job_log" USING btree (
+  "execute_time" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Indexes structure for table sys_notice
+-- ----------------------------
+CREATE INDEX "idx_sys_notice_status_kind_publish" ON "public"."sys_notice" USING btree (
+  "status" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "kind" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "publish_at" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_sys_notice_status_pinned_publish" ON "public"."sys_notice" USING btree (
+  "status" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "is_pinned" "pg_catalog"."bool_ops" ASC NULLS LAST,
+  "publish_at" "pg_catalog"."timestamptz_ops" DESC NULLS FIRST
+);
+CREATE INDEX "idx_sys_notice_target_account_ids_gin" ON "public"."sys_notice" USING gin (
+  (target_account_ids::jsonb) "pg_catalog"."jsonb_ops"
+);
+CREATE INDEX "idx_sys_notice_target_account_types_gin" ON "public"."sys_notice" USING gin (
+  (target_account_types::jsonb) "pg_catalog"."jsonb_ops"
+);
+
+-- ----------------------------
+-- Primary Key structure for table sys_notice
+-- ----------------------------
+ALTER TABLE "public"."sys_notice" ADD CONSTRAINT "pk_sys_notice" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for table sys_notice_read
+-- ----------------------------
+CREATE INDEX "idx_sys_notice_read_account" ON "public"."sys_notice_read" USING btree (
+  "account_type" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "account_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Uniques structure for table sys_notice_read
+-- ----------------------------
+ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "uq_sys_notice_read_account" UNIQUE ("notice_id", "account_type", "account_id");
+
+-- ----------------------------
+-- Primary Key structure for table sys_notice_read
+-- ----------------------------
+ALTER TABLE "public"."sys_notice_read" ADD CONSTRAINT "pk_sys_notice_read" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Indexes structure for table sys_operation_audit_log
@@ -2552,86 +2808,3 @@ CREATE UNIQUE INDEX "idx_sys_weak_password_password" ON "public"."sys_weak_passw
 -- Primary Key structure for table sys_weak_password
 -- ----------------------------
 ALTER TABLE "public"."sys_weak_password" ADD CONSTRAINT "pk_sys_weak_password" PRIMARY KEY ("id");
-
--- ==================== 对齐 V6（原库未执行 V6 索引，此处补齐并沿用新表名） ====================
-CREATE INDEX IF NOT EXISTS "idx_sys_notice_status_kind_publish" ON "public"."sys_notice" USING btree ("status", "kind", "publish_at");
-CREATE INDEX IF NOT EXISTS "idx_sys_notice_status_pinned_publish" ON "public"."sys_notice" USING btree ("status", "is_pinned", "publish_at" DESC);
-CREATE INDEX IF NOT EXISTS "idx_sys_notice_target_account_types_gin" ON "public"."sys_notice" USING GIN (("target_account_types"::jsonb));
-CREATE INDEX IF NOT EXISTS "idx_sys_notice_target_account_ids_gin" ON "public"."sys_notice" USING GIN (("target_account_ids"::jsonb));
-CREATE INDEX IF NOT EXISTS "idx_sys_notice_read_account" ON "public"."sys_notice_read" USING btree ("account_type", "account_id");
--- ==================== 对齐 V6 剩余索引（原库缺失，补齐） ====================
-CREATE INDEX IF NOT EXISTS "idx_sys_account_identity_account_id" ON "public"."sys_account_identity" USING btree ("account_id");
-
-
--- ==================== go-job task scheduling (sys_job / sys_job_log) ====================
--- ----------------------------
--- Table structure for sys_job
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_job";
-CREATE TABLE "public"."sys_job" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "handler_key" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "cron_expr" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "params" text COLLATE "pg_catalog"."default",
-  "status" varchar(16) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'ENABLED',
-  "description" text COLLATE "pg_catalog"."default",
-  "last_run_at" timestamptz(6),
-  "next_run_at" timestamptz(6),
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "created_by" varchar(64) COLLATE "pg_catalog"."default",
-  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
-)
-;
--- ----------------------------
--- Records of sys_job (default scheduled jobs)
--- ----------------------------
-INSERT INTO "public"."sys_job" VALUES ('100001', 'accountPurgeCancelledJob', '应用注销已取消账户清理', '0 0 2 * * *', '', 'ENABLED', '每天 02:00 物理清理已注销的账户过期数据', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
-INSERT INTO "public"."sys_job" VALUES ('100002', 'auditAlertJob', '审计告警分析', '0 * * * * *', '', 'ENABLED', '每分钟扫描审计告警规则并发送告警', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
-INSERT INTO "public"."sys_job" VALUES ('100003', 'bannerStatusJob', '展示图状态同步', '0 0 * * * *', '', 'ENABLED', '每小时按 start_at/end_at 激活或过期 Banner', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
-INSERT INTO "public"."sys_job" VALUES ('100004', 'bannerFlushInteractions', '展示图互动刷库', '0 * * * * *', '', 'ENABLED', '每分钟将 Redis 互动增量刷入数据库', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
-INSERT INTO "public"."sys_job" VALUES ('100005', 'sysFileCleanupLocalOrphans', '本地存储孤儿文件清理', '0 0 3 * * *', '', 'ENABLED', '每天 03:00 清理本地存储中无对应 sys_file 元数据的孤儿文件', NULL, NULL, '2026-01-01 00:00:00+00', NULL, '2026-01-01 00:00:00+00', NULL);
-
--- ----------------------------
--- Table structure for sys_job_log
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_job_log";
-CREATE TABLE "public"."sys_job_log" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "job_id" varchar(64) COLLATE "pg_catalog"."default",
-  "handler_key" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "status" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
-  "message" text COLLATE "pg_catalog"."default",
-  "duration_ms" int8 NOT NULL DEFAULT 0,
-  "started_at" timestamptz(6) NOT NULL,
-  "finished_at" timestamptz(6) NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now()
-)
-;
--- ----------------------------
--- Indexes structure for sys_job
--- ----------------------------
-CREATE UNIQUE INDEX "idx_sys_job_handler_key" ON "public"."sys_job" USING btree ("handler_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
-ALTER TABLE "public"."sys_job" ADD CONSTRAINT "pk_sys_job" PRIMARY KEY ("id");
-
--- ----------------------------
--- Indexes structure for sys_job_log
--- ----------------------------
-CREATE INDEX "idx_sys_job_log_job_id" ON "public"."sys_job_log" USING btree ("job_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
-CREATE INDEX "idx_sys_job_log_handler_key" ON "public"."sys_job_log" USING btree ("handler_key" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST);
-CREATE INDEX "idx_sys_job_log_created_at" ON "public"."sys_job_log" USING btree ("created_at");
-ALTER TABLE "public"."sys_job_log" ADD CONSTRAINT "pk_sys_job_log" PRIMARY KEY ("id");
-
--- ----------------------------
--- Records of sys_resource (job management menu + buttons)
--- ----------------------------
-INSERT INTO "public"."sys_resource" VALUES ('203050','200003','sys-job','任务管理','MENU','210001','/sys/job','/sys/job/index.vue',NULL,'icon-park-outline:calendar',NULL,NULL,1,'t','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203051','203050','sys-job-page','查看任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203052','203050','sys-job-create','新建任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203053','203050','sys-job-update','编辑任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203054','203050','sys-job-delete','删除任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203055','203050','sys-job-detail','查看任务详情','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203056','203050','sys-job-trigger','立即触发','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);
-INSERT INTO "public"."sys_resource" VALUES ('203057','203050','sys-job-logs','查看执行日志','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-01-01 00:00:00+00',NULL,'2026-01-01 00:00:00+00',NULL);

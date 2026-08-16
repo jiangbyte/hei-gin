@@ -1,4 +1,4 @@
-// internal/modules/health/handler.go HTTP 处理器。
+﻿// internal/modules/internal/health/handler.go HTTP 处理器。
 //
 // Author: Charlie
 

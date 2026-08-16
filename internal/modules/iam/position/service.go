@@ -14,7 +14,6 @@ import (
 	"hei-gin/internal/framework/core/security/datascope"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 职位服务。
@@ -26,7 +25,7 @@ type Service struct{ repo *Repo }
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
 // New 构建 iam.position 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
 		Name:   "iam.position",
@@ -64,12 +63,12 @@ func (s *Service) Update(ctx context.Context, req EditParam, sess *security.Sess
 
 // Delete 批量删除（数据范围校验）。
 func (s *Service) Delete(ctx context.Context, ids []string, sess *security.SessionPayload) error {
-	for _, id := range ids {
-		row, err := s.repo.GetByID(ctx, id)
-		if err != nil {
-			return err
-		}
-		if err := s.assertScope(sess, row); err != nil {
+	rows, err := s.repo.GetByIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i := range rows {
+		if err := s.assertScope(sess, &rows[i]); err != nil {
 			return err
 		}
 	}

@@ -1,7 +1,7 @@
-// Package result 提供跨 IAM 模块共用的只读结果视图（避免模块间循环依赖）。
+// Package view 提供跨 IAM 模块共用的只读结果视图（避免模块间循环依赖）。
 //
 // Author: Charlie
-package result
+package view
 
 import "time"
 

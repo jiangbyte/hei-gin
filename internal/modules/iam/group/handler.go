@@ -17,37 +17,25 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_group）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/create", ResourceType: "iam_group", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/update", ResourceType: "iam_group", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/delete", ResourceType: "iam_group", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-user", ResourceType: "iam_group", Action: "grant_user"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-role", ResourceType: "iam_group", Action: "grant_role"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-resource", ResourceType: "iam_group", Action: "grant_resource"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/groups/grant-client-resource", ResourceType: "iam_group", Action: "grant_client_resource"},
-		)
-		api.POST("/v1/admin/sys/groups/create", admin, middleware.RequirePermission(d.Perms, "iam:group:create", "用户组创建"), s.create)
-		api.POST("/v1/admin/sys/groups/update", admin, middleware.RequirePermission(d.Perms, "iam:group:update", "用户组更新"), s.update)
-		api.POST("/v1/admin/sys/groups/delete", admin, middleware.RequirePermission(d.Perms, "iam:group:delete", "用户组删除"), s.delete)
+		api.POST("/v1/admin/sys/groups/create", admin, middleware.RequirePermission(d.Perms, "iam:group:create", "用户组创建"), middleware.OperationAudit(d.Audit, "iam_group", "create"), s.create)
+		api.POST("/v1/admin/sys/groups/update", admin, middleware.RequirePermission(d.Perms, "iam:group:update", "用户组更新"), middleware.OperationAudit(d.Audit, "iam_group", "update"), s.update)
+		api.POST("/v1/admin/sys/groups/delete", admin, middleware.RequirePermission(d.Perms, "iam:group:delete", "用户组删除"), middleware.OperationAudit(d.Audit, "iam_group", "delete"), s.delete)
 		api.GET("/v1/admin/sys/groups/detail", admin, middleware.RequirePermission(d.Perms, "iam:group:detail", "用户组详情"), s.detail)
 		api.GET("/v1/admin/sys/groups/page", admin, middleware.RequirePermission(d.Perms, "iam:group:page", "用户组分页"), s.page)
 		api.GET("/v1/admin/sys/groups/own-user", admin, middleware.RequirePermission(d.Perms, "iam:group:ownuser", "用户组成员查询"), s.ownUser)
-		api.POST("/v1/admin/sys/groups/grant-user", admin, middleware.RequirePermission(d.Perms, "iam:group:grantuser", "用户组成员授权"), s.grantUser)
+		api.POST("/v1/admin/sys/groups/grant-user", admin, middleware.RequirePermission(d.Perms, "iam:group:grantuser", "用户组成员授权"), middleware.OperationAudit(d.Audit, "iam_group", "grant_user"), s.grantUser)
 		api.GET("/v1/admin/sys/groups/own-role", admin, middleware.RequirePermission(d.Perms, "iam:group:ownrole", "用户组已拥有角色"), s.ownRole)
-		api.POST("/v1/admin/sys/groups/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:group:grantrole", "用户组角色授权"), s.grantRole)
+		api.POST("/v1/admin/sys/groups/grant-role", admin, middleware.RequirePermission(d.Perms, "iam:group:grantrole", "用户组角色授权"), middleware.OperationAudit(d.Audit, "iam_group", "grant_role"), s.grantRole)
 		api.GET("/v1/admin/sys/groups/own-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownresource", "用户组已拥有资源"), s.ownResource)
-		api.POST("/v1/admin/sys/groups/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantresource", "用户组资源授权"), s.grantResource)
+		api.POST("/v1/admin/sys/groups/grant-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantresource", "用户组资源授权"), middleware.OperationAudit(d.Audit, "iam_group", "grant_resource"), s.grantResource)
 		api.GET("/v1/admin/sys/groups/own-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:ownclientresource", "用户组已拥有客户端资源"), s.ownClientResource)
-		api.POST("/v1/admin/sys/groups/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantclientresource", "用户组客户端资源授权"), s.grantClientResource)
+		api.POST("/v1/admin/sys/groups/grant-client-resource", admin, middleware.RequirePermission(d.Perms, "iam:group:grantclientresource", "用户组客户端资源授权"), middleware.OperationAudit(d.Audit, "iam_group", "grant_client_resource"), s.grantClientResource)
 	}
 }
 

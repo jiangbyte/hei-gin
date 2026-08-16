@@ -13,7 +13,8 @@
 | [framework/platform/gojob](../internal/framework/platform/gojob/) | API 内嵌任务调度器（`sys_job` 表驱动） |
 | [modules/](../internal/modules/) | 业务包目录（同属根 module） |
 | [modules/iam/account](../internal/modules/iam/account/) | 业务包分层样板 |
-| [modules/profile](../internal/modules/profile/) | 用户中心（admin/portal 共享服务） |
+| [modules/profile](../internal/modules/profile/) | 用户中心共享服务；`profile/admin`、`profile/portal` 注册端 |
+| [modules/internal/health](../internal/modules/internal/health/) | 存活/就绪检查（对齐 fastapi `modules/internal/health`） |
 | [app/](../internal/app/) | 装配根：唯一运行入口 `cmd/api`；`modules/all` |
 | [scripts/db.sql](../scripts/db.sql) | 建表 + seed（与 hei-boot schema 对齐） |
 | [web/](../web/) | 前端（admin） |
@@ -23,8 +24,7 @@
 | 路径 | 职责 |
 |------|------|
 | `hei-gin/internal/framework/...` | 配置、安全、中间件、Module 注册表、DB/Redis/存储、stringly/bind、内嵌任务调度 |
-| `hei-gin/internal/modules/...` | 业务；同包 `param`/`result`/`repo`/`service`/`handler`；`init` 自注册 |
-| `hei-gin/internal/modules/shared` | 跨业务共享 |
+| `hei-gin/internal/modules/...` | 业务；同包 `param`/`result`/`repo`/`service`/`handler`；`init` 自注册；依赖袋为 `module.Deps` |
 | `hei-gin/internal/app/...` | 装配根：`cmd` 入口加载、基础设施、模块钩子 |
 
 ## 约定摘要

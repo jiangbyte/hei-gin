@@ -18,7 +18,6 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
-	"hei-gin/internal/modules/shared"
 )
 
 // AlertLog 对应 sys_alert_log。
@@ -52,9 +51,12 @@ var sensitiveActions = []string{"role_create", "role_grant", "permission_change"
 // withJobs 附加任务处理器（gojob 调度器收集）。
 func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
-		Name: "auditAlertJob",
-		Run: func(ctx context.Context, _ string) error {
-			return s.runAuditAlertJob(ctx, nf)
+		Name: "sys_audit_alert",
+		Run: func(ctx context.Context, _ string) (string, error) {
+			if err := s.runAuditAlertJob(ctx, nf); err != nil {
+				return "", err
+			}
+			return "done", nil
 		},
 	})
 	m.Models = append(m.Models, &AlertLog{})
@@ -362,15 +364,4 @@ func runtimeInt(ctx context.Context, db *gorm.DB, nf *notify.Facade, key string,
 		return def
 	}
 	return n
-}
-
-// New 构建 sys.audit 模块（含 auditAlertJob）。
-func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB)
-	m := module.Module{
-		Name:   "sys.audit",
-		Models: []any{&OperationLog{}},
-		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
-	}
-	return s.withJobs(m, d.Notify)
 }

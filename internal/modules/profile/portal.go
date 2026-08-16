@@ -14,33 +14,21 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 )
 
-// registerRoutes 门户端 /v1/portal/* 用户中心路由。
-func (s *Service) registerRoutes(api *gin.RouterGroup) {
-	// 操作审计登记（对齐 hei-boot @OperationAudit：profile_center 门户端）
-	s.auditReg.RegisterSpecs(
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/update", ResourceType: "profile_center", Action: "update_profile"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/avatar/upload", ResourceType: "profile_center", Action: "upload_avatar"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/password/send-code", ResourceType: "profile_center", Action: "send_password_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/password/update", ResourceType: "profile_center", Action: "update_password"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/phone/send-code", ResourceType: "profile_center", Action: "send_bind_phone_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/phone/update", ResourceType: "profile_center", Action: "update_phone"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/email/send-code", ResourceType: "profile_center", Action: "send_bind_email_code"},
-		audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/profile/email/update", ResourceType: "profile_center", Action: "update_email"},
-	)
+// PortalRoutes 门户端 /v1/portal/* 用户中心路由。
+func (s *Service) PortalRoutes(api *gin.RouterGroup) {
 	g := api.Group("/v1/portal", middleware.RequireAccountType(security.AccountPortal))
 	g.GET("/me", s.portalMe)
 	profile := g.Group("/profile")
-	profile.POST("/update", s.portalUpdateProfile)
-	profile.POST("/avatar/upload", s.portalUploadAvatar)
-	profile.POST("/password/send-code", s.portalSendPasswordCode)
-	profile.POST("/password/update", s.portalUpdatePassword)
-	profile.POST("/phone/send-code", s.portalSendPhoneCode)
-	profile.POST("/phone/update", s.portalUpdatePhone)
-	profile.POST("/email/send-code", s.portalSendEmailCode)
-	profile.POST("/email/update", s.portalUpdateEmail)
+	profile.POST("/update", middleware.OperationAudit(s.audit, "profile_center", "update_profile"), s.portalUpdateProfile)
+	profile.POST("/avatar/upload", middleware.OperationAudit(s.audit, "profile_center", "upload_avatar"), s.portalUploadAvatar)
+	profile.POST("/password/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_password_code"), s.portalSendPasswordCode)
+	profile.POST("/password/update", middleware.OperationAudit(s.audit, "profile_center", "update_password"), s.portalUpdatePassword)
+	profile.POST("/phone/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_bind_phone_code"), s.portalSendPhoneCode)
+	profile.POST("/phone/update", middleware.OperationAudit(s.audit, "profile_center", "update_phone"), s.portalUpdatePhone)
+	profile.POST("/email/send-code", middleware.OperationAudit(s.audit, "profile_center", "send_bind_email_code"), s.portalSendEmailCode)
+	profile.POST("/email/update", middleware.OperationAudit(s.audit, "profile_center", "update_email"), s.portalUpdateEmail)
 	g.GET("/spaces/detail", s.portalSpacesDetail)
 }
 

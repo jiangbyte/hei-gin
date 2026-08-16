@@ -20,7 +20,6 @@ type Config struct {
 	Redis    RedisConfig    `mapstructure:"redis"`
 	Auth     AuthConfig     `mapstructure:"auth"`
 	CORS     CORSConfig     `mapstructure:"cors"`
-	Storage  StorageConfig  `mapstructure:"storage"`
 	IDGen    IDGenConfig    `mapstructure:"id_generator"`
 	Modules  ModulesConfig  `mapstructure:"modules"`
 	Audit    AuditConfig    `mapstructure:"audit"`
@@ -30,6 +29,7 @@ type Config struct {
 	Crypto   CryptoConfig   `mapstructure:"crypto"`
 	Security SecurityConfig `mapstructure:"security"`
 	OAuth    OAuthConfig    `mapstructure:"oauth"`
+	Job      JobConfig      `mapstructure:"job"`
 }
 
 // AppConfig 应用基础信息与监听地址。
@@ -162,9 +162,10 @@ type SecurityConfig struct {
 //
 // Author: Charlie
 type OAuthConfig struct {
-	GitHub OAuthProviderConfig `mapstructure:"github"`
-	Gitee  OAuthProviderConfig `mapstructure:"gitee"`
-	WeChat OAuthProviderConfig `mapstructure:"wechat"`
+	GitHub   OAuthProviderConfig `mapstructure:"github"`
+	Gitee    OAuthProviderConfig `mapstructure:"gitee"`
+	WeChat   OAuthProviderConfig `mapstructure:"wechat"`
+	WeChatMP OAuthProviderConfig `mapstructure:"wechat_mp"`
 }
 
 // OAuthProviderConfig 单个 OAuth 提供商。
@@ -172,23 +173,6 @@ type OAuthProviderConfig struct {
 	ClientID     string `mapstructure:"client_id"`
 	ClientSecret string `mapstructure:"client_secret"`
 	RedirectURL  string `mapstructure:"redirect_url"`
-}
-
-// StorageConfig 对象存储（local / S3 兼容）参数。
-//
-// Author: Charlie
-type StorageConfig struct {
-	Provider             string `mapstructure:"provider"`
-	Bucket               string `mapstructure:"bucket"`
-	Endpoint             string `mapstructure:"endpoint"`
-	AccessKey            string `mapstructure:"access_key"`
-	SecretKey            string `mapstructure:"secret_key"`
-	Region               string `mapstructure:"region"`
-	UseSSL               bool   `mapstructure:"use_ssl"`
-	PresignExpireSeconds int    `mapstructure:"presign_expire_seconds"`
-	BaseURL              string `mapstructure:"base_url"`
-	PublicPath           string `mapstructure:"public_path"`
-	LocalRoot            string `mapstructure:"local_root"`
 }
 
 // IDGenConfig 雪花 ID 的 worker / datacenter。
@@ -215,6 +199,16 @@ type AuditConfig struct {
 	StreamKey          string `mapstructure:"stream_key"`
 	ConsumerGroup      string `mapstructure:"consumer_group"`
 	UseStream          bool   `mapstructure:"use_stream"`
+}
+
+// JobConfig 内嵌任务调度（对齐 hei-boot hei.job / hei-fastapi JobSettings）。
+//
+// Author: Charlie
+type JobConfig struct {
+	ScanIntervalMS   int `mapstructure:"scan_interval_ms"`
+	PoolSize         int `mapstructure:"pool_size"`
+	LogRetentionDays int `mapstructure:"log_retention_days"`
+	LogBatchSize     int `mapstructure:"log_batch_size"`
 }
 
 // Load 从指定 YAML 路径加载配置，并叠加 HEI_ 环境变量。
@@ -282,17 +276,20 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("otel.enabled", false)
 	v.SetDefault("security.hsts_enabled", false)
 	v.SetDefault("security.hsts_max_age_seconds", 31536000)
-	v.SetDefault("storage.provider", "local")
+	v.SetDefault("storage.provider", "rustfs")
 	v.SetDefault("storage.bucket", "hei-gin")
-	v.SetDefault("storage.public_path", "/api/v1/files")
-	v.SetDefault("storage.local_root", "storage")
 	v.SetDefault("storage.presign_expire_seconds", 3600)
+	v.SetDefault("storage.bucket_public", false)
 	v.SetDefault("id_generator.worker_id", 1)
 	v.SetDefault("id_generator.datacenter_id", 1)
 	v.SetDefault("audit.operation_queue_size", 1000)
 	v.SetDefault("audit.stream_key", "hei:audit:ops")
 	v.SetDefault("audit.consumer_group", "hei-gin-audit")
 	v.SetDefault("audit.use_stream", true)
+	v.SetDefault("job.scan_interval_ms", 1000)
+	v.SetDefault("job.pool_size", 4)
+	v.SetDefault("job.log_retention_days", 30)
+	v.SetDefault("job.log_batch_size", 1000)
 }
 
 // Addr 返回 HTTP 监听地址 host:port。

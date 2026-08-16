@@ -14,9 +14,8 @@ const emit = defineEmits<{
   uploaded: [file: any]
 }>()
 
-/** DEFAULT_FILE_ENGINE → provider id（与后端 StorageProvider 一致） */
+/** DEFAULT_FILE_ENGINE → provider id（与后端 FileEngines 一致） */
 const ENGINE_TO_PROVIDER: Record<string, string> = {
-  LOCAL: 'local',
   ALIYUN: 'oss',
   TENCENT: 's3',
   MINIO: 'minio',

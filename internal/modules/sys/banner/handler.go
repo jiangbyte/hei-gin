@@ -14,31 +14,22 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_banner）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/banners/create", ResourceType: "sys_banner", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/banners/update", ResourceType: "sys_banner", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/banners/delete", ResourceType: "sys_banner", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/sys/banners/interaction", ResourceType: "sys_banner", Action: "interaction"},
-		)
 		api.GET("/v1/admin/sys/banners/list", admin, s.list)
-		api.POST("/v1/admin/sys/banners/create", admin, middleware.RequirePermission(d.Perms, "sys:banner:create", "Banner创建"), s.create)
-		api.POST("/v1/admin/sys/banners/update", admin, middleware.RequirePermission(d.Perms, "sys:banner:update", "Banner更新"), s.update)
-		api.POST("/v1/admin/sys/banners/delete", admin, middleware.RequirePermission(d.Perms, "sys:banner:delete", "Banner删除"), s.delete)
+		api.POST("/v1/admin/sys/banners/create", admin, middleware.RequirePermission(d.Perms, "sys:banner:create", "Banner创建"), middleware.OperationAudit(d.Audit, "sys_banner", "create"), s.create)
+		api.POST("/v1/admin/sys/banners/update", admin, middleware.RequirePermission(d.Perms, "sys:banner:update", "Banner更新"), middleware.OperationAudit(d.Audit, "sys_banner", "update"), s.update)
+		api.POST("/v1/admin/sys/banners/delete", admin, middleware.RequirePermission(d.Perms, "sys:banner:delete", "Banner删除"), middleware.OperationAudit(d.Audit, "sys_banner", "delete"), s.delete)
 		api.GET("/v1/admin/sys/banners/detail", admin, middleware.RequirePermission(d.Perms, "sys:banner:detail", "Banner详情"), s.detail)
 		api.GET("/v1/admin/sys/banners/page", admin, middleware.RequirePermission(d.Perms, "sys:banner:page", "Banner分页"), s.page)
 
 		// 门户 banner 列表与互动为公开接口（对齐 hei-boot PortalBannerController，web public:true）
 		api.GET("/v1/portal/sys/banners/list", s.portalList)
-		api.POST("/v1/portal/sys/banners/interaction", s.interaction)
+		api.POST("/v1/portal/sys/banners/interaction", middleware.OperationAudit(d.Audit, "sys_banner", "interaction"), s.interaction)
 	}
 }
 

@@ -1,10 +1,10 @@
-// internal/modules/health/result.go 出参定义。
+﻿// internal/modules/internal/health/result.go 出参定义。
 //
 // Author: Charlie
 
 package health
 
-// CheckItem 单项探针结果。
+// CheckItem å•é¡¹æŽ¢é’ˆç»“æžœã€‚
 //
 // Author: Charlie
 type CheckItem struct {
@@ -13,14 +13,14 @@ type CheckItem struct {
 	Detail  *string `json:"detail"`
 }
 
-// LiveResult 存活探针结果。
+// LiveResult å­˜æ´»æŽ¢é’ˆç»“æžœã€‚
 //
 // Author: Charlie
 type LiveResult struct {
 	Status string `json:"status"`
 }
 
-// ReadyResult 就绪探针结果。
+// ReadyResult å°±ç»ªæŽ¢é’ˆç»“æžœã€‚
 //
 // Author: Charlie
 type ReadyResult struct {

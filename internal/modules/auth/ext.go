@@ -35,12 +35,6 @@ type AuthOptions struct {
 	CopyrightURL               string                 `json:"copyright_url"`
 }
 
-// OauthProviderOption 三方登录入口选项。
-//
-// Author: Charlie
-// RefreshResult 刷新会话结果（与 LoginResult 一致）。
-type RefreshResult = LoginResult
-
 // CancelParam 注销账号入参。
 //
 // Author: Charlie
@@ -136,7 +130,7 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 	_ = s.db.WithContext(ctx).Table("profile_user_portal").
 		Where("account_id = ?", accountID).
 		Update("remark", "cancelled at "+now.Format(time.RFC3339)).Error
-	_ = s.sessions.DeleteAllForAccount(ctx, accountID)
+	_ = s.sessions.DeleteAllForAccountAnyType(ctx, accountID)
 	return nil
 }
 

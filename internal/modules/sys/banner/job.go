@@ -33,11 +33,10 @@ func (s *Service) SyncStatusBySchedule(ctx context.Context) (expired, activated 
 }
 
 // bannerStatusJobHandler 任务 Handler。
-func (s *Service) bannerStatusJobHandler(ctx context.Context, _ string) error {
+func (s *Service) bannerStatusJobHandler(ctx context.Context, _ string) (string, error) {
 	expired, activated, err := s.SyncStatusBySchedule(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
-	_ = fmt.Sprintf("expired=%d,activated=%d", expired, activated)
-	return nil
+	return fmt.Sprintf("expired=%d,activated=%d", expired, activated), nil
 }

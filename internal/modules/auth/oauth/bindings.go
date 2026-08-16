@@ -55,13 +55,14 @@ func (s *Service) RegisterBindingRoutes(api *gin.RouterGroup, perms *security.Pe
 		p := prefix
 		g := api.Group(p.base, middleware.RequireAccountType(p.typ))
 		g.GET("/bindings", s.bindings(p.typ))
-		g.POST("/:provider/bind/authorize", s.bindAuthorize(p.typ))
-		g.POST("/:provider/unbind", s.unbind(p.typ))
+		g.POST("/:provider/bind/authorize", middleware.OperationAudit(s.audit, "auth", "oauth_bind_authorize"), s.bindAuthorize(p.typ))
+		g.POST("/:provider/unbind", middleware.OperationAudit(s.audit, "auth", "oauth_unbind"), s.unbind(p.typ))
 	}
 	// 管理端强制解绑
 	api.POST("/v1/admin/sys/accounts/oauth/unbind",
 		middleware.RequireAccountType(security.AccountAdmin),
 		middleware.RequirePermission(perms, "iam:account:update", "账户更新"),
+		middleware.OperationAudit(s.audit, "iam_account", "oauth_unbind"),
 		s.adminUnbind)
 }
 

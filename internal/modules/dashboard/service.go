@@ -6,13 +6,21 @@ package dashboard
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
+)
+
+const onlineCacheTTL = 30 * time.Second
+
+var (
+	onlineCacheMu    sync.Mutex
+	onlineCacheAt    time.Time
+	onlineCacheCount int64
 )
 
 // Service 仪表盘服务。
@@ -27,7 +35,7 @@ type Service struct {
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
 // New 构建 dashboard 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	s.sessions = d.Sessions
 	return module.Module{
@@ -98,21 +106,27 @@ func (s *Service) buildTrend(rows []DailyCountRow, since time.Time, typ string) 
 	return points
 }
 
-// onlineSessionCount 在线会话数（经 SessionStore 账号索引统计；对齐 hei-boot StpKit searchSessionId 估算）。
+// onlineSessionCount 在线 token 数（SCARD login:tokens + 30s 短缓存；对齐 fastapi）。
 func (s *Service) onlineSessionCount(ctx context.Context) int64 {
 	if s.sessions == nil {
 		return 0
 	}
-	accountIDs, err := s.sessions.ListAccountIDs(ctx)
+	now := time.Now()
+	onlineCacheMu.Lock()
+	if !onlineCacheAt.IsZero() && now.Before(onlineCacheAt) {
+		n := onlineCacheCount
+		onlineCacheMu.Unlock()
+		return n
+	}
+	onlineCacheMu.Unlock()
+
+	n, err := s.sessions.CountTokens(ctx)
 	if err != nil {
-		return 0
+		n = 0
 	}
-	var total int64
-	for _, id := range accountIDs {
-		tokens, err2 := s.sessions.ListTokensForAccount(ctx, id)
-		if err2 == nil {
-			total += int64(len(tokens))
-		}
-	}
-	return total
+	onlineCacheMu.Lock()
+	onlineCacheCount = n
+	onlineCacheAt = now.Add(onlineCacheTTL)
+	onlineCacheMu.Unlock()
+	return n
 }

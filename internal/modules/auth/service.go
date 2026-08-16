@@ -24,7 +24,6 @@ import (
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/modules/auth/oauth"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 认证服务。
@@ -37,15 +36,15 @@ type Service struct {
 	sessions       *security.SessionStore
 	accounts       AccountFinder
 	notify         *notify.Facade
-	auditReg       *audit.Registry
+	audit          *audit.Queue
 	runtime        *runtimecfg.Settings
-	passwordPolicy *shared.PasswordPolicy
+	passwordPolicy *security.PasswordPolicy
 	oauth          *oauth.Service
 	perms          *security.PermissionRegistry
 }
 
 // NewService 构造认证服务。
-func NewService(d *shared.Deps, accounts AccountFinder) *Service {
+func NewService(d *module.Deps, accounts AccountFinder) *Service {
 	s := &Service{
 		cfg:            d.Cfg,
 		db:             d.DB,
@@ -53,9 +52,9 @@ func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 		sessions:       d.Sessions,
 		accounts:       accounts,
 		notify:         d.Notify,
-		auditReg:       d.AuditReg,
+		audit:          d.Audit,
 		runtime:        d.Runtime,
-		passwordPolicy: shared.NewPasswordPolicy(d.DB, d.Runtime),
+		passwordPolicy: security.NewPasswordPolicy(d.DB, d.Runtime),
 		perms:          d.Perms,
 	}
 	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
@@ -69,7 +68,7 @@ func NewService(d *shared.Deps, accounts AccountFinder) *Service {
 }
 
 // New 构建认证模块。
-func New(d *shared.Deps, accounts AccountFinder) module.Module {
+func New(d *module.Deps, accounts AccountFinder) module.Module {
 	s := NewService(d, accounts)
 	models := []any{oauth.AccountOAuthBinding{}}
 	return module.Module{
@@ -222,6 +221,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 		PermissionGrants: grants,
 		ClientIP:         &clientIP,
 		UserAgent:        &userAgent,
+		DeviceLabel:      security.DeviceLabelFromUserAgent(userAgent),
 		RememberMe:       rememberMe,
 		PasswordExpired:  passwordExpired,
 		LoginAt:          now,

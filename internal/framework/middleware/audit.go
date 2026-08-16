@@ -22,24 +22,28 @@ type AuditPublisher interface {
 	Publish(audit.Event)
 }
 
-// Audit 请求成功后按路由注册表发布操作审计事件。
+// OperationAudit 按路由声明 resourceType/action，请求成功后发布操作审计事件。
+//
+// 用法与 RequirePermission 同级挂在路由上（对齐 hei-boot @OperationAudit 传参）：
+//
+//	api.POST("/v1/admin/sys/accounts/create",
+//	  admin,
+//	  middleware.RequirePermission(d.Perms, "iam:account:create", "账户创建"),
+//	  middleware.OperationAudit(d.Audit, "iam_account", "create"),
+//	  s.create,
+//	)
 //
 // 语义对齐 hei-boot @OperationAudit AOP：
 //   - 仅当处理器正常返回（status < 400）才记录，失败/越权请求不产生审计行；
-//   - success 恒为 true；module 按 buildModule 规则（resources→resource，其余 iam）；
+//   - success 恒为 true；module 按 BuildModule 规则；
 //   - summary 为 "METHOD 完整路径"；account_type 存小写（admin/portal）。
-func Audit(reg *audit.Registry, pub AuditPublisher) gin.HandlerFunc {
+func OperationAudit(pub AuditPublisher, resourceType, action string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
-		if pub == nil || reg == nil {
+		if pub == nil {
 			return
 		}
 		if c.Writer.Status() >= http.StatusBadRequest {
-			// 失败请求不入库（对齐 hei-boot proceed 抛错时不发布）
-			return
-		}
-		spec, ok := reg.Match(c.Request.Method, c.Request.URL.Path)
-		if !ok {
 			return
 		}
 		ctx := c.Request.Context()
@@ -48,9 +52,9 @@ func Audit(reg *audit.Registry, pub AuditPublisher) gin.HandlerFunc {
 			ip = c.ClientIP()
 		}
 		ev := audit.Event{
-			Module:       audit.BuildModule(spec.ResourceType),
-			ResourceType: spec.ResourceType,
-			Action:       spec.Action,
+			Module:       audit.BuildModule(resourceType),
+			ResourceType: resourceType,
+			Action:       action,
 			Summary:      c.Request.Method + " " + c.Request.URL.Path,
 			RequestID:    contextx.RequestID(ctx),
 			IP:           ip,

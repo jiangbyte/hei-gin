@@ -17,7 +17,8 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/runtimecfg"
+	"hei-gin/internal/framework/platform/storage"
 )
 
 // 敏感配置键（与 FastAPI SENSITIVE_CONFIG_KEYS 对齐的子集）。
@@ -33,6 +34,8 @@ var sensitiveKeys = map[string]struct{}{
 	"PUSH_LARK_SECRET":              {},
 	"STORAGE_MINIO_ACCESS_KEY":      {},
 	"STORAGE_MINIO_SECRET_KEY":      {},
+	"STORAGE_RUSTFS_ACCESS_KEY":     {},
+	"STORAGE_RUSTFS_SECRET_KEY":     {},
 	"STORAGE_ALIYUN_ACCESS_KEY":     {},
 	"STORAGE_ALIYUN_SECRET_KEY":     {},
 	"STORAGE_TENCENT_ACCESS_KEY":    {},
@@ -43,23 +46,25 @@ var sensitiveKeys = map[string]struct{}{
 //
 // Author: Charlie
 type Service struct {
-	repo   *Repo
-	fernet *crypto.Codec
-	notify *notify.Facade
+	repo    *Repo
+	fernet  *crypto.Codec
+	notify  *notify.Facade
+	storage *storage.Manager
+	runtime *runtimecfg.Settings
 }
 
 // NewService 构造配置服务。
-func NewService(db *gorm.DB, fernet *crypto.Codec, nf *notify.Facade) *Service {
-	return &Service{repo: NewRepo(db), fernet: fernet, notify: nf}
+func NewService(db *gorm.DB, fernet *crypto.Codec, nf *notify.Facade, sto *storage.Manager, rt *runtimecfg.Settings) *Service {
+	return &Service{repo: NewRepo(db), fernet: fernet, notify: nf, storage: sto, runtime: rt}
 }
 
 // New 构建 sys.config 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	var codec *crypto.Codec
 	if d.Cfg != nil {
 		codec, _ = crypto.NewFernetFromConfig(d.Cfg.Crypto.FernetKey, d.Cfg.Crypto.VaultAddr)
 	}
-	s := NewService(d.DB, codec, d.Notify)
+	s := NewService(d.DB, codec, d.Notify, d.Storage, d.Runtime)
 	return module.Module{
 		Name:   "sys.config",
 		Models: []any{&Config{}},
@@ -158,7 +163,11 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		Remark: req.Remark, SortCode: req.SortCode, ValueType: vt, Label: req.Label, Scope: req.Scope,
 		Scene: req.Scene, IsBuiltin: false, ExtJSON: datatypes.JSON([]byte("{}")),
 	}
-	return s.repo.Create(ctx, &row)
+	if err := s.repo.Create(ctx, &row); err != nil {
+		return err
+	}
+	s.refreshRuntime()
+	return nil
 }
 
 // Update 更新配置（config_key 唯一排除自身 + 内置保护；对齐 hei-boot ConfigServiceImpl.update）。
@@ -188,7 +197,11 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 			updates["scope"] = cur.Scope
 		}
 	}
-	return s.repo.Update(ctx, req.ID, updates)
+	if err := s.repo.Update(ctx, req.ID, updates); err != nil {
+		return err
+	}
+	s.refreshRuntime()
+	return nil
 }
 
 // Delete 批量删除（内置配置禁止删除；对齐 hei-boot ConfigServiceImpl.delete）。
@@ -206,7 +219,11 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 	if len(builtin) > 0 {
 		return errors.New("内置配置不可删除: " + strings.Join(builtin, ", "))
 	}
-	return s.repo.DeleteByIDs(ctx, ids)
+	if err := s.repo.DeleteByIDs(ctx, ids); err != nil {
+		return err
+	}
+	s.refreshRuntime()
+	return nil
 }
 
 // Detail 详情（敏感值解密后返回）。
@@ -268,6 +285,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 	for _, row := range rows {
 		existing[row.ConfigKey] = row
 	}
+	creates := make([]Config, 0)
 	for _, it := range items {
 		row, ok := existing[it.ConfigKey]
 		// 敏感键落库后以 ext_json.is_set=true 标记「已配置」（对齐 web loadByCategory 契约）。
@@ -276,7 +294,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 			ext, _ = json.Marshal(map[string]bool{"is_set": true})
 		}
 		if !ok {
-			nr := Config{
+			creates = append(creates, Config{
 				ID:          idgen.Next(),
 				ConfigKey:   it.ConfigKey,
 				ConfigValue: s.maybeEncrypt(it.ConfigKey, it.Category, it.ConfigValue),
@@ -289,10 +307,7 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 				IsBuiltin:   boolOr(it.IsBuiltin),
 				SortCode:    intOr(it.SortCode),
 				ExtJSON:     ext,
-			}
-			if err := s.repo.Create(ctx, &nr); err != nil {
-				return err
-			}
+			})
 			continue
 		}
 		updates := map[string]any{
@@ -329,7 +344,20 @@ func (s *Service) BatchSave(ctx context.Context, req BatchSaveParam) error {
 			return err
 		}
 	}
+	if err := s.repo.CreateInBatches(ctx, creates); err != nil {
+		return err
+	}
+	s.refreshRuntime()
 	return nil
+}
+
+func (s *Service) refreshRuntime() {
+	if s.runtime != nil {
+		s.runtime.Invalidate()
+	}
+	if s.storage != nil {
+		s.storage.Refresh()
+	}
 }
 
 func strOr(v *string, def string) string {

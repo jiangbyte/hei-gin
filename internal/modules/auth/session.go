@@ -1,12 +1,15 @@
-// internal/modules/auth/session.go 会话管理。
+// internal/modules/auth/session.go 会话管理（对齐 hei-fastapi session_admin_service）。
 //
 // Author: Charlie
 
 package auth
 
 import (
+	"context"
 	"net/http"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +20,15 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
+	"hei-gin/internal/modules/iam/view"
+)
+
+const analysisCacheTTL = 30 * time.Second
+
+var (
+	analysisCacheMu   sync.Mutex
+	analysisCacheAt   time.Time
+	analysisCacheData *SessionAnalysis
 )
 
 // SessionAnalysis 在线会话分析统计。
@@ -101,134 +113,153 @@ type SessionTokenExitParam struct {
 	Tokens []string `json:"tokens" binding:"required"`
 }
 
+type sessionGroupKey struct {
+	AccountType string
+	AccountID   string
+}
+
 // registerSessionRoutes 挂载管理端在线会话 API。
 func (s *Service) registerSessionRoutes(api *gin.RouterGroup) {
 	g := api.Group("/v1/admin/auth/sessions", middleware.RequireAccountType(security.AccountAdmin))
 	g.GET("/analysis", middleware.RequirePermission(s.perms, "auth:session:analysis", "会话分析"), s.sessionAnalysis)
 	g.GET("/page", middleware.RequirePermission(s.perms, "auth:session:page", "会话分页"), s.sessionPage)
 	g.GET("/tokens", middleware.RequirePermission(s.perms, "auth:session:tokenlist", "会话 Token 列表"), s.sessionTokens)
-	g.POST("/exit", middleware.RequirePermission(s.perms, "auth:session:exit", "会话强制下线"), s.sessionExit)
-	g.POST("/token/exit", middleware.RequirePermission(s.perms, "auth:session:tokenexit", "Token 强制下线"), s.sessionTokenExit)
+	g.POST("/exit", middleware.RequirePermission(s.perms, "auth:session:exit", "会话强制下线"), middleware.OperationAudit(s.audit, "auth_session", "exit"), s.sessionExit)
+	g.POST("/token/exit", middleware.RequirePermission(s.perms, "auth:session:tokenexit", "Token 强制下线"), middleware.OperationAudit(s.audit, "auth_session", "token_exit"), s.sessionTokenExit)
+}
+
+func invalidateAnalysisCache() {
+	analysisCacheMu.Lock()
+	analysisCacheData = nil
+	analysisCacheAt = time.Time{}
+	analysisCacheMu.Unlock()
 }
 
 func (s *Service) sessionAnalysis(c *gin.Context) {
-	admin := s.analyzeSessions(c, security.AccountAdmin)
-	portal := s.analyzeSessions(c, security.AccountPortal)
-	response.OK(c, SessionAnalysis{
-		OnlineAccountCount: admin.accountCount + portal.accountCount,
-		OnlineTokenCount:   admin.tokenCount + portal.tokenCount,
-		AdminAccountCount:  admin.accountCount,
-		PortalAccountCount: portal.accountCount,
-		OneHourNewCount:    admin.oneHourNew + portal.oneHourNew,
-		MaxTokenCount:      maxInt(admin.maxToken, portal.maxToken),
-	})
-}
+	now := time.Now()
+	analysisCacheMu.Lock()
+	if analysisCacheData != nil && now.Before(analysisCacheAt) {
+		cached := *analysisCacheData
+		analysisCacheMu.Unlock()
+		response.OK(c, cached)
+		return
+	}
+	analysisCacheMu.Unlock()
 
-type sessionAccumulator struct {
-	accountCount int
-	tokenCount   int
-	oneHourNew   int
-	maxToken     int
-}
-
-func (s *Service) analyzeSessions(c *gin.Context, accountType security.AccountType) sessionAccumulator {
-	acc := sessionAccumulator{}
-	accountIDs, err := s.sessions.ListAccountIDs(c.Request.Context())
+	grouped, err := s.groupOnlineSessions(c.Request.Context())
 	if err != nil {
-		return acc
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
 	}
-	for _, accountID := range accountIDs {
-		sess, _ := s.sessions.Get(c.Request.Context(), s.firstToken(c, accountID))
-		if sess != nil && sess.AccountType != accountType {
-			continue
+	oneHourAgo := now.Add(-time.Hour)
+	result := SessionAnalysis{}
+	maxToken := 0
+	for key, sessions := range grouped {
+		result.OnlineAccountCount++
+		n := len(sessions)
+		result.OnlineTokenCount += n
+		if n > maxToken {
+			maxToken = n
 		}
-		tokens, _ := s.sessions.ListTokensForAccount(c.Request.Context(), accountID)
-		if len(tokens) == 0 {
-			continue
+		switch security.AccountType(key.AccountType) {
+		case security.AccountAdmin:
+			result.AdminAccountCount++
+		case security.AccountPortal:
+			result.PortalAccountCount++
 		}
-		// 校验该账号存在对应类型的会话
-		matched := 0
-		for _, tok := range tokens {
-			one, _ := s.sessions.Get(c.Request.Context(), tok)
-			if one == nil || one.AccountType != accountType {
-				continue
+		for _, sess := range sessions {
+			if !sess.LoginAt.IsZero() && !sess.LoginAt.Before(oneHourAgo) {
+				result.OneHourNewCount++
 			}
-			matched++
-			if time.Since(one.LoginAt) < time.Hour {
-				acc.oneHourNew++
-			}
-		}
-		if matched == 0 {
-			continue
-		}
-		acc.accountCount++
-		acc.tokenCount += matched
-		if matched > acc.maxToken {
-			acc.maxToken = matched
 		}
 	}
-	return acc
-}
+	result.MaxTokenCount = maxToken
 
-func (s *Service) firstToken(c *gin.Context, accountID string) string {
-	tokens, _ := s.sessions.ListTokensForAccount(c.Request.Context(), accountID)
-	if len(tokens) == 0 {
-		return ""
-	}
-	return tokens[0]
+	analysisCacheMu.Lock()
+	analysisCacheData = &result
+	analysisCacheAt = now.Add(analysisCacheTTL)
+	analysisCacheMu.Unlock()
+	response.OK(c, result)
 }
 
 func (s *Service) sessionPage(c *gin.Context) {
 	var q SessionPageParam
 	_ = c.ShouldBindQuery(&q)
 	cur, size := q.Normalize()
-	accountIDs, err := s.sessions.ListAccountIDs(c.Request.Context())
+	grouped, err := s.groupOnlineSessions(c.Request.Context())
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	var matched []SessionAccount
-	for _, accountID := range accountIDs {
-		item := s.hydrateSession(c, accountID, q.AccountType)
-		if item == nil {
-			continue
+	grouped = filterGroupedSessions(grouped, q)
+	needsProfile := q.Account != "" || q.Keyword != ""
+	if needsProfile {
+		items := s.buildSessionItems(c.Request.Context(), grouped)
+		items = filterProfileSessionItems(items, q)
+		sortSessionItems(items)
+		total := int64(len(items))
+		from := (cur - 1) * size
+		to := from + size
+		if from > len(items) {
+			from = len(items)
 		}
-		if !matchesSessionFilter(item, q) {
-			continue
+		if to > len(items) {
+			to = len(items)
 		}
-		matched = append(matched, *item)
+		response.Page(c, int64(cur), int64(size), total, items[from:to])
+		return
 	}
-	total := int64(len(matched))
+
+	keys := make([]sessionGroupKey, 0, len(grouped))
+	for k := range grouped {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return groupSortLess(grouped[keys[i]], grouped[keys[j]], keys[i].AccountID, keys[j].AccountID)
+	})
+	total := int64(len(keys))
 	from := (cur - 1) * size
 	to := from + size
-	if from >= len(matched) {
-		from = len(matched)
+	if from > len(keys) {
+		from = len(keys)
 	}
-	if to > len(matched) {
-		to = len(matched)
+	if to > len(keys) {
+		to = len(keys)
 	}
-	response.Page(c, int64(cur), int64(size), total, matched[from:to])
+	pageGrouped := make(map[sessionGroupKey][]*security.SessionPayload, to-from)
+	for _, k := range keys[from:to] {
+		pageGrouped[k] = grouped[k]
+	}
+	items := s.buildSessionItems(c.Request.Context(), pageGrouped)
+	sortSessionItems(items)
+	response.Page(c, int64(cur), int64(size), total, items)
 }
 
 func (s *Service) sessionTokens(c *gin.Context) {
-	accountID := c.Query("account_id")
+	accountID := strings.TrimSpace(c.Query("account_id"))
 	if accountID == "" {
 		response.Fail(c, http.StatusBadRequest, 400, "account_id required")
 		return
 	}
-	accountType := c.Query("account_type")
-	var tokens []SessionTokenInfo
-	for _, tok := range s.tokenList(c, accountID) {
-		sess, _ := s.sessions.Get(c.Request.Context(), tok)
-		if sess == nil {
-			continue
-		}
-		if accountType != "" && string(sess.AccountType) != accountType {
-			continue
-		}
-		tokens = append(tokens, toTokenInfo(sess))
+	accountType := security.AccountType(strings.TrimSpace(c.Query("account_type")))
+	if accountType == "" {
+		accountType = security.AccountAdmin
 	}
-	response.OK(c, tokens)
+	tokens, err := s.sessions.ListTokensForAccount(c.Request.Context(), accountType, accountID)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	sessions, err := s.sessions.ListSessionsByTokens(c.Request.Context(), tokens)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	out := make([]SessionTokenInfo, 0, len(sessions))
+	for _, sess := range sessions {
+		out = append(out, toTokenInfo(sess))
+	}
+	response.OK(c, out)
 }
 
 func (s *Service) sessionExit(c *gin.Context) {
@@ -237,9 +268,22 @@ func (s *Service) sessionExit(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	for _, target := range req.Targets {
-		_ = s.sessions.DeleteAllForAccount(c.Request.Context(), target.AccountID)
+	targets := make([]security.AccountSessionTarget, 0, len(req.Targets))
+	for _, t := range req.Targets {
+		accountType := security.AccountType(strings.TrimSpace(t.AccountType))
+		if accountType == "" {
+			accountType = security.AccountAdmin
+		}
+		targets = append(targets, security.AccountSessionTarget{
+			AccountType: accountType,
+			AccountID:   t.AccountID,
+		})
 	}
+	if err := s.sessions.DeleteAccountsSessions(c.Request.Context(), targets); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	invalidateAnalysisCache()
 	response.OK(c, nil)
 }
 
@@ -249,150 +293,255 @@ func (s *Service) sessionTokenExit(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
+	seen := map[string]struct{}{}
 	for _, tok := range req.Tokens {
 		tok = strings.TrimSpace(tok)
 		if tok == "" {
 			continue
 		}
+		if _, ok := seen[tok]; ok {
+			continue
+		}
+		seen[tok] = struct{}{}
 		_ = s.sessions.Delete(c.Request.Context(), tok)
 	}
+	invalidateAnalysisCache()
 	response.OK(c, nil)
 }
 
-func (s *Service) hydrateSession(c *gin.Context, accountID, accountTypeFilter string) *SessionAccount {
-	var tokens []SessionTokenInfo
-	var latest *security.SessionPayload
-	firstLogin := time.Time{}
-	for _, tok := range s.tokenList(c, accountID) {
-		sess, _ := s.sessions.Get(c.Request.Context(), tok)
+func (s *Service) groupOnlineSessions(ctx context.Context) (map[sessionGroupKey][]*security.SessionPayload, error) {
+	tokens, err := s.sessions.ListTokens(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sessions, err := s.sessions.ListSessionsByTokens(ctx, tokens)
+	if err != nil {
+		return nil, err
+	}
+	grouped := make(map[sessionGroupKey][]*security.SessionPayload)
+	for _, sess := range sessions {
 		if sess == nil {
 			continue
 		}
-		if accountTypeFilter != "" && string(sess.AccountType) != accountTypeFilter {
-			continue
-		}
-		if firstLogin.IsZero() || sess.LoginAt.Before(firstLogin) {
-			firstLogin = sess.LoginAt
-		}
-		if latest == nil || sess.LastActiveAt.After(latest.LastActiveAt) {
-			latest = sess
-		}
-		tokens = append(tokens, toTokenInfo(sess))
+		key := sessionGroupKey{AccountType: string(sess.AccountType), AccountID: sess.AccountID}
+		grouped[key] = append(grouped[key], sess)
 	}
-	if len(tokens) == 0 {
+	return grouped, nil
+}
+
+func filterGroupedSessions(
+	grouped map[sessionGroupKey][]*security.SessionPayload,
+	q SessionPageParam,
+) map[sessionGroupKey][]*security.SessionPayload {
+	result := grouped
+	if q.AccountType != "" {
+		wanted := q.AccountType
+		filtered := make(map[sessionGroupKey][]*security.SessionPayload)
+		for k, sessions := range result {
+			if k.AccountType == wanted {
+				filtered[k] = sessions
+			}
+		}
+		result = filtered
+	}
+	if q.AccountID != "" {
+		filtered := make(map[sessionGroupKey][]*security.SessionPayload)
+		for k, sessions := range result {
+			if strings.Contains(k.AccountID, q.AccountID) {
+				filtered[k] = sessions
+			}
+		}
+		result = filtered
+	}
+	if q.IP != "" {
+		filtered := make(map[sessionGroupKey][]*security.SessionPayload)
+		for k, sessions := range result {
+			for _, sess := range sessions {
+				if sess.ClientIP != nil && strings.Contains(*sess.ClientIP, q.IP) {
+					filtered[k] = sessions
+					break
+				}
+			}
+		}
+		result = filtered
+	}
+	return result
+}
+
+func (s *Service) buildSessionItems(
+	ctx context.Context,
+	grouped map[sessionGroupKey][]*security.SessionPayload,
+) []SessionAccount {
+	if len(grouped) == 0 {
 		return nil
 	}
-	item := &SessionAccount{
-		AccountID:   accountID,
-		AccountType: string(accountTypeOf(tokens)),
-		TokenCount:  len(tokens),
-		Tokens:      tokens,
+	ids := make([]string, 0, len(grouped))
+	seen := map[string]struct{}{}
+	for k := range grouped {
+		if _, ok := seen[k.AccountID]; ok {
+			continue
+		}
+		seen[k.AccountID] = struct{}{}
+		ids = append(ids, k.AccountID)
 	}
-	if !firstLogin.IsZero() {
-		item.FirstLoginAt = &firstLogin
+	views, _ := view.LoadAccountViews(ctx, s.db, ids)
+	viewByID := make(map[string]view.AccountView, len(views))
+	for _, v := range views {
+		viewByID[v.ID] = v
 	}
-	if latest != nil {
-		item.LatestLoginIP = latest.ClientIP
-		item.LatestLoginTime = &latest.LoginAt
-		item.LatestActiveAt = &latest.LastActiveAt
-		item.ClientIP = latest.ClientIP
-		item.DeviceLabel = latest.DeviceLabel
-		item.AccountType = string(latest.AccountType)
+
+	items := make([]SessionAccount, 0, len(grouped))
+	for key, sessions := range grouped {
+		tokenInfos := make([]SessionTokenInfo, 0, len(sessions))
+		for _, sess := range sessions {
+			tokenInfos = append(tokenInfos, toTokenInfo(sess))
+		}
+		sort.Slice(tokenInfos, func(i, j int) bool {
+			return tokenActiveAt(tokenInfos[i]).After(tokenActiveAt(tokenInfos[j]))
+		})
+		var firstLogin *time.Time
+		var latestActive *time.Time
+		for _, t := range tokenInfos {
+			if t.LoginAt != nil && (firstLogin == nil || t.LoginAt.Before(*firstLogin)) {
+				v := *t.LoginAt
+				firstLogin = &v
+			}
+			if t.LastActiveAt != nil && (latestActive == nil || t.LastActiveAt.After(*latestActive)) {
+				v := *t.LastActiveAt
+				latestActive = &v
+			}
+		}
+		item := SessionAccount{
+			AccountID:      key.AccountID,
+			AccountType:    key.AccountType,
+			TokenCount:     len(tokenInfos),
+			FirstLoginAt:   firstLogin,
+			LatestActiveAt: latestActive,
+			Tokens:         tokenInfos,
+		}
+		if len(tokenInfos) > 0 {
+			newest := tokenInfos[0]
+			item.ClientIP = newest.ClientIP
+			item.DeviceLabel = newest.DeviceLabel
+		}
+		if v, ok := viewByID[key.AccountID]; ok {
+			item.Account = v.Account
+			if item.Account == "" {
+				item.Account = key.AccountID
+			}
+			item.Name = v.Name
+			item.Nickname = v.Nickname
+			item.Avatar = v.Avatar
+			item.LatestLoginIP = v.LatestLoginIP
+			item.LatestLoginTime = v.LatestLoginTime
+		} else {
+			item.Account = key.AccountID
+		}
+		items = append(items, item)
 	}
-	item.Account = s.accountName(c, accountID)
-	name, nickname, avatar := s.profileNames(c, accountID)
-	item.Name = name
-	item.Nickname = nickname
-	item.Avatar = avatar
-	return item
+	return items
 }
 
-func accountTypeOf(tokens []SessionTokenInfo) security.AccountType {
-	if len(tokens) == 0 {
-		return ""
+func filterProfileSessionItems(items []SessionAccount, q SessionPageParam) []SessionAccount {
+	result := items
+	if q.Account != "" {
+		keyword := strings.ToLower(q.Account)
+		filtered := make([]SessionAccount, 0, len(result))
+		for _, item := range result {
+			if containsFold(item.Account, keyword) ||
+				containsFold(deref(item.Name), keyword) ||
+				containsFold(deref(item.Nickname), keyword) {
+				filtered = append(filtered, item)
+			}
+		}
+		result = filtered
 	}
-	return security.AccountType(tokens[0].AccountType)
+	if q.Keyword != "" {
+		keyword := strings.ToLower(q.Keyword)
+		filtered := make([]SessionAccount, 0, len(result))
+		for _, item := range result {
+			if containsFold(item.Account, keyword) ||
+				containsFold(deref(item.Name), keyword) ||
+				containsFold(deref(item.Nickname), keyword) ||
+				containsFold(item.AccountID, keyword) {
+				filtered = append(filtered, item)
+			}
+		}
+		result = filtered
+	}
+	return result
 }
 
-func (s *Service) tokenList(c *gin.Context, accountID string) []string {
-	tokens, _ := s.sessions.ListTokensForAccount(c.Request.Context(), accountID)
-	return tokens
+func sortSessionItems(items []SessionAccount) {
+	sort.Slice(items, func(i, j int) bool {
+		ai := itemSortActive(items[i])
+		aj := itemSortActive(items[j])
+		if !ai.Equal(aj) {
+			return ai.After(aj)
+		}
+		return items[i].AccountID > items[j].AccountID
+	})
+}
+
+func groupSortLess(a, b []*security.SessionPayload, accountIDA, accountIDB string) bool {
+	ta := groupLatestActive(a)
+	tb := groupLatestActive(b)
+	if !ta.Equal(tb) {
+		return ta.After(tb)
+	}
+	return accountIDA > accountIDB
+}
+
+func groupLatestActive(sessions []*security.SessionPayload) time.Time {
+	var latest time.Time
+	for _, sess := range sessions {
+		active := sess.LastActiveAt
+		if active.IsZero() {
+			active = sess.LoginAt
+		}
+		if active.After(latest) {
+			latest = active
+		}
+	}
+	return latest
+}
+
+func itemSortActive(item SessionAccount) time.Time {
+	if item.LatestActiveAt != nil {
+		return *item.LatestActiveAt
+	}
+	if item.FirstLoginAt != nil {
+		return *item.FirstLoginAt
+	}
+	return time.Time{}
+}
+
+func tokenActiveAt(t SessionTokenInfo) time.Time {
+	if t.LastActiveAt != nil {
+		return *t.LastActiveAt
+	}
+	if t.LoginAt != nil {
+		return *t.LoginAt
+	}
+	return time.Time{}
 }
 
 func toTokenInfo(sess *security.SessionPayload) SessionTokenInfo {
+	loginAt := sess.LoginAt
+	lastActive := sess.LastActiveAt
+	expires := sess.ExpiresAt
 	return SessionTokenInfo{
 		Token:        sess.Token,
 		AccountID:    sess.AccountID,
 		AccountType:  string(sess.AccountType),
-		LoginAt:      &sess.LoginAt,
-		LastActiveAt: &sess.LastActiveAt,
-		ExpiresAt:    &sess.ExpiresAt,
+		LoginAt:      &loginAt,
+		LastActiveAt: &lastActive,
+		ExpiresAt:    &expires,
 		ClientIP:     sess.ClientIP,
 		DeviceLabel:  sess.DeviceLabel,
 		UserAgent:    sess.UserAgent,
 		RememberMe:   sess.RememberMe,
 	}
-}
-
-func (s *Service) accountName(c *gin.Context, accountID string) string {
-	if s.db == nil {
-		return accountID
-	}
-	var account string
-	_ = s.db.WithContext(c.Request.Context()).Table("sys_account").
-		Select("account").
-		Where("id = ?", accountID).Limit(1).Scan(&account).Error
-	if account == "" {
-		return accountID
-	}
-	return account
-}
-
-func (s *Service) profileNames(c *gin.Context, accountID string) (*string, *string, *string) {
-	if s.db == nil {
-		return nil, nil, nil
-	}
-	var name, nickname, avatar *string
-	_ = s.db.WithContext(c.Request.Context()).Table("profile_user_admin").
-		Select("name, nickname, avatar").
-		Where("account_id = ?", accountID).Limit(1).
-		Scan(&struct {
-			Name     *string `gorm:"column:name"`
-			Nickname *string `gorm:"column:nickname"`
-			Avatar   *string `gorm:"column:avatar"`
-		}{name, nickname, avatar}).Error
-	return name, nickname, avatar
-}
-
-func matchesSessionFilter(item *SessionAccount, q SessionPageParam) bool {
-	if q.AccountID != "" && q.AccountID != item.AccountID {
-		return false
-	}
-	if q.Account != "" {
-		k := strings.ToLower(q.Account)
-		if !containsFold(item.Account, k) && !containsFold(deref(item.Name), k) && !containsFold(deref(item.Nickname), k) {
-			return false
-		}
-	}
-	if q.IP != "" {
-		hit := false
-		for _, t := range item.Tokens {
-			if t.ClientIP != nil && strings.Contains(*t.ClientIP, q.IP) {
-				hit = true
-				break
-			}
-		}
-		if !hit {
-			return false
-		}
-	}
-	if q.Keyword != "" {
-		k := strings.ToLower(q.Keyword)
-		if !containsFold(item.Account, k) && !containsFold(item.AccountID, k) {
-			return false
-		}
-	}
-	return true
 }
 
 func containsFold(value, keyword string) bool {
@@ -404,13 +553,6 @@ func deref(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // SessionFromAuthContext 复用 auth 包 handler 用的会话读取。

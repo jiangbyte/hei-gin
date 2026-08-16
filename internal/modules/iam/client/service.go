@@ -15,7 +15,6 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/iam/relation"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 客户端资源服务。
@@ -32,7 +31,7 @@ func NewService(db *gorm.DB) *Service {
 }
 
 // New 构建 iam.client 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
 		Name:   "iam.client",

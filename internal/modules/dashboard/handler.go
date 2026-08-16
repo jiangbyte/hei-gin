@@ -10,10 +10,10 @@ import (
 	"hei-gin/internal/framework/core/response"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/module"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
+func (s *Service) registerRoutes(d *module.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
 		api.GET(
 			"/v1/admin/dashboard/overview",

@@ -1,6 +1,6 @@
 /** Author: Charlie */
 
-import { API_PREFIX, FILES_PUBLIC_PATH } from '@/constants/api'
+import { API_PREFIX } from '@/constants/api'
 
 export type UploadedFileValueType = 'auto' | 'url' | 'object_name'
 
@@ -37,15 +37,18 @@ export function buildPortalFileDownloadUrl(id?: string | number | null) {
   return `${API_PREFIX}/sys/file/download?id=${encodeURIComponent(rawId)}`
 }
 
-/** object_name -> 公开访问路径。 */
-export function buildPublicFileUrl(objectName?: string | null) {
-  const name = String(objectName ?? '')
-    .replace(/^\/+/, '')
-    .trim()
-  if (!name) {
+/**
+ * 仅当入参已是可访问 URL 时返回；object key 需经上传返回 url 或 fileApi.url 解析。
+ */
+export function buildPublicFileUrl(objectNameOrUrl?: string | null) {
+  const value = String(objectNameOrUrl ?? '').trim()
+  if (!value) {
     return undefined
   }
-  return `${FILES_PUBLIC_PATH}/${name}`
+  if (/^(https?:|data:|blob:)/i.test(value)) {
+    return value
+  }
+  return undefined
 }
 
 export function formatFileSize(size?: number | string | null) {
@@ -152,14 +155,32 @@ export function getFilenameFromContentDisposition(value?: string | null) {
 }
 
 export function saveBlob(blob: Blob, filename = 'download') {
-  const url = URL.createObjectURL(blob)
+  const safeName = String(filename || 'download').replace(/[/\\?%*:|"<>]/g, '_').trim() || 'download'
+  const objectUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.href = url
-  link.download = filename
+  link.href = objectUrl
+  link.download = safeName
+  link.rel = 'noopener'
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
+/**
+ * 从远程 URL 拉取 Blob 并触发下载。
+ * 注意：跨域直链依赖对象存储 CORS；同站后端下载请优先走带 id 的下载接口。
+ */
+export async function downloadRemoteUrl(url?: string | null, filename = 'download') {
+  const remoteUrl = String(url ?? '').trim()
+  if (!remoteUrl) {
+    return
+  }
+  const response = await fetch(remoteUrl)
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`)
+  }
+  saveBlob(await response.blob(), filename)
 }
 
 function getFileContentType(file?: FileLike | string | null) {

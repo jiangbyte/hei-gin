@@ -14,10 +14,9 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
 		api.GET("/v1/admin/sys/audit/page", admin, middleware.RequirePermission(d.Perms, "sys:audit:page", "审计分页"), s.page)

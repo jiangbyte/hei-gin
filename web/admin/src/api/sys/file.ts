@@ -1,7 +1,7 @@
 /** Author: Charlie */
 
 import { API_PREFIX } from '@/constants/api'
-import { getFilenameFromContentDisposition, http, saveBlob } from '@/utils'
+import { downloadRemoteUrl, getFilenameFromContentDisposition, http, saveBlob } from '@/utils'
 
 const filePrefix = `${API_PREFIX}/sys/file`
 
@@ -98,25 +98,27 @@ export async function downloadFile(target: FileDownloadTarget, fallbackFilename 
   const objectName = getDownloadTargetObjectName(target)
   const filename = getDownloadTargetFilename(target, fallbackFilename)
 
-  if (isRemoteDownloadTarget(target) && objectName) {
+  // 有 id 时走后端流式下载（Content-Disposition: attachment），避免跨域直链只「打开」不下载
+  if (id) {
+    const response = await download(id)
+    const disposition = response.headers?.['content-disposition']
+    const dispositionText = Array.isArray(disposition)
+      ? disposition[0]
+      : typeof disposition === 'string'
+        ? disposition
+        : undefined
+    const responseFilename = getFilenameFromContentDisposition(dispositionText) || filename
+    saveBlob(response.data, responseFilename)
+    return responseFilename
+  }
+
+  if (objectName) {
     const response = await url(objectName)
-    openFileUrl(response.data?.url, filename)
+    await downloadRemoteUrl(response.data?.url, filename)
     return filename
   }
 
-  if (!id) {
-    return filename
-  }
-  const response = await download(id)
-  const disposition = response.headers?.['content-disposition']
-  const dispositionText = Array.isArray(disposition)
-    ? disposition[0]
-    : typeof disposition === 'string'
-      ? disposition
-      : undefined
-  const responseFilename = getFilenameFromContentDisposition(dispositionText) || filename
-  saveBlob(response.data, responseFilename)
-  return responseFilename
+  return filename
 }
 
 function getDownloadTargetId(target: FileDownloadTarget) {
@@ -132,25 +134,4 @@ function getDownloadTargetFilename(target: FileDownloadTarget, fallbackFilename:
     return fallbackFilename
   }
   return target.original_name || target.object_name || fallbackFilename
-}
-
-function isRemoteDownloadTarget(target: FileDownloadTarget) {
-  return (
-    typeof target !== 'string' && !!target.storage_provider && target.storage_provider !== 'local'
-  )
-}
-
-function openFileUrl(value?: string | null, filename = 'download') {
-  const url = value || undefined
-  if (!url) {
-    return
-  }
-  const link = document.createElement('a')
-  link.href = url
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }

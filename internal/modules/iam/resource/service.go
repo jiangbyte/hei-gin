@@ -15,7 +15,6 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/iam/relation"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 资源服务（权限绑定经 relation 模块，权限注册表经 Perms）。
@@ -36,7 +35,7 @@ func NewService(db *gorm.DB) *Service {
 }
 
 // New 构建 iam.resource 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	s.perms = d.Perms
 	return module.Module{

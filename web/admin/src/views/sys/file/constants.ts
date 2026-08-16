@@ -1,7 +1,6 @@
-/** Storage provider labels/colors — aligned with StorageProvider enum, not sys_dict. */
+/** Storage provider labels/colors — aligned with object-storage providers, not sys_dict. */
 
 export const STORAGE_PROVIDER_OPTIONS = [
-  { label: '本地文件', value: 'local', color: '#18a058' },
   { label: '阿里云 OSS', value: 'oss', color: '#f0a020' },
   { label: '腾讯云 COS', value: 's3', color: '#722ed1' },
   { label: 'MinIO', value: 'minio', color: '#2080f0' },

@@ -6,12 +6,17 @@ package file
 
 import (
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // init 自注册 sys.file 模块。
 func init() {
 	module.Register("sys.file", 50, func(d *module.Deps) module.Module {
-		return New(shared.FromModule(d))
+		s := NewService(d.DB, d.Storage, d.Runtime)
+		d.Provide(ServiceKey, s)
+		return module.Module{
+			Name:   "sys.file",
+			Models: []any{&File{}},
+			Routes: []module.RouteRegistrar{s.registerRoutes(d)},
+		}
 	})
 }

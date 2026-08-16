@@ -15,21 +15,11 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/module"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
+func (s *Service) registerRoutes(d *module.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
-		// 操作审计登记（对齐 hei-boot @OperationAudit：biz_cgtestknowledgecategory）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/create", ResourceType: "biz_cgtestknowledgecategory", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/update", ResourceType: "biz_cgtestknowledgecategory", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/delete", ResourceType: "biz_cgtestknowledgecategory", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/children/create", ResourceType: "biz_cgtestknowledgecategory", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/children/update", ResourceType: "biz_cgtestknowledgecategory", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/biz/cg-test-knowledge-category/children/delete", ResourceType: "biz_cgtestknowledgecategory", Action: "delete"},
-		)
 		g := api.Group("/v1/admin/biz/cg-test-knowledge-category", middleware.RequireAccountType(security.AccountAdmin))
 		g.POST("/create", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:create", "Create knowledge category"), s.create)
 		g.POST("/update", middleware.RequirePermission(d.Perms, "biz:cgtestknowledgecategory:update", "Update knowledge category"), s.update)

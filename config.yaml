@@ -66,19 +66,6 @@ cors:
     - X-Requested-With
     - X-HEI-CSRF
 
-storage:
-  provider: local
-  bucket: hei-gin
-  endpoint: http://127.0.0.1:9000
-  access_key: minioadmin
-  secret_key: minioadmin
-  region: us-east-1
-  use_ssl: false
-  presign_expire_seconds: 3600
-  base_url: ""
-  public_path: /api/v1/files
-  local_root: storage
-
 id_generator:
   worker_id: 1
   datacenter_id: 1
@@ -93,6 +80,12 @@ audit:
   consumer_group: hei-gin-audit
   use_stream: true
 
+job:
+  scan_interval_ms: 1000
+  pool_size: 4
+  log_retention_days: 30
+  log_batch_size: 1000
+
 oauth:
   github:
     client_id: ""
@@ -103,6 +96,10 @@ oauth:
     client_secret: ""
     redirect_url: ""
   wechat:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  wechat_mp:
     client_id: ""
     client_secret: ""
     redirect_url: ""

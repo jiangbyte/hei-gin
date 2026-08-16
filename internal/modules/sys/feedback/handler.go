@@ -15,20 +15,11 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_feedback）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/feedbacks/submit", ResourceType: "sys_feedback", Action: "submit"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/feedbacks/update", ResourceType: "sys_feedback", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/feedbacks/delete", ResourceType: "sys_feedback", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/portal/sys/feedbacks/submit", ResourceType: "sys_feedback", Action: "submit"},
-		)
 		admin := api.Group("/v1/admin/sys/feedbacks", middleware.RequireAccountType(security.AccountAdmin))
 		admin.GET("/page", middleware.RequirePermission(d.Perms, "sys:feedback:page", "Feedback page"), s.pageAdmin)
 		admin.GET("/detail", middleware.RequirePermission(d.Perms, "sys:feedback:detail", "Feedback detail"), s.detail)

@@ -67,19 +67,7 @@ cors:
     - X-Requested-With
     - X-HEI-CSRF
 
-
-storage:
-  provider: local
-  bucket: hei-gin
-  endpoint: http://127.0.0.1:9000
-  access_key: minioadmin
-  secret_key: minioadmin
-  region: us-east-1
-  use_ssl: false
-  presign_expire_seconds: 3600
-  base_url: ""
-  public_path: /api/v1/files
-  local_root: storage
+# 对象存储（DEFAULT_FILE_ENGINE / STORAGE_*）在 sys_config，由管理端「系统配置 → 存储」维护；对齐 hei-boot / hei-fastapi。
 
 id_generator:
   worker_id: 1

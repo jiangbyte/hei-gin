@@ -182,3 +182,29 @@ func (r *Repo) FirstOrCreateRead(ctx context.Context, row NoticeRead) error {
 func (r *Repo) CreateRead(ctx context.Context, row *NoticeRead) error {
 	return r.with(ctx).Create(row).Error
 }
+
+// CreateReadsInBatches 批量插入已读记录。
+func (r *Repo) CreateReadsInBatches(ctx context.Context, rows []NoticeRead) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	return r.with(ctx).CreateInBatches(rows, 100).Error
+}
+
+// ListExistingReadNoticeIDs 返回指定账号在给定通知 ID 中已读的子集。
+func (r *Repo) ListExistingReadNoticeIDs(ctx context.Context, accountType, accountID string, noticeIDs []string) (map[string]struct{}, error) {
+	out := map[string]struct{}{}
+	if len(noticeIDs) == 0 {
+		return out, nil
+	}
+	var ids []string
+	if err := r.with(ctx).Model(&NoticeRead{}).
+		Where("account_type = ? AND account_id = ? AND notice_id IN ?", accountType, accountID, noticeIDs).
+		Pluck("notice_id", &ids).Error; err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		out[id] = struct{}{}
+	}
+	return out, nil
+}

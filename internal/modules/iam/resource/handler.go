@@ -15,48 +15,32 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：iam_resource / iam_resourcemodule / iam_clientresource）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/create", ResourceType: "iam_resource", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/update", ResourceType: "iam_resource", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resources/delete", ResourceType: "iam_resource", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/create", ResourceType: "iam_resourcemodule", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/update", ResourceType: "iam_resourcemodule", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-modules/delete", ResourceType: "iam_resourcemodule", Action: "delete"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/resource-permissions", ResourceType: "iam_resource", Action: "grant"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/client-resource-permissions", ResourceType: "iam_clientresource", Action: "grant"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/create", ResourceType: "iam_resource", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/update", ResourceType: "iam_resource", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/resource-buttons/delete", ResourceType: "iam_resource", Action: "delete"},
-		)
-		api.POST("/v1/admin/sys/resources/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), s.create)
-		api.POST("/v1/admin/sys/resources/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), s.update)
-		api.POST("/v1/admin/sys/resources/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), s.delete)
+		api.POST("/v1/admin/sys/resources/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), middleware.OperationAudit(d.Audit, "iam_resource", "create"), s.create)
+		api.POST("/v1/admin/sys/resources/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), middleware.OperationAudit(d.Audit, "iam_resource", "update"), s.update)
+		api.POST("/v1/admin/sys/resources/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), middleware.OperationAudit(d.Audit, "iam_resource", "delete"), s.delete)
 		api.GET("/v1/admin/sys/resources/detail", admin, middleware.RequirePermission(d.Perms, "iam:resource:detail", "资源详情"), s.detail)
 		api.GET("/v1/admin/sys/resources/page", admin, middleware.RequirePermission(d.Perms, "iam:resource:page", "资源分页"), s.page)
 		api.GET("/v1/admin/sys/resources/current", admin, s.currentAdmin)
 		api.GET("/v1/admin/sys/resources/tree", admin, middleware.RequirePermission(d.Perms, "iam:resource:list", "资源树"), s.tree)
-		api.POST("/v1/admin/sys/resource-modules/create", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:create", "资源模块创建"), s.createModule)
-		api.POST("/v1/admin/sys/resource-modules/update", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:update", "资源模块更新"), s.updateModule)
-		api.POST("/v1/admin/sys/resource-modules/delete", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:delete", "资源模块删除"), s.deleteModule)
+		api.POST("/v1/admin/sys/resource-modules/create", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:create", "资源模块创建"), middleware.OperationAudit(d.Audit, "iam_resourcemodule", "create"), s.createModule)
+		api.POST("/v1/admin/sys/resource-modules/update", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:update", "资源模块更新"), middleware.OperationAudit(d.Audit, "iam_resourcemodule", "update"), s.updateModule)
+		api.POST("/v1/admin/sys/resource-modules/delete", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:delete", "资源模块删除"), middleware.OperationAudit(d.Audit, "iam_resourcemodule", "delete"), s.deleteModule)
 		api.GET("/v1/admin/sys/resource-modules/detail", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:detail", "资源模块详情"), s.detailModule)
 		api.GET("/v1/admin/sys/resource-modules/page", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:page", "资源模块分页"), s.pageModule)
 		api.GET("/v1/admin/sys/resource-modules/selector", admin, middleware.RequirePermission(d.Perms, "iam:resourcemodule:page", "资源模块选择"), s.selectorModule)
 		api.GET("/v1/portal/sys/resources/current", s.currentPortal)
 		api.GET("/v1/admin/permission-registry", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), s.permissionRegistry)
-		api.POST("/v1/admin/resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), s.bindResourcePermissions)
-		api.POST("/v1/admin/client-resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:grant", "客户端资源授权"), s.bindClientResourcePermissions)
-		api.POST("/v1/admin/sys/resource-buttons/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), s.createButton)
-		api.POST("/v1/admin/sys/resource-buttons/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), s.updateButton)
-		api.POST("/v1/admin/sys/resource-buttons/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), s.deleteButton)
+		api.POST("/v1/admin/resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:resource:grant", "资源授权"), middleware.OperationAudit(d.Audit, "iam_resource", "grant"), s.bindResourcePermissions)
+		api.POST("/v1/admin/client-resource-permissions", admin, middleware.RequirePermission(d.Perms, "iam:clientresource:grant", "客户端资源授权"), middleware.OperationAudit(d.Audit, "iam_clientresource", "grant"), s.bindClientResourcePermissions)
+		api.POST("/v1/admin/sys/resource-buttons/create", admin, middleware.RequirePermission(d.Perms, "iam:resource:create", "资源创建"), middleware.OperationAudit(d.Audit, "iam_resource", "create"), s.createButton)
+		api.POST("/v1/admin/sys/resource-buttons/update", admin, middleware.RequirePermission(d.Perms, "iam:resource:update", "资源更新"), middleware.OperationAudit(d.Audit, "iam_resource", "update"), s.updateButton)
+		api.POST("/v1/admin/sys/resource-buttons/delete", admin, middleware.RequirePermission(d.Perms, "iam:resource:delete", "资源删除"), middleware.OperationAudit(d.Audit, "iam_resource", "delete"), s.deleteButton)
 		api.GET("/v1/admin/sys/resource-buttons/page", admin, middleware.RequirePermission(d.Perms, "iam:resource:list", "资源分页"), s.pageButton)
 	}
 }

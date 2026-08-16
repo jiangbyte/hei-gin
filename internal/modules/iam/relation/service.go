@@ -14,11 +14,10 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // New 构建 iam.relation 模块。
-func New(_ *shared.Deps) module.Module {
+func New(_ *module.Deps) module.Module {
 	return module.Module{
 		Name:   "iam.relation",
 		Models: []any{&Relation{}},

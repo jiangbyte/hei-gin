@@ -45,7 +45,6 @@ type Deps struct {
 	Perms    *security.PermissionRegistry
 	Storage  *storage.Manager
 	Audit    *audit.Queue
-	AuditReg *audit.Registry
 	Notify   *notify.Facade
 	Runtime  *runtimecfg.Settings
 	Modules  *module.Registry
@@ -79,10 +78,7 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 	if err != nil {
 		return nil, err
 	}
-	store, err := storage.NewManager(cfg.Storage)
-	if err != nil {
-		return nil, err
-	}
+	store := storage.NewManager()
 	if err := otel.Init(cfg.OTel); err != nil {
 		return nil, err
 	}
@@ -99,12 +95,16 @@ func OpenInfra(cfg *config.Config) (*Deps, error) {
 		Sessions: security.NewSessionStore(rdb),
 		Perms:    security.NewPermissionRegistry(rdb),
 		Storage:  store,
-		Audit:    audit.NewQueue(gdb, rdb, cfg.Audit),
-		AuditReg: audit.NewRegistry(),
-		Notify:   nf,
+		Audit:  audit.NewQueue(gdb, rdb, cfg.Audit),
+		Notify: nf,
 		Runtime:  rt,
 		// 任务调度器（handlers 在 NewAPI 装配完成后填充）
-		Jobs: gojob.NewManager(gdb, nil),
+		Jobs: gojob.NewManager(gdb, rdb, gojob.Config{
+			ScanIntervalMS:   cfg.Job.ScanIntervalMS,
+			PoolSize:         cfg.Job.PoolSize,
+			LogRetentionDays: cfg.Job.LogRetentionDays,
+			LogBatchSize:     cfg.Job.LogBatchSize,
+		}, nil),
 	}, nil
 }
 
@@ -137,8 +137,7 @@ func NewAPI(d *Deps) *API {
 	}
 
 	api := r.Group("/api")
-	// 操作审计：请求成功后按路由注册表发布审计（对齐 hei-boot @OperationAudit 覆盖）
-	api.Use(middleware.Audit(d.AuditReg, d.Audit))
+	// 操作审计由各路由挂载 middleware.OperationAudit(d.Audit, resourceType, action)
 	d.Modules.MountRoutes(api)
 
 	srv := &http.Server{

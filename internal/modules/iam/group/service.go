@@ -18,7 +18,6 @@ import (
 	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/iam/resource"
 	"hei-gin/internal/modules/iam/role"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 用户组服务（授权经 relation 模块，成员账号视图经 result 模块）。
@@ -47,7 +46,7 @@ func NewService(db *gorm.DB) *Service {
 }
 
 // New 构建 iam.group 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	s.sessions = d.Sessions
 	return module.Module{
@@ -64,7 +63,7 @@ func (s *Service) invalidateAccounts(ctx context.Context, accountIDs []string) {
 	}
 	for _, id := range accountIDs {
 		if id != "" {
-			_ = s.sessions.DeleteAllForAccount(ctx, id)
+			_ = s.sessions.DeleteAllForAccountAnyType(ctx, id)
 		}
 	}
 }
@@ -101,12 +100,12 @@ func (s *Service) Update(ctx context.Context, req EditParam, sess *security.Sess
 
 // Delete 批量删除（先校验数据范围、清组关联，再删组；对齐 hei-boot GroupServiceImpl.delete）。
 func (s *Service) Delete(ctx context.Context, ids []string, sess *security.SessionPayload) error {
-	for _, id := range ids {
-		row, err := s.repo.GetByID(ctx, id)
-		if err != nil {
-			return err
-		}
-		if err := s.assertScope(sess, row); err != nil {
+	rows, err := s.repo.GetByIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i := range rows {
+		if err := s.assertScope(sess, &rows[i]); err != nil {
 			return err
 		}
 	}

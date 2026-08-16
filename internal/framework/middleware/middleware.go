@@ -174,7 +174,6 @@ func AuthWhitelist(extra []string) gin.HandlerFunc {
 		"/api/v1/portal/forgot-password",
 		"/api/v1/portal/reset-password",
 		"/api/v1/portal/oauth/*",
-		"/api/v1/files/*",
 	}
 	patterns := append(builtin, extra...)
 	return func(c *gin.Context) {

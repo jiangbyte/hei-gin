@@ -22,7 +22,6 @@ import (
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 文件存储业务服务。
@@ -40,16 +39,12 @@ func NewService(db *gorm.DB, sto *storage.Manager, rt *runtimecfg.Settings) *Ser
 }
 
 // New 构建 sys.file 模块。
-func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Storage, d.Runtime)
+func New(d *module.Deps) module.Module {
+	s := FromDeps(d)
 	return module.Module{
 		Name:   "sys.file",
 		Models: []any{&File{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
-		Jobs: []module.Job{{
-			Name: "sysFileCleanupLocalOrphans",
-			Run:  s.sysFileCleanupLocalOrphansHandler,
-		}},
 	}
 }
 
@@ -66,10 +61,13 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageP
 	originalName := safeOriginalName(fh.Filename)
 	objectName := s.buildObjectName(ctx, originalName, "uploads")
 	ct := sanitizeContentType(fh.Header.Get("Content-Type"))
-	// 按传入 storage_provider 解析引擎；缺省走运行时 DEFAULT_FILE_ENGINE（对齐 hei-boot storageSettingsResolver.resolve）。
-	provName := strings.ToLower(strings.TrimSpace(storageProvider))
+	// 按传入 storage_provider 解析引擎；缺省走运行时 DEFAULT_FILE_ENGINE（对齐 hei-boot）。
+	provName := storage.ResolveProvider(storageProvider)
 	if provName == "" {
 		provName = s.sto.DefaultProviderName(ctx)
+	}
+	if !storage.IsS3Compatible(provName) {
+		return nil, fmt.Errorf("不支持的存储引擎: %s（仅支持对象存储）", storageProvider)
 	}
 	prov := s.sto.ProviderByName(ctx, provName)
 	urlVal, err := prov.Put(ctx, objectName, f, fh.Size, ct)
@@ -100,9 +98,12 @@ func (s *Service) Upload(ctx context.Context, fh *multipart.FileHeader, storageP
 // CreateFromStream 从流创建文件记录（头像等非 multipart 场景；对齐 hei-boot fileApi.upload）。
 // 引擎解析与 Upload 一致（缺省 DEFAULT_FILE_ENGINE），写读同一 Provider 保证 URL 可解析。
 func (s *Service) CreateFromStream(ctx context.Context, objectName, originalName, storageProvider, contentType string, size int64, r io.Reader, accountID string) (*File, error) {
-	provName := strings.ToLower(strings.TrimSpace(storageProvider))
+	provName := storage.ResolveProvider(storageProvider)
 	if provName == "" {
 		provName = s.sto.DefaultProviderName(ctx)
+	}
+	if !storage.IsS3Compatible(provName) {
+		return nil, fmt.Errorf("不支持的存储引擎: %s（仅支持对象存储）", storageProvider)
 	}
 	prov := s.sto.ProviderByName(ctx, provName)
 	urlVal, err := prov.Put(ctx, objectName, r, size, contentType)
@@ -137,7 +138,7 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 		return err
 	}
 	for i := range rows {
-		objectKey := toObjectKey(rows[i].ObjectName, s.publicPath())
+		objectKey := toObjectKey(rows[i].ObjectName)
 		if objectKey == "" {
 			continue
 		}
@@ -152,11 +153,11 @@ func (s *Service) DeleteByObjectName(ctx context.Context, objectName string) err
 	if name == "" || isExternalURL(name) {
 		return nil
 	}
-	row, err := s.repo.FindByObjectName(ctx, toObjectKey(name, s.publicPath()))
+	row, err := s.repo.FindByObjectName(ctx, toObjectKey(name))
 	if err != nil {
 		return nil
 	}
-	if key := toObjectKey(row.ObjectName, s.publicPath()); key != "" {
+	if key := toObjectKey(row.ObjectName); key != "" {
 		_ = s.providerFor(ctx, row).Delete(ctx, key)
 	}
 	return s.repo.DeleteByIDs(ctx, []string{row.ID})
@@ -216,7 +217,7 @@ func (s *Service) OpenByID(ctx context.Context, id string) (*File, io.ReadCloser
 	if err != nil {
 		return nil, nil, err
 	}
-	rc, err := s.providerFor(ctx, row).Get(ctx, toObjectKey(row.ObjectName, s.publicPath()))
+	rc, err := s.providerFor(ctx, row).Get(ctx, toObjectKey(row.ObjectName))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -225,7 +226,7 @@ func (s *Service) OpenByID(ctx context.Context, id string) (*File, io.ReadCloser
 
 // URL 获取对象访问 URL（始终重算，避免返回已过期的预签名；对齐 hei-boot FileServiceImpl.url）。
 func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error) {
-	key := toObjectKey(objectName, s.publicPath())
+	key := toObjectKey(objectName)
 	if key == "" {
 		return nil, fmt.Errorf("file not found")
 	}
@@ -236,9 +237,9 @@ func (s *Service) URL(ctx context.Context, objectName string) (*URLResult, error
 	return &URLResult{ObjectName: key, URL: s.providerFor(ctx, row).PublicURL(ctx, key)}, nil
 }
 
-// PresignedURL 获取对象预签名 URL（本地返回公开 URL；S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
+// PresignedURL 获取对象预签名 URL（S3 按运行时 STORAGE_PRESIGN_EXPIRE_SECONDS 生成）。
 func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResult, error) {
-	key := toObjectKey(objectName, s.publicPath())
+	key := toObjectKey(objectName)
 	if key == "" {
 		return nil, fmt.Errorf("file not found")
 	}
@@ -258,25 +259,6 @@ func (s *Service) PresignedURL(ctx context.Context, objectName string) (*URLResu
 	return &URLResult{ObjectName: key, URL: p.PublicURL(ctx, key)}, nil
 }
 
-// OpenByObjectName 按对象名打开文件（公开访问：先校验元数据存在，避免越权读取存储对象）。
-func (s *Service) OpenByObjectName(ctx context.Context, objectName string) (contentType string, rc io.ReadCloser, err error) {
-	if !validObjectName(objectName) {
-		return "", nil, fmt.Errorf("file not found")
-	}
-	key := toObjectKey(objectName, s.publicPath())
-	if key == "" {
-		return "", nil, fmt.Errorf("file not found")
-	}
-	row, err := s.repo.FindByObjectName(ctx, key)
-	if err != nil {
-		return "", nil, fmt.Errorf("file not found")
-	}
-	rc, err = s.providerFor(ctx, row).Get(ctx, key)
-	if err != nil {
-		return "", nil, err
-	}
-	return row.ContentType, rc, nil
-}
 
 // AssertOwnedByCurrent 校验文件归属（门户端仅本人可访问；对齐 hei-boot assertOwnedByCurrent）。
 func (s *Service) AssertOwnedByCurrent(row *File, accountID string) error {
@@ -294,7 +276,7 @@ func (s *Service) withResolvedURL(ctx context.Context, row *File) *File {
 	if row == nil || row.ObjectName == "" {
 		return row
 	}
-	key := toObjectKey(row.ObjectName, s.publicPath())
+	key := toObjectKey(row.ObjectName)
 	if key == "" {
 		return row
 	}
@@ -309,7 +291,7 @@ func (s *Service) providerFor(ctx context.Context, row *File) storage.Provider {
 	if row != nil && strings.TrimSpace(row.StorageProvider) != "" {
 		return s.sto.ProviderByName(ctx, row.StorageProvider)
 	}
-	return s.sto.Provider()
+	return s.sto.Provider(ctx)
 }
 
 // fillNames 批量回填 created_name / updated_name（ACCOUNT 登录标识，对齐 hei-boot easy-trans）。
@@ -345,15 +327,6 @@ func (s *Service) fillNames(ctx context.Context, rows []File) {
 	}
 }
 
-// publicPath 公开路径前缀（默认 /api/v1/files）。
-func (s *Service) publicPath() string {
-	if s.sto != nil {
-		if p := s.sto.PublicPath(); p != "" {
-			return p
-		}
-	}
-	return "/api/v1/files"
-}
 
 // validateUpload 按运行时上传限制校验（STORAGE_UPLOAD_*：JSON 数组或逗号分隔；缺省 10MB）。
 func (s *Service) validateUpload(ctx context.Context, fh *multipart.FileHeader) error {
@@ -488,8 +461,8 @@ func isExternalURL(value string) bool {
 }
 
 // NormalizeObjectName 规范化对象名（对齐 hei-boot FileAccessUrls.normalizeObjectName）：外部 URL 原样返回，
-// 否则去掉公开路径前缀后返回纯 object key（供 banner/feedback 等落库前规范化图片/附件引用）。
-func NormalizeObjectName(value, publicPath string) string {
+// 否则去掉历史公开路径前缀后返回纯 object key。
+func NormalizeObjectName(value string) string {
 	raw := strings.TrimSpace(value)
 	if raw == "" {
 		return ""
@@ -497,33 +470,13 @@ func NormalizeObjectName(value, publicPath string) string {
 	if isExternalURL(raw) {
 		return raw
 	}
-	return toObjectKey(raw, publicPath)
+	return toObjectKey(raw)
 }
 
 // toObjectKey 把任意对象引用（纯 key / /api/v1/files/... 路径 / 完整 URL）转成存储纯 key。
-func toObjectKey(raw, publicPath string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ""
-	}
-	pathOnly := raw
-	if strings.Contains(raw, "://") {
-		if u, err := url.Parse(raw); err == nil {
-			pathOnly = u.Path
-		}
-	}
-	pathOnly = strings.ReplaceAll(pathOnly, "\\", "/")
-	prefix := strings.TrimRight(publicPath, "/") + "/"
-	if strings.HasPrefix(pathOnly, prefix) {
-		pathOnly = pathOnly[len(prefix):]
-	} else if strings.TrimRight(pathOnly, "/") == strings.TrimRight(publicPath, "/") {
-		return ""
-	}
-	key := strings.TrimLeft(pathOnly, "/")
-	if key == "" {
-		return ""
-	}
-	if strings.Contains(key, "..") {
+func toObjectKey(raw string) string {
+	key := storage.StripToObjectKey(raw)
+	if key == "" || strings.Contains(key, "..") {
 		return ""
 	}
 	return key
@@ -535,7 +488,7 @@ func CleanupManaged(ctx context.Context, db *gorm.DB, sto *storage.Manager, obje
 	if name == "" || isExternalURL(name) {
 		return nil
 	}
-	key := toObjectKey(name, sto.PublicPath())
+	key := toObjectKey(name)
 	if key == "" {
 		return nil
 	}
@@ -546,15 +499,4 @@ func CleanupManaged(ctx context.Context, db *gorm.DB, sto *storage.Manager, obje
 	p := sto.ProviderByName(ctx, row.StorageProvider)
 	_ = p.Delete(ctx, key)
 	return db.WithContext(ctx).Where("id = ?", row.ID).Delete(&File{}).Error
-}
-
-// validObjectName 公开访问路径安全校验（对齐 hei-boot publicDownload）。
-func validObjectName(objectName string) bool {
-	if objectName == "" {
-		return false
-	}
-	if strings.Contains(objectName, "..") || strings.HasPrefix(objectName, "/") || strings.Contains(objectName, "\\") {
-		return false
-	}
-	return true
 }

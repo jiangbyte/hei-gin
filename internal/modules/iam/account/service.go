@@ -16,13 +16,13 @@ import (
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/runtimecfg"
+	"hei-gin/internal/framework/platform/storage"
 	"hei-gin/internal/modules/iam/client"
 	"hei-gin/internal/modules/iam/group"
 	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/iam/resource"
 	"hei-gin/internal/modules/iam/role"
 	"hei-gin/internal/modules/profile"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 账号服务（资料经 user 模块 Repo，授权经 relation 模块）。
@@ -39,10 +39,11 @@ type Service struct {
 	clients   *client.Service
 	runtime   *runtimecfg.Settings
 	sessions  *security.SessionStore
+	storage   *storage.Manager
 }
 
 // NewService 构造账号服务。
-func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings) *Service {
+func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings, sto *storage.Manager) *Service {
 	return &Service{
 		repo:      NewRepo(db, rdb),
 		admin:     profile.AdminRepo(db),
@@ -53,16 +54,18 @@ func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings) *Servic
 		resources: resource.NewService(db),
 		clients:   client.NewService(db),
 		runtime:   rt,
+		storage:   sto,
 	}
 }
 
 // New 构建 iam.account 模块。
-func New(d *shared.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Runtime)
+func New(d *module.Deps) module.Module {
+	s := NewService(d.DB, d.Redis, d.Runtime, d.Storage)
 	s.sessions = d.Sessions
+	d.Provide(AccountFinderKey, s)
 	return s.withJobs(module.Module{
 		Name:   "iam.account",
-		Models: []any{&Account{}, &Identity{}},
+		Models: []any{&Account{}, &Identity{}, &security.PasswordHistory{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
 	})
 }
@@ -72,7 +75,7 @@ func (s *Service) invalidateSessions(ctx context.Context, accountID string) {
 	if s.sessions == nil || accountID == "" {
 		return
 	}
-	_ = s.sessions.DeleteAllForAccount(ctx, accountID)
+	_ = s.sessions.DeleteAllForAccountAnyType(ctx, accountID)
 }
 
 // FindByIdentity 按身份类型与标识查找账号。
@@ -378,7 +381,7 @@ func (s *Service) replaceAccountIdentities(ctx context.Context, accountID string
 }
 
 func (s *Service) recordHistory(ctx context.Context, accountID, rawPassword, changedBy, reason string) error {
-	policy := shared.NewPasswordPolicy(s.repo.DB(), s.runtime)
+	policy := security.NewPasswordPolicy(s.repo.DB(), s.runtime)
 	return policy.RecordHistory(ctx, accountID, rawPassword, changedBy, reason)
 }
 
@@ -459,6 +462,7 @@ func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionP
 			vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
 				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
 		}
+		vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
 		records = append(records, vo)
 	}
 	return records, total, current, size, nil
@@ -522,5 +526,21 @@ func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, er
 		vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
 			p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
 	}
+	vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
 	return vo, nil
+}
+
+// resolveAvatar 把头像对象引用解析为可访问 URL（对齐 profile / fastapi resolve_access_url）。
+func (s *Service) resolveAvatar(ctx context.Context, value *string) *string {
+	if value == nil || strings.TrimSpace(*value) == "" {
+		return nil
+	}
+	if s.storage == nil {
+		return value
+	}
+	u := s.storage.ResolveURL(ctx, *value)
+	if u == "" {
+		return nil
+	}
+	return &u
 }

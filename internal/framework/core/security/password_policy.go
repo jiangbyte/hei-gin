@@ -1,8 +1,8 @@
-// internal/modules/shared/password.go 密码策略（对齐 hei-boot PasswordPolicyApiProvider / PasswordHelper）。
+// internal/framework/core/security/password_policy.go 密码策略（对齐 hei-boot PasswordPolicyApiProvider / PasswordHelper）。
 //
 // Author: Charlie
 
-package shared
+package security
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/runtimecfg"
 )
@@ -113,7 +112,7 @@ func (p *PasswordPolicy) RecordHistory(ctx context.Context, accountID, raw, chan
 	if accountID == "" || raw == "" {
 		return nil
 	}
-	hash, err := security.HashPassword(raw)
+	hash, err := HashPassword(raw)
 	if err != nil {
 		return err
 	}
@@ -170,7 +169,7 @@ func (p *PasswordPolicy) matchesRecent(ctx context.Context, accountID, raw strin
 		return false, err
 	}
 	for _, row := range rows {
-		if security.CheckPassword(row.PasswordHash, raw) {
+		if CheckPassword(row.PasswordHash, raw) {
 			return true, nil
 		}
 	}

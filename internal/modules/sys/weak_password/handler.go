@@ -14,23 +14,15 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_weakpassword）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/create", ResourceType: "sys_weakpassword", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/update", ResourceType: "sys_weakpassword", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/weak-password/delete", ResourceType: "sys_weakpassword", Action: "delete"},
-		)
-		api.POST("/v1/admin/sys/weak-password/create", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:create", "弱密码创建"), s.create)
-		api.POST("/v1/admin/sys/weak-password/update", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:update", "弱密码更新"), s.update)
-		api.POST("/v1/admin/sys/weak-password/delete", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:delete", "弱密码删除"), s.delete)
+		api.POST("/v1/admin/sys/weak-password/create", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:create", "弱密码创建"), middleware.OperationAudit(d.Audit, "sys_weakpassword", "create"), s.create)
+		api.POST("/v1/admin/sys/weak-password/update", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:update", "弱密码更新"), middleware.OperationAudit(d.Audit, "sys_weakpassword", "update"), s.update)
+		api.POST("/v1/admin/sys/weak-password/delete", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:delete", "弱密码删除"), middleware.OperationAudit(d.Audit, "sys_weakpassword", "delete"), s.delete)
 		api.GET("/v1/admin/sys/weak-password/detail", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:detail", "弱密码详情"), s.detail)
 		api.GET("/v1/admin/sys/weak-password/page", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:page", "弱密码分页"), s.page)
 		api.GET("/v1/admin/sys/weak-password/list", admin, middleware.RequirePermission(d.Perms, "sys:weakpassword:list", "弱密码列表"), s.list)

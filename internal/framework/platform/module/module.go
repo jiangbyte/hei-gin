@@ -26,12 +26,12 @@ import (
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Job 是任务处理器 Handler（Name 为 gojob 调度器收集的 handler key）。
+// Job 是任务处理器 Handler（Name 为 execute_class 注册 key）。
 //
 // Author: Charlie
 type Job struct {
 	Name string
-	Run  func(ctx context.Context, param string) error
+	Run  func(ctx context.Context, paramJSON string) (string, error)
 }
 
 // Module 为插件契约。官方模块经 Register 注册；勿做扫盘发现。
@@ -59,7 +59,6 @@ type Deps struct {
 	Storage  *storage.Manager
 	Notify   *notify.Facade
 	Audit    *audit.Queue
-	AuditReg *audit.Registry
 	Runtime  *runtimecfg.Settings
 	Jobs     *gojob.Manager
 	services map[string]any

@@ -14,23 +14,15 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) module.RouteRegistrar {
+func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
-		// 操作审计登记（对齐 hei-boot @OperationAudit：sys_dict）
-		d.AuditReg.RegisterSpecs(
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/dicts/create", ResourceType: "sys_dict", Action: "create"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/dicts/update", ResourceType: "sys_dict", Action: "update"},
-			audit.AuditSpec{Method: "POST", PathPattern: "/api/v1/admin/sys/dicts/delete", ResourceType: "sys_dict", Action: "delete"},
-		)
-		api.POST("/v1/admin/sys/dicts/create", admin, middleware.RequirePermission(d.Perms, "sys:dict:create", "字典创建"), s.create)
-		api.POST("/v1/admin/sys/dicts/update", admin, middleware.RequirePermission(d.Perms, "sys:dict:update", "字典更新"), s.update)
-		api.POST("/v1/admin/sys/dicts/delete", admin, middleware.RequirePermission(d.Perms, "sys:dict:delete", "字典删除"), s.delete)
+		api.POST("/v1/admin/sys/dicts/create", admin, middleware.RequirePermission(d.Perms, "sys:dict:create", "字典创建"), middleware.OperationAudit(d.Audit, "sys_dict", "create"), s.create)
+		api.POST("/v1/admin/sys/dicts/update", admin, middleware.RequirePermission(d.Perms, "sys:dict:update", "字典更新"), middleware.OperationAudit(d.Audit, "sys_dict", "update"), s.update)
+		api.POST("/v1/admin/sys/dicts/delete", admin, middleware.RequirePermission(d.Perms, "sys:dict:delete", "字典删除"), middleware.OperationAudit(d.Audit, "sys_dict", "delete"), s.delete)
 		api.GET("/v1/admin/sys/dicts/detail", admin, middleware.RequirePermission(d.Perms, "sys:dict:detail", "字典详情"), s.detail)
 		api.GET("/v1/admin/sys/dicts/page", admin, middleware.RequirePermission(d.Perms, "sys:dict:page", "字典分页"), s.page)
 		api.GET("/v1/admin/sys/dicts/tree", admin, s.tree)

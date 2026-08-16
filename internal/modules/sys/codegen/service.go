@@ -15,7 +15,6 @@ import (
 
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service 代码生成业务服务。
@@ -27,7 +26,7 @@ type Service struct{ repo *Repo }
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
 // New 构建 sys.codegen 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
 		Name:   "sys.codegen",

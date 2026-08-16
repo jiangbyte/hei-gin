@@ -171,7 +171,6 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // Service {{.Main.BusinessName}}服务。
@@ -185,7 +184,7 @@ type Service struct {
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
 // New 构建 biz.{{.Main.Package}} 模块。
-func New(d *shared.Deps) module.Module {
+func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)
 	return module.Module{
 		Name:   "{{.ModulePath}}",
@@ -265,10 +264,10 @@ import (
 	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/middleware"
-	"hei-gin/internal/modules/shared"
+	"hei-gin/internal/framework/platform/module"
 )
 
-func (s *Service) registerRoutes(d *shared.Deps) func(*gin.RouterGroup) {
+func (s *Service) registerRoutes(d *module.Deps) func(*gin.RouterGroup) {
 	return func(api *gin.RouterGroup) {
 		g := api.Group("{{.APIPrefix}}", middleware.RequireAccountType(security.AccountAdmin))
 		g.POST("/create", middleware.RequirePermission(d.Perms, "{{.PermissionPrefix}}:create", "创建{{.Main.BusinessName}}"), s.create)
@@ -349,13 +348,12 @@ const goRegisterTmpl = `package {{.Main.Package}}
 
 import (
 	"hei-gin/internal/framework/platform/module"
-	"hei-gin/internal/modules/shared"
 )
 
 // init 自注册 {{.ModulePath}} 模块。
 func init() {
 	module.Register("{{.ModulePath}}", 90, func(d *module.Deps) module.Module {
-		return New(shared.FromModule(d))
+		return New(d)
 	})
 }
 `

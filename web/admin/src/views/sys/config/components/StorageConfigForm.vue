@@ -2,16 +2,14 @@
 
 <script setup lang="ts">
 import { useMessage } from 'naive-ui'
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import ConfigSectionLayout from './ConfigSectionLayout.vue'
-import { FILES_PUBLIC_PATH } from '@/constants/api'
 import { loadByCategory, parseBool, saveByKeys, toBoolStr } from '../composables/useConfigForm'
 
 const CATEGORY = 'STORAGE'
-type Engine = 'LOCAL' | 'ALIYUN' | 'TENCENT' | 'MINIO' | 'RUSTFS'
+type Engine = 'ALIYUN' | 'TENCENT' | 'MINIO' | 'RUSTFS'
 
 const engineOptions = [
-  { label: '本地文件', value: 'LOCAL' as Engine },
   { label: '阿里云 OSS', value: 'ALIYUN' as Engine },
   { label: '腾讯云 COS', value: 'TENCENT' as Engine },
   { label: 'MinIO', value: 'MINIO' as Engine },
@@ -28,7 +26,7 @@ type CloudForm = {
   region: string
   useSsl: boolean
   baseUrl: string
-  publicPath: string
+  bucketPublic: boolean
 }
 
 function emptyCloud(defaults: Partial<CloudForm> = {}): CloudForm {
@@ -42,7 +40,7 @@ function emptyCloud(defaults: Partial<CloudForm> = {}): CloudForm {
     region: '',
     useSsl: false,
     baseUrl: '',
-    publicPath: FILES_PUBLIC_PATH,
+    bucketPublic: false,
     ...defaults,
   }
 }
@@ -53,14 +51,8 @@ const message = useMessage()
 const state = reactive({
   loading: false,
   saving: false,
-  subTab: 'LOCAL' as Engine,
+  subTab: 'MINIO' as Engine,
   defaultEngine: 'MINIO' as Engine,
-  local: {
-    localRoot: '/defaultUploadFolder',
-    windowsRoot: 'D:/defaultUploadFolder',
-    publicPath: FILES_PUBLIC_PATH,
-    baseUrl: '',
-  },
   aliyun: emptyCloud({
     endpoint: 'oss-cn-hangzhou.aliyuncs.com',
     region: 'cn-hangzhou',
@@ -81,6 +73,27 @@ const state = reactive({
   snapshot: '',
 })
 
+const activeCloud = computed(() => {
+  switch (state.subTab) {
+    case 'ALIYUN':
+      return state.aliyun
+    case 'TENCENT':
+      return state.tencent
+    case 'MINIO':
+      return state.minio
+    case 'RUSTFS':
+      return state.rustfs
+    default:
+      return state.minio
+  }
+})
+
+const baseUrlHint = computed(() =>
+  activeCloud.value.bucketPublic
+    ? '公开桶：永久访问前缀（CDN/自定义域名），必填更稳妥；留空则按 endpoint+bucket 拼直链'
+    : '非公开：Base URL 当前不用于改写预签名（避免签名失效）；留空即可',
+)
+
 onMounted(() => {
   void reload()
 })
@@ -100,10 +113,15 @@ function loadCloud(
   target.region = map[`${prefix}_REGION`] || defaults.region
   target.useSsl = map[`${prefix}_USE_SSL`] ? parseBool(map[`${prefix}_USE_SSL`]) : defaults.useSsl
   target.baseUrl = map[`${prefix}_BASE_URL`] || ''
-  target.publicPath = map[`${prefix}_PUBLIC_PATH`] || defaults.publicPath
+  target.bucketPublic = map[`${prefix}_BUCKET_PUBLIC`]
+    ? parseBool(map[`${prefix}_BUCKET_PUBLIC`])
+    : false
 }
 
 function cloudKeys(prefix: string, form: CloudForm) {
+  if (form.baseUrl.trim() && !/^https?:\/\//i.test(form.baseUrl.trim())) {
+    throw new Error(`${prefix}: 自定义基础 URL 必须以 http:// 或 https:// 开头`)
+  }
   return [
     { config_key: `${prefix}_ACCESS_KEY`, config_value: form.accessKey, category: CATEGORY },
     { config_key: `${prefix}_SECRET_KEY`, config_value: form.secretKey, category: CATEGORY },
@@ -111,8 +129,12 @@ function cloudKeys(prefix: string, form: CloudForm) {
     { config_key: `${prefix}_BUCKET`, config_value: form.bucket, category: CATEGORY },
     { config_key: `${prefix}_REGION`, config_value: form.region, category: CATEGORY },
     { config_key: `${prefix}_USE_SSL`, config_value: toBoolStr(form.useSsl), category: CATEGORY },
-    { config_key: `${prefix}_BASE_URL`, config_value: form.baseUrl, category: CATEGORY },
-    { config_key: `${prefix}_PUBLIC_PATH`, config_value: form.publicPath, category: CATEGORY },
+    { config_key: `${prefix}_BASE_URL`, config_value: form.baseUrl.trim(), category: CATEGORY },
+    {
+      config_key: `${prefix}_BUCKET_PUBLIC`,
+      config_value: toBoolStr(form.bucketPublic),
+      category: CATEGORY,
+    },
   ]
 }
 
@@ -120,11 +142,8 @@ async function reload() {
   state.loading = true
   try {
     const map = await loadByCategory(CATEGORY)
-    state.defaultEngine = (map.DEFAULT_FILE_ENGINE || 'MINIO') as Engine
-    state.local.localRoot = map.STORAGE_LOCAL_LOCAL_ROOT || state.local.localRoot
-    state.local.windowsRoot = map.STORAGE_LOCAL_WINDOWS_ROOT || state.local.windowsRoot
-    state.local.publicPath = map.STORAGE_LOCAL_PUBLIC_PATH || state.local.publicPath
-    state.local.baseUrl = map.STORAGE_LOCAL_BASE_URL || ''
+    const engine = (map.DEFAULT_FILE_ENGINE || 'MINIO') as Engine
+    state.defaultEngine = engineOptions.some((o) => o.value === engine) ? engine : 'MINIO'
 
     loadCloud(
       state.aliyun,
@@ -164,12 +183,9 @@ async function reload() {
       }),
     )
 
-    if (engineOptions.some((o) => o.value === state.defaultEngine)) {
-      state.subTab = state.defaultEngine
-    }
+    state.subTab = state.defaultEngine
     state.snapshot = JSON.stringify({
       defaultEngine: state.defaultEngine,
-      local: state.local,
       aliyun: state.aliyun,
       tencent: state.tencent,
       minio: state.minio,
@@ -184,7 +200,6 @@ function reset() {
   if (!state.snapshot) return
   const data = JSON.parse(state.snapshot)
   state.defaultEngine = data.defaultEngine
-  Object.assign(state.local, data.local)
   Object.assign(state.aliyun, data.aliyun)
   Object.assign(state.tencent, data.tencent)
   Object.assign(state.minio, data.minio)
@@ -200,26 +215,6 @@ async function save() {
         config_value: state.defaultEngine,
         category: CATEGORY,
       },
-      {
-        config_key: 'STORAGE_LOCAL_LOCAL_ROOT',
-        config_value: state.local.localRoot,
-        category: CATEGORY,
-      },
-      {
-        config_key: 'STORAGE_LOCAL_WINDOWS_ROOT',
-        config_value: state.local.windowsRoot,
-        category: CATEGORY,
-      },
-      {
-        config_key: 'STORAGE_LOCAL_PUBLIC_PATH',
-        config_value: state.local.publicPath,
-        category: CATEGORY,
-      },
-      {
-        config_key: 'STORAGE_LOCAL_BASE_URL',
-        config_value: state.local.baseUrl,
-        category: CATEGORY,
-      },
       ...cloudKeys('STORAGE_ALIYUN', state.aliyun),
       ...cloudKeys('STORAGE_TENCENT', state.tencent),
       ...cloudKeys('STORAGE_MINIO', state.minio),
@@ -228,6 +223,8 @@ async function save() {
     message.success('保存成功')
     await reload()
     emit('saved')
+  } catch (error: any) {
+    message.error(error?.message || '保存失败')
   } finally {
     state.saving = false
   }
@@ -268,7 +265,7 @@ async function save() {
     </NTabs>
 
     <ConfigSectionLayout
-      description="配置各文件存储引擎参数。上方单选切换默认引擎（互斥）；保存后热重载生效。RustFS 为 S3 兼容存储，默认 path-style，Region 建议 us-east-1。"
+      description="仅支持对象存储。公开桶走直连（优先自定义 Base URL）；非公开每次预签名。保存后热重载生效。"
       :saving="state.saving"
       @save="save"
       @reset="reset"
@@ -279,28 +276,7 @@ async function save() {
         label-width="140"
         require-mark-placement="left"
       >
-        <template v-if="state.subTab === 'LOCAL'">
-          <NFormItem
-            label="WINDOWS存储位置"
-            required
-          >
-            <NInput
-              v-model:value="state.local.windowsRoot"
-              placeholder="D:/defaultUploadFolder"
-            />
-          </NFormItem>
-          <NFormItem
-            label="LINUX存储位置"
-            required
-          >
-            <NInput
-              v-model:value="state.local.localRoot"
-              placeholder="/defaultUploadFolder"
-            />
-          </NFormItem>
-        </template>
-
-        <template v-else-if="state.subTab === 'ALIYUN'">
+        <template v-if="state.subTab === 'ALIYUN'">
           <NFormItem
             label="阿里云密钥ID"
             required
@@ -341,6 +317,15 @@ async function save() {
             <NInput
               v-model:value="state.aliyun.bucket"
               placeholder="defaultbucket"
+            />
+          </NFormItem>
+          <NFormItem label="桶是否公开">
+            <NSwitch v-model:value="state.aliyun.bucketPublic" />
+          </NFormItem>
+          <NFormItem label="自定义基础 URL">
+            <NInput
+              v-model:value="state.aliyun.baseUrl"
+              :placeholder="baseUrlHint"
             />
           </NFormItem>
         </template>
@@ -388,6 +373,15 @@ async function save() {
               placeholder="defaultbucket"
             />
           </NFormItem>
+          <NFormItem label="桶是否公开">
+            <NSwitch v-model:value="state.tencent.bucketPublic" />
+          </NFormItem>
+          <NFormItem label="自定义基础 URL">
+            <NInput
+              v-model:value="state.tencent.baseUrl"
+              :placeholder="baseUrlHint"
+            />
+          </NFormItem>
         </template>
 
         <template v-else-if="state.subTab === 'MINIO'">
@@ -427,6 +421,15 @@ async function save() {
             <NInput
               v-model:value="state.minio.bucket"
               placeholder="defaultbucket"
+            />
+          </NFormItem>
+          <NFormItem label="桶是否公开">
+            <NSwitch v-model:value="state.minio.bucketPublic" />
+          </NFormItem>
+          <NFormItem label="自定义基础 URL">
+            <NInput
+              v-model:value="state.minio.baseUrl"
+              :placeholder="baseUrlHint"
             />
           </NFormItem>
         </template>
@@ -482,10 +485,13 @@ async function save() {
           <NFormItem label="使用 SSL">
             <NSwitch v-model:value="state.rustfs.useSsl" />
           </NFormItem>
+          <NFormItem label="桶是否公开">
+            <NSwitch v-model:value="state.rustfs.bucketPublic" />
+          </NFormItem>
           <NFormItem label="自定义基础 URL">
             <NInput
               v-model:value="state.rustfs.baseUrl"
-              placeholder="可选，公网访问前缀；留空则用预签名 URL"
+              :placeholder="baseUrlHint"
             />
           </NFormItem>
         </template>
