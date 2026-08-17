@@ -3,6 +3,7 @@
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white)
 ![Gin](https://img.shields.io/badge/Gin-1.12-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![Vue](https://img.shields.io/badge/Admin-Vue%203-4FC08D?logo=vuedotjs&logoColor=white)
 ![React](https://img.shields.io/badge/Portal-React-61DAFB?logo=react&logoColor=black)
@@ -168,7 +169,7 @@
 | 层级 | 技术 |
 | --- | --- |
 | 后端 | Go 1.25+ · Gin · 单 module 单体（`cmd/api`） |
-| 持久化 | PostgreSQL · GORM |
+| 持久化 | PostgreSQL / MySQL · GORM（按 `db.driver` 或 DSN 二选一） |
 | 缓存 / 会话 | Redis（go-redis）· 不透明会话 Token |
 | 配置 | Viper（`config.yaml`）+ 运行时 `sys_config` |
 | 其他 | AWS SDK v2（S3）· zap · robfig/cron · snowflake |
@@ -190,7 +191,8 @@ hei-gin
 │   ├── portal                # 门户（React）
 │   └── admin-uniapp          # 管理端 uni-app
 ├── configs/config.example.yaml
-├── scripts/db.sql            # 数据库结构 + 种子数据（对齐 hei-boot）
+├── scripts/db.sql            # PostgreSQL 结构 + 种子数据
+├── scripts/db.mysql.sql      # MySQL 结构 + 种子数据（由 db.sql 转换）
 └── docs/images               # README 截图
 ```
 
@@ -199,17 +201,36 @@ hei-gin
 ### 环境要求
 
 - Go **1.25+**
-- PostgreSQL、Redis
+- PostgreSQL **或** MySQL 8+、Redis
 - Node.js **22+**、pnpm **9+**（前端）
 
 ### 1. 初始化数据库
+
+**PostgreSQL：**
 
 ```bash
 createdb -U postgres -h 127.0.0.1 hei_gin
 psql -U postgres -h 127.0.0.1 -d hei_gin -f scripts/db.sql
 ```
 
-> 本地 / 演示环境以 [`scripts/db.sql`](scripts/db.sql) 全量重建库表与种子数据。
+**MySQL 8+：**
+
+```bash
+mysql -u root -p -e "CREATE DATABASE hei_gin DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p hei_gin < scripts/db.mysql.sql
+```
+
+在 [`configs/config.example.yaml`](configs/config.example.yaml) 中配置 `db.driver` / `db.url`（也可只写 URL，由 scheme 推断）：
+
+```yaml
+db:
+  driver: postgres
+  url: postgres://postgres:123456@127.0.0.1:5432/hei_gin?sslmode=disable
+  # driver: mysql
+  # url: mysql://root:123456@127.0.0.1:3306/hei_gin?charset=utf8mb4&parseTime=true&loc=Local
+```
+
+> 本地 / 演示环境以对应脚本全量重建库表与种子数据。已有 PostgreSQL 库若列仍为 `jsonb`，可一次性改为 `json`：`ALTER COLUMN ... TYPE json USING col::json`。
 
 ### 2. 启动后端
 
@@ -253,7 +274,8 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 | [`web/portal/README.md`](web/portal/README.md) | 门户前端说明与环境变量 |
 | [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md) | uni-app 端说明 |
 | [`configs/config.example.yaml`](configs/config.example.yaml) | 后端配置样例 |
-| [`scripts/db.sql`](scripts/db.sql) | 数据库结构与种子数据 |
+| [`scripts/db.sql`](scripts/db.sql) | PostgreSQL 结构与种子数据 |
+| [`scripts/db.mysql.sql`](scripts/db.mysql.sql) | MySQL 结构与种子数据 |
 
 ## 姊妹项目
 

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 反馈持久化。
@@ -65,7 +67,7 @@ func (r *Repo) PageAdmin(ctx context.Context, q PageParam) (rows []Feedback, tot
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Feedback{})
 	if q.Title != "" {
-		db = db.Where("title ILIKE ?", "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
 	}
 	if q.Category != "" {
 		db = db.Where("category = ?", q.Category)

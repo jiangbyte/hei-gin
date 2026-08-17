@@ -6,7 +6,12 @@ app:
   timezone: Asia/Shanghai
 
 db:
+  # driver: mysql | postgres；留空则从 url scheme 推断（mysql:// / postgres:// / postgresql://）
+  driver: postgres
   url: postgres://postgres:123456@127.0.0.1:5432/hei_gin?sslmode=disable
+  # MySQL 示例：
+  # driver: mysql
+  # url: mysql://root:123456@127.0.0.1:3306/hei_gin?charset=utf8mb4&parseTime=true&loc=Local
   echo: false
   pool_size: 10
   max_overflow: 20

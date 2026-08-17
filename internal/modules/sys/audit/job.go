@@ -28,7 +28,7 @@ type AlertLog struct {
 	RuleName    string         `gorm:"column:rule_name;size:64;not null" json:"rule_name"`
 	Severity    string         `gorm:"column:severity;size:16;not null" json:"severity"`
 	Summary     string         `gorm:"column:summary;size:255;not null" json:"summary"`
-	Details     datatypes.JSON `gorm:"column:details;type:jsonb" json:"details"`
+	Details     datatypes.JSON `gorm:"column:details;type:json" json:"details"`
 	NotifiedVia *string        `gorm:"column:notified_via;size:64" json:"notified_via"`
 	CreatedAt   time.Time      `gorm:"column:created_at" json:"created_at"`
 }

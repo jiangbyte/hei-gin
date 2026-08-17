@@ -27,8 +27,8 @@ type Activity struct {
 	Price           float64        `gorm:"column:price" json:"price"`
 	IsPublic        bool           `gorm:"column:is_public" json:"is_public"`
 	NeedApproval    bool           `gorm:"column:need_approval" json:"need_approval"`
-	RuleConfig      datatypes.JSON `gorm:"column:rule_config;type:jsonb" json:"rule_config"`
-	Extra           datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	RuleConfig      datatypes.JSON `gorm:"column:rule_config;type:json" json:"rule_config"`
+	Extra           datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt       time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy       *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt       time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

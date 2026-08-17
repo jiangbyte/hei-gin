@@ -19,6 +19,7 @@ import (
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/core/security/datascope"
+	"hei-gin/internal/framework/platform/db/dialect"
 	"hei-gin/internal/modules/auth/oauth"
 )
 
@@ -295,27 +296,27 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 		db = db.Where("account_status = ?", p.AccountStatus)
 	}
 	if p.Account != "" {
-		db = db.Where("id IN (SELECT account_id FROM sys_account_identity WHERE identity_type = ? AND identifier ILIKE ?)",
+		db = db.Where("id IN (SELECT account_id FROM sys_account_identity WHERE identity_type = ? AND "+dialect.ILike(db, "identifier")+")",
 			IdentityAccount, "%"+p.Account+"%")
 	}
 	if p.Name != "" {
 		db = db.Where(
-			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE name ILIKE ?))
-			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE name ILIKE ?))`,
+			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "name")+`))
+			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "name")+`))`,
 			string(security.AccountAdmin), "%"+p.Name+"%", string(security.AccountPortal), "%"+p.Name+"%",
 		)
 	}
 	if p.Phone != "" {
 		db = db.Where(
-			`id IN (SELECT account_id FROM profile_user_admin WHERE phone ILIKE ?)
-			 OR id IN (SELECT account_id FROM profile_user_portal WHERE phone ILIKE ?)`,
+			`id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "phone")+`)
+			 OR id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "phone")+`)`,
 			"%"+p.Phone+"%", "%"+p.Phone+"%",
 		)
 	}
 	if p.Email != "" {
 		db = db.Where(
-			`id IN (SELECT account_id FROM profile_user_admin WHERE email ILIKE ?)
-			 OR id IN (SELECT account_id FROM profile_user_portal WHERE email ILIKE ?)`,
+			`id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "email")+`)
+			 OR id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "email")+`)`,
 			"%"+p.Email+"%", "%"+p.Email+"%",
 		)
 	}

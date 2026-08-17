@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 系统配置持久化。
@@ -80,10 +82,10 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Config, total int6
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Config{})
 	if q.ConfigKey != "" {
-		db = db.Where("config_key ILIKE ?", "%"+q.ConfigKey+"%")
+		db = db.Where(dialect.ILike(db, "config_key"), "%"+q.ConfigKey+"%")
 	}
 	if q.Category != "" {
-		db = db.Where("category ILIKE ?", "%"+q.Category+"%")
+		db = db.Where(dialect.ILike(db, "category"), "%"+q.Category+"%")
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err

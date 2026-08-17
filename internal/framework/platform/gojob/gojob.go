@@ -44,7 +44,7 @@ type SysJob struct {
 	ExecuteClass      string         `gorm:"column:execute_class;size:255;not null" json:"execute_class"`
 	ExecuteType       string         `gorm:"column:execute_type;size:16;not null" json:"execute_type"`
 	TriggerConfig     string         `gorm:"column:trigger_config;size:255;not null" json:"trigger_config"`
-	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:jsonb" json:"execute_param"`
+	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:json" json:"execute_param"`
 	LastRunTime       *time.Time     `gorm:"column:last_run_time" json:"last_run_time"`
 	NextRunTime       time.Time      `gorm:"column:next_run_time;not null;index:idx_sys_job_enabled_next" json:"next_run_time"`
 	LastExecuteResult *string        `gorm:"column:last_execute_result;size:500" json:"last_execute_result"`
@@ -67,7 +67,7 @@ type SysJobLog struct {
 	ID                string         `gorm:"column:id;primaryKey;size:64" json:"id"`
 	JobID             string         `gorm:"column:job_id;size:64;not null;index" json:"job_id"`
 	JobName           string         `gorm:"column:job_name;size:128;not null" json:"job_name"`
-	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:jsonb" json:"execute_param"`
+	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:json" json:"execute_param"`
 	ExecuteTime       time.Time      `gorm:"column:execute_time;not null" json:"execute_time"`
 	ExecuteDurationMS *int64         `gorm:"column:execute_duration_ms" json:"execute_duration_ms"`
 	Success           bool           `gorm:"column:success;not null" json:"success"`

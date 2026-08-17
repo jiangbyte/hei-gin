@@ -11,6 +11,7 @@ import (
 
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/core/security/datascope"
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 用户组持久化。
@@ -79,7 +80,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 		db = datascope.Apply(db, sess, "owner_dept_id")
 	}
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

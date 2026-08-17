@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 客户端资源持久化。
@@ -53,7 +54,7 @@ func (r *Repo) PageModules(ctx context.Context, p ModulePageParam) (rows []Clien
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientModule{})
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.AccountType != "" {
 		db = db.Where("account_type = ?", p.AccountType)
@@ -108,7 +109,7 @@ func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []C
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientResource{})
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.ModuleID != "" {
 		db = db.Where("module_id = ?", p.ModuleID)

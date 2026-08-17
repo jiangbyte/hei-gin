@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 代码生成持久化。
@@ -67,13 +69,13 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Plan, total int64,
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Plan{})
 	if q.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+q.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+q.Name+"%")
 	}
 	if q.GenType != "" {
 		db = db.Where("gen_type = ?", q.GenType)
 	}
 	if q.MainTable != "" {
-		db = db.Where("main_table ILIKE ?", "%"+q.MainTable+"%")
+		db = db.Where(dialect.ILike(db, "main_table"), "%"+q.MainTable+"%")
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -128,8 +130,15 @@ type ColumnRow struct {
 	IsPrimaryKey  bool   `gorm:"column:is_primary_key"`
 }
 
-// ListTables 列出 public schema 下的基表（排除代码生成自身表）。
+// ListTables 列出当前 schema 下的基表（排除代码生成自身表）。
 func (r *Repo) ListTables(ctx context.Context) ([]TableRow, error) {
+	if dialect.IsMySQL(r.db) {
+		return r.listTablesMySQL(ctx)
+	}
+	return r.listTablesPostgres(ctx)
+}
+
+func (r *Repo) listTablesPostgres(ctx context.Context) ([]TableRow, error) {
 	var rows []TableRow
 	err := r.with(ctx).Raw(`
 SELECT c.relname AS table_name,
@@ -143,8 +152,28 @@ ORDER BY c.relname`).Scan(&rows).Error
 	return rows, err
 }
 
+func (r *Repo) listTablesMySQL(ctx context.Context) ([]TableRow, error) {
+	var rows []TableRow
+	err := r.with(ctx).Raw(`
+SELECT TABLE_NAME AS table_name,
+       COALESCE(TABLE_COMMENT, '') AS table_comment
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_TYPE = 'BASE TABLE'
+  AND TABLE_NAME NOT IN ('sys_codegen_plan', 'sys_codegen_field')
+ORDER BY TABLE_NAME`).Scan(&rows).Error
+	return rows, err
+}
+
 // ListColumns 列出表列元数据（含主键标记）。
 func (r *Repo) ListColumns(ctx context.Context, tableName string) ([]ColumnRow, error) {
+	if dialect.IsMySQL(r.db) {
+		return r.listColumnsMySQL(ctx, tableName)
+	}
+	return r.listColumnsPostgres(ctx, tableName)
+}
+
+func (r *Repo) listColumnsPostgres(ctx context.Context, tableName string) ([]ColumnRow, error) {
 	var rows []ColumnRow
 	err := r.with(ctx).Raw(`
 SELECT c.column_name,
@@ -173,5 +202,34 @@ LEFT JOIN pg_catalog.pg_description pgd
 WHERE c.table_schema = current_schema()
   AND c.table_name = ?
 ORDER BY c.ordinal_position`, tableName).Scan(&rows).Error
+	return rows, err
+}
+
+func (r *Repo) listColumnsMySQL(ctx context.Context, tableName string) ([]ColumnRow, error) {
+	var rows []ColumnRow
+	err := r.with(ctx).Raw(`
+SELECT c.COLUMN_NAME AS column_name,
+       COALESCE(c.COLUMN_COMMENT, '') AS column_comment,
+       c.DATA_TYPE AS data_type,
+       c.DATA_TYPE AS udt_name,
+       c.CHARACTER_MAXIMUM_LENGTH AS max_length,
+       c.IS_NULLABLE AS is_nullable,
+       c.ORDINAL_POSITION AS sort,
+       EXISTS (
+         SELECT 1
+         FROM information_schema.TABLE_CONSTRAINTS tc
+         JOIN information_schema.KEY_COLUMN_USAGE kcu
+           ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+          AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
+          AND tc.TABLE_NAME = kcu.TABLE_NAME
+         WHERE tc.TABLE_SCHEMA = c.TABLE_SCHEMA
+           AND tc.TABLE_NAME = c.TABLE_NAME
+           AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+           AND kcu.COLUMN_NAME = c.COLUMN_NAME
+       ) AS is_primary_key
+FROM information_schema.COLUMNS c
+WHERE c.TABLE_SCHEMA = DATABASE()
+  AND c.TABLE_NAME = ?
+ORDER BY c.ORDINAL_POSITION`, tableName).Scan(&rows).Error
 	return rows, err
 }

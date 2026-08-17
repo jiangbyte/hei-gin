@@ -6,10 +6,12 @@ package db
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -34,14 +36,20 @@ type OwnerDept struct {
 	OwnerDeptID *string `gorm:"column:owner_dept_id;size:64;index" json:"owner_dept_id"`
 }
 
-// Open 按配置打开 Postgres 或 sqlite: 前缀的 SQLite，并注册审计回调。
+// Open 按 db.driver 或 DSN scheme 打开 MySQL / PostgreSQL，并注册审计回调。
 func Open(cfg config.DBConfig) (*gorm.DB, error) {
+	driver, dsn, err := resolveDriverDSN(cfg)
+	if err != nil {
+		return nil, err
+	}
 	var dialector gorm.Dialector
-	dsn := cfg.URL
-	if len(dsn) >= 7 && dsn[:7] == "sqlite:" {
-		dialector = sqlite.Open(dsn[7:])
-	} else {
+	switch driver {
+	case "mysql":
+		dialector = mysql.Open(dsn)
+	case "postgres":
 		dialector = postgres.Open(dsn)
+	default:
+		return nil, fmt.Errorf("unsupported db driver: %s (use mysql or postgres)", driver)
 	}
 	level := logger.Silent
 	if cfg.Echo {
@@ -65,6 +73,82 @@ func Open(cfg config.DBConfig) (*gorm.DB, error) {
 	_ = gdb.Callback().Create().Before("gorm:create").Register("hei:audit_create", auditCreate)
 	_ = gdb.Callback().Update().Before("gorm:update").Register("hei:audit_update", auditUpdate)
 	return gdb, nil
+}
+
+// resolveDriverDSN 解析 driver 与最终传给驱动的 DSN。
+// driver 优先用 cfg.Driver；否则从 URL scheme 推断（mysql / postgres|postgresql）。
+func resolveDriverDSN(cfg config.DBConfig) (driver, dsn string, err error) {
+	raw := strings.TrimSpace(cfg.URL)
+	if raw == "" {
+		return "", "", fmt.Errorf("db.url is required")
+	}
+	driver = strings.ToLower(strings.TrimSpace(cfg.Driver))
+	if driver == "" {
+		driver, err = inferDriver(raw)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	switch driver {
+	case "mysql", "postgres":
+	default:
+		return "", "", fmt.Errorf("unsupported db.driver %q (use mysql or postgres)", cfg.Driver)
+	}
+	dsn, err = normalizeDSN(driver, raw)
+	if err != nil {
+		return "", "", err
+	}
+	return driver, dsn, nil
+}
+
+func inferDriver(raw string) (string, error) {
+	lower := strings.ToLower(raw)
+	switch {
+	case strings.HasPrefix(lower, "mysql://"), strings.HasPrefix(lower, "mysql:"):
+		return "mysql", nil
+	case strings.HasPrefix(lower, "postgres://"), strings.HasPrefix(lower, "postgresql://"):
+		return "postgres", nil
+	default:
+		return "", fmt.Errorf("cannot infer db driver from url %q; set db.driver to mysql or postgres", raw)
+	}
+}
+
+// normalizeDSN 将 URL 转为各驱动接受的 DSN。
+// MySQL go-sql-driver 使用 user:pass@tcp(host:port)/db?params；也接受已是该格式的 DSN。
+func normalizeDSN(driver, raw string) (string, error) {
+	if driver == "postgres" {
+		return raw, nil
+	}
+	// mysql
+	lower := strings.ToLower(raw)
+	if strings.HasPrefix(lower, "mysql://") {
+		u, err := url.Parse(raw)
+		if err != nil {
+			return "", fmt.Errorf("parse mysql url: %w", err)
+		}
+		user := ""
+		if u.User != nil {
+			user = u.User.Username()
+			if p, ok := u.User.Password(); ok {
+				user += ":" + p
+			}
+		}
+		host := u.Host
+		if host == "" {
+			host = "127.0.0.1:3306"
+		}
+		dbName := strings.TrimPrefix(u.Path, "/")
+		q := u.RawQuery
+		dsn := fmt.Sprintf("%s@tcp(%s)/%s", user, host, dbName)
+		if q != "" {
+			dsn += "?" + q
+		} else {
+			dsn += "?parseTime=true&loc=Local&charset=utf8mb4"
+		}
+		return dsn, nil
+	}
+	// 已是 go-sql-driver 风格或其它：原样返回
+	return raw, nil
 }
 
 func auditCreate(db *gorm.DB) {

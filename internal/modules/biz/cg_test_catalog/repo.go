@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 目录持久化。
@@ -51,10 +53,10 @@ func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Catalog, total int
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Catalog{})
 	if p.Code != "" {
-		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
 	}
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.Category != "" {
 		db = db.Where("category = ?", p.Category)

@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 知识分类持久化。
@@ -51,10 +53,10 @@ func (r *Repo) PageCategories(ctx context.Context, p PageParam) (rows []Category
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Category{})
 	if p.Code != "" {
-		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
 	}
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)
@@ -108,10 +110,10 @@ func (r *Repo) PageDocs(ctx context.Context, p DocPageParam) (rows []Doc, total 
 		db = db.Where("category_id = ?", p.CategoryID)
 	}
 	if p.Code != "" {
-		db = db.Where("code ILIKE ?", "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
 	}
 	if p.Title != "" {
-		db = db.Where("title ILIKE ?", "%"+p.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), "%"+p.Title+"%")
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

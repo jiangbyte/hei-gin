@@ -19,8 +19,8 @@ type OperationLog struct {
 	ResourceID   *string        `gorm:"column:resource_id;size:128" json:"resource_id"`
 	Action       string         `gorm:"column:action;size:64;not null" json:"action"`
 	Summary      *string        `gorm:"column:summary;size:255" json:"summary"`
-	BeforeData   datatypes.JSON `gorm:"column:before_data;type:jsonb" json:"before_data"`
-	AfterData    datatypes.JSON `gorm:"column:after_data;type:jsonb" json:"after_data"`
+	BeforeData   datatypes.JSON `gorm:"column:before_data;type:json" json:"before_data"`
+	AfterData    datatypes.JSON `gorm:"column:after_data;type:json" json:"after_data"`
 	AccountID    *string        `gorm:"column:account_id;size:64" json:"account_id"`
 	AccountType  *string        `gorm:"column:account_type;size:32" json:"account_type"`
 	RequestID    *string        `gorm:"column:request_id;size:64" json:"request_id"`

@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 订单持久化。
@@ -56,13 +58,13 @@ func (r *Repo) PageOrders(ctx context.Context, p PageParam) (rows []Order, total
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Order{})
 	if p.OrderNo != "" {
-		db = db.Where("order_no ILIKE ?", "%"+p.OrderNo+"%")
+		db = db.Where(dialect.ILike(db, "order_no"), "%"+p.OrderNo+"%")
 	}
 	if p.Name != "" {
-		db = db.Where("name ILIKE ?", "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
 	}
 	if p.CustomerName != "" {
-		db = db.Where("customer_name ILIKE ?", "%"+p.CustomerName+"%")
+		db = db.Where(dialect.ILike(db, "customer_name"), "%"+p.CustomerName+"%")
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

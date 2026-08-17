@@ -6,9 +6,12 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 仪表盘统计持久化。
@@ -93,7 +96,10 @@ type DailyCountRow struct {
 // AccountDailyCounts 自 since 起每日新增账号数（对齐 hei-boot accountDailyCounts）。
 func (r *Repo) AccountDailyCounts(ctx context.Context, since time.Time) []DailyCountRow {
 	var rows []DailyCountRow
-	if err := r.with(ctx).Raw(`SELECT TO_CHAR(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt FROM sys_account WHERE created_at >= ? GROUP BY created_at::date ORDER BY day`, since).Scan(&rows).Error; err != nil {
+	db := r.with(ctx)
+	sel, grp := dialect.DayBucket(db, "created_at")
+	q := fmt.Sprintf("SELECT %s AS day, COUNT(*) AS cnt FROM sys_account WHERE created_at >= ? GROUP BY %s ORDER BY day", sel, grp)
+	if err := db.Raw(q, since).Scan(&rows).Error; err != nil {
 		return nil
 	}
 	return rows
@@ -102,7 +108,10 @@ func (r *Repo) AccountDailyCounts(ctx context.Context, since time.Time) []DailyC
 // AuditDailyCounts 自 since 起每日审计日志数（对齐 hei-boot auditDailyCounts）。
 func (r *Repo) AuditDailyCounts(ctx context.Context, since time.Time) []DailyCountRow {
 	var rows []DailyCountRow
-	if err := r.with(ctx).Raw(`SELECT TO_CHAR(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt FROM sys_operation_audit_log WHERE created_at >= ? GROUP BY created_at::date ORDER BY day`, since).Scan(&rows).Error; err != nil {
+	db := r.with(ctx)
+	sel, grp := dialect.DayBucket(db, "created_at")
+	q := fmt.Sprintf("SELECT %s AS day, COUNT(*) AS cnt FROM sys_operation_audit_log WHERE created_at >= ? GROUP BY %s ORDER BY day", sel, grp)
+	if err := db.Raw(q, since).Scan(&rows).Error; err != nil {
 		return nil
 	}
 	return rows

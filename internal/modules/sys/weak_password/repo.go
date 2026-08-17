@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 弱密码持久化。
@@ -62,7 +64,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []WeakPassword, tota
 	db := r.with(ctx).Model(&WeakPassword{})
 	kw := firstText(q.Password, q.Keyword)
 	if kw != "" {
-		db = db.Where("password ILIKE ?", "%"+kw+"%")
+		db = db.Where(dialect.ILike(db, "password"), "%"+kw+"%")
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -76,7 +78,7 @@ func (r *Repo) List(ctx context.Context, q ListParam) ([]WeakPassword, error) {
 	db := r.with(ctx).Model(&WeakPassword{})
 	kw := firstText(q.Password, q.Keyword)
 	if kw != "" {
-		db = db.Where("password ILIKE ?", "%"+kw+"%")
+		db = db.Where(dialect.ILike(db, "password"), "%"+kw+"%")
 	}
 	var rows []WeakPassword
 	err := db.Order("id desc").Find(&rows).Error

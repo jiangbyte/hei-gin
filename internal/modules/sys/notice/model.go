@@ -22,11 +22,11 @@ type Notice struct {
 	Category           *string        `gorm:"column:category;size:32" json:"category"`
 	Severity           string         `gorm:"column:severity;size:32" json:"severity"`
 	TargetScope        string         `gorm:"column:target_scope;size:32" json:"target_scope"`
-	TargetAccountTypes datatypes.JSON `gorm:"column:target_account_types;type:jsonb" json:"target_account_types"`
-	TargetAccountIDs   datatypes.JSON `gorm:"column:target_account_ids;type:jsonb" json:"target_account_ids"`
-	TargetDeptIDs      datatypes.JSON `gorm:"column:target_dept_ids;type:jsonb" json:"target_dept_ids"`
-	TargetRoleIDs      datatypes.JSON `gorm:"column:target_role_ids;type:jsonb" json:"target_role_ids"`
-	PublishLocations   datatypes.JSON `gorm:"column:publish_locations;type:jsonb" json:"publish_locations"`
+	TargetAccountTypes datatypes.JSON `gorm:"column:target_account_types;type:json" json:"target_account_types"`
+	TargetAccountIDs   datatypes.JSON `gorm:"column:target_account_ids;type:json" json:"target_account_ids"`
+	TargetDeptIDs      datatypes.JSON `gorm:"column:target_dept_ids;type:json" json:"target_dept_ids"`
+	TargetRoleIDs      datatypes.JSON `gorm:"column:target_role_ids;type:json" json:"target_role_ids"`
+	PublishLocations   datatypes.JSON `gorm:"column:publish_locations;type:json" json:"publish_locations"`
 	IsPinned           bool           `gorm:"column:is_pinned" json:"is_pinned"`
 	PinnedUntil        *time.Time     `gorm:"column:pinned_until" json:"pinned_until"`
 	SenderAccountType  *string        `gorm:"column:sender_account_type;size:32" json:"sender_account_type"`
@@ -39,7 +39,7 @@ type Notice struct {
 	ExpireAt           *time.Time     `gorm:"column:expire_at" json:"expire_at"`
 	ViewCount          int            `gorm:"column:view_count" json:"view_count"`
 	IsRead             bool           `gorm:"-" json:"is_read"`
-	Extra              datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Extra              datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt          time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy          *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt          time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

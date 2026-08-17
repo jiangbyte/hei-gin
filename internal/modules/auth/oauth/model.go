@@ -17,7 +17,7 @@ type AccountOAuthBinding struct {
 	UnionID    *string   `gorm:"column:union_id;size:128" json:"union_id"`
 	Nickname   *string   `gorm:"column:nickname;size:128" json:"nickname"`
 	Avatar     *string   `gorm:"column:avatar;type:text" json:"avatar"`
-	RawProfile string    `gorm:"column:raw_profile;type:jsonb;not null;default:'{}'" json:"raw_profile"`
+	RawProfile string    `gorm:"column:raw_profile;type:json;not null;default:'{}'" json:"raw_profile"`
 	BoundAt    time.Time `gorm:"column:bound_at" json:"bound_at"`
 	CreatedAt  time.Time `gorm:"column:created_at" json:"created_at"`
 	CreatedBy  *string   `gorm:"column:created_by;size:64" json:"created_by"`

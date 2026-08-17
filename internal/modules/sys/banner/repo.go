@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo Banner 持久化。
@@ -55,7 +57,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Banner, total int6
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Banner{})
 	if q.Title != "" {
-		db = db.Where("title ILIKE ?", "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
 	}
 	if q.Position != "" {
 		db = db.Where("position = ?", q.Position)
@@ -64,7 +66,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Banner, total int6
 		db = db.Where("status = ?", q.Status)
 	}
 	if q.TargetAccountType != "" {
-		db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", q.TargetAccountType)
+		db = db.Where(dialect.JSONContainsString(db, "target_account_types"), q.TargetAccountType)
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -85,7 +87,7 @@ func (r *Repo) List(ctx context.Context, position, category, typ, accountType, s
 	if typ != "" {
 		db = db.Where("type = ?", typ)
 	}
-	db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", accountType)
+	db = db.Where(dialect.JSONContainsString(db, "target_account_types"), accountType)
 	now := time.Now()
 	db = db.Where("(start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)", now, now)
 	var rows []Banner
@@ -115,7 +117,7 @@ func (r *Repo) ListPortal(ctx context.Context, q PortalListParam, status string)
 		db = db.Where("type = ?", q.Type)
 	}
 	db = db.Where("(start_at IS NULL OR start_at <= ?) AND (end_at IS NULL OR end_at >= ?)", now, now)
-	db = db.Where("jsonb_exists((target_account_types)::jsonb, ?)", "PORTAL")
+	db = db.Where(dialect.JSONContainsString(db, "target_account_types"), "PORTAL")
 	var rows []Banner
 	err := db.Order("sort asc, id asc").Find(&rows).Error
 	return rows, err

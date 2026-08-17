@@ -47,6 +47,8 @@ type AppConfig struct {
 //
 // Author: Charlie
 type DBConfig struct {
+	// Driver 为 mysql 或 postgres；为空时从 url scheme 推断。
+	Driver      string `mapstructure:"driver"`
 	URL         string `mapstructure:"url"`
 	Echo        bool   `mapstructure:"echo"`
 	PoolSize    int    `mapstructure:"pool_size"`

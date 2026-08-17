@@ -13,6 +13,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/platform/db/dialect"
 	"hei-gin/internal/framework/platform/gojob"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
@@ -137,7 +138,7 @@ func (s *Service) Page(ctx context.Context, q PageParam) ([]gojob.SysJob, int64,
 	cur, size := q.Normalize()
 	tx := s.db.WithContext(ctx).Model(&gojob.SysJob{})
 	if n := strings.TrimSpace(q.JobName); n != "" {
-		tx = tx.Where("job_name ILIKE ?", "%"+n+"%")
+		tx = tx.Where(dialect.ILike(tx, "job_name"), "%"+n+"%")
 	}
 	if t := strings.TrimSpace(q.ExecuteType); t != "" {
 		tx = tx.Where("execute_type = ?", strings.ToUpper(t))

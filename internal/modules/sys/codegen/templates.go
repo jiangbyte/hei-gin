@@ -22,7 +22,7 @@ import (
 // Author: {{.Author}}
 type {{.Main.EntityName}} struct {
 {{- range .Main.Fields }}
-	{{.GoName}} {{.GoType}} ` + "`" + ` + "` + "`" + `" + ` + "`" + `gorm:"column:{{.Name}};{{if .IsPrimaryKey}}primaryKey;size:64{{else if .MaxLength}}size:{{.MaxLength}}{{end}}{{if .IsJSON}};type:jsonb{{end}}{{if .IsDatetime}};type:timestamp{{end}}" json:"{{.Name}}"` + "`" + ` + "` + "`" + `" + ` + "`" + `
+	{{.GoName}} {{.GoType}} ` + "`" + ` + "` + "`" + `" + ` + "`" + `gorm:"column:{{.Name}};{{if .IsPrimaryKey}}primaryKey;size:64{{else if .MaxLength}}size:{{.MaxLength}}{{end}}{{if .IsJSON}};type:json{{end}}{{if .IsDatetime}};type:timestamp{{end}}" json:"{{.Name}}"` + "`" + ` + "` + "`" + `" + ` + "`" + `
 {{- end }}
 }
 
@@ -101,6 +101,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo {{.Main.BusinessName}}持久化。
@@ -146,7 +148,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam) (rows []{{.Main.EntityName
 {{- range .Main.QueryFields }}
 {{- if eq .PythonType "str" }}
 	if p.{{.GoName}} != "" {
-		db = db.Where("{{.Name}} ILIKE ?", "%"+p.{{.GoName}}+"%")
+		db = db.Where(dialect.ILike(db, "{{.Name}}"), "%"+p.{{.GoName}}+"%")
 	}
 {{- end }}
 {{- end }}

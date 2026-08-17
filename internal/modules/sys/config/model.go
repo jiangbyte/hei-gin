@@ -24,7 +24,7 @@ type Config struct {
 	Scope       *string        `gorm:"column:scope;size:32" json:"scope"`
 	Scene       *string        `gorm:"column:scene;size:64" json:"scene"`
 	IsBuiltin   bool           `gorm:"column:is_builtin;not null;default:false" json:"is_builtin"`
-	ExtJSON     datatypes.JSON `gorm:"column:ext_json;type:jsonb" json:"ext_json"`
+	ExtJSON     datatypes.JSON `gorm:"column:ext_json;type:json" json:"ext_json"`
 	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy   *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

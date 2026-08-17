@@ -140,6 +140,20 @@ func NewAPI(d *Deps) *API {
 	// 操作审计由各路由挂载 middleware.OperationAudit(d.Audit, resourceType, action)
 	d.Modules.MountRoutes(api)
 
+	if d.Cfg.App.Debug {
+		r.GET("/api/v1/internal/debug/routes", func(c *gin.Context) {
+			type routeInfo struct {
+				Method string `json:"method"`
+				Path   string `json:"path"`
+			}
+			out := make([]routeInfo, 0, len(r.Routes()))
+			for _, rt := range r.Routes() {
+				out = append(out, routeInfo{Method: rt.Method, Path: rt.Path})
+			}
+			response.OK(c, out)
+		})
+	}
+
 	srv := &http.Server{
 		Addr:              d.Cfg.Addr(),
 		Handler:           r,

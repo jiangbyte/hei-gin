@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"hei-gin/internal/framework/platform/db/dialect"
 )
 
 // Repo 通知持久化。
@@ -76,7 +78,7 @@ func (r *Repo) PageAdmin(ctx context.Context, q PageParam) (rows []Notice, total
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Notice{})
 	if q.Title != "" {
-		db = db.Where("title ILIKE ?", "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
 	}
 	if q.Status != "" {
 		db = db.Where("status = ?", q.Status)
@@ -162,10 +164,10 @@ func (r *Repo) backfillRead(ctx context.Context, accountType, accountID string, 
 
 // applyVisibility 按目标范围过滤已发布通知（ALL/ACCOUNT_TYPE 匹配类型 JSON，SPECIFIC 匹配账号 JSON）。
 func applyVisibility(db *gorm.DB, accountType, accountID string) *gorm.DB {
-	cond := "(target_scope IN ('ALL','ACCOUNT_TYPE') AND (target_account_types IS NULL OR jsonb_array_length(COALESCE(target_account_types::jsonb,'[]'::jsonb)) = 0 OR jsonb_exists((target_account_types)::jsonb, ?)))"
+	cond := "(target_scope IN ('ALL','ACCOUNT_TYPE') AND (" + dialect.JSONArrayEmptyOrNull(db, "target_account_types") + " OR " + dialect.JSONContainsString(db, "target_account_types") + "))"
 	args := []any{accountType}
 	if accountID != "" {
-		cond += " OR (target_scope = 'SPECIFIC' AND jsonb_exists((target_account_ids)::jsonb, ?))"
+		cond += " OR (target_scope = 'SPECIFIC' AND " + dialect.JSONContainsString(db, "target_account_ids") + ")"
 		args = append(args, accountID)
 	}
 	return db.Where(cond, args...)

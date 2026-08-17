@@ -21,7 +21,7 @@ type Category struct {
 	Sort        int            `gorm:"column:sort" json:"sort"`
 	IsVisible   bool           `gorm:"column:is_visible" json:"is_visible"`
 	Description *string        `gorm:"column:description;type:text" json:"description"`
-	Extra       datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Extra       datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy   *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
@@ -49,8 +49,8 @@ type Doc struct {
 	ViewCount   int            `gorm:"column:view_count" json:"view_count"`
 	Sort        int            `gorm:"column:sort" json:"sort"`
 	IsTop       bool           `gorm:"column:is_top" json:"is_top"`
-	Settings    datatypes.JSON `gorm:"column:settings;type:jsonb" json:"settings"`
-	Extra       datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Settings    datatypes.JSON `gorm:"column:settings;type:json" json:"settings"`
+	Extra       datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy   *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

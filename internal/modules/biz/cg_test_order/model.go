@@ -25,9 +25,9 @@ type Order struct {
 	TotalAmount   float64        `gorm:"column:total_amount" json:"total_amount"`
 	ItemCount     int            `gorm:"column:item_count" json:"item_count"`
 	NeedInvoice   bool           `gorm:"column:need_invoice" json:"need_invoice"`
-	InvoiceConfig datatypes.JSON `gorm:"column:invoice_config;type:jsonb" json:"invoice_config"`
+	InvoiceConfig datatypes.JSON `gorm:"column:invoice_config;type:json" json:"invoice_config"`
 	Remark        *string        `gorm:"column:remark;type:text" json:"remark"`
-	Extra         datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Extra         datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt     time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy     *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt     time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
@@ -52,9 +52,9 @@ type OrderItem struct {
 	UnitPrice  float64        `gorm:"column:unit_price" json:"unit_price"`
 	ShippedAt  *time.Time     `gorm:"column:shipped_at" json:"shipped_at"`
 	IsGift     bool           `gorm:"column:is_gift" json:"is_gift"`
-	ItemConfig datatypes.JSON `gorm:"column:item_config;type:jsonb" json:"item_config"`
+	ItemConfig datatypes.JSON `gorm:"column:item_config;type:json" json:"item_config"`
 	Remark     *string        `gorm:"column:remark;type:text" json:"remark"`
-	Extra      datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Extra      datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt  time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy  *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt  time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

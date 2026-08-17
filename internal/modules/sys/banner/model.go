@@ -24,7 +24,7 @@ type Banner struct {
 	Category           string         `gorm:"column:category;size:32;not null" json:"category"`
 	Type               string         `gorm:"column:type;size:32;not null" json:"type"`
 	Position           string         `gorm:"column:position;size:32;not null" json:"position"`
-	TargetAccountTypes datatypes.JSON `gorm:"column:target_account_types;type:jsonb" json:"target_account_types"`
+	TargetAccountTypes datatypes.JSON `gorm:"column:target_account_types;type:json" json:"target_account_types"`
 	Sort               int            `gorm:"column:sort;not null;default:0" json:"sort"`
 	InteractionCount   int64          `gorm:"column:interaction_count;not null;default:0" json:"interaction_count"`
 	Status             string         `gorm:"column:status;size:32;not null" json:"status"`

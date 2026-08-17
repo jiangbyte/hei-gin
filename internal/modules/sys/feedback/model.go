@@ -19,7 +19,7 @@ type Feedback struct {
 	Content              string         `gorm:"column:content;type:text" json:"content"`
 	Category             string         `gorm:"column:category;size:64" json:"category"`
 	Contact              *string        `gorm:"column:contact;size:255" json:"contact"`
-	AttachObjectNames    datatypes.JSON `gorm:"column:attach_object_names;type:jsonb" json:"attach_object_names"`
+	AttachObjectNames    datatypes.JSON `gorm:"column:attach_object_names;type:json" json:"attach_object_names"`
 	Status               string         `gorm:"column:status;size:32" json:"status"`
 	Reply                *string        `gorm:"column:reply;type:text" json:"reply"`
 	RepliedBy            *string        `gorm:"column:replied_by;size:64" json:"replied_by"`

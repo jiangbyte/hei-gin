@@ -23,7 +23,7 @@ type Catalog struct {
 	IsVisible   bool           `gorm:"column:is_visible" json:"is_visible"`
 	Icon        *string        `gorm:"column:icon;size:128" json:"icon"`
 	Description *string        `gorm:"column:description;type:text" json:"description"`
-	Extra       datatypes.JSON `gorm:"column:extra;type:jsonb" json:"extra"`
+	Extra       datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy   *string        `gorm:"column:created_by;size:64" json:"created_by"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`

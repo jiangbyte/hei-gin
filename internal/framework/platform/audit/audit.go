@@ -53,8 +53,8 @@ type LogRow struct {
 	ResourceID   *string         `gorm:"column:resource_id;size:128"`
 	Action       string          `gorm:"column:action;size:64"`
 	Summary      *string         `gorm:"column:summary;size:255"`
-	BeforeData   json.RawMessage `gorm:"column:before_data;type:jsonb"`
-	AfterData    json.RawMessage `gorm:"column:after_data;type:jsonb"`
+	BeforeData   json.RawMessage `gorm:"column:before_data;type:json"`
+	AfterData    json.RawMessage `gorm:"column:after_data;type:json"`
 	AccountID    *string         `gorm:"column:account_id;size:64"`
 	AccountType  *string         `gorm:"column:account_type;size:32"`
 	RequestID    *string         `gorm:"column:request_id;size:64"`
