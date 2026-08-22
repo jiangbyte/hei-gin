@@ -155,7 +155,8 @@ func main() {
 		"force_bind_email:", me.Data.ForceBindEmail, "profile_keys:", len(me.Data.Profile))
 	if len(me.Data.PermissionKeys) > 0 {
 		fmt.Println("  sample perms:", strings.Join(me.Data.PermissionKeys[:min(6, len(me.Data.PermissionKeys))], ", "))
-		authGET(login.Data.Token, "/dashboard/overview")
+		authGET(login.Data.Token, "/workspace/overview")
+		authGET(login.Data.Token, "/workspace/shortcuts")
 		authGET(login.Data.Token, "/sys/config/list?category=AUTH_PASSWORD")
 		authGET(login.Data.Token, "/sys/notices/my-page?current=1&size=3")
 		authGET(login.Data.Token, "/sys/banners/page?current=1&size=10")

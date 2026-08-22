@@ -26,7 +26,7 @@ import (
 // Author: Charlie
 type RouteRegistrar func(api *gin.RouterGroup)
 
-// Job 是任务处理器 Handler（Name 为 execute_class 注册 key）。
+// Job 是任务处理器 Handler（运行时通过 Boot FQCN 别名解析到 Name）。
 //
 // Author: Charlie
 type Job struct {

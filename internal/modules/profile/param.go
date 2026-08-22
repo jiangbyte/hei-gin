@@ -8,8 +8,8 @@ package profile
 //
 // Author: Charlie
 type ProfileUpdateParam struct {
-	Name      *string `json:"name"`
 	Nickname  *string `json:"nickname"`
+	Avatar    *string `json:"avatar"`
 	Signature *string `json:"signature"`
 	Remark    *string `json:"remark"`
 }

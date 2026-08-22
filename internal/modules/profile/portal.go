@@ -167,7 +167,6 @@ func (s *Service) portalSpacesDetail(c *gin.Context) {
 	}
 	response.OK(c, gin.H{
 		"account_id": accountID,
-		"name":       p.Name,
 		"nickname":   p.Nickname,
 		"avatar":     p.Avatar,
 		"signature":  p.Signature,

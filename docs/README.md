@@ -16,8 +16,10 @@
 | [modules/profile](../internal/modules/profile/) | 用户中心共享服务；`profile/admin`、`profile/portal` 注册端 |
 | [modules/internal/health](../internal/modules/internal/health/) | 存活/就绪检查（对齐 fastapi `modules/internal/health`） |
 | [app/](../internal/app/) | 装配根：唯一运行入口 `cmd/api`；`modules/all` |
+| [docs/ALIGNMENT.md](ALIGNMENT.md) | hei-boot 契约对齐清单与验收说明 |
 | [scripts/db.sql](../scripts/db.sql) | 建表 + seed（与 hei-boot schema 对齐） |
-| [web/](../web/) | 前端（admin） |
+
+前端项目见 monorepo 姊妹仓库 [hei-admin](../../hei-admin)、[hei-portal](../../hei-portal)。
 
 ## 包职责
 

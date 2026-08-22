@@ -126,8 +126,9 @@ func NewAPI(d *Deps) *API {
 	r.Use(middleware.ErrorHandler())
 
 	r.GET("/", func(c *gin.Context) {
-		response.OK(c, gin.H{"name": d.Cfg.App.Name, "status": "ok"})
+		response.OK(c, gin.H{"name": d.Cfg.App.Name})
 	})
+	MountOpenAPI(r, "http://"+d.Cfg.Addr(), d.Cfg.App.Name)
 	if d.Cfg.Metrics.Enabled {
 		path := d.Cfg.Metrics.Path
 		if path == "" {

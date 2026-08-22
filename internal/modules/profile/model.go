@@ -19,7 +19,6 @@ const ProfileTablePortal = "profile_user_portal"
 // Author: Charlie
 type Profile struct {
 	AccountID string    `gorm:"column:account_id;primaryKey;size:64" json:"account_id"`
-	Name      *string   `gorm:"column:name;size:64" json:"name"`
 	Nickname  *string   `gorm:"column:nickname;size:64" json:"nickname"`
 	Avatar    *string   `gorm:"column:avatar;type:text" json:"avatar"`
 	Signature *string   `gorm:"column:signature;type:text" json:"signature"`

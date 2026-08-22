@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -72,36 +71,21 @@ type ProviderOption struct {
 	WebOAuth bool   `json:"web_oauth"`
 }
 
-// ProviderOptions 三方登录入口选项。
-func (s *Service) ProviderOptions() []ProviderOption {
-	out := []ProviderOption{}
-	for _, p := range []string{"github", "gitee", "wechat", "wechat_mp", "qq"} {
-		_, err := s.providerConfig(p)
+// ProviderOptions 三方登录入口选项（对齐 hei-boot buildOauthProviderOptions）。
+func (s *Service) ProviderOptions(ctx context.Context, accountType security.AccountType) []ProviderOption {
+	out := make([]ProviderOption, 0, len(allProviders))
+	for _, p := range allProviders {
+		if accountType == security.AccountAdmin && p == providerWeChatMP {
+			continue
+		}
 		out = append(out, ProviderOption{
-			Provider: p,
+			Provider: string(p),
 			Label:    providerLabel(p),
-			Enabled:  err == nil,
-			WebOAuth: p == "github" || p == "gitee" || p == "qq",
+			Enabled:  s.oauthEnabled(ctx, accountType, p),
+			WebOAuth: isWebOAuth(p),
 		})
 	}
 	return out
-}
-
-func providerLabel(provider string) string {
-	switch provider {
-	case "github":
-		return "GitHub"
-	case "gitee":
-		return "Gitee"
-	case "wechat":
-		return "微信"
-	case "wechat_mp":
-		return "微信公众号"
-	case "qq":
-		return "QQ"
-	default:
-		return provider
-	}
 }
 
 // RegisterRoutes 挂载 admin/portal OAuth 路由。
@@ -155,8 +139,16 @@ type LoginResult struct {
 
 func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		provider := strings.ToLower(c.Param("provider"))
-		pc, err := s.providerConfig(provider)
+		provider, err := parseProvider(c.Param("provider"))
+		if err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if !isWebOAuth(provider) {
+			response.Fail(c, http.StatusBadRequest, 400, "请使用小程序登录接口")
+			return
+		}
+		pc, err := s.providerConfig(c.Request.Context(), accountType, provider)
 		if err != nil {
 			response.Fail(c, http.StatusBadRequest, 400, err.Error())
 			return
@@ -170,11 +162,20 @@ func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
 		if redirect == "" {
 			redirect = s.frontendCallback(c.Request.Context(), accountType)
 		}
+		intent := strings.TrimSpace(c.Query("intent"))
+		if intent == "" {
+			intent = "LOGIN"
+		}
+		intent = strings.ToUpper(intent)
+		if intent != "LOGIN" && intent != "BIND" {
+			response.Fail(c, http.StatusBadRequest, 400, "不支持的 OAuth intent")
+			return
+		}
 		payload, _ := json.Marshal(map[string]string{
 			"account_type": string(accountType),
-			"provider":     provider,
+			"provider":     string(provider),
 			"redirect":     redirect,
-			"intent":       c.Query("intent"),
+			"intent":       intent,
 			"account_id":   c.Query("account_id"),
 		})
 		_ = s.rdb.Set(c.Request.Context(), stateKeyPrefix+state, string(payload), 10*time.Minute).Err()
@@ -189,7 +190,11 @@ func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
 
 func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		provider := strings.ToLower(c.Param("provider"))
+		provider, err := parseProvider(c.Param("provider"))
+		if err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
 		code := c.Query("code")
 		state := c.Query("state")
 		if code == "" || state == "" {
@@ -208,7 +213,11 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 			response.Fail(c, http.StatusBadRequest, 400, "账号类型不匹配")
 			return
 		}
-		pc, err := s.providerConfig(provider)
+		if st["provider"] != "" && !strings.EqualFold(st["provider"], string(provider)) {
+			response.Fail(c, http.StatusBadRequest, 400, "授权状态不匹配")
+			return
+		}
+		pc, err := s.providerConfig(c.Request.Context(), accountType, provider)
 		if err != nil {
 			response.Fail(c, http.StatusBadRequest, 400, err.Error())
 			return
@@ -220,8 +229,7 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 		}
 		var accountID string
 		if st["intent"] == "BIND" && st["account_id"] != "" {
-			// 绑定模式：写入绑定关系，不创建账号
-			if err := s.createBinding(c.Request.Context(), st["account_id"], provider, profile); err != nil {
+			if err := s.createBinding(c.Request.Context(), st["account_id"], string(provider), profile); err != nil {
 				response.Fail(c, http.StatusBadRequest, 400, err.Error())
 				return
 			}
@@ -299,7 +307,7 @@ func (s *Service) wechatMpLogin(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	pc, err := s.providerConfig("wechat_mp")
+	pc, err := s.providerConfig(c.Request.Context(), security.AccountPortal, providerWeChatMP)
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
@@ -309,7 +317,7 @@ func (s *Service) wechatMpLogin(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	accountID, err := s.resolveOrBindAccount(c.Request.Context(), security.AccountPortal, "wechat_mp", profile)
+	accountID, err := s.resolveOrBindAccount(c.Request.Context(), security.AccountPortal, providerWeChatMP, profile)
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
@@ -350,49 +358,8 @@ type providerCfg struct {
 	RedirectURL  string
 }
 
-func (s *Service) providerConfig(provider string) (providerCfg, error) {
-	o := s.cfg.OAuth
-	switch strings.ToLower(provider) {
-	case "github":
-		if o.GitHub.ClientID == "" || o.GitHub.ClientSecret == "" {
-			return providerCfg{}, fmt.Errorf("OAuth 提供商 github 未配置")
-		}
-		return providerCfg{
-			ClientID:     o.GitHub.ClientID,
-			ClientSecret: o.GitHub.ClientSecret,
-			RedirectURL:  o.GitHub.RedirectURL,
-		}, nil
-	case "wechat_mp", "wechat-mp":
-		if o.WeChatMP.ClientID == "" || o.WeChatMP.ClientSecret == "" {
-			return providerCfg{}, fmt.Errorf("OAuth 提供商 wechat_mp 未配置")
-		}
-		return providerCfg{
-			ClientID:     o.WeChatMP.ClientID,
-			ClientSecret: o.WeChatMP.ClientSecret,
-			RedirectURL:  o.WeChatMP.RedirectURL,
-		}, nil
-	case "gitee", "wechat", "wechat_open", "qq":
-		return providerCfg{}, fmt.Errorf("OAuth 提供商 %s 未配置", provider)
-	default:
-		return providerCfg{}, fmt.Errorf("不支持的 OAuth 提供商: %s", provider)
-	}
-}
-
-func buildAuthorizeURL(provider string, pc providerCfg, state string) (string, error) {
-	switch provider {
-	case "github":
-		q := url.Values{}
-		q.Set("client_id", pc.ClientID)
-		q.Set("redirect_uri", pc.RedirectURL)
-		q.Set("scope", "read:user user:email")
-		q.Set("state", state)
-		return "https://github.com/login/oauth/authorize?" + q.Encode(), nil
-	default:
-		return "", fmt.Errorf("OAuth 提供商 %s 未配置", provider)
-	}
-}
-
 type oauthProfile struct {
+	Provider string
 	OpenID   string
 	UnionID  string
 	Nickname string
@@ -400,128 +367,14 @@ type oauthProfile struct {
 	Raw      string
 }
 
-func exchangeCode(ctx context.Context, provider string, pc providerCfg, code string) (*oauthProfile, error) {
-	if provider != "github" {
-		return nil, fmt.Errorf("OAuth 提供商 %s 未配置", provider)
+func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security.AccountType, provider oauthProvider, profile *oauthProfile) (string, error) {
+	providerName := string(provider)
+	if profile.Provider != "" {
+		providerName = profile.Provider
 	}
-	form := url.Values{}
-	form.Set("client_id", pc.ClientID)
-	form.Set("client_secret", pc.ClientSecret)
-	form.Set("code", code)
-	form.Set("redirect_uri", pc.RedirectURL)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://github.com/login/oauth/access_token", strings.NewReader(form.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	var tok struct {
-		AccessToken string `json:"access_token"`
-		Error       string `json:"error"`
-	}
-	if err := json.Unmarshal(body, &tok); err != nil {
-		return nil, err
-	}
-	if tok.AccessToken == "" {
-		if tok.Error != "" {
-			return nil, fmt.Errorf("github token: %s", tok.Error)
-		}
-		return nil, fmt.Errorf("github token 交换失败")
-	}
-	ureq, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user", nil)
-	if err != nil {
-		return nil, err
-	}
-	ureq.Header.Set("Authorization", "Bearer "+tok.AccessToken)
-	ureq.Header.Set("Accept", "application/json")
-	uresp, err := http.DefaultClient.Do(ureq)
-	if err != nil {
-		return nil, err
-	}
-	defer uresp.Body.Close()
-	ubody, _ := io.ReadAll(uresp.Body)
-	var user struct {
-		ID        int64  `json:"id"`
-		Login     string `json:"login"`
-		Name      string `json:"name"`
-		AvatarURL string `json:"avatar_url"`
-	}
-	if err := json.Unmarshal(ubody, &user); err != nil {
-		return nil, err
-	}
-	if user.ID == 0 {
-		return nil, fmt.Errorf("无法获取 GitHub 用户信息")
-	}
-	nick := user.Name
-	if nick == "" {
-		nick = user.Login
-	}
-	return &oauthProfile{
-		OpenID:   fmt.Sprintf("%d", user.ID),
-		Nickname: nick,
-		Avatar:   user.AvatarURL,
-		Raw:      string(ubody),
-	}, nil
-}
-
-func exchangeWechatMp(ctx context.Context, pc providerCfg, code string) (*oauthProfile, error) {
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return nil, fmt.Errorf("缺少 code")
-	}
-	q := url.Values{}
-	q.Set("appid", pc.ClientID)
-	q.Set("secret", pc.ClientSecret)
-	q.Set("js_code", code)
-	q.Set("grant_type", "authorization_code")
-	u := "https://api.weixin.qq.com/sns/jscode2session?" + q.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	var data struct {
-		OpenID     string `json:"openid"`
-		UnionID    string `json:"unionid"`
-		ErrCode    int    `json:"errcode"`
-		ErrMsg     string `json:"errmsg"`
-		SessionKey string `json:"session_key"`
-	}
-	if err := json.Unmarshal(body, &data); err != nil {
-		return nil, err
-	}
-	if data.ErrCode != 0 {
-		msg := data.ErrMsg
-		if msg == "" {
-			msg = fmt.Sprintf("%d", data.ErrCode)
-		}
-		return nil, fmt.Errorf("微信小程序登录失败: %s", msg)
-	}
-	if data.OpenID == "" {
-		return nil, fmt.Errorf("微信小程序登录失败: 未返回 openid")
-	}
-	return &oauthProfile{
-		OpenID:  data.OpenID,
-		UnionID: data.UnionID,
-		Raw:     string(body),
-	}, nil
-}
-
-func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security.AccountType, provider string, profile *oauthProfile) (string, error) {
 	var binding AccountOAuthBinding
 	err := s.db.WithContext(ctx).
-		Where("provider = ? AND open_id = ?", strings.ToUpper(provider), profile.OpenID).
+		Where("provider = ? AND open_id = ?", providerName, profile.OpenID).
 		First(&binding).Error
 	if err == nil {
 		var acc struct {
@@ -542,13 +395,26 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 	if err != gorm.ErrRecordNotFound {
 		return "", err
 	}
-	// 首次绑定：自动创建对应类型账号（门户）；管理端要求已有绑定
 	if accountType == security.AccountAdmin {
-		return "", fmt.Errorf("未绑定的 GitHub 账号，请先在管理端绑定")
+		return "", fmt.Errorf("请先使用账号密码登录后再绑定该三方账号")
 	}
 	accountID := idgen.Next()
 	now := time.Now().UTC()
 	hash, _ := security.HashPassword(randomPassword())
+	identifier := allocateOauthAccountName(profile.OpenID, provider)
+	for i := 0; ; i++ {
+		var cnt int64
+		_ = s.db.WithContext(ctx).Table("sys_account_identity").
+			Where("identity_type = ? AND identifier = ?", "ACCOUNT", identifier).Count(&cnt).Error
+		if cnt == 0 {
+			break
+		}
+		if i == 0 {
+			identifier = allocateOauthAccountName(profile.OpenID+fmt.Sprintf("%d", i), provider)
+		} else {
+			identifier = allocateOauthAccountName(profile.OpenID, provider) + fmt.Sprintf("%d", i)
+		}
+	}
 	acc := map[string]any{
 		"id":             accountID,
 		"password_hash":  hash,
@@ -561,17 +427,17 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		"id":            idgen.Next(),
 		"account_id":    accountID,
 		"identity_type": "ACCOUNT",
-		"identifier":    "gh_" + profile.OpenID,
+		"identifier":    identifier,
 		"verified":      true,
 		"is_primary":    true,
 		"bind_status":   "BOUND",
 		"created_at":    now,
 		"updated_at":    now,
 	}
-	bind := AccountOAuthBinding{
+	bindRow := AccountOAuthBinding{
 		ID:         idgen.Next(),
 		AccountID:  accountID,
-		Provider:   strings.ToUpper(provider),
+		Provider:   providerName,
 		OpenID:     profile.OpenID,
 		Nickname:   strPtr(profile.Nickname),
 		Avatar:     strPtr(profile.Avatar),
@@ -580,8 +446,8 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
-	if bind.RawProfile == "" {
-		bind.RawProfile = "{}"
+	if bindRow.RawProfile == "" {
+		bindRow.RawProfile = "{}"
 	}
 	return accountID, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("sys_account").Create(acc).Error; err != nil {
@@ -597,7 +463,7 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 			"created_at": now,
 			"updated_at": now,
 		}).Error
-		return tx.Create(&bind).Error
+		return tx.Create(&bindRow).Error
 	})
 }
 

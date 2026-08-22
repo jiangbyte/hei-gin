@@ -157,8 +157,11 @@ func (r *Repo) backfillRead(ctx context.Context, accountType, accountID string, 
 		readSet[rd.NoticeID] = struct{}{}
 	}
 	for i := range rows {
-		_, ok := readSet[rows[i].ID]
-		rows[i].IsRead = ok
+		ok := false
+		if _, found := readSet[rows[i].ID]; found {
+			ok = true
+		}
+		rows[i].IsRead = boolStringPtr(ok)
 	}
 }
 

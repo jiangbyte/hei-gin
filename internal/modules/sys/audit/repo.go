@@ -31,6 +31,8 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []OperationLog, tota
 	}
 	if q.Action != "" {
 		db = db.Where("action = ?", q.Action)
+	} else if q.ExcludeAction != "" {
+		db = db.Where("action <> ?", q.ExcludeAction)
 	}
 	if q.AccountID != "" {
 		db = db.Where("account_id = ?", q.AccountID)

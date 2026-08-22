@@ -1,9 +1,0 @@
-dist
-node_modules
-unpackage
-.HBuilderX
-.idea
-*.log
-*.local
-coverage
-.vscode

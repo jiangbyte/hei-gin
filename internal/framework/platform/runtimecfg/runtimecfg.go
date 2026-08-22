@@ -1,6 +1,6 @@
 // Package runtimecfg 运行时配置读取：sys_config 表为权威，缺省回退默认值。
 //
-// 对齐 hei-boot RuntimeSettings / ConfigApi：管理端配置页（web/admin/sys/config）保存的
+// 对齐 hei-boot RuntimeSettings / ConfigApi：管理端配置页（hei-admin sys/config）保存的
 // 每个键（AUTH_LOGIN_* / AUTH_PASSWORD_* / MAIL_* / SMS_* / PUSH_* / STORAGE_* ...）
 // 都应由业务侧在运行期消费，而非仅落库。
 //

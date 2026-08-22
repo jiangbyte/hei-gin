@@ -7,6 +7,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	contextx "hei-gin/internal/framework/core/context"
@@ -27,12 +28,15 @@ type AuthOptions struct {
 	RegisterAllowAccount       bool                   `json:"register_allow_account"`
 	RegisterAllowEmail         bool                   `json:"register_allow_email"`
 	RegisterAllowPhone         bool                   `json:"register_allow_phone"`
+	RegisterRequireEmail       bool                   `json:"register_require_email"`
+	RegisterRequirePhone       bool                   `json:"register_require_phone"`
 	ForceBindEmail             bool                   `json:"force_bind_email"`
 	ForceBindPhone             bool                   `json:"force_bind_phone"`
 	OAuthProviders             []oauth.ProviderOption `json:"oauth_providers"`
 	PasswordChangeVerifyMethod string                 `json:"password_change_verify_method"`
 	CopyrightText              string                 `json:"copyright_text"`
 	CopyrightURL               string                 `json:"copyright_url"`
+	SiteFooter                 *SiteFooterResult      `json:"site_footer"`
 }
 
 // CancelParam 注销账号入参。
@@ -44,6 +48,7 @@ type CancelParam struct {
 
 // AuthOptions 读取登录页公开配置。
 func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountType) *AuthOptions {
+	typeName := strings.ToUpper(string(accountType))
 	o := &AuthOptions{
 		AccountType:                string(accountType),
 		AllowAccount:               true,
@@ -54,12 +59,17 @@ func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountT
 		RegisterAllowAccount:       accountType == security.AccountPortal,
 		RegisterAllowEmail:         accountType == security.AccountPortal,
 		RegisterAllowPhone:         accountType == security.AccountPortal,
+		RegisterRequireEmail:       s.runtimeBool(ctx, "AUTH_REGISTER_"+typeName+"_REQUIRE_EMAIL", accountType == security.AccountPortal),
+		RegisterRequirePhone:       s.runtimeBool(ctx, "AUTH_REGISTER_"+typeName+"_REQUIRE_PHONE", false),
+		ForceBindEmail:             s.runtimeBool(ctx, "AUTH_FORCE_BIND_"+typeName+"_EMAIL", false),
+		ForceBindPhone:             s.runtimeBool(ctx, "AUTH_FORCE_BIND_"+typeName+"_PHONE", false),
 		PasswordChangeVerifyMethod: s.runtimeString(ctx, "PASSWORD_CHANGE_VERIFY_METHOD", "OLD_PASSWORD"),
 		CopyrightText:              s.runtimeString(ctx, "COPYRIGHT_TEXT", ""),
 		CopyrightURL:               s.runtimeString(ctx, "COPYRIGHT_URL", ""),
+		SiteFooter:                 resolveSiteFooter(ctx, s),
 	}
 	if s.oauth != nil {
-		o.OAuthProviders = s.oauth.ProviderOptions()
+		o.OAuthProviders = s.oauth.ProviderOptions(ctx, accountType)
 	}
 	return o
 }

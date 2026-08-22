@@ -1,4 +1,4 @@
-// internal/modules/sys/codegen/param.go 入参定义。
+// internal/modules/sys/codegen/param.go 入参定义（对齐 hei-boot）。
 //
 // Author: Charlie
 
@@ -14,11 +14,11 @@ type AddParam struct {
 	GenType          string  `json:"gen_type" binding:"required"`
 	Author           string  `json:"author" binding:"required"`
 	Description      *string `json:"description"`
-	MainTable        string  `json:"main_table" binding:"required"`
-	MainPK           string  `json:"main_pk"`
-	MainEntityName   string  `json:"main_entity_name" binding:"required"`
-	MainModulePath   string  `json:"main_module_path" binding:"required"`
-	MainBusinessName string  `json:"main_business_name" binding:"required"`
+	Table            string  `json:"table_name" binding:"required"`
+	PKColumn         string  `json:"pk_column"`
+	EntityName       string  `json:"entity_name" binding:"required"`
+	ModulePath       string  `json:"module_path" binding:"required"`
+	BusinessName     string  `json:"business_name" binding:"required"`
 	APIPrefix        string  `json:"api_prefix" binding:"required"`
 	PermissionPrefix string  `json:"permission_prefix" binding:"required"`
 	ResourceModuleID *string `json:"resource_module_id"`
@@ -52,7 +52,7 @@ type PageParam struct {
 	schema.PageQuery
 	Name      string `form:"name"`
 	GenType   string `form:"gen_type"`
-	MainTable string `form:"main_table"`
+	Table string `form:"table_name"`
 }
 
 // IDsParam 批量 ID 入参。
@@ -66,26 +66,26 @@ type IDsParam struct {
 //
 // Author: Charlie
 type FieldUpdateItemParam struct {
-	ID             string  `json:"id"`
-	TableRole      string  `json:"table_role" binding:"required"`
-	ColumnName     string  `json:"column_name" binding:"required"`
-	ColumnComment  *string `json:"column_comment"`
-	DBType         string  `json:"db_type" binding:"required"`
-	PythonType     string  `json:"python_type"`
-	TypescriptType string  `json:"typescript_type"`
-	FormWidget     string  `json:"form_widget"`
-	DictCode       *string `json:"dict_code"`
-	QueryOperator  *string `json:"query_operator"`
-	ShowInTable    bool    `json:"show_in_table"`
-	ShowInForm     bool    `json:"show_in_form"`
-	ShowInDetail   bool    `json:"show_in_detail"`
-	ShowInQuery    bool    `json:"show_in_query"`
-	IsPrimaryKey   bool    `json:"is_primary_key"`
-	IsRequired     bool    `json:"is_required"`
-	IsUnique       bool    `json:"is_unique"`
-	IsNullable     bool    `json:"is_nullable"`
-	MaxLength      *int    `json:"max_length"`
-	Sort           int     `json:"sort"`
+	ID            string  `json:"id"`
+	TableRole     string  `json:"table_role" binding:"required"`
+	ColumnName    string  `json:"column_name" binding:"required"`
+	Label         *string `json:"label"`
+	DBType        string  `json:"db_type" binding:"required"`
+	ValueType     string  `json:"value_type"`
+	UIType        string  `json:"ui_type"`
+	Widget        string  `json:"widget"`
+	DictCode      *string `json:"dict_code"`
+	QueryOperator *string `json:"query_operator"`
+	InTable       bool    `json:"in_table"`
+	InForm        bool    `json:"in_form"`
+	InDetail      bool    `json:"in_detail"`
+	InQuery       bool    `json:"in_query"`
+	PrimaryKey    bool    `json:"primary_key"`
+	Required      bool    `json:"required"`
+	UniqueFlag    bool    `json:"unique_flag"`
+	Nullable      bool    `json:"nullable"`
+	MaxLength     *int    `json:"max_length"`
+	Sort          int     `json:"sort"`
 }
 
 // FieldsUpdateBatchParam 批量更新代码生成字段配置。
@@ -102,4 +102,11 @@ type FieldsUpdateBatchParam struct {
 type FieldQuery struct {
 	PlanID    string `form:"plan_id" binding:"required"`
 	TableRole string `form:"table_role"`
+}
+
+// TableColumnsQuery 表字段元数据查询。
+//
+// Author: Charlie
+type TableColumnsQuery struct {
+	TableName string `form:"table_name" binding:"required"`
 }

@@ -53,3 +53,15 @@ type PasswordKeyResult struct {
 type LogoutResult struct {
 	Success bool `json:"success"`
 }
+
+// SiteFooterResult 站点页脚公开信息：版权与备案。
+//
+// Author: Charlie
+type SiteFooterResult struct {
+	CopyrightText string `json:"copyright_text"`
+	CopyrightURL  string `json:"copyright_url"`
+	IcpNumber     string `json:"icp_number"`
+	IcpURL        string `json:"icp_url"`
+	PsbNumber     string `json:"psb_number"`
+	PsbURL        string `json:"psb_url"`
+}

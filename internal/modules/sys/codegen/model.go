@@ -5,7 +5,7 @@ package codegen
 
 import "time"
 
-// Plan 代码生成方案实体，对应表 sys_codegen_plan。
+// Plan 代码生成方案实体，对应表 sys_codegen_plan（字段名对齐 hei-boot）。
 //
 // Author: Charlie
 type Plan struct {
@@ -14,11 +14,11 @@ type Plan struct {
 	GenType          string    `gorm:"column:gen_type;size:32;not null" json:"gen_type"`
 	Author           string    `gorm:"column:author;size:64;not null" json:"author"`
 	Description      *string   `gorm:"column:description" json:"description"`
-	MainTable        string    `gorm:"column:main_table;size:128;not null" json:"main_table"`
-	MainPK           string    `gorm:"column:main_pk;size:128;not null;default:id" json:"main_pk"`
-	MainEntityName   string    `gorm:"column:main_entity_name;size:128;not null" json:"main_entity_name"`
-	MainModulePath   string    `gorm:"column:main_module_path;size:255;not null" json:"main_module_path"`
-	MainBusinessName string    `gorm:"column:main_business_name;size:128;not null" json:"main_business_name"`
+	Table            string    `gorm:"column:table_name;size:128;not null" json:"table_name"`
+	PKColumn         string    `gorm:"column:pk_column;size:128;not null;default:id" json:"pk_column"`
+	EntityName       string    `gorm:"column:entity_name;size:128;not null" json:"entity_name"`
+	ModulePath       string    `gorm:"column:module_path;size:255;not null" json:"module_path"`
+	BusinessName     string    `gorm:"column:business_name;size:128;not null" json:"business_name"`
 	APIPrefix        string    `gorm:"column:api_prefix;size:255;not null" json:"api_prefix"`
 	PermissionPrefix string    `gorm:"column:permission_prefix;size:128;not null" json:"permission_prefix"`
 	ResourceModuleID *string   `gorm:"column:resource_module_id;size:64" json:"resource_module_id"`
@@ -44,35 +44,35 @@ type Plan struct {
 // TableName 返回 Plan 对应的数据库表名。
 func (Plan) TableName() string { return "sys_codegen_plan" }
 
-// Field 代码生成字段实体，对应表 sys_codegen_field。
+// Field 代码生成字段实体，对应表 sys_codegen_field（字段名对齐 hei-boot）。
 //
 // Author: Charlie
 type Field struct {
-	ID             string    `gorm:"column:id;primaryKey;size:64" json:"id"`
-	PlanID         string    `gorm:"column:plan_id;size:64;not null;index" json:"plan_id"`
-	TableRole      string    `gorm:"column:table_role;size:16;not null;default:MAIN" json:"table_role"`
-	ColumnName     string    `gorm:"column:column_name;size:128;not null" json:"column_name"`
-	ColumnComment  *string   `gorm:"column:column_comment;size:255" json:"column_comment"`
-	DBType         string    `gorm:"column:db_type;size:128;not null" json:"db_type"`
-	PythonType     string    `gorm:"column:python_type;size:64;not null;default:str" json:"python_type"`
-	TypescriptType string    `gorm:"column:typescript_type;size:64;not null;default:string" json:"typescript_type"`
-	FormWidget     string    `gorm:"column:form_widget;size:32;not null;default:input" json:"form_widget"`
-	DictCode       *string   `gorm:"column:dict_code;size:128" json:"dict_code"`
-	QueryOperator  *string   `gorm:"column:query_operator;size:32" json:"query_operator"`
-	ShowInTable    bool      `gorm:"column:show_in_table;not null;default:true" json:"show_in_table"`
-	ShowInForm     bool      `gorm:"column:show_in_form;not null;default:true" json:"show_in_form"`
-	ShowInDetail   bool      `gorm:"column:show_in_detail;not null;default:true" json:"show_in_detail"`
-	ShowInQuery    bool      `gorm:"column:show_in_query;not null;default:false" json:"show_in_query"`
-	IsPrimaryKey   bool      `gorm:"column:is_primary_key;not null;default:false" json:"is_primary_key"`
-	IsRequired     bool      `gorm:"column:is_required;not null;default:false" json:"is_required"`
-	IsUnique       bool      `gorm:"column:is_unique;not null;default:false" json:"is_unique"`
-	IsNullable     bool      `gorm:"column:is_nullable;not null;default:true" json:"is_nullable"`
-	MaxLength      *int      `gorm:"column:max_length" json:"max_length"`
-	Sort           int       `gorm:"column:sort;not null;default:99" json:"sort"`
-	CreatedAt      time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	CreatedBy      *string   `gorm:"column:created_by;size:64" json:"created_by"`
-	UpdatedAt      time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UpdatedBy      *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
+	ID            string    `gorm:"column:id;primaryKey;size:64" json:"id"`
+	PlanID        string    `gorm:"column:plan_id;size:64;not null;index" json:"plan_id"`
+	TableRole     string    `gorm:"column:table_role;size:16;not null;default:MAIN" json:"table_role"`
+	ColumnName    string    `gorm:"column:column_name;size:128;not null" json:"column_name"`
+	Label         *string   `gorm:"column:label;size:255" json:"label"`
+	DBType        string    `gorm:"column:db_type;size:128;not null" json:"db_type"`
+	ValueType     string    `gorm:"column:value_type;size:64;not null;default:str" json:"value_type"`
+	UIType        string    `gorm:"column:ui_type;size:64;not null;default:string" json:"ui_type"`
+	Widget        string    `gorm:"column:widget;size:32;not null;default:input" json:"widget"`
+	DictCode      *string   `gorm:"column:dict_code;size:128" json:"dict_code"`
+	QueryOperator *string   `gorm:"column:query_operator;size:32" json:"query_operator"`
+	InTable       bool      `gorm:"column:in_table;not null;default:true" json:"in_table"`
+	InForm        bool      `gorm:"column:in_form;not null;default:true" json:"in_form"`
+	InDetail      bool      `gorm:"column:in_detail;not null;default:true" json:"in_detail"`
+	InQuery       bool      `gorm:"column:in_query;not null;default:false" json:"in_query"`
+	PrimaryKey    bool      `gorm:"column:primary_key;not null;default:false" json:"primary_key"`
+	Required      bool      `gorm:"column:required;not null;default:false" json:"required"`
+	UniqueFlag    bool      `gorm:"column:unique_flag;not null;default:false" json:"unique_flag"`
+	Nullable      bool      `gorm:"column:nullable;not null;default:true" json:"nullable"`
+	MaxLength     *int      `gorm:"column:max_length" json:"max_length"`
+	Sort          int       `gorm:"column:sort;not null;default:99" json:"sort"`
+	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	CreatedBy     *string   `gorm:"column:created_by;size:64" json:"created_by"`
+	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UpdatedBy     *string   `gorm:"column:updated_by;size:64" json:"updated_by"`
 }
 
 // TableName 返回 Field 对应的数据库表名。

@@ -7,14 +7,16 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/modules/profile"
+	"hei-gin/internal/modules/profile/identity"
 	"hei-gin/internal/modules/sys/file"
 )
 
 // init 自注册 profile.portal。
 func init() {
 	module.Register("profile.portal", 71, func(d *module.Deps) module.Module {
+		idSvc := identity.FromDeps(d)
 		s := profile.NewService(d.DB, d.Redis, d.Notify, d.Storage, file.FromDeps(d), d.Runtime,
-			d.Audit, security.AccountPortal, profile.ProfileTablePortal, "portal")
+			d.Audit, security.AccountPortal, profile.ProfileTablePortal, "portal", idSvc)
 		return module.Module{
 			Name:   "profile.portal",
 			Order:  71,

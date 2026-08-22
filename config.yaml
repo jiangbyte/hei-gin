@@ -54,9 +54,6 @@ cors:
   allow_methods:
     - GET
     - POST
-    - PUT
-    - PATCH
-    - DELETE
     - OPTIONS
   allow_headers:
     - Authorization
@@ -96,6 +93,10 @@ oauth:
     client_id: ""
     client_secret: ""
     redirect_url: ""
+  qq:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
   wechat:
     client_id: ""
     client_secret: ""
@@ -106,7 +107,7 @@ oauth:
     redirect_url: ""
 
 metrics:
-  enabled: true
+  enabled: false
   path: /metrics
 
 security:

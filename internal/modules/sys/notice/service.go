@@ -85,6 +85,9 @@ func (s *Service) Detail(ctx context.Context, id string) (*Notice, error) {
 func (s *Service) PageAdmin(ctx context.Context, q PageParam) (rows []Notice, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.PageAdmin(ctx, q)
+	for i := range rows {
+		rows[i].IsRead = nil
+	}
 	return rows, total, current, size, err
 }
 
@@ -140,7 +143,7 @@ func (s *Service) MyDetail(ctx context.Context, id, accountType, accountID strin
 	_ = s.MarkRead(ctx, ReadRecord{
 		NoticeID: id, AccountType: accountType, AccountID: accountID, ReadAt: time.Now().UTC(),
 	})
-	row.IsRead = true
+	row.IsRead = strPtr("true")
 	return row, nil
 }
 

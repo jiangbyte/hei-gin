@@ -26,9 +26,16 @@ type OperationLog struct {
 	RequestID    *string        `gorm:"column:request_id;size:64" json:"request_id"`
 	IP           *string        `gorm:"column:ip;size:64" json:"ip"`
 	UserAgent    *string        `gorm:"column:user_agent;size:512" json:"user_agent"`
+	ActionName   *string        `gorm:"column:action_name;size:128" json:"action_name"`
+	ActionType   *string        `gorm:"column:action_type;size:32" json:"action_type"`
+	ModuleLabel  *string        `gorm:"column:module_label;size:128" json:"module_label"`
+	OperatorName *string        `gorm:"column:operator_name;size:128" json:"operator_name"`
+	DurationMs   *int           `gorm:"column:duration_ms" json:"duration_ms"`
 	Success      bool           `gorm:"column:success;not null" json:"success"`
 	ErrorMessage *string        `gorm:"column:error_message" json:"error_message"`
 	CreatedAt    time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	CreatedBy    *string        `gorm:"column:created_by;size:64" json:"created_by"`
+	UpdatedBy    *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
 }
 
 // TableName 返回 OperationLog 对应的数据库表名。

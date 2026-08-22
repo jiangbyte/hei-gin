@@ -48,28 +48,28 @@ func New(d *module.Deps) module.Module {
 
 // Create 创建任务。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
-	if err := gojob.ValidateTrigger(req.ExecuteType, req.TriggerConfig); err != nil {
+	if err := gojob.ValidateTrigger(req.TriggerType, req.TriggerConfig); err != nil {
 		return err
 	}
-	if s.jobs != nil && !s.jobs.HasHandler(strings.TrimSpace(req.ExecuteClass)) {
-		return fmt.Errorf("未找到任务处理器: %s", req.ExecuteClass)
+	if s.jobs != nil && !s.jobs.HasHandler(strings.TrimSpace(req.Handler)) {
+		return fmt.Errorf("未找到任务处理器: %s", req.Handler)
 	}
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
 	now := time.Now().UTC()
-	next, err := gojob.ComputeNextRunTime(req.ExecuteType, req.TriggerConfig, now)
+	next, err := gojob.ComputeNextRunTime(req.TriggerType, req.TriggerConfig, now)
 	if err != nil {
 		return err
 	}
 	row := gojob.SysJob{
 		ID:            idgen.Next(),
-		JobName:       strings.TrimSpace(req.JobName),
-		ExecuteClass:  strings.TrimSpace(req.ExecuteClass),
-		ExecuteType:   strings.ToUpper(strings.TrimSpace(req.ExecuteType)),
+		Name:          strings.TrimSpace(req.Name),
+		Handler:       strings.TrimSpace(req.Handler),
+		TriggerType:   strings.ToUpper(strings.TrimSpace(req.TriggerType)),
 		TriggerConfig: strings.TrimSpace(req.TriggerConfig),
-		ExecuteParam:  gojob.ParamJSON(req.ExecuteParam),
+		Params:        gojob.ParamJSON(req.Params),
 		NextRunTime:   next,
 		Enabled:       enabled,
 		Description:   req.Description,
@@ -84,30 +84,30 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	if err := s.db.WithContext(ctx).First(&row, "id = ?", req.ID).Error; err != nil {
 		return fmt.Errorf("job not found")
 	}
-	if err := gojob.ValidateTrigger(req.ExecuteType, req.TriggerConfig); err != nil {
+	if err := gojob.ValidateTrigger(req.TriggerType, req.TriggerConfig); err != nil {
 		return err
 	}
-	if s.jobs != nil && !s.jobs.HasHandler(strings.TrimSpace(req.ExecuteClass)) {
-		return fmt.Errorf("未找到任务处理器: %s", req.ExecuteClass)
+	if s.jobs != nil && !s.jobs.HasHandler(strings.TrimSpace(req.Handler)) {
+		return fmt.Errorf("未找到任务处理器: %s", req.Handler)
 	}
 	enabled := row.Enabled
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
-	typeChanged := !strings.EqualFold(row.ExecuteType, req.ExecuteType) ||
+	typeChanged := !strings.EqualFold(row.TriggerType, req.TriggerType) ||
 		row.TriggerConfig != strings.TrimSpace(req.TriggerConfig)
 	updates := map[string]any{
-		"job_name":       strings.TrimSpace(req.JobName),
-		"execute_class":  strings.TrimSpace(req.ExecuteClass),
-		"execute_type":   strings.ToUpper(strings.TrimSpace(req.ExecuteType)),
+		"name":           strings.TrimSpace(req.Name),
+		"handler":        strings.TrimSpace(req.Handler),
+		"trigger_type":   strings.ToUpper(strings.TrimSpace(req.TriggerType)),
 		"trigger_config": strings.TrimSpace(req.TriggerConfig),
-		"execute_param":  gojob.ParamJSON(req.ExecuteParam),
+		"params":         gojob.ParamJSON(req.Params),
 		"enabled":        enabled,
 		"description":    req.Description,
 		"sort":           req.Sort,
 	}
 	if typeChanged {
-		next, err := gojob.ComputeNextRunTime(req.ExecuteType, req.TriggerConfig, time.Now().UTC())
+		next, err := gojob.ComputeNextRunTime(req.TriggerType, req.TriggerConfig, time.Now().UTC())
 		if err != nil {
 			return err
 		}
@@ -137,11 +137,11 @@ func (s *Service) Detail(ctx context.Context, id string) (*gojob.SysJob, error) 
 func (s *Service) Page(ctx context.Context, q PageParam) ([]gojob.SysJob, int64, int, int, error) {
 	cur, size := q.Normalize()
 	tx := s.db.WithContext(ctx).Model(&gojob.SysJob{})
-	if n := strings.TrimSpace(q.JobName); n != "" {
-		tx = tx.Where(dialect.ILike(tx, "job_name"), "%"+n+"%")
+	if n := strings.TrimSpace(q.Name); n != "" {
+		tx = tx.Where(dialect.ILike(tx, "name"), "%"+n+"%")
 	}
-	if t := strings.TrimSpace(q.ExecuteType); t != "" {
-		tx = tx.Where("execute_type = ?", strings.ToUpper(t))
+	if t := strings.TrimSpace(q.TriggerType); t != "" {
+		tx = tx.Where("trigger_type = ?", strings.ToUpper(t))
 	}
 	if q.Enabled != nil {
 		tx = tx.Where("enabled = ?", *q.Enabled)
@@ -163,7 +163,7 @@ func (s *Service) SetEnabled(ctx context.Context, req EnabledParam) error {
 	}
 	updates := map[string]any{"enabled": req.Enabled}
 	if req.Enabled {
-		next, err := gojob.ComputeNextRunTime(row.ExecuteType, row.TriggerConfig, time.Now().UTC())
+		next, err := gojob.ComputeNextRunTime(row.TriggerType, row.TriggerConfig, time.Now().UTC())
 		if err != nil {
 			return err
 		}
@@ -206,7 +206,7 @@ func (s *Service) Logs(ctx context.Context, q LogParam) ([]gojob.SysJobLog, int6
 		return nil, 0, cur, size, err
 	}
 	var rows []gojob.SysJobLog
-	err := tx.Order("execute_time DESC").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
+	err := tx.Order("started_at DESC").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
 	return rows, total, cur, size, err
 }
 
@@ -238,7 +238,7 @@ func (s *Service) logCleanupHandler(ctx context.Context, paramJSON string) (stri
 	}
 	cutoff := time.Now().UTC().AddDate(0, 0, -retention)
 	res := s.db.WithContext(ctx).
-		Where("execute_time < ?", cutoff).
+		Where("started_at < ?", cutoff).
 		Limit(batch).
 		Delete(&gojob.SysJobLog{})
 	if res.Error != nil {

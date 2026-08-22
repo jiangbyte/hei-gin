@@ -11,8 +11,9 @@ import "hei-gin/internal/framework/core/schema"
 // Author: Charlie
 type PageParam struct {
 	schema.PageQuery
-	Module    string `form:"module"`
-	Action    string `form:"action"`
-	AccountID string `form:"account_id"`
-	Success   *bool  `form:"success"`
+	Module         string `form:"module"`
+	Action         string `form:"action"`
+	ExcludeAction  string `form:"exclude_action"`
+	AccountID      string `form:"account_id"`
+	Success        *bool  `form:"success"`
 }

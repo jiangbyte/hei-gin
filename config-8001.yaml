@@ -1,0 +1,139 @@
+app:
+  name: hei-gin
+  host: 127.0.0.1
+  port: 8001
+  debug: true
+  timezone: Asia/Shanghai
+
+db:
+  driver: postgres
+  url: postgres://postgres:123456@127.0.0.1:5432/hei_gin?sslmode=disable
+  echo: false
+  pool_size: 10
+  max_overflow: 20
+
+redis:
+  url: redis://:123456@127.0.0.1:6379/4
+  max_connections: 100
+
+auth:
+  token_name: Authorization
+  token_ttl_seconds: 14400
+  token_ttl_short_seconds: 7200
+  portal_register_enabled: true
+  login_failure_window_seconds: 900
+  login_account_max_failures: 5
+  login_ip_max_failures: 30
+  login_lock_seconds: 900
+  captcha_ttl_seconds: 300
+  password_crypto_key_ttl_seconds: 600
+  session_idle_timeout_seconds: 0
+  session_bind_ip: true
+  session_bind_user_agent: false
+  max_concurrent_sessions: 5
+  session_cookie_enabled: true
+  session_cookie_name: Authorization
+  session_cookie_secure: false
+  session_cookie_samesite: lax
+  default_password: "123456"
+  auth_whitelist:
+    - /api/v1/portal/sys/banners/list
+    - /api/v1/portal/sys/banners/interaction
+    - /api/v1/portal/sys/dicts/tree
+    - /api/v1/portal/sys/notices/list
+
+cors:
+  allow_origins:
+    - http://localhost:5173
+    - http://127.0.0.1:5173
+    - http://localhost:5174
+    - http://127.0.0.1:5174
+    - http://localhost:5163
+    - http://127.0.0.1:5163
+  allow_credentials: true
+  allow_methods:
+    - GET
+    - POST
+    - OPTIONS
+  allow_headers:
+    - Authorization
+    - Content-Type
+    - X-Request-Id
+    - Accept
+    - Origin
+    - X-Requested-With
+    - X-HEI-CSRF
+
+id_generator:
+  worker_id: 1
+  datacenter_id: 1
+
+modules:
+  disabled: []
+  enabled: []
+
+audit:
+  operation_queue_size: 1000
+  stream_key: hei:audit:ops
+  consumer_group: hei-gin-audit
+  use_stream: true
+
+job:
+  scan_interval_ms: 1000
+  pool_size: 4
+  log_retention_days: 30
+  log_batch_size: 1000
+
+oauth:
+  github:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  gitee:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  qq:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  wechat:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+  wechat_mp:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+
+metrics:
+  enabled: false
+  path: /metrics
+
+security:
+  hsts_enabled: false
+  hsts_max_age_seconds: 31536000
+
+notify:
+  mail:
+    enabled: false
+    host: ""
+    port: 587
+    username: ""
+    password: ""
+    from: ""
+    ssl: false
+  sms:
+    enabled: false
+    provider: log
+  push:
+    enabled: false
+
+otel:
+  enabled: false
+  endpoint: ""
+
+crypto:
+  fernet_key: "XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck="
+  vault_addr: ""
+  vault_token: ""

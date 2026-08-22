@@ -161,5 +161,5 @@ func (s *Service) adminUpdateEmail(c *gin.Context) {
 }
 
 func (s *Service) adminOrgInfo(c *gin.Context) {
-	response.OK(c, s.OrgInfo(contextx.Session(c.Request.Context())))
+	response.OK(c, s.OrgInfo(c.Request.Context(), contextx.Session(c.Request.Context())))
 }

@@ -38,7 +38,7 @@ type Notice struct {
 	RevokedAt          *time.Time     `gorm:"column:revoked_at" json:"revoked_at"`
 	ExpireAt           *time.Time     `gorm:"column:expire_at" json:"expire_at"`
 	ViewCount          int            `gorm:"column:view_count" json:"view_count"`
-	IsRead             bool           `gorm:"-" json:"is_read"`
+	IsRead             *string        `gorm:"-" json:"is_read"`
 	Extra              datatypes.JSON `gorm:"column:extra;type:json" json:"extra"`
 	CreatedAt          time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	CreatedBy          *string        `gorm:"column:created_by;size:64" json:"created_by"`
@@ -85,3 +85,12 @@ func jsonObj(v any) datatypes.JSON {
 	}
 	return b
 }
+
+func boolStringPtr(v bool) *string {
+	if v {
+		return strPtr("true")
+	}
+	return strPtr("false")
+}
+
+func strPtr(v string) *string { return &v }

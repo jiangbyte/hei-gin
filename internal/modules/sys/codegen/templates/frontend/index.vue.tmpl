@@ -1,0 +1,815 @@
+<!--
+  由 HEI 代码生成器生成。
+  Author: {{(index .Plan "author")}}
+  生成时间：{{.GeneratedAt}}
+-->
+
+<script setup lang="tsx">
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+import type { PaginationProps } from 'naive-ui'
+{{end}}
+import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
+import { Icon } from '@iconify/vue/offline'
+import { {{.APIExportName}} } from '@/api'
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+import { readPageMeta } from '@/utils/wire'
+{{end}}
+import { {{if or (index .Main "has_query_dict") (and $.HasSub (index .Sub "has_query_dict"))}}dictList, {{end}}{{if or (index .Main "has_table_dict") (and $.HasSub (index .Sub "has_table_dict"))}}createTagColor, dictTypeColor, dictTypeData, displayValue, {{end}}formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { NButton, NFlex, NIcon{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}, NInput, NInputGroup{{end}}{{if or (index .Main "has_table_tag") (and $.HasSub (index .Sub "has_table_tag"))}}, NTag{{end}} } from 'naive-ui'
+import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
+{{if and $.HasSub $.Sub}}
+import ChildModalDetail from './components/children/ChildModalDetail.vue'
+import ChildModalForm from './components/children/ChildModalForm.vue'
+{{end}}
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+import ModalDetail from './components/ModalDetail.vue'
+import ModalForm from './components/ModalForm.vue'
+
+const formModalRef = ref<any>(null)
+const detailModalRef = ref<any>(null)
+{{end}}
+{{if and $.HasSub $.Sub}}
+const childFormModalRef = ref<any>(null)
+const childDetailModalRef = ref<any>(null)
+{{end}}
+const state = reactive({
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+  rows: [] as any[],
+  total: 0,
+  loading: false,
+  page: 1,
+  pageSize: 20,
+{{end}}
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+  searchValues: {} as any,
+  checkedRowKeys: [] as string[],
+{{end}}
+{{if $.HasTree}}
+  treeRows: [] as any[],
+  treeLoading: false,
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+  selectedTreeKeys: [] as string[],
+  treeKeyword: '',
+{{end}}
+{{end}}
+{{if and $.HasSub $.Sub}}
+  childRows: [] as any[],
+  childTotal: 0,
+  childLoading: false,
+{{if eq (deref (index .Plan "gen_type")) "MASTER_DETAIL"}}
+  childDrawerVisible: false,
+{{end}}
+  childSearchValues: {} as any,
+  childCheckedRowKeys: [] as string[],
+  childPage: 1,
+  childPageSize: 20,
+  selectedMasterId: null as string | null,
+{{end}}
+})
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+{{end}}
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+const treeData = computed(() => buildTreeNodes(state.treeRows))
+{{else if eq (deref (index .Plan "gen_type")) "TREE"}}
+const filteredTreeRows = computed(() => filterTreeRows(state.treeRows, state.searchValues))
+{{end}}
+{{if and $.HasSub $.Sub}}
+const hasChildCheckedRows = computed(() => state.childCheckedRowKeys.length > 0)
+const canCreateChild = computed(() => Boolean(state.selectedMasterId))
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+const searchForm = createProSearchForm<any>({
+  defaultCollapsed: true,
+  onSubmit(values) {
+    state.searchValues = normalizeSearchValues(values)
+{{if eq (deref (index .Plan "gen_type")) "TREE"}}
+  },
+  onReset() {
+    state.searchValues = {}
+  },
+{{else}}
+    state.page = 1
+    fetchPage()
+  },
+  onReset() {
+    state.searchValues = {}
+    state.page = 1
+    fetchPage()
+  },
+{{end}}
+})
+
+const searchColumns = computed<ProSearchFormColumns<any>>(() => [
+{{range $idx, $field := (index .Main "query_fields")}}
+{{if hasDictCode $field}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    field: 'select',
+    fieldProps: {
+      options: dictList('{{index $field "dict_code"}}'),
+    },
+  },
+{{else}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', field: 'input' },
+{{end}}
+{{else}}
+  { title: '关键词', path: 'keyword', field: 'input' },
+{{end}}
+])
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+const pagination = computed<PaginationProps>(() => ({
+  page: state.page,
+  pageSize: state.pageSize,
+  itemCount: state.total,
+  showSizePicker: true,
+  pageSizes: [10, 20, 30, 50],
+  prefix: ({ itemCount }) => `${itemCount} 条`,
+  onUpdatePage: (value) => {
+    state.page = value
+    fetchPage()
+  },
+  onUpdatePageSize: (value) => {
+    state.pageSize = value
+    state.page = 1
+    fetchPage()
+  },
+}))
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+const childSearchForm = createProSearchForm<any>({
+  defaultCollapsed: true,
+  onSubmit(values) {
+    state.childSearchValues = normalizeSearchValues(values)
+    state.childPage = 1
+    fetchChildPage()
+  },
+  onReset() {
+    state.childSearchValues = {}
+    state.childPage = 1
+    fetchChildPage()
+  },
+})
+
+const childSearchColumns = computed<ProSearchFormColumns<any>>(() => [
+{{range $idx, $field := (index .Sub "query_fields")}}
+{{if hasDictCode $field}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    field: 'select',
+    fieldProps: {
+      options: dictList('{{index $field "dict_code"}}'),
+    },
+  },
+{{else}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', field: 'input' },
+{{end}}
+{{else}}
+  { title: '关键词', path: 'keyword', field: 'input' },
+{{end}}
+])
+
+const childPagination = computed<PaginationProps>(() => ({
+  page: state.childPage,
+  pageSize: state.childPageSize,
+  itemCount: state.childTotal,
+  showSizePicker: true,
+  pageSizes: [10, 20, 30, 50],
+  prefix: ({ itemCount }) => `${itemCount} 条`,
+  onUpdatePage: (value) => {
+    state.childPage = value
+    fetchChildPage()
+  },
+  onUpdatePageSize: (value) => {
+    state.childPageSize = value
+    state.childPage = 1
+    fetchChildPage()
+  },
+}))
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+const tableColumns = computed<ProDataTableColumns<any>>(() => [
+  { type: 'selection', fixed: 'left' },
+{{range $idx, $field := (index .Main "table_fields")}}
+{{if ge $idx 8}}{{break}}{{end}}
+{{if hasDictCode $field}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: row => (
+      <NTag color={createTagColor(dictTypeColor('{{index $field "dict_code"}}', row.{{index $field "name"}}))} bordered={false}>
+        {dictTypeData('{{index $field "dict_code"}}', row.{{index $field "name"}}) || displayValue(row.{{index $field "name"}})}
+      </NTag>
+    ),
+  },
+{{else if (index $field "is_bool")}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    width: 120,
+    render: row => (
+      <NTag type={row.{{index $field "name"}} === 'true' ? 'success' : 'default'} bordered={false}>
+        {row.{{index $field "name"}} === 'true' ? '是' : row.{{index $field "name"}} === 'false' ? '否' : '-'}
+      </NTag>
+    ),
+  },
+{{else if (index $field "is_datetime")}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', width: 190, render: row => formatDateTime(row.{{index $field "name"}}) },
+{{else}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', width: 150, ellipsis: { tooltip: true } },
+{{end}}
+{{end}}
+  { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
+  {
+    title: '操作',
+    key: 'actions',
+    width: {{if and $.HasSub $.Sub}}170{{else}}130{{end}},
+    fixed: 'right',
+    render: row => (
+      <NFlex size={12}>
+        {hasPermission('{{.PermissionPrefix}}:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.{{(index .Main "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('{{.PermissionPrefix}}:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.{{(index .Main "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+{{if and $.HasSub $.Sub}}
+        <NButton type="info" size="small" text={true} onClick={() => selectMaster(row.{{(index .Main "pk_name")}})}>
+          {renderButtonIcon('icon-park-outline:list-view')}
+        </NButton>
+{{end}}
+        {hasPermission('{{.PermissionPrefix}}:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.{{(index .Main "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
+      </NFlex>
+    ),
+  },
+])
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+const childColumns = computed<ProDataTableColumns<any>>(() => [
+  { type: 'selection', fixed: 'left' },
+{{range $idx, $field := (index .Sub "table_fields")}}
+{{if ge $idx 8}}{{break}}{{end}}
+{{if hasDictCode $field}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: row => (
+      <NTag color={createTagColor(dictTypeColor('{{index $field "dict_code"}}', row.{{index $field "name"}}))} bordered={false}>
+        {dictTypeData('{{index $field "dict_code"}}', row.{{index $field "name"}}) || displayValue(row.{{index $field "name"}})}
+      </NTag>
+    ),
+  },
+{{else if (index $field "is_bool")}}
+  {
+    title: '{{index $field "label"}}',
+    path: '{{index $field "name"}}',
+    width: 120,
+    render: row => (
+      <NTag type={row.{{index $field "name"}} === 'true' ? 'success' : 'default'} bordered={false}>
+        {row.{{index $field "name"}} === 'true' ? '是' : row.{{index $field "name"}} === 'false' ? '否' : '-'}
+      </NTag>
+    ),
+  },
+{{else if (index $field "is_datetime")}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', width: 190, render: row => formatDateTime(row.{{index $field "name"}}) },
+{{else}}
+  { title: '{{index $field "label"}}', path: '{{index $field "name"}}', width: 150, ellipsis: { tooltip: true } },
+{{end}}
+{{end}}
+  { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 130,
+    fixed: 'right',
+    render: row => (
+      <NFlex size={12}>
+        {hasPermission('{{.PermissionPrefix}}:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openChildDetailModal(row.{{(index .Sub "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('{{.PermissionPrefix}}:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openChildEditModal(row.{{(index .Sub "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('{{.PermissionPrefix}}:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmChildDelete(row.{{(index .Sub "pk_name")}})}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
+      </NFlex>
+    ),
+  },
+])
+{{end}}
+
+onMounted(() => {
+{{if $.HasTree}}
+  fetchTree()
+{{end}}
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+  fetchChildPage()
+{{else if eq (deref (index .Plan "gen_type")) "TREE"}}
+{{else}}
+  fetchPage()
+{{end}}
+})
+
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+async function fetchPage() {
+  state.loading = true
+  try {
+    const response = await {{.APIExportName}}.page({ current: state.page, size: state.pageSize, ...state.searchValues })
+    const data = response.data ?? {}
+    state.rows = data.records ?? []
+    const pageMeta = readPageMeta(data, { current: state.page, size: state.pageSize })
+    state.total = pageMeta.total
+    state.page = pageMeta.current
+    state.pageSize = pageMeta.size
+    state.checkedRowKeys = state.checkedRowKeys.filter(key => state.rows.some(item => item.{{(index .Main "pk_name")}} === key))
+  } finally {
+    state.loading = false
+  }
+}
+{{end}}
+{{if $.HasTree}}
+
+async function fetchTree() {
+  state.treeLoading = true
+  try {
+    const response = await {{.APIExportName}}.tree({{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}{ keyword: state.treeKeyword || undefined }{{end}})
+    state.treeRows = response.data ?? []
+  } finally {
+    state.treeLoading = false
+  }
+}
+
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+async function searchTree() {
+  state.selectedTreeKeys = []
+  state.selectedMasterId = null
+  state.childPage = 1
+  await Promise.all([fetchTree(), fetchChildPage()])
+}
+
+async function resetTreeSearch() {
+  state.treeKeyword = ''
+  await searchTree()
+}
+
+function handleTreeSelect(keys: Array<string | number>) {
+  state.selectedTreeKeys = keys.map(String)
+  state.selectedMasterId = state.selectedTreeKeys[0] ?? null
+  state.childPage = 1
+  fetchChildPage()
+}
+
+function buildTreeNodes(items: any[]): any[] {
+  return items.map(item => ({
+    key: item.{{(index .Main "pk_name")}},
+    label: item.{{(index .Plan "tree_label_field")}},
+    children: item.children?.length ? buildTreeNodes(item.children) : undefined,
+  }))
+}
+{{else if eq (deref (index .Plan "gen_type")) "TREE"}}
+
+function filterTreeRows(items: any[], searchValues: any): any[] {
+  return items
+    .map((item) => {
+      const children = filterTreeRows(item.children ?? [], searchValues)
+      if (matchesTreeRow(item, searchValues) || children.length) {
+        return { ...item, children }
+      }
+      return null
+    })
+    .filter(Boolean)
+}
+
+function matchesTreeRow(item: any, searchValues: any) {
+{{range $idx, $field := (index .Main "query_fields")}}
+{{if bootIsFirst $idx}}
+  const conditions = [
+{{end}}
+{{if eq (deref (index $field "query_operator")) "EQ"}}
+    equalsValue(item.{{index $field "name"}}, searchValues.{{index $field "name"}}),
+{{else}}
+    containsValue(item.{{index $field "name"}}, searchValues.{{index $field "name"}}),
+{{end}}
+{{if bootIsLast $idx (index .Main "query_fields")}}
+  ]
+  return conditions.every(Boolean)
+{{end}}
+{{else}}
+  const keyword = searchValues.keyword
+  if (keyword === undefined || keyword === null || keyword === '') {
+    return true
+  }
+  return Object.entries(item).some(([key, value]) => key !== 'children' && containsValue(value, keyword))
+{{end}}
+}
+
+function containsValue(source: unknown, target: unknown) {
+  if (target === undefined || target === null || target === '') {
+    return true
+  }
+  return String(source ?? '').toLowerCase().includes(String(target).toLowerCase())
+}
+
+function equalsValue(source: unknown, target: unknown) {
+  if (target === undefined || target === null || target === '') {
+    return true
+  }
+  return String(source ?? '') === String(target)
+}
+{{end}}
+{{end}}
+{{if eq (deref (index .Plan "gen_type")) "MASTER_DETAIL"}}
+
+async function selectMaster(id: string) {
+  state.selectedMasterId = id
+{{if eq (deref (index .Plan "gen_type")) "MASTER_DETAIL"}}
+  state.childDrawerVisible = true
+{{end}}
+  state.childCheckedRowKeys = []
+  state.childPage = 1
+  await fetchChildPage()
+}
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+async function fetchChildPage() {
+  state.childLoading = true
+  try {
+    const response = await {{.APIExportName}}.childPage({
+      current: state.childPage,
+      size: state.childPageSize,
+      {{(index .Plan "sub_foreign_key")}}: state.selectedMasterId,
+      ...state.childSearchValues,
+    })
+    const data = response.data ?? {}
+    state.childRows = data.records ?? []
+    const childPageMeta = readPageMeta(data, { current: state.childPage, size: state.childPageSize })
+    state.childTotal = childPageMeta.total
+    state.childPage = childPageMeta.current
+    state.childPageSize = childPageMeta.size
+    state.childCheckedRowKeys = state.childCheckedRowKeys.filter(key => state.childRows.some(item => item.{{(index .Sub "pk_name")}} === key))
+  } finally {
+    state.childLoading = false
+  }
+}
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+function openDetailModal(id: string) {
+  detailModalRef.value?.openModal(id)
+}
+
+function openCreateModal() {
+  formModalRef.value?.openModal()
+}
+
+function openEditModal(id: string) {
+  formModalRef.value?.openModal(id)
+}
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+function openChildDetailModal(id: string) {
+  childDetailModalRef.value?.openModal(id)
+}
+
+function openChildCreateModal() {
+  childFormModalRef.value?.openModal(undefined, { {{(index .Plan "sub_foreign_key")}}: state.selectedMasterId })
+}
+
+function openChildEditModal(id: string) {
+  childFormModalRef.value?.openModal(id)
+}
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+function handleCheckedRowKeys(keys: Array<string | number>) {
+  state.checkedRowKeys = keys.map(String)
+}
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+function handleChildCheckedRowKeys(keys: Array<string | number>) {
+  state.childCheckedRowKeys = keys.map(String)
+}
+{{end}}
+
+{{if ne (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+function confirmDelete(value: string | string[]) {
+  const ids = Array.isArray(value) ? value : [value]
+  if (!ids.length) {
+    return
+  }
+  window.$dialog.warning({
+    title: ids.length > 1 ? '批量删除' : '删除',
+    content: ids.length > 1 ? `删除 ${ids.length} 条记录?` : '删除该记录?',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: () => deleteRows(ids),
+  })
+}
+
+async function deleteRows(ids: string[]) {
+  await {{.APIExportName}}.remove({ ids })
+  state.checkedRowKeys = state.checkedRowKeys.filter(key => !ids.includes(key))
+{{if eq (deref (index .Plan "gen_type")) "MASTER_DETAIL"}}
+  if (state.selectedMasterId && ids.includes(state.selectedMasterId)) {
+    state.selectedMasterId = null
+    state.childDrawerVisible = false
+    state.childRows = []
+    state.childTotal = 0
+    state.childCheckedRowKeys = []
+  }
+{{end}}
+  window.$message.success('删除成功')
+{{if eq (deref (index .Plan "gen_type")) "TREE"}}
+  await fetchTree()
+{{else}}
+  await fetchPage()
+{{end}}
+}
+{{end}}
+{{if and $.HasSub $.Sub}}
+
+function confirmChildDelete(value: string | string[]) {
+  const ids = Array.isArray(value) ? value : [value]
+  if (!ids.length) {
+    return
+  }
+  window.$dialog.warning({
+    title: ids.length > 1 ? '批量删除' : '删除',
+    content: ids.length > 1 ? `删除 ${ids.length} 条明细?` : '删除该明细?',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: () => deleteChildRows(ids),
+  })
+}
+
+async function deleteChildRows(ids: string[]) {
+  await {{.APIExportName}}.childRemove({ ids })
+  state.childCheckedRowKeys = state.childCheckedRowKeys.filter(key => !ids.includes(key))
+  window.$message.success('删除成功')
+  await fetchChildPage()
+}
+{{end}}
+</script>
+
+<template>
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+  <div class="generated-left-tree-table">
+    <ProCard class="generated-tree" content-class="h-full min-h-0 overflow-hidden">
+      <NFlex class="generated-tree-layout" vertical :size="12">
+        <NInputGroup>
+          <NInput
+            v-model:value="state.treeKeyword"
+            clearable
+            placeholder="搜索{{(index .Plan "main_business_name")}}"
+            @keyup.enter="searchTree"
+          />
+          <NButton type="primary" :loading="state.treeLoading" title="搜索" @click="searchTree">
+            <template #icon><NIcon><Icon icon="icon-park-outline:search" /></NIcon></template>
+          </NButton>
+          <NButton :disabled="!state.treeKeyword" title="重置" @click="resetTreeSearch">
+            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+          </NButton>
+        </NInputGroup>
+        <div class="generated-tree-body">
+          <NSpin
+            :show="state.treeLoading"
+            class="generated-tree-spin"
+            content-class="generated-tree-spin-content"
+          >
+            <NScrollbar class="generated-tree-scroll" content-class="generated-tree-scroll-content">
+              <NTree
+                block-line
+                block-node
+                show-line
+                :data="treeData"
+                :selected-keys="state.selectedTreeKeys"
+                key-field="key"
+                label-field="label"
+                children-field="children"
+                @update:selected-keys="handleTreeSelect"
+              />
+            </NScrollbar>
+          </NSpin>
+        </div>
+      </NFlex>
+    </ProCard>
+
+    <NFlex class="min-w-0 min-h-0 h-full" vertical>
+      <ProCard content-class="pb-0!">
+        <ProSearchForm
+          :form="childSearchForm"
+          :columns="childSearchColumns"
+          :reset-button-props="{ content: '重置' }"
+          :search-button-props="{ content: '搜索' }"
+        />
+      </ProCard>
+      <ProDataTable
+        class="min-h-0 flex-1"
+        remote
+        title="{{if (deref (index .Plan "sub_business_name"))}}{{(index .Plan "sub_business_name")}}{{else}}明细{{end}}"
+        row-key="{{(index .Sub "pk_name")}}"
+        :scroll-x="1300"
+        :columns="childColumns"
+        :data="state.childRows"
+        :loading="state.childLoading"
+        :pagination="childPagination"
+        :checked-row-keys="state.childCheckedRowKeys"
+        :on-update-checked-row-keys="handleChildCheckedRowKeys"
+      >
+        <template #toolbar>
+          <NFlex>
+            <NButton v-if="hasPermission('{{.PermissionPrefix}}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
+              <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+            </NButton>
+            <NButton text :loading="state.childLoading" @click="fetchChildPage">
+              <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+            </NButton>
+            <NButton v-if="hasPermission('{{.PermissionPrefix}}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
+              <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+            </NButton>
+          </NFlex>
+        </template>
+      </ProDataTable>
+    </NFlex>
+
+    <ChildModalDetail ref="childDetailModalRef" />
+    <ChildModalForm ref="childFormModalRef" @saved="fetchChildPage" />
+  </div>
+{{else}}
+  <NFlex class="h-full min-h-0" vertical>
+    <ProCard content-class="pb-0!">
+      <ProSearchForm
+        :form="searchForm"
+        :columns="searchColumns"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
+      />
+    </ProCard>
+
+    <ProDataTable
+      class="min-h-0 flex-1"
+{{if ne (deref (index .Plan "gen_type")) "TREE"}}
+      remote
+{{end}}
+      title="{{(index .Plan "menu_name")}}"
+      row-key="{{(index .Main "pk_name")}}"
+      :scroll-x="1300"
+      :columns="tableColumns"
+{{if eq (deref (index .Plan "gen_type")) "TREE"}}
+      :data="filteredTreeRows"
+      :loading="state.treeLoading"
+      :pagination="false"
+      default-expand-all
+{{else}}
+      :data="state.rows"
+      :loading="state.loading"
+      :pagination="pagination"
+{{end}}
+      :checked-row-keys="state.checkedRowKeys"
+      :on-update-checked-row-keys="handleCheckedRowKeys"
+    >
+      <template #toolbar>
+        <NFlex>
+          <NButton v-if="hasPermission('{{.PermissionPrefix}}:create')" type="primary" text @click="openCreateModal">
+            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+          </NButton>
+          <NButton text :loading="{{if eq (deref (index .Plan "gen_type")) "TREE"}}state.treeLoading{{else}}state.loading{{end}}" @click="{{if eq (deref (index .Plan "gen_type")) "TREE"}}fetchTree{{else}}fetchPage{{end}}">
+            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+          </NButton>
+          <NButton v-if="hasPermission('{{.PermissionPrefix}}:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
+            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+          </NButton>
+        </NFlex>
+      </template>
+    </ProDataTable>
+{{if eq (deref (index .Plan "gen_type")) "MASTER_DETAIL"}}
+
+    <NDrawer v-model:show="state.childDrawerVisible" :width="960" placement="right">
+      <NDrawerContent title="{{if (deref (index .Plan "sub_business_name"))}}{{(index .Plan "sub_business_name")}}{{else}}明细{{end}}管理" closable>
+        <NFlex style="height: calc(100vh - 110px)" vertical>
+          <ProCard content-class="pb-0!">
+            <ProSearchForm
+              :form="childSearchForm"
+              :columns="childSearchColumns"
+              :reset-button-props="{ content: '重置' }"
+              :search-button-props="{ content: '搜索' }"
+            />
+          </ProCard>
+          <ProDataTable
+            class="min-h-0 flex-1"
+            remote
+            title="{{if (deref (index .Plan "sub_business_name"))}}{{(index .Plan "sub_business_name")}}{{else}}明细{{end}}"
+            row-key="{{(index .Sub "pk_name")}}"
+            :scroll-x="1300"
+            :columns="childColumns"
+            :data="state.childRows"
+            :loading="state.childLoading"
+            :pagination="childPagination"
+            :checked-row-keys="state.childCheckedRowKeys"
+            :on-update-checked-row-keys="handleChildCheckedRowKeys"
+          >
+            <template #toolbar>
+              <NFlex>
+                <NButton v-if="hasPermission('{{.PermissionPrefix}}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+                </NButton>
+                <NButton text :loading="state.childLoading" @click="fetchChildPage">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+                </NButton>
+                <NButton v-if="hasPermission('{{.PermissionPrefix}}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
+                  <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+                </NButton>
+              </NFlex>
+            </template>
+          </ProDataTable>
+        </NFlex>
+      </NDrawerContent>
+    </NDrawer>
+{{end}}
+
+    <ModalDetail ref="detailModalRef" />
+    <ModalForm ref="formModalRef" @saved="{{if eq (deref (index .Plan "gen_type")) "TREE"}}fetchTree{{else}}fetchPage{{end}}" />
+{{if and $.HasSub $.Sub}}
+    <ChildModalDetail ref="childDetailModalRef" />
+    <ChildModalForm ref="childFormModalRef" @saved="fetchChildPage" />
+{{end}}
+  </NFlex>
+{{end}}
+</template>
+{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}
+
+<style scoped>
+.generated-left-tree-table {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.generated-tree {
+  min-height: 0;
+}
+
+.generated-tree-layout {
+  height: 100%;
+  min-height: 0;
+}
+
+.generated-tree-body {
+  min-height: 0;
+  flex: 1;
+}
+
+.generated-tree-spin,
+.generated-tree-spin :deep(.generated-tree-spin-content),
+.generated-tree-scroll {
+  height: 100%;
+  min-height: 0;
+}
+
+.generated-tree-scroll :deep(.generated-tree-scroll-content) {
+  min-width: max-content;
+  padding-right: 8px;
+}
+
+@media (max-width: 900px) {
+  .generated-left-tree-table {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(260px, 34vh) minmax(0, 1fr);
+  }
+}
+</style>
+{{end}}

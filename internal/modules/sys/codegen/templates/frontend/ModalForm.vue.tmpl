@@ -1,0 +1,318 @@
+<!--
+  由 HEI 代码生成器生成。
+  Author: {{index .Plan "author"}}
+  生成时间：{{.GeneratedAt}}
+-->
+
+<script setup lang="ts">
+import type { FormInst, FormRules } from 'naive-ui'
+import { {{.APIExportName}} } from '@/api'
+{{if wireImports .Target}}import { {{wireImports .Target}} } from '@/utils/wire'{{end}}
+import { createRequiredRule{{if (index .Target "has_form_datetime")}}, toApiDateTime, toFormDateTime{{end}} } from '@/utils'
+{{if (index .Target "has_form_icon")}}
+import IconSelect from '@/components/common/IconSelect.vue'
+{{end}}
+{{if (index .Target "has_form_editor")}}
+import { {{if (index .Target "has_form_richtext")}}RichTextEditor, {{end}}{{if (index .Target "has_form_markdown")}}MdEditor, {{end}}{{if (index .Target "has_form_code")}}MonacoEditor{{end}} } from '@/components/editor'
+{{end}}
+import { computed, reactive, ref } from 'vue'
+
+const emit = defineEmits<{
+  saved: []
+}>()
+
+const formRef = ref<FormInst | null>(null)
+const defaultFormData: Record<string, any> = {
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if and $.HasTreeParentForm (eq (index $field "name") (index $.Plan "tree_parent_field"))}}
+  {{index $field "name"}}: null,
+{{else}}
+  {{index $field "name"}}: {{index $field "vue_default"}},
+{{end}}
+{{end}}
+}
+const state = reactive({
+  showModal: false,
+  loading: false,
+{{if $.HasTreeParentForm}}
+  treeLoading: false,
+{{end}}
+  submitLoading: false,
+  dataId: null as string | null,
+  formModel: normalizeFormData(),
+{{if $.HasTreeParentForm}}
+  treeRows: [] as any[],
+{{end}}
+})
+
+const modalTitle = computed(() => state.dataId ? '编辑{{index .Plan "main_business_name"}}' : '新增{{index .Plan "main_business_name"}}')
+{{if $.HasTreeParentForm}}
+const parentTreeOptions = computed(() =>
+  buildParentTreeOptions(state.treeRows, state.dataId),
+)
+{{end}}
+const rules = computed<FormRules>(() => ({
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if or (index $field "required") (index $field "is_json")}}
+  {{index $field "name"}}: [
+{{if (index $field "required")}}
+{{if eq (index $field "value_type") "bool"}}
+    {
+      validator: () => typeof state.formModel.{{index $field "name"}} === 'boolean',
+      message: '请选择{{index $field "label"}}',
+      trigger: 'change',
+    },
+{{else if or (eq (index $field "value_type") "int") (eq (index $field "value_type") "float")}}
+    {
+      validator: () => typeof state.formModel.{{index $field "name"}} === 'number' && Number.isFinite(state.formModel.{{index $field "name"}}),
+      message: '请输入{{index $field "label"}}',
+      trigger: ['input', 'blur'],
+    },
+{{else}}
+    createRequiredRule('{{index $field "label"}}', {{if or (eq (index $field "widget") "dict") (eq (index $field "value_type") "bool") (index $field "is_datetime") (eq (index $field "widget") "icon")}}'change'{{else}}'input'{{end}}),
+{{end}}
+{{end}}
+{{if (index $field "is_json")}}
+    {
+      validator: () => isValidJsonValue(state.formModel.{{index $field "name"}}),
+      message: '请输入合法 JSON 对象',
+      trigger: ['input', 'blur'],
+    },
+{{end}}
+  ],
+{{end}}
+{{end}}
+}))
+
+async function openModal(id?: string, defaults: Partial<typeof defaultFormData> = {}) {
+  state.dataId = id ?? null
+  state.formModel = normalizeFormData(defaults)
+  state.showModal = true
+{{if $.HasTreeParentForm}}
+  await fetchTreeRows()
+{{end}}
+  if (id) {
+    await fetchDetail(id)
+  }
+}
+{{if $.HasTreeParentForm}}
+
+async function fetchTreeRows() {
+  state.treeLoading = true
+  try {
+    const response = await {{.APIExportName}}.tree()
+    state.treeRows = response.data ?? []
+  } finally {
+    state.treeLoading = false
+  }
+}
+{{end}}
+
+async function fetchDetail(id: string) {
+  state.loading = true
+  try {
+    const response = await {{.APIExportName}}.detail({ id })
+    state.formModel = normalizeFormData(response.data ?? {})
+  } finally {
+    state.loading = false
+  }
+}
+
+function normalizeFormData(data: Record<string, any> = {}): Record<string, any> {
+  return {
+    ...defaultFormData,
+    ...data,
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if (index $field "is_bool")}}
+    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireBool(String(data.{{index $field "name"}})),
+{{end}}
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if eq (index $field "value_type") "int"}}
+    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireInt(String(data.{{index $field "name"}})),
+{{end}}
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if eq (index $field "value_type") "float"}}
+    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireFloat(String(data.{{index $field "name"}})),
+{{end}}
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if (index $field "is_datetime")}}
+    {{index $field "name"}}: toFormDateTime(data.{{index $field "name"}}),
+{{end}}
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if (index $field "is_json")}}
+    {{index $field "name"}}: stringifyJsonValue(data.{{index $field "name"}}),
+{{end}}
+{{end}}
+  }
+}
+{{if or (index .Target "needs_submit_normalize") $.HasTreeParentForm}}
+
+function normalizeSubmitData(data: Record<string, any>): Record<string, any> {
+  return {
+    ...data,
+{{if $.HasTreeParentForm}}
+    {{index .Plan "tree_parent_field"}}: data.{{index .Plan "tree_parent_field"}} === '' ? null : (data.{{index .Plan "tree_parent_field"}} ?? null),
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if (index $field "is_datetime")}}
+    {{index $field "name"}}: toApiDateTime(data.{{index $field "name"}}),
+{{end}}
+{{end}}
+{{range $idx, $field := (index .Target "form_fields")}}
+{{if (index $field "is_json")}}
+    {{index $field "name"}}: parseJsonValue(data.{{index $field "name"}}),
+{{end}}
+{{end}}
+  }
+}
+{{end}}
+{{if (index .Target "has_form_json")}}
+
+function parseJsonValue(value: unknown) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return {}
+  }
+  const parsed = JSON.parse(text)
+  if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
+    throw new Error('JSON value must be an object')
+  }
+  return parsed
+}
+
+function isValidJsonValue(value: unknown) {
+  try {
+    parseJsonValue(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function stringifyJsonValue(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return '{}'
+  }
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2)
+    } catch {
+      return value
+    }
+  }
+  return JSON.stringify(value, null, 2)
+}
+{{end}}
+
+function closeModal() {
+  state.showModal = false
+  state.submitLoading = false
+}
+{{if $.HasTreeParentForm}}
+
+function buildParentTreeOptions(items: any[], editingId: string | null, disabledParent = false): any[] {
+  return items.map((item) => {
+    const itemId = String(item.{{index .Main "pk_name"}} ?? '')
+    const disabled = disabledParent || (editingId !== null && itemId === editingId)
+    return {
+      key: item.{{index .Main "pk_name"}},
+      label: String(item.{{index .Plan "tree_label_field"}} ?? item.{{index .Main "pk_name"}} ?? ''),
+      disabled,
+      children: buildParentTreeOptions(item.children ?? [], editingId, disabled),
+    }
+  })
+}
+{{end}}
+
+async function submitForm() {
+  await formRef.value?.validate()
+  state.submitLoading = true
+  try {
+    const payload = {{if or (index .Target "needs_submit_normalize") $.HasTreeParentForm}}normalizeSubmitData(state.formModel){{else}}state.formModel{{end}}
+    if (state.dataId) {
+      await {{.APIExportName}}.update({ ...payload, {{index .Target "pk_name"}}: state.dataId })
+      window.$message.success('更新成功')
+    } else {
+      await {{.APIExportName}}.create(payload)
+      window.$message.success('创建成功')
+    }
+    emit('saved')
+    closeModal()
+  } finally {
+    state.submitLoading = false
+  }
+}
+
+defineExpose({
+  openModal,
+})
+</script>
+
+<template>
+  <NModal
+    v-model:show="state.showModal"
+    preset="card"
+    draggable
+    :mask-closable="false"
+    :title="modalTitle"
+    style="width: {{if (index .Target "has_form_editor")}}960px{{else}}720px{{end}}"
+    :segmented="{ content: true, action: true }"
+  >
+    <NSpin :show="state.loading{{if $.HasTreeParentForm}} || state.treeLoading{{end}}">
+      <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
+        <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading{{if $.HasTreeParentForm}} || state.treeLoading{{end}} || state.submitLoading">
+{{range $idx, $field := (index .Target "form_fields")}}
+          <NFormItem label="{{if and $.HasTreeParentForm (eq (index $field "name") (index $.Plan "tree_parent_field"))}}父级{{else}}{{index $field "label"}}{{end}}" path="{{index $field "name"}}">
+{{if and $.HasTreeParentForm (eq (index $field "name") (index $.Plan "tree_parent_field"))}}
+            <NTreeSelect
+              v-model:value="state.formModel.{{index $field "name"}}"
+              clearable
+              filterable
+              :options="parentTreeOptions"
+              :loading="state.treeLoading"
+              key-field="key"
+              label-field="label"
+              children-field="children"
+              class="w-full"
+            />
+{{else if or (eq (index $field "widget") "number") (eq (index $field "value_type") "int") (eq (index $field "value_type") "float")}}
+            <NInputNumber v-model:value="state.formModel.{{index $field "name"}}" class="w-full" />
+{{else if eq (index $field "widget") "richtext"}}
+            <RichTextEditor v-model:value="state.formModel.{{index $field "name"}}" :height="360" class="w-full" />
+{{else if eq (index $field "widget") "markdown"}}
+            <MdEditor v-model:value="state.formModel.{{index $field "name"}}" :height="360" class="w-full" />
+{{else if eq (index $field "widget") "code"}}
+            <MonacoEditor v-model:value="state.formModel.{{index $field "name"}}" language="{{index $field "code_language"}}" :height="360" class="w-full" />
+{{else if eq (index $field "widget") "icon"}}
+            <IconSelect v-model:value="state.formModel.{{index $field "name"}}" class="w-full" />
+{{else if eq (index $field "widget") "textarea"}}
+            <NInput v-model:value="state.formModel.{{index $field "name"}}" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
+{{else if and (eq (index $field "widget") "dict") (index $field "dict_code")}}
+            <DictSelect v-model="state.formModel.{{index $field "name"}}" dict-code="{{index $field "dict_code"}}" />
+{{else if (index $field "is_json")}}
+            <NInput v-model:value="state.formModel.{{index $field "name"}}" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+{{else if eq (index $field "value_type") "bool"}}
+            <NSwitch v-model:value="state.formModel.{{index $field "name"}}" />
+{{else if or (eq (index $field "widget") "datetime") (eq (index $field "value_type") "datetime")}}
+            <NDatePicker v-model:formatted-value="state.formModel.{{index $field "name"}}" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+{{else}}
+            <NInput v-model:value="state.formModel.{{index $field "name"}}" />
+{{end}}
+          </NFormItem>
+{{end}}
+        </NForm>
+      </NScrollbar>
+    </NSpin>
+
+    <template #action>
+      <NSpace justify="end">
+        <NButton @click="closeModal">取消</NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
+      </NSpace>
+    </template>
+  </NModal>
+</template>

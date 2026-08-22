@@ -1,0 +1,110 @@
+# 路由级 Swagger 覆盖（key = "METHOD /path"，path 与 Gin 路由一致，含 :param）
+routes:
+  "POST /v1/admin/sys/file/upload":
+    summary: 文件上传
+    accept: multipart/form-data
+    security: true
+    success: response.SwaggerApiResponse
+  "POST /v1/portal/sys/file/upload":
+    summary: 门户文件上传
+    accept: multipart/form-data
+    security: true
+    success: response.SwaggerApiResponse
+  "GET /v1/admin/sys/file/download":
+    summary: 文件下载
+    security: true
+    produce: application/octet-stream
+    success: response.SwaggerApiResponse
+  "GET /v1/portal/sys/file/download":
+    summary: 门户文件下载
+    security: true
+    success: response.SwaggerApiResponse
+  "GET /v1/admin/captcha":
+    summary: 管理端验证码
+    security: false
+    success: response.SwaggerApiResponse{data=auth.CaptchaResult}
+  "GET /v1/portal/captcha":
+    summary: 门户验证码
+    security: false
+    success: response.SwaggerApiResponse{data=auth.CaptchaResult}
+  "GET /v1/admin/password-key":
+    summary: 管理端密码加密公钥
+    security: false
+    success: response.SwaggerApiResponse{data=auth.PasswordKeyResult}
+  "GET /v1/portal/password-key":
+    summary: 门户密码加密公钥
+    security: false
+    success: response.SwaggerApiResponse{data=auth.PasswordKeyResult}
+  "POST /v1/admin/login":
+    summary: 管理端登录
+    body_type: LoginParam
+    security: false
+    success: response.SwaggerApiResponse{data=auth.LoginResult}
+  "POST /v1/portal/login":
+    summary: 门户登录
+    body_type: LoginParam
+    security: false
+    success: response.SwaggerApiResponse{data=auth.LoginResult}
+  "POST /v1/admin/send-login-code":
+    summary: 管理端发送登录验证码
+    body_type: SendLoginCodeParam
+    security: false
+  "POST /v1/portal/send-login-code":
+    summary: 门户发送登录验证码
+    body_type: SendLoginCodeParam
+    security: false
+  "POST /v1/portal/register":
+    summary: 门户注册
+    body_type: RegisterParam
+    security: false
+    success: response.SwaggerApiResponse{data=auth.LoginResult}
+  "POST /v1/admin/auth/refresh":
+    summary: 管理端刷新令牌
+    security: true
+    success: response.SwaggerApiResponse{data=auth.LoginResult}
+  "POST /v1/portal/auth/refresh":
+    summary: 门户刷新令牌
+    security: true
+    success: response.SwaggerApiResponse{data=auth.LoginResult}
+  "GET /v1/admin/oauth/:provider/authorize":
+    summary: OAuth 授权跳转
+    security: false
+    params:
+      - name: provider
+        in: path
+        type: string
+        required: true
+        desc: 三方提供方
+  "GET /v1/portal/oauth/:provider/authorize":
+    summary: 门户 OAuth 授权跳转
+    security: false
+    params:
+      - name: provider
+        in: path
+        type: string
+        required: true
+        desc: 三方提供方
+  "GET /v1/admin/oauth/:provider/callback":
+    summary: OAuth 回调
+    security: false
+    params:
+      - name: provider
+        in: path
+        type: string
+        required: true
+        desc: 三方提供方
+  "GET /v1/portal/oauth/:provider/callback":
+    summary: 门户 OAuth 回调
+    security: false
+    params:
+      - name: provider
+        in: path
+        type: string
+        required: true
+        desc: 三方提供方
+  "POST /v1/admin/oauth/exchange":
+    summary: OAuth 换票
+    security: false
+  "POST /v1/portal/oauth/exchange":
+    summary: 门户 OAuth 换票
+    security: false

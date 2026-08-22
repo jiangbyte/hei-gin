@@ -33,8 +33,14 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 
 	api.POST("/v1/admin/forgot-password", middleware.RateLimit(rdb, "admin:forgot-password", 5, 60), middleware.OperationAudit(s.audit, "auth", "forgot_password"), s.forgotPassword(security.AccountAdmin))
 	api.POST("/v1/portal/forgot-password", middleware.RateLimit(rdb, "portal:forgot-password", 5, 60), middleware.OperationAudit(s.audit, "auth", "forgot_password"), s.forgotPassword(security.AccountPortal))
+	api.POST("/v1/admin/forgot-password/phone", middleware.RateLimit(rdb, "admin:forgot-password-phone", 5, 60), middleware.OperationAudit(s.audit, "auth", "forgot_password_phone"), s.forgotPasswordByPhone(security.AccountAdmin))
+	api.POST("/v1/portal/forgot-password/phone", middleware.RateLimit(rdb, "portal:forgot-password-phone", 5, 60), middleware.OperationAudit(s.audit, "auth", "forgot_password_phone"), s.forgotPasswordByPhone(security.AccountPortal))
 	api.POST("/v1/admin/reset-password", middleware.RateLimit(rdb, "admin:reset-password", 10, 60), middleware.OperationAudit(s.audit, "auth", "reset_password"), s.resetPassword(security.AccountAdmin))
 	api.POST("/v1/portal/reset-password", middleware.RateLimit(rdb, "portal:reset-password", 10, 60), middleware.OperationAudit(s.audit, "auth", "reset_password"), s.resetPassword(security.AccountPortal))
+	api.POST("/v1/admin/reset-password/phone", middleware.RateLimit(rdb, "admin:reset-password-phone", 10, 60), middleware.OperationAudit(s.audit, "auth", "reset_password_phone"), s.resetPasswordByPhone(security.AccountAdmin))
+	api.POST("/v1/portal/reset-password/phone", middleware.RateLimit(rdb, "portal:reset-password-phone", 10, 60), middleware.OperationAudit(s.audit, "auth", "reset_password_phone"), s.resetPasswordByPhone(security.AccountPortal))
+
+	api.GET("/v1/public/site-footer", s.siteFooter)
 
 	api.POST("/v1/admin/logout", middleware.RequireAccountType(security.AccountAdmin), middleware.OperationAudit(s.audit, "auth", "logout"), s.logout)
 	api.POST("/v1/portal/logout", middleware.RequireAccountType(security.AccountPortal), middleware.OperationAudit(s.audit, "auth", "logout"), s.logout)
@@ -185,6 +191,40 @@ func (s *Service) resetPassword(accountType security.AccountType) gin.HandlerFun
 		}
 		response.OK(c, nil)
 	}
+}
+
+func (s *Service) forgotPasswordByPhone(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req ForgotPasswordByPhoneParam
+		if err := bind.JSON(c, &req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if err := s.ForgotPasswordByPhone(c.Request.Context(), accountType, req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		response.OK(c, nil)
+	}
+}
+
+func (s *Service) resetPasswordByPhone(accountType security.AccountType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req ResetPasswordByPhoneParam
+		if err := bind.JSON(c, &req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		if err := s.ResetPasswordByPhone(c.Request.Context(), accountType, req); err != nil {
+			response.Fail(c, http.StatusBadRequest, 400, err.Error())
+			return
+		}
+		response.OK(c, nil)
+	}
+}
+
+func (s *Service) siteFooter(c *gin.Context) {
+	response.OK(c, s.SiteFooter(c.Request.Context()))
 }
 
 func (s *Service) authOptions(accountType security.AccountType) gin.HandlerFunc {

@@ -41,8 +41,8 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		return err
 	}
 	plan := fromAddParam(req)
-	if plan.MainPK == "" {
-		plan.MainPK = "id"
+	if plan.PKColumn == "" {
+		plan.PKColumn = "id"
 	}
 	if plan.Sort == 0 {
 		plan.Sort = 99
@@ -67,8 +67,8 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	}
 	plan := fromAddParam(req.AddParam)
 	plan.ID = req.ID
-	if plan.MainPK == "" {
-		plan.MainPK = "id"
+	if plan.PKColumn == "" {
+		plan.PKColumn = "id"
 	}
 	if plan.Sort == 0 {
 		plan.Sort = 99
@@ -138,14 +138,14 @@ func (s *Service) TableColumns(ctx context.Context, tableName string) ([]Databas
 	for _, r := range rows {
 		py, ts := dbTypeToPythonAndTs(r.DataType, r.UDTName)
 		out = append(out, DatabaseColumnResult{
-			ColumnName:     r.ColumnName,
-			ColumnComment:  r.ColumnComment,
-			DBType:         r.UDTName,
-			PythonType:     py,
-			TypescriptType: ts,
-			IsPrimaryKey:   r.IsPrimaryKey,
-			IsNullable:     strings.EqualFold(r.IsNullable, "YES"),
-			MaxLength:      r.MaxLength,
+			ColumnName: r.ColumnName,
+			Label:      r.ColumnComment,
+			DBType:     r.UDTName,
+			ValueType:  py,
+			UIType:     ts,
+			PrimaryKey: r.IsPrimaryKey,
+			Nullable:   strings.EqualFold(r.IsNullable, "YES"),
+			MaxLength:  r.MaxLength,
 		})
 	}
 	return out, nil
@@ -174,29 +174,29 @@ func (s *Service) UpdateFieldsBatch(ctx context.Context, req FieldsUpdateBatchPa
 	fields := make([]Field, 0, len(req.Fields))
 	for _, item := range req.Fields {
 		fields = append(fields, Field{
-			ID:             idgen.Next(),
-			PlanID:         req.PlanID,
-			TableRole:      item.TableRole,
-			ColumnName:     item.ColumnName,
-			ColumnComment:  item.ColumnComment,
-			DBType:         item.DBType,
-			PythonType:     def(item.PythonType, "str"),
-			TypescriptType: def(item.TypescriptType, "string"),
-			FormWidget:     def(item.FormWidget, "input"),
-			DictCode:       item.DictCode,
-			QueryOperator:  item.QueryOperator,
-			ShowInTable:    item.ShowInTable,
-			ShowInForm:     item.ShowInForm,
-			ShowInDetail:   item.ShowInDetail,
-			ShowInQuery:    item.ShowInQuery,
-			IsPrimaryKey:   item.IsPrimaryKey,
-			IsRequired:     item.IsRequired,
-			IsUnique:       item.IsUnique,
-			IsNullable:     item.IsNullable,
-			MaxLength:      item.MaxLength,
-			Sort:           item.Sort,
-			CreatedAt:      now,
-			UpdatedAt:      now,
+			ID:            idgen.Next(),
+			PlanID:        req.PlanID,
+			TableRole:     item.TableRole,
+			ColumnName:    item.ColumnName,
+			Label:         item.Label,
+			DBType:        item.DBType,
+			ValueType:     def(item.ValueType, "str"),
+			UIType:        def(item.UIType, "string"),
+			Widget:        def(item.Widget, "input"),
+			DictCode:      item.DictCode,
+			QueryOperator: item.QueryOperator,
+			InTable:       item.InTable,
+			InForm:        item.InForm,
+			InDetail:      item.InDetail,
+			InQuery:       item.InQuery,
+			PrimaryKey:    item.PrimaryKey,
+			Required:      item.Required,
+			UniqueFlag:    item.UniqueFlag,
+			Nullable:      item.Nullable,
+			MaxLength:     item.MaxLength,
+			Sort:          item.Sort,
+			CreatedAt:     now,
+			UpdatedAt:     now,
 		})
 	}
 	return s.repo.ReplaceFields(ctx, req.PlanID, fields)
@@ -226,11 +226,11 @@ var (
 
 // validatePlan 校验方案：主键/树字段/子表配置必须存在于表结构（对齐 hei-boot validatePlan）。
 func (s *Service) validatePlan(ctx context.Context, req AddParam) error {
-	mainNames, err := s.columnNameSet(ctx, req.MainTable)
+	mainNames, err := s.columnNameSet(ctx, req.Table)
 	if err != nil {
 		return err
 	}
-	mainPK := req.MainPK
+	mainPK := req.PKColumn
 	if mainPK == "" {
 		mainPK = "id"
 	}
@@ -278,7 +278,7 @@ func (s *Service) columnNameSet(ctx context.Context, tableName string) (map[stri
 
 // syncReflectedFields 按表结构反射同步 MAIN/SUB 字段。
 func (s *Service) syncReflectedFields(ctx context.Context, plan *Plan) error {
-	if err := s.upsertReflected(ctx, plan.ID, "MAIN", plan.MainTable); err != nil {
+	if err := s.upsertReflected(ctx, plan.ID, "MAIN", plan.Table); err != nil {
 		return err
 	}
 	if isRelationType(plan.GenType) && plan.SubTable != nil && *plan.SubTable != "" {
@@ -312,21 +312,21 @@ func (s *Service) upsertReflected(ctx context.Context, planID, tableRole, tableN
 		if !ok {
 			f = Field{
 				ID: idgen.Next(), PlanID: planID, TableRole: tableRole, ColumnName: c.ColumnName,
-				ShowInTable: !isAudit, ShowInForm: !c.IsPrimaryKey && !isAudit, ShowInDetail: true,
-				ShowInQuery: isDefaultQuery(c.ColumnName),
-				FormWidget:  widget,
-				DictCode:    defaultDictCode(c.ColumnName),
-				CreatedAt:   now,
+				InTable: !isAudit, InForm: !c.IsPrimaryKey && !isAudit, InDetail: true,
+				InQuery: isDefaultQuery(c.ColumnName),
+				Widget:  widget,
+				DictCode: defaultDictCode(c.ColumnName),
+				CreatedAt: now,
 			}
 		}
-		f.ColumnComment = blankToNil(c.ColumnComment)
+		f.Label = blankToNil(c.ColumnComment)
 		f.DBType = c.UDTName
-		f.PythonType = py
-		f.TypescriptType = ts
-		f.IsPrimaryKey = c.IsPrimaryKey
-		f.IsRequired = !strings.EqualFold(c.IsNullable, "YES") && !c.IsPrimaryKey && !isAudit
-		f.IsUnique = false
-		f.IsNullable = strings.EqualFold(c.IsNullable, "YES")
+		f.ValueType = py
+		f.UIType = ts
+		f.PrimaryKey = c.IsPrimaryKey
+		f.Required = !strings.EqualFold(c.IsNullable, "YES") && !c.IsPrimaryKey && !isAudit
+		f.UniqueFlag = false
+		f.Nullable = strings.EqualFold(c.IsNullable, "YES")
 		f.MaxLength = c.MaxLength
 		f.Sort = c.Sort
 		f.UpdatedAt = now
@@ -344,9 +344,9 @@ func (s *Service) upsertReflected(ctx context.Context, planID, tableRole, tableN
 	}
 	for _, f := range toUpdate {
 		if err := s.repo.with(ctx).Model(&Field{}).Where("id = ?", f.ID).Updates(map[string]any{
-			"column_comment": f.ColumnComment, "db_type": f.DBType, "python_type": f.PythonType,
-			"typescript_type": f.TypescriptType, "is_primary_key": f.IsPrimaryKey, "is_required": f.IsRequired,
-			"is_unique": f.IsUnique, "is_nullable": f.IsNullable, "max_length": f.MaxLength,
+			"label": f.Label, "db_type": f.DBType, "value_type": f.ValueType,
+			"ui_type": f.UIType, "primary_key": f.PrimaryKey, "required": f.Required,
+			"unique_flag": f.UniqueFlag, "nullable": f.Nullable, "max_length": f.MaxLength,
 			"sort": f.Sort, "updated_at": f.UpdatedAt,
 		}).Error; err != nil {
 			return err
@@ -359,8 +359,8 @@ func (s *Service) upsertReflected(ctx context.Context, planID, tableRole, tableN
 func fromAddParam(req AddParam) *Plan {
 	return &Plan{
 		ID: idgen.Next(), Name: req.Name, GenType: req.GenType, Author: req.Author, Description: req.Description,
-		MainTable: req.MainTable, MainPK: req.MainPK, MainEntityName: req.MainEntityName,
-		MainModulePath: req.MainModulePath, MainBusinessName: req.MainBusinessName,
+		Table: req.Table, PKColumn: req.PKColumn, EntityName: req.EntityName,
+		ModulePath: req.ModulePath, BusinessName: req.BusinessName,
 		APIPrefix: req.APIPrefix, PermissionPrefix: req.PermissionPrefix,
 		ResourceModuleID: req.ResourceModuleID, ParentResourceID: req.ParentResourceID,
 		MenuName: req.MenuName, MenuPath: req.MenuPath, ComponentPath: req.ComponentPath,
@@ -374,8 +374,8 @@ func fromAddParam(req AddParam) *Plan {
 func planUpdates(p *Plan) map[string]any {
 	return map[string]any{
 		"name": p.Name, "gen_type": p.GenType, "author": p.Author, "description": p.Description,
-		"main_table": p.MainTable, "main_pk": p.MainPK, "main_entity_name": p.MainEntityName,
-		"main_module_path": p.MainModulePath, "main_business_name": p.MainBusinessName,
+		"table_name": p.Table, "pk_column": p.PKColumn, "entity_name": p.EntityName,
+		"module_path": p.ModulePath, "business_name": p.BusinessName,
 		"api_prefix": p.APIPrefix, "permission_prefix": p.PermissionPrefix,
 		"resource_module_id": p.ResourceModuleID, "parent_resource_id": p.ParentResourceID,
 		"menu_name": p.MenuName, "menu_path": p.MenuPath, "component_path": p.ComponentPath,

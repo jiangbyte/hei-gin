@@ -147,18 +147,18 @@ func crudSpecs(suffix string) map[string]crudSpec {
 			update: cloneUpdate(func(m map[string]any) { m["name"] = "E2E CliRes " + suffix + " upd"; m["sort"] = 98 }),
 		},
 		"/api/v1/admin/sys/jobs/create": {
-			findField: "job_name", findValue: "E2E Job " + suffix,
+			findField: "name", findValue: "E2E Job " + suffix,
 			create: map[string]any{
-				"job_name": "E2E Job " + suffix, "execute_class": "sys_job_sample",
-				"execute_type": "FIXED", "trigger_config": "3600",
-				"execute_param": map[string]any{}, "sort": 99, "enabled": &enabled,
+				"name": "E2E Job " + suffix, "handler": "github.jiangbyte.io.sys.modules.job.sample.SysJobSample",
+				"trigger_type": "FIXED", "trigger_config": "3600",
+				"params": map[string]any{}, "sort": 99, "enabled": &enabled,
 			},
 			update: cloneUpdate(func(m map[string]any) {
-				m["job_name"] = "E2E Job " + suffix + " upd"
+				m["name"] = "E2E Job " + suffix + " upd"
 				m["trigger_config"] = "7200"
 				m["sort"] = 98
 			}),
-			pageQuery: func(v string) string { return "current=1&size=50&job_name=" + url.QueryEscape(v) },
+			pageQuery: func(v string) string { return "current=1&size=50&name=" + url.QueryEscape(v) },
 		},
 		"/api/v1/admin/biz/cg-test-catalog/create": {
 			findField: "code", findValue: "E2E_CAT_" + suffix,
@@ -316,8 +316,8 @@ func attachDeferredCRUDSpecs(base, adminTok, suffix string, specs map[string]cru
 		findField: "name", findValue: "E2E Gen " + suffix,
 		create: map[string]any{
 			"name": "E2E Gen " + suffix, "gen_type": "SINGLE", "author": "e2e",
-			"main_table": table, "main_pk": "id", "main_entity_name": "E2eEntity" + suffix,
-			"main_module_path": "biz/e2e_" + suffix, "main_business_name": "e2e" + suffix,
+			"table_name": table, "pk_column": "id", "entity_name": "E2eEntity" + suffix,
+			"module_path": "biz/e2e_" + suffix, "business_name": "e2e" + suffix,
 			"api_prefix": "/v1/admin/biz/e2e-" + suffix, "permission_prefix": "biz:e2e" + suffix,
 			"menu_name": "E2E Gen", "menu_path": "/e2e-gen/" + suffix, "component_path": "e2e/Gen",
 			"sort": 99,

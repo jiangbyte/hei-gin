@@ -17,6 +17,7 @@ import (
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
+	"hei-gin/internal/modules/auth/oauth"
 	"hei-gin/internal/modules/iam/client"
 	"hei-gin/internal/modules/iam/group"
 	"hei-gin/internal/modules/iam/relation"
@@ -255,12 +256,12 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	_ = s.recordHistory(ctx, accID, rawPassword, accID, "admin_reset")
 	if accountType == string(security.AccountAdmin) {
 		return s.admin.UpsertProfile(ctx, &profile.Profile{
-			AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+			AccountID: accID, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
 		})
 	}
 	return s.portal.UpsertProfile(ctx, &profile.Profile{
-		AccountID: accID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+		AccountID: accID, Nickname: req.Nickname, Avatar: req.Avatar,
 		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
 	})
 }
@@ -319,12 +320,12 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	}
 	if accountType == string(security.AccountAdmin) {
 		return s.admin.UpsertProfile(ctx, &profile.Profile{
-			AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+			AccountID: req.ID, Nickname: req.Nickname, Avatar: req.Avatar,
 			Signature: req.Signature, Phone: req.Phone, Email: req.Email, Remark: req.Remark,
 		})
 	}
 	return s.portal.UpsertProfile(ctx, &profile.Profile{
-		AccountID: req.ID, Name: req.Name, Nickname: req.Nickname, Avatar: req.Avatar,
+		AccountID: req.ID, Nickname: req.Nickname, Avatar: req.Avatar,
 		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
 	})
 }
@@ -440,6 +441,8 @@ func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionP
 	idents, _ := s.repo.FindAccountIdentities(ctx, ids)
 	adminProfiles, _ := s.admin.ListByAccountIDs(ctx, ids)
 	portalProfiles, _ := s.portal.ListByAccountIDs(ctx, ids)
+	allIdents, _ := s.repo.FindIdentitiesByAccountIDs(ctx, ids)
+	allOAuth, _ := s.repo.FindOAuthBindingsByAccountIDs(ctx, ids)
 
 	records = make([]AccountResult, 0, len(rows))
 	for i := range rows {
@@ -453,19 +456,61 @@ func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionP
 			CreatedAt: a.CreatedAt, CreatedBy: a.CreatedBy, UpdatedAt: a.UpdatedAt, UpdatedBy: a.UpdatedBy,
 		}
 		vo.Account = idents[a.ID]
-		if a.AccountType == string(security.AccountAdmin) {
-			if p := adminProfiles[a.ID]; p != nil {
-				vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email, vo.Remark =
-					p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
-			}
-		} else if p := portalProfiles[a.ID]; p != nil {
-			vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
-				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
-		}
+		s.applyProfiles(&vo, a.AccountType, adminProfiles[a.ID], portalProfiles[a.ID])
+		s.applyIdentities(&vo, allIdents[a.ID])
+		s.applyOAuthBindings(&vo, allOAuth[a.ID])
 		vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
 		records = append(records, vo)
 	}
 	return records, total, current, size, nil
+}
+
+func (s *Service) applyProfiles(vo *AccountResult, accountType string, adminP, portalP *profile.Profile) {
+	if accountType == string(security.AccountAdmin) {
+		if adminP != nil {
+			vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email, vo.Remark =
+				adminP.Nickname, adminP.Avatar, adminP.Signature, adminP.Phone, adminP.Email, adminP.Remark
+		}
+		return
+	}
+	if portalP != nil {
+		vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
+			portalP.Nickname, portalP.Avatar, portalP.Signature, portalP.Phone, portalP.Email
+	}
+}
+
+func (s *Service) applyIdentities(vo *AccountResult, idents []Identity) {
+	vo.Identities = []IdentityResult{}
+	for _, it := range idents {
+		vo.Identities = append(vo.Identities, IdentityResult{
+			ID: it.ID, AccountID: it.AccountID, IdentityType: it.IdentityType,
+			Identifier: it.Identifier, Verified: it.Verified, IsPrimary: it.IsPrimary,
+			BindStatus: it.BindStatus, CreatedAt: it.CreatedAt, CreatedBy: it.CreatedBy,
+			UpdatedAt: it.UpdatedAt, UpdatedBy: it.UpdatedBy,
+		})
+		switch it.IdentityType {
+		case IdentityEmail:
+			vo.EmailLoginEnabled = true
+			vo.EmailIdentity = &it.Identifier
+			vo.EmailIdentityVerified = it.Verified
+			vo.EmailIdentityBindStatus = &it.BindStatus
+		case IdentityPhone:
+			vo.PhoneLoginEnabled = true
+			vo.PhoneIdentity = &it.Identifier
+			vo.PhoneIdentityVerified = it.Verified
+			vo.PhoneIdentityBindStatus = &it.BindStatus
+		}
+	}
+}
+
+func (s *Service) applyOAuthBindings(vo *AccountResult, binds []oauth.AccountOAuthBinding) {
+	vo.OAuthBindings = []OAuthBindingResult{}
+	for _, b := range binds {
+		vo.OAuthBindings = append(vo.OAuthBindings, OAuthBindingResult{
+			ID: b.ID, Provider: b.Provider, OpenID: b.OpenID, UnionID: b.UnionID,
+			Nickname: b.Nickname, Avatar: b.Avatar, BoundAt: &b.BoundAt,
+		})
+	}
 }
 
 func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, error) {
@@ -484,47 +529,18 @@ func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, er
 	if ident, err := s.repo.FindAccountIdentity(ctx, id); err == nil {
 		vo.Account = ident.Identifier
 	}
-	// 全量身份 + 三方绑定 + 登录开关（对齐 hei-boot SysAccountResult）
-	vo.Identities = []IdentityResult{}
 	if idents, err := s.repo.FindIdentities(ctx, id); err == nil {
-		for _, it := range idents {
-			vo.Identities = append(vo.Identities, IdentityResult{
-				ID: it.ID, AccountID: it.AccountID, IdentityType: it.IdentityType,
-				Identifier: it.Identifier, Verified: it.Verified, IsPrimary: it.IsPrimary,
-				BindStatus: it.BindStatus, CreatedAt: it.CreatedAt, CreatedBy: it.CreatedBy,
-				UpdatedAt: it.UpdatedAt, UpdatedBy: it.UpdatedBy,
-			})
-			switch it.IdentityType {
-			case IdentityEmail:
-				vo.EmailLoginEnabled = true
-				vo.EmailIdentity = &it.Identifier
-				vo.EmailIdentityVerified = it.Verified
-				vo.EmailIdentityBindStatus = &it.BindStatus
-			case IdentityPhone:
-				vo.PhoneLoginEnabled = true
-				vo.PhoneIdentity = &it.Identifier
-				vo.PhoneIdentityVerified = it.Verified
-				vo.PhoneIdentityBindStatus = &it.BindStatus
-			}
-		}
+		s.applyIdentities(vo, idents)
 	}
-	vo.OAuthBindings = []OAuthBindingResult{}
 	if binds, err := s.repo.FindOAuthBindings(ctx, id); err == nil {
-		for _, b := range binds {
-			vo.OAuthBindings = append(vo.OAuthBindings, OAuthBindingResult{
-				ID: b.ID, Provider: b.Provider, OpenID: b.OpenID, UnionID: b.UnionID,
-				Nickname: b.Nickname, Avatar: b.Avatar, BoundAt: &b.BoundAt,
-			})
-		}
+		s.applyOAuthBindings(vo, binds)
 	}
 	if acc.AccountType == string(security.AccountAdmin) {
 		if p, err := s.admin.GetProfile(ctx, id); err == nil {
-			vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email, vo.Remark =
-				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
+			s.applyProfiles(vo, acc.AccountType, p, nil)
 		}
 	} else if p, err := s.portal.GetProfile(ctx, id); err == nil {
-		vo.Name, vo.Nickname, vo.Avatar, vo.Signature, vo.Phone, vo.Email =
-			p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
+		s.applyProfiles(vo, acc.AccountType, nil, p)
 	}
 	vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
 	return vo, nil

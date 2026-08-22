@@ -46,20 +46,40 @@ func runReadCases(base, adminTok, portalTok string, bucket *caseBucket) {
 			},
 		},
 		{
-			name: "read_dashboard_overview", token: admin, method: "GET", path: "/api/v1/admin/dashboard/overview",
+			name: "read_workspace_overview", token: admin, method: "GET", path: "/api/v1/admin/workspace/overview",
 			check: func(status int, _ []byte, ar apiResp, data map[string]any) error {
 				if err := assertBizOK(status, ar.Code); err != nil {
 					return err
 				}
-				if err := assertKeys(data, "summary", "accounts", "iam", "ops_today", "trends", "files"); err != nil {
+				return assertKeys(data, "shortcuts", "recent_operations", "recent_logins")
+			},
+		},
+		{
+			name: "read_public_site_footer", token: "", method: "GET", path: "/api/v1/public/site-footer",
+			check: func(status int, _ []byte, ar apiResp, data map[string]any) error {
+				if err := assertBizOK(status, ar.Code); err != nil {
 					return err
 				}
-				accounts, _ := data["accounts"].(map[string]any)
-				if err := assertKeys(accounts, "enabled", "disabled", "today_new", "by_type"); err != nil {
-					return fmt.Errorf("accounts: %w", err)
+				return assertKeys(data, "copyright_text", "icp_number", "psb_number")
+			},
+		},
+		{
+			name: "read_identity_status", token: admin, method: "GET", path: "/api/v1/admin/profile/identity/status",
+			check: func(status int, _ []byte, ar apiResp, data map[string]any) error {
+				if err := assertBizOK(status, ar.Code); err != nil {
+					return err
 				}
-				trends, _ := data["trends"].(map[string]any)
-				return assertKeys(trends, "account_trend", "audit_trend")
+				return assertKeys(data, "status")
+			},
+		},
+		{
+			name: "read_audit_my_page", token: admin, method: "GET", path: "/api/v1/admin/sys/audit/my-page?current=1&size=5",
+			check: func(status int, _ []byte, ar apiResp, data map[string]any) error {
+				if err := assertBizOK(status, ar.Code); err != nil {
+					return err
+				}
+				_, err := assertPage(data)
+				return err
 			},
 		},
 		{

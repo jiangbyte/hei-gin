@@ -53,6 +53,17 @@ func (r *Repo) ListByAccountIDs(ctx context.Context, ids []string) (map[string]*
 	return out, nil
 }
 
+// HasIdentity 判断账号是否拥有指定类型登录身份（PHONE/EMAIL）。
+func (r *Repo) HasIdentity(ctx context.Context, accountID, identityType string) bool {
+	var n int64
+	if err := r.db.WithContext(ctx).Table("sys_account_identity").
+		Where("account_id = ? AND identity_type = ?", accountID, identityType).
+		Count(&n).Error; err != nil {
+		return false
+	}
+	return n > 0
+}
+
 // GetProfile 按账号 ID 查资料。
 func (r *Repo) GetProfile(ctx context.Context, accountID string) (*Profile, error) {
 	var p Profile
@@ -85,7 +96,7 @@ func (r *Repo) UpsertProfile(ctx context.Context, p *Profile) error {
 		return r.CreateProfile(ctx, p)
 	}
 	updates := map[string]any{
-		"name": p.Name, "nickname": p.Nickname, "avatar": p.Avatar, "signature": p.Signature,
+		"nickname": p.Nickname, "avatar": p.Avatar, "signature": p.Signature,
 		"phone": p.Phone, "email": p.Email,
 	}
 	if r.table == ProfileTableAdmin {

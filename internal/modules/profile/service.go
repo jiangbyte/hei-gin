@@ -28,6 +28,7 @@ import (
 	"hei-gin/internal/framework/platform/notify"
 	"hei-gin/internal/framework/platform/runtimecfg"
 	"hei-gin/internal/framework/platform/storage"
+	"hei-gin/internal/modules/profile/identity"
 	"hei-gin/internal/modules/sys/file"
 )
 
@@ -48,11 +49,13 @@ type Service struct {
 	audit          *audit.Queue
 	avatarPrefix   string
 	accountType    security.AccountType
+	identity       *identity.Service
 }
 
 // NewService 构造按账户类型绑定的用户中心服务。
 func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, st *storage.Manager, fs *file.Service,
-	rt *runtimecfg.Settings, aq *audit.Queue, accountType security.AccountType, table, avatarPrefix string) *Service {
+	rt *runtimecfg.Settings, aq *audit.Queue, accountType security.AccountType, table, avatarPrefix string,
+	idSvc *identity.Service) *Service {
 	return &Service{
 		repo:           NewRepo(db, table),
 		rdb:            rdb,
@@ -64,6 +67,7 @@ func NewService(db *gorm.DB, rdb *redis.Client, nf *notify.Facade, st *storage.M
 		audit:          aq,
 		avatarPrefix:   avatarPrefix,
 		accountType:    accountType,
+		identity:       idSvc,
 	}
 }
 
@@ -74,24 +78,34 @@ func (s *Service) Me(ctx context.Context, sess *security.SessionPayload) (*MeRes
 	}
 	profile := s.getOrCreate(ctx, sess.AccountID)
 	account, _ := s.repo.GetAccountIdentifier(ctx, sess.AccountID)
+	var identityStatus *identity.IdentityStatusResult
+	if s.identity != nil {
+		identityStatus, _ = s.identity.GetUserStatus(ctx, sess.AccountID)
+		identityStatus = normalizeIdentityForAPI(identityStatus)
+	}
+	roleIDs := emptyStrings(sess.RoleIDs)
+	deptIDs := emptyStrings(sess.DeptIDs)
+	groupIDs := emptyStrings(sess.GroupIDs)
+	perms := emptyStrings(sess.PermissionKeys)
 	return &MeResult{
-		AccountID:       sess.AccountID,
-		AccountType:     sess.AccountType,
-		Account:         account,
-		Name:            profile.Name,
-		Nickname:        profile.Nickname,
-		Avatar:          s.resolveAvatar(ctx, profile.Avatar),
-		RoleIDs:         sess.RoleIDs,
-		DeptIDs:         sess.DeptIDs,
-		GroupIDs:        sess.GroupIDs,
-		RoleIDNames:     s.repo.LoadIDNames(ctx, "sys_role", sess.RoleIDs),
-		DeptIDNames:     s.repo.LoadIDNames(ctx, "sys_dept", sess.DeptIDs),
-		GroupIDNames:    s.repo.LoadIDNames(ctx, "sys_group", sess.GroupIDs),
-		PermissionKeys:  sess.PermissionKeys,
-		Profile:         profile,
-		PasswordExpired: sess.PasswordExpired,
-		ForceBindEmail:  s.forceBind(ctx, "EMAIL"),
-		ForceBindPhone:  s.forceBind(ctx, "PHONE"),
+		AccountID:         sess.AccountID,
+		AccountType:       sess.AccountType,
+		Account:           account,
+		Nickname:          profile.Nickname,
+		Avatar:            s.resolveAvatar(ctx, profile.Avatar),
+		Identity:          identityStatus,
+		RoleIDs:           roleIDs,
+		DeptIDs:           deptIDs,
+		GroupIDs:          groupIDs,
+		RoleIDNames:       s.repo.LoadIDNames(ctx, "sys_role", roleIDs),
+		DeptIDNames:       s.repo.LoadIDNames(ctx, "sys_dept", deptIDs),
+		GroupIDNames:      s.repo.LoadIDNames(ctx, "sys_group", groupIDs),
+		PermissionKeys:    perms,
+		Profile:           s.toUserProfile(ctx, sess.AccountID, profile),
+		PasswordExpired:   sess.PasswordExpired,
+		ForceBindEmail:    s.forceBind(ctx, "EMAIL"),
+		ForceBindPhone:    s.forceBind(ctx, "PHONE"),
+		ForceBindIdentity: s.forceBindIdentity(ctx, sess.AccountID),
 	}, nil
 }
 
@@ -99,11 +113,11 @@ func (s *Service) Me(ctx context.Context, sess *security.SessionPayload) (*MeRes
 func (s *Service) UpdateProfile(ctx context.Context, accountID string, req ProfileUpdateParam) error {
 	_ = s.getOrCreate(ctx, accountID)
 	updates := map[string]any{"updated_by": accountID}
-	if req.Name != nil {
-		updates["name"] = *req.Name
-	}
 	if req.Nickname != nil {
 		updates["nickname"] = *req.Nickname
+	}
+	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" {
+		updates["avatar"] = file.NormalizeObjectName(*req.Avatar)
 	}
 	if req.Signature != nil {
 		updates["signature"] = *req.Signature
@@ -275,11 +289,21 @@ func (s *Service) decryptPasswords(ctx context.Context, keyID string, encryptedV
 }
 
 // OrgInfo 组织关联信息。
-func (s *Service) OrgInfo(sess *security.SessionPayload) OrgInfoResult {
+func (s *Service) OrgInfo(ctx context.Context, sess *security.SessionPayload) OrgInfoResult {
+	if sess == nil {
+		return OrgInfoResult{
+			RoleIDNames:  []IDName{},
+			DeptIDNames:  []IDName{},
+			GroupIDNames: []IDName{},
+		}
+	}
+	roleIDs := emptyStrings(sess.RoleIDs)
+	deptIDs := emptyStrings(sess.DeptIDs)
+	groupIDs := emptyStrings(sess.GroupIDs)
 	return OrgInfoResult{
-		RoleIDs:  sess.RoleIDs,
-		DeptIDs:  sess.DeptIDs,
-		GroupIDs: sess.GroupIDs,
+		RoleIDNames:  s.repo.LoadIDNames(ctx, "sys_role", roleIDs),
+		DeptIDNames:  s.repo.LoadIDNames(ctx, "sys_dept", deptIDs),
+		GroupIDNames: s.repo.LoadIDNames(ctx, "sys_group", groupIDs),
 	}
 }
 
@@ -509,6 +533,19 @@ func (s *Service) forceBind(ctx context.Context, channel string) bool {
 	return false
 }
 
+// forceBindIdentity 读取 AUTH_FORCE_BIND_{TYPE}_IDENTITY 运行时配置。
+func (s *Service) forceBindIdentity(ctx context.Context, accountID string) bool {
+	key := "AUTH_FORCE_BIND_" + strings.ToUpper(string(s.accountType)) + "_IDENTITY"
+	force := false
+	if s.runtime != nil {
+		force = s.runtime.GetBool(ctx, key, false)
+	}
+	if !force || s.identity == nil {
+		return false
+	}
+	return !s.identity.IsVerified(ctx, accountID)
+}
+
 func (s *Service) getOrCreate(ctx context.Context, accountID string) *Profile {
 	p, err := s.repo.GetProfile(ctx, accountID)
 	if err == nil {
@@ -549,4 +586,34 @@ func SessionFromContext(ctx context.Context) *security.SessionPayload {
 // AccountIDFromContext 从 context 取账号 ID。
 func AccountIDFromContext(ctx context.Context) string {
 	return contextx.AccountID(ctx)
+}
+
+func emptyStrings(items []string) []string {
+	if items == nil {
+		return []string{}
+	}
+	return items
+}
+
+func (s *Service) toUserProfile(ctx context.Context, accountID string, profile *Profile) *UserProfileResult {
+	if profile == nil {
+		return nil
+	}
+	return &UserProfileResult{
+		AccountID:         accountID,
+		Nickname:          profile.Nickname,
+		Avatar:            s.resolveAvatar(ctx, profile.Avatar),
+		Signature:         profile.Signature,
+		Phone:             profile.Phone,
+		Email:             profile.Email,
+		PhoneLoginEnabled: s.repo.HasIdentity(ctx, accountID, "PHONE"),
+		EmailLoginEnabled: s.repo.HasIdentity(ctx, accountID, "EMAIL"),
+		Remark:            profile.Remark,
+		CreatedAt:         profile.CreatedAt,
+		UpdatedAt:         profile.UpdatedAt,
+	}
+}
+
+func normalizeIdentityForAPI(status *identity.IdentityStatusResult) *identity.IdentityStatusResult {
+	return status
 }

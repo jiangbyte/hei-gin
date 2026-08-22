@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 ![Version](https://img.shields.io/badge/version-1.0.0--beta-orange)
 
-**HEI Gin** 是一套开箱即用的 Go / Gin 工程化脚手架：单个后端进程同时提供 **Admin** 与 **Portal** 双端 API，同仓维护 Vue 3 / React / uni-app 前端，覆盖认证授权、组织权限、系统运维、消息通知与运营看板等常见后台能力。与 [hei-boot](https://github.com/jiangbyte/hei-boot)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 保持 API 契约与前端对齐。
+**HEI Gin** 是一套开箱即用的 Go / Gin 工程化后端脚手架：单个进程同时提供 **Admin** 与 **Portal** 双端 API，覆盖认证授权、组织权限、系统运维、消息通知与工作台等常见后台能力。与 [hei-boot](https://github.com/jiangbyte/hei-boot)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 保持 API 契约一致；前端统一使用姊妹项目 [hei-admin](https://github.com/jiangbyte/hei-admin)、[hei-portal](https://github.com/jiangbyte/hei-portal)。
 
 > 当前版本：`1.0.0-beta` · 协议：[Apache License 2.0](LICENSE)
 
@@ -160,9 +160,9 @@
 - **RBAC 权限**：账号 / 角色 / 部门 / 用户组 / 岗位；菜单、按钮与 API 资源授权；在线会话踢出
 - **系统管理**：字典、动态配置（`sys_config`，敏感项可加密）、Banner、公告 / 通知、意见反馈、弱口令库
 - **对象存储**：S3 兼容存储（MinIO / RustFS / 阿里云 OSS 等），引擎与凭证走运行时配置，直链或预签名访问
-- **运维能力**：操作审计与告警、登录日志、运营工作台（概览与近 7 日趋势）、内嵌任务调度（`sys_job`；DB 扫描 + Redis 锁 + cron）
-- **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
-- **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
+- **运维能力**：操作审计与告警、登录日志、工作台（快捷应用与近期活动）、内嵌任务调度（`sys_job`；DB 扫描 + Redis 锁 + cron）
+- **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL，输出至 `../hei-admin`）
+- **实名认证**：工单提交与审核、敏感字段加密存储（对齐 hei-boot）
 
 ## 技术栈
 
@@ -173,9 +173,8 @@
 | 缓存 / 会话 | Redis（go-redis）· 不透明会话 Token |
 | 配置 | Viper（`config.yaml`）+ 运行时 `sys_config` |
 | 其他 | AWS SDK v2（S3）· zap · robfig/cron · snowflake |
-| 管理端 | Vue 3 · Vite · TypeScript · Naive UI · Pinia · UnoCSS |
-| 门户 | React 19 · Vite · TypeScript · Ant Design · Zustand · UnoCSS |
-| 移动端 | uni-app 3 · Vue 3 · TypeScript · uview-pro |
+| 管理端前端 | [hei-admin](../hei-admin)（Vue 3 + Naive UI） |
+| 门户前端 | [hei-portal](../hei-portal)（React + Ant Design） |
 
 ## 工程结构
 
@@ -185,14 +184,10 @@ hei-gin
 ├── internal/
 │   ├── app/                  # 装配根（基础设施 + 模块钩子）
 │   ├── framework/            # 可修改运行时（config / security / middleware / storage / gojob …）
-│   └── modules/              # 业务模块（auth / iam / sys / profile / dashboard / biz …）
-├── web/
-│   ├── admin                 # 管理端（Vue 3）
-│   ├── portal                # 门户（React）
-│   └── admin-uniapp          # 管理端 uni-app
+│   └── modules/              # 业务模块（auth / iam / sys / profile / workspace / biz …）
 ├── configs/config.example.yaml
 ├── scripts/db.sql            # PostgreSQL 结构 + 种子数据
-├── scripts/db.mysql.sql      # MySQL 结构 + 种子数据（由 db.sql 转换）
+├── scripts/db.mysql.sql      # MySQL 结构 + 种子数据
 └── docs/images               # README 截图
 ```
 
@@ -202,7 +197,7 @@ hei-gin
 
 - Go **1.25+**
 - PostgreSQL **或** MySQL 8+、Redis
-- Node.js **22+**、pnpm **9+**（前端）
+- 前端见 [hei-admin](../hei-admin)、[hei-portal](../hei-portal)（Node.js 22+、pnpm 9+）
 
 ### 1. 初始化数据库
 
@@ -244,17 +239,17 @@ go run ./cmd/api
 | --- | --- |
 | API | http://127.0.0.1:8000 |
 
-### 3. 启动前端
+### 3. 启动前端（姊妹项目）
 
 ```bash
 # 管理端 → http://127.0.0.1:5173
-cd web/admin && pnpm install && pnpm dev
+cd ../hei-admin && pnpm install && pnpm dev
 
 # 门户 → http://127.0.0.1:5174
-cd web/portal && pnpm install && pnpm dev
+cd ../hei-portal && pnpm install && pnpm dev
 ```
 
-uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
+详见 [hei-admin](../hei-admin/README.md)、[hei-portal](../hei-portal/README.md)。
 
 ## 默认账号
 
@@ -270,9 +265,8 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 | 文档 | 说明 |
 | --- | --- |
 | [`docs/README.md`](docs/README.md) | 架构约定与二次开发索引 |
-| [`web/admin/README.md`](web/admin/README.md) | 管理端前端说明与环境变量 |
-| [`web/portal/README.md`](web/portal/README.md) | 门户前端说明与环境变量 |
-| [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md) | uni-app 端说明 |
+| [`../hei-admin/README.md`](../hei-admin/README.md) | 管理端前端说明与环境变量 |
+| [`../hei-portal/README.md`](../hei-portal/README.md) | 门户前端说明与环境变量 |
 | [`configs/config.example.yaml`](configs/config.example.yaml) | 后端配置样例 |
 | [`scripts/db.sql`](scripts/db.sql) | PostgreSQL 结构与种子数据 |
 | [`scripts/db.mysql.sql`](scripts/db.mysql.sql) | MySQL 结构与种子数据 |
@@ -281,9 +275,11 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 
 | 项目 | 说明 | 协议 |
 | --- | --- | --- |
-| [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
+| [**hei-boot**](../hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
 | [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架（本仓库） | Apache License 2.0 |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 异步脚手架 | Apache License 2.0 |
+| [**hei-fastapi**](../hei-fastapi) | FastAPI 异步脚手架 | Apache License 2.0 |
+| [**hei-admin**](../hei-admin) | Vue 3 管理端 | Apache License 2.0 |
+| [**hei-portal**](../hei-portal) | React 门户 | Apache License 2.0 |
 
 ## License
 

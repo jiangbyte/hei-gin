@@ -1,5 +1,0 @@
-dist
-node_modules
-pnpm-lock.yaml
-.eslintrc-auto-import.json
-src/typing/auto-imports.d.ts

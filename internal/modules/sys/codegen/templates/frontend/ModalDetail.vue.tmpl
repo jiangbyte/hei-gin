@@ -1,0 +1,101 @@
+<!--
+  由 HEI 代码生成器生成。
+  Author: {{index .Plan "author"}}
+  生成时间：{{.GeneratedAt}}
+-->
+
+<script setup lang="ts">
+import { {{.APIExportName}} } from '@/api'
+import { {{if (index .Target "has_detail_dict")}}createTagColor, dictTypeColor, dictTypeData, {{end}}displayValue, formatDateTime } from '@/utils'
+{{if (index .Target "has_detail_editor")}}
+import { {{if (index .Target "has_detail_richtext")}}RichTextPreview, {{end}}{{if (index .Target "has_detail_markdown")}}MdPreview, {{end}}{{if (index .Target "has_detail_code")}}MonacoPreview{{end}} } from '@/components/editor'
+{{end}}
+import { reactive } from 'vue'
+
+const state = reactive({
+  showModal: false,
+  loading: false,
+  detail: {} as any,
+})
+
+async function openModal(id: string) {
+  state.detail = {}
+  state.showModal = true
+  await fetchDetail(id)
+}
+
+async function fetchDetail(id: string) {
+  state.loading = true
+  try {
+    const response = await {{.APIExportName}}.detail({ id })
+    state.detail = response.data ?? {}
+  } finally {
+    state.loading = false
+  }
+}
+{{if (index .Target "has_detail_json")}}
+
+function formatJsonValue(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return '{}'
+  }
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2)
+    } catch {
+      return value
+    }
+  }
+  return JSON.stringify(value, null, 2)
+}
+{{end}}
+
+defineExpose({
+  openModal,
+})
+</script>
+
+<template>
+  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="{{index .Plan "main_business_name"}}详情" style="width: {{if (index .Target "has_detail_editor")}}960px{{else}}680px{{end}}">
+    <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
+      <NSpin :show="state.loading">
+        <NDescriptions label-placement="left" bordered :column="1">
+{{range $idx, $field := (index .Target "detail_fields")}}
+          <NDescriptionsItem label="{{if and $.HasTree (eq (index $field "name") (index $.Plan "tree_parent_field"))}}父级{{else}}{{index $field "label"}}{{end}}">
+{{if and $.HasTree (eq (index $field "name") (index $.Plan "tree_parent_field"))}}
+            {{"{{"}} displayValue(state.detail.{{index $field "name"}}_name || state.detail.{{index $field "name"}}) {{"}}" }}
+{{else if hasDictCode $field}}
+            <NTag :color="createTagColor(dictTypeColor('{{index $field "dict_code"}}', state.detail.{{index $field "name"}}))" :bordered="false">
+              {{"{{"}} dictTypeData('{{index $field "dict_code"}}', state.detail.{{index $field "name"}}) || displayValue(state.detail.{{index $field "name"}}) {{"}}" }}
+            </NTag>
+{{else if eq (index $field "value_type") "datetime"}}
+            {{"{{"}} formatDateTime(state.detail.{{index $field "name"}}) {{"}}" }}
+{{else if eq (index $field "widget") "richtext"}}
+            <RichTextPreview :value="state.detail.{{index $field "name"}}" />
+{{else if eq (index $field "widget") "markdown"}}
+            <MdPreview :value="state.detail.{{index $field "name"}}" />
+{{else if eq (index $field "widget") "code"}}
+            <MonacoPreview :value="state.detail.{{index $field "name"}}" language="{{index $field "code_language"}}" height="240px" />
+{{else if eq (index $field "widget") "icon"}}
+            <NFlex v-if="state.detail.{{index $field "name"}}" align="center" :size="8">
+              <NovaIcon :icon="String(state.detail.{{index $field "name"}})" :size="18" />
+              {{"{{"}} displayValue(state.detail.{{index $field "name"}}) {{"}}" }}
+            </NFlex>
+            <span v-else>-</span>
+{{else if (index $field "is_json")}}
+            <NCode :code="formatJsonValue(state.detail.{{index $field "name"}})" language="json" word-wrap />
+{{else}}
+            {{"{{"}} displayValue(state.detail.{{index $field "name"}}) {{"}}" }}
+{{end}}
+          </NDescriptionsItem>
+{{end}}
+          <NDescriptionsItem label="创建时间">{{"{{"}} formatDateTime(state.detail.created_at) {{"}}" }}</NDescriptionsItem>
+          <NDescriptionsItem label="创建人">{{"{{"}} displayValue(state.detail.created_name || state.detail.created_by) {{"}}" }}</NDescriptionsItem>
+          <NDescriptionsItem label="所属部门">{{"{{"}} displayValue(state.detail.owner_dept_id) {{"}}" }}</NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">{{"{{"}} formatDateTime(state.detail.updated_at) {{"}}" }}</NDescriptionsItem>
+          <NDescriptionsItem label="更新人">{{"{{"}} displayValue(state.detail.updated_name || state.detail.updated_by) {{"}}" }}</NDescriptionsItem>
+        </NDescriptions>
+      </NSpin>
+    </NScrollbar>
+  </NModal>
+</template>

@@ -170,7 +170,7 @@ func enrichGETQuery(path string) string {
 		vals.Set("name", "a")
 		vals.Set("title", "a")
 	case strings.Contains(path, "/jobs"):
-		vals.Set("job_name", "a")
+		vals.Set("name", "a")
 	case strings.Contains(path, "/file"):
 		vals.Set("original_name", "a")
 	case strings.Contains(path, "/feedback"):

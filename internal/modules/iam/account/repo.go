@@ -76,6 +76,40 @@ func (r *Repo) DecryptPassword(ctx context.Context, keyID, encryptedValue string
 	return string(plain), nil
 }
 
+// FindIdentitiesByAccountIDs 批量查账号身份。
+func (r *Repo) FindIdentitiesByAccountIDs(ctx context.Context, accountIDs []string) (map[string][]Identity, error) {
+	out := make(map[string][]Identity, len(accountIDs))
+	if len(accountIDs) == 0 {
+		return out, nil
+	}
+	var rows []Identity
+	if err := r.with(ctx).Where("account_id IN ?", accountIDs).
+		Order("account_id, identity_type, is_primary DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.AccountID] = append(out[row.AccountID], row)
+	}
+	return out, nil
+}
+
+// FindOAuthBindingsByAccountIDs 批量查账号三方绑定。
+func (r *Repo) FindOAuthBindingsByAccountIDs(ctx context.Context, accountIDs []string) (map[string][]oauth.AccountOAuthBinding, error) {
+	out := make(map[string][]oauth.AccountOAuthBinding, len(accountIDs))
+	if len(accountIDs) == 0 {
+		return out, nil
+	}
+	var rows []oauth.AccountOAuthBinding
+	if err := r.with(ctx).Where("account_id IN ?", accountIDs).
+		Order("account_id, provider").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.AccountID] = append(out[row.AccountID], row)
+	}
+	return out, nil
+}
+
 // FindIdentities 查账号全部身份。
 func (r *Repo) FindIdentities(ctx context.Context, accountID string) ([]Identity, error) {
 	var rows []Identity
@@ -301,8 +335,8 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 	}
 	if p.Name != "" {
 		db = db.Where(
-			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "name")+`))
-			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "name")+`))`,
+			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "nickname")+`))
+			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "nickname")+`))`,
 			string(security.AccountAdmin), "%"+p.Name+"%", string(security.AccountPortal), "%"+p.Name+"%",
 		)
 	}

@@ -52,6 +52,11 @@ type LogRow struct {
 	ResourceType *string         `gorm:"column:resource_type;size:128"`
 	ResourceID   *string         `gorm:"column:resource_id;size:128"`
 	Action       string          `gorm:"column:action;size:64"`
+	ActionName   *string         `gorm:"column:action_name;size:128"`
+	ActionType   *string         `gorm:"column:action_type;size:32"`
+	ModuleLabel  *string         `gorm:"column:module_label;size:128"`
+	OperatorName *string         `gorm:"column:operator_name;size:128"`
+	DurationMs   *int            `gorm:"column:duration_ms"`
 	Summary      *string         `gorm:"column:summary;size:255"`
 	BeforeData   json.RawMessage `gorm:"column:before_data;type:json"`
 	AfterData    json.RawMessage `gorm:"column:after_data;type:json"`
@@ -300,10 +305,26 @@ func (q *Queue) persist(ctx context.Context, ev Event) error {
 	}
 	row := LogRow{
 		ID:        idgen.Next(),
-		Module:    ev.Module,
+		Module:    buildModule(ev.ResourceType, ev.Module),
 		Action:    ev.Action,
 		Success:   ev.Success,
 		CreatedAt: createdAt,
+	}
+	rt := ev.ResourceType
+	if rt == "" {
+		rt = ev.Module
+	}
+	actionName := ActionName(rt, ev.Action, actionNameFromExtra(ev.Extra))
+	actionType := ActionType(ev.Action, actionTypeFromExtra(ev.Extra))
+	moduleLabel := ModuleLabel(rt)
+	row.ActionName = &actionName
+	row.ActionType = &actionType
+	row.ModuleLabel = &moduleLabel
+	if op := operatorNameFromExtra(ev.Extra); op != "" {
+		row.OperatorName = &op
+	}
+	if ms := durationFromExtra(ev.Extra); ms != nil {
+		row.DurationMs = ms
 	}
 	if ev.ResourceType != "" {
 		row.ResourceType = &ev.ResourceType
@@ -339,4 +360,69 @@ func (q *Queue) persist(ctx context.Context, ev Event) error {
 		row.AfterData = after
 	}
 	return q.db.WithContext(ctx).Create(&row).Error
+}
+
+func buildModule(resourceType, fallback string) string {
+	rt := strings.TrimSpace(resourceType)
+	if rt == "" {
+		rt = strings.TrimSpace(fallback)
+	}
+	if rt == "" {
+		return "unknown"
+	}
+	if rt == "resources" {
+		return "resource"
+	}
+	if idx := strings.Index(rt, "_"); idx > 0 {
+		return rt[:idx]
+	}
+	return rt
+}
+
+func actionNameFromExtra(extra map[string]any) string {
+	if extra == nil {
+		return ""
+	}
+	if v, ok := extra["action_name"].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func actionTypeFromExtra(extra map[string]any) string {
+	if extra == nil {
+		return ""
+	}
+	if v, ok := extra["action_type"].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func operatorNameFromExtra(extra map[string]any) string {
+	if extra == nil {
+		return ""
+	}
+	if v, ok := extra["operator_name"].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func durationFromExtra(extra map[string]any) *int {
+	if extra == nil {
+		return nil
+	}
+	switch v := extra["duration_ms"].(type) {
+	case int:
+		return &v
+	case int64:
+		n := int(v)
+		return &n
+	case float64:
+		n := int(v)
+		return &n
+	default:
+		return nil
+	}
 }

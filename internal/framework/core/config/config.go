@@ -166,6 +166,7 @@ type SecurityConfig struct {
 type OAuthConfig struct {
 	GitHub   OAuthProviderConfig `mapstructure:"github"`
 	Gitee    OAuthProviderConfig `mapstructure:"gitee"`
+	QQ       OAuthProviderConfig `mapstructure:"qq"`
 	WeChat   OAuthProviderConfig `mapstructure:"wechat"`
 	WeChatMP OAuthProviderConfig `mapstructure:"wechat_mp"`
 }
@@ -266,14 +267,14 @@ func setDefaults(v *viper.Viper) {
 		"http://localhost:5163", "http://127.0.0.1:5163",
 	})
 	v.SetDefault("cors.allow_credentials", true)
-	v.SetDefault("cors.allow_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
+	v.SetDefault("cors.allow_methods", []string{"GET", "POST", "OPTIONS"})
 	v.SetDefault("cors.allow_headers", []string{"Authorization", "Content-Type", "X-Request-Id", "Accept", "Origin", "X-Requested-With", "X-HEI-CSRF"})
 	v.SetDefault("notify.mail.enabled", false)
 	v.SetDefault("notify.mail.port", 587)
 	v.SetDefault("notify.sms.enabled", false)
 	v.SetDefault("notify.sms.provider", "log")
 	v.SetDefault("notify.push.enabled", false)
-	v.SetDefault("metrics.enabled", true)
+	v.SetDefault("metrics.enabled", false)
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("otel.enabled", false)
 	v.SetDefault("security.hsts_enabled", false)

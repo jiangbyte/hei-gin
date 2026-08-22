@@ -280,6 +280,7 @@ func (s *Service) registerRoutes(d *module.Deps) func(*gin.RouterGroup) {
 	}
 }
 
+// create 创建{{.Main.BusinessName}}（body: AddParam；由 scripts/gen-swag 生成 OpenAPI）。
 func (s *Service) create(c *gin.Context) {
 	var req AddParam
 	if err := bind.JSON(c, &req); err != nil {

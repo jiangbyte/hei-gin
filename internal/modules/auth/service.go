@@ -392,6 +392,101 @@ func (s *Service) ResetPassword(ctx context.Context, accountType security.Accoun
 	return s.passwordPolicy.RecordHistory(ctx, accountID, password, accountID, "self_reset")
 }
 
+// ForgotPasswordByPhone 向绑定手机发送重置 OTP。
+func (s *Service) ForgotPasswordByPhone(ctx context.Context, accountType security.AccountType, req ForgotPasswordByPhoneParam) error {
+	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return err
+	}
+	phone := normalizePhone(req.Phone)
+	if phone == "" {
+		return errOTPTargetRequired
+	}
+	if s.accounts == nil {
+		return nil
+	}
+	accountID, _, err := s.accounts.FindEnabledByIdentity(ctx, accountType, "PHONE", phone)
+	if err != nil || accountID == "" {
+		return nil
+	}
+	code, err := sixDigitCode()
+	if err != nil {
+		return err
+	}
+	ttl := s.otpTTL(ctx)
+	if err := s.repo.StoreResetPasswordOTP(ctx, string(accountType), phone, code, ttl); err != nil {
+		return err
+	}
+	if s.notify != nil {
+		vars := map[string]any{
+			"app_name":       s.cfg.App.Name,
+			"code":           code,
+			"expire_minutes": strconv.Itoa(max(1, int(ttl.Seconds())/60)),
+		}
+		_ = s.notify.SendTemplated(ctx, "RESET_PASSWORD_CODE", phone, vars)
+	}
+	return nil
+}
+
+// ResetPasswordByPhone 通过手机 OTP 重置密码。
+func (s *Service) ResetPasswordByPhone(ctx context.Context, accountType security.AccountType, req ResetPasswordByPhoneParam) error {
+	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
+		return err
+	}
+	phone := normalizePhone(req.Phone)
+	if !s.repo.ConsumeResetPasswordOTP(ctx, string(accountType), phone, req.OTPCode) {
+		return errInvalidOTP
+	}
+	if s.accounts == nil {
+		return errAccountFinder
+	}
+	accountID, _, err := s.accounts.FindEnabledByIdentity(ctx, accountType, "PHONE", phone)
+	if err != nil || accountID == "" {
+		return errAccountNotFound
+	}
+	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
+	if err != nil {
+		return err
+	}
+	if password == "" {
+		return errEmptyPassword
+	}
+	if err := s.passwordPolicy.Validate(ctx, password, accountID, "", "", phone); err != nil {
+		return err
+	}
+	hash, err := security.HashPassword(password)
+	if err != nil {
+		return err
+	}
+	if err := s.accounts.UpdatePasswordHash(ctx, accountID, hash); err != nil {
+		return err
+	}
+	return s.passwordPolicy.RecordHistory(ctx, accountID, password, accountID, "self_reset_phone")
+}
+
+// SiteFooter 解析站点页脚公开配置。
+func (s *Service) SiteFooter(ctx context.Context) *SiteFooterResult {
+	return resolveSiteFooter(ctx, s)
+}
+
+func resolveSiteFooter(ctx context.Context, s *Service) *SiteFooterResult {
+	return &SiteFooterResult{
+		CopyrightText: s.runtimeString(ctx, "COPYRIGHT_TEXT", ""),
+		CopyrightURL:  s.runtimeString(ctx, "COPYRIGHT_URL", ""),
+		IcpNumber:     s.runtimeString(ctx, "SITE_ICP_NUMBER", ""),
+		IcpURL:        s.runtimeString(ctx, "SITE_ICP_URL", ""),
+		PsbNumber:     s.runtimeString(ctx, "SITE_PSB_NUMBER", ""),
+		PsbURL:        s.runtimeString(ctx, "SITE_PSB_URL", ""),
+	}
+}
+
+func (s *Service) otpTTL(ctx context.Context) time.Duration {
+	sec := s.runtimeInt(ctx, "AUTH_OTP_TTL_SECONDS", 300)
+	if sec <= 0 {
+		sec = 300
+	}
+	return time.Duration(sec) * time.Second
+}
+
 // Register 门户注册。
 func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterResult, error) {
 	if !s.registerEnabled(ctx) {
@@ -601,6 +696,7 @@ var (
 	errIPLocked           = authErr{"该 IP 登录失败次数过多"}
 	errOTPTargetRequired  = authErr{"请提供邮箱或手机号"}
 	errResetTokenInvalid  = authErr{"重置令牌无效"}
+	errAccountNotFound    = authErr{"账号不存在"}
 )
 
 type authErr struct{ msg string }

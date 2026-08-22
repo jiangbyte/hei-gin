@@ -74,8 +74,8 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Plan, total int64,
 	if q.GenType != "" {
 		db = db.Where("gen_type = ?", q.GenType)
 	}
-	if q.MainTable != "" {
-		db = db.Where(dialect.ILike(db, "main_table"), "%"+q.MainTable+"%")
+	if q.Table != "" {
+		db = db.Where(dialect.ILike(db, "table_name"), "%"+q.Table+"%")
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err

@@ -95,12 +95,12 @@ func LoadAccountViews(ctx context.Context, db *gorm.DB, ids []string) ([]Account
 		v.Account = identByAccount[id]
 		if row.AccountType == string(security.AccountAdmin) {
 			if p := adminProfiles[id]; p != nil {
-				v.Name, v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email, v.Remark =
-					p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
+				v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email, v.Remark =
+					p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email, p.Remark
 			}
 		} else if p := portalProfiles[id]; p != nil {
-			v.Name, v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email =
-				p.Name, p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
+			v.Nickname, v.Avatar, v.Signature, v.Phone, v.Email =
+				p.Nickname, p.Avatar, p.Signature, p.Phone, p.Email
 		}
 		out = append(out, v)
 	}

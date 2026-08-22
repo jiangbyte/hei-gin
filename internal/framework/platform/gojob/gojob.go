@@ -1,4 +1,4 @@
-// Package gojob 内嵌任务调度：DB 扫描 + Redis 锁 + sys_job/sys_job_log（对齐 hei-boot / hei-fastapi）。
+// Package gojob 内嵌任务调度：DB 扫描 + Redis 锁 + sys_job/sys_job_log（列名与 hei-boot 一致）。
 //
 // Author: Charlie
 package gojob
@@ -35,57 +35,66 @@ const (
 	maxResultLength    = 500
 )
 
-// SysJob 任务定义（sys_job，对齐 hei-boot）。
+// handlerAliases Boot JobHandler 全限定类名 → hei-gin 注册 key。
+var handlerAliases = map[string]string{
+	"github.jiangbyte.io.sys.modules.job.sample.SysJobSample":                 "sys_job_sample",
+	"github.jiangbyte.io.sys.modules.banner.job.BannerStatusJob":              "sys_banner_status_sync",
+	"github.jiangbyte.io.sys.modules.banner.job.BannerFlushInteractionsJob":   "sys_banner_flush_interactions",
+	"github.jiangbyte.io.sys.modules.audit.job.AuditAlertJob":                 "sys_audit_alert",
+	"github.jiangbyte.io.iam.modules.account.job.AccountPurgeCancelledJob":  "iam_account_purge_cancelled",
+	"github.jiangbyte.io.sys.modules.job.cleanup.SysJobLogCleanupJob":         "sys_job_log_cleanup",
+}
+
+// SysJob 任务定义（sys_job，对齐 hei-boot SysJob）。
 //
 // Author: Charlie
 type SysJob struct {
-	ID                string         `gorm:"column:id;primaryKey;size:64" json:"id"`
-	JobName           string         `gorm:"column:job_name;size:128;not null" json:"job_name"`
-	ExecuteClass      string         `gorm:"column:execute_class;size:255;not null" json:"execute_class"`
-	ExecuteType       string         `gorm:"column:execute_type;size:16;not null" json:"execute_type"`
-	TriggerConfig     string         `gorm:"column:trigger_config;size:255;not null" json:"trigger_config"`
-	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:json" json:"execute_param"`
-	LastRunTime       *time.Time     `gorm:"column:last_run_time" json:"last_run_time"`
-	NextRunTime       time.Time      `gorm:"column:next_run_time;not null;index:idx_sys_job_enabled_next" json:"next_run_time"`
-	LastExecuteResult *string        `gorm:"column:last_execute_result;size:500" json:"last_execute_result"`
-	Enabled           bool           `gorm:"column:enabled;not null;default:true;index:idx_sys_job_enabled_next" json:"enabled"`
-	Description       *string        `gorm:"column:description;size:500" json:"description"`
-	Sort              int            `gorm:"column:sort;not null;default:0" json:"sort"`
-	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	CreatedBy         *string        `gorm:"column:created_by;size:64" json:"created_by"`
-	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UpdatedBy         *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
+	ID            string         `gorm:"column:id;primaryKey;size:64" json:"id"`
+	Name          string         `gorm:"column:name;size:128;not null" json:"name"`
+	Handler       string         `gorm:"column:handler;size:255;not null" json:"handler"`
+	TriggerType   string         `gorm:"column:trigger_type;size:16;not null" json:"trigger_type"`
+	TriggerConfig string         `gorm:"column:trigger_config;size:255;not null" json:"trigger_config"`
+	Params        datatypes.JSON `gorm:"column:params;type:json" json:"params"`
+	LastRunTime   *time.Time     `gorm:"column:last_run_time" json:"last_run_time"`
+	NextRunTime   time.Time      `gorm:"column:next_run_time;not null;index:idx_sys_job_enabled_next" json:"next_run_time"`
+	LastResult    *string        `gorm:"column:last_result;size:500" json:"last_result"`
+	Enabled       bool           `gorm:"column:enabled;not null;default:true;index:idx_sys_job_enabled_next" json:"enabled"`
+	Description   *string        `gorm:"column:description;size:500" json:"description"`
+	Sort          int            `gorm:"column:sort;not null;default:0" json:"sort"`
+	CreatedAt     time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	CreatedBy     *string        `gorm:"column:created_by;size:64" json:"created_by"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UpdatedBy     *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
 }
 
 // TableName 返回表名。
 func (SysJob) TableName() string { return "sys_job" }
 
-// SysJobLog 任务执行日志（sys_job_log，对齐 hei-boot）。
+// SysJobLog 任务执行日志（sys_job_log，对齐 hei-boot SysJobLog）。
 //
 // Author: Charlie
 type SysJobLog struct {
-	ID                string         `gorm:"column:id;primaryKey;size:64" json:"id"`
-	JobID             string         `gorm:"column:job_id;size:64;not null;index" json:"job_id"`
-	JobName           string         `gorm:"column:job_name;size:128;not null" json:"job_name"`
-	ExecuteParam      datatypes.JSON `gorm:"column:execute_param;type:json" json:"execute_param"`
-	ExecuteTime       time.Time      `gorm:"column:execute_time;not null" json:"execute_time"`
-	ExecuteDurationMS *int64         `gorm:"column:execute_duration_ms" json:"execute_duration_ms"`
-	Success           bool           `gorm:"column:success;not null" json:"success"`
-	ExecuteResult     *string        `gorm:"column:execute_result;type:text" json:"execute_result"`
-	Executor          *string        `gorm:"column:executor;size:64" json:"executor"`
-	IP                *string        `gorm:"column:ip;size:64" json:"ip"`
-	ProcessID         *string        `gorm:"column:process_id;size:32" json:"process_id"`
-	AppDir            *string        `gorm:"column:app_dir;size:500" json:"app_dir"`
-	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	CreatedBy         *string        `gorm:"column:created_by;size:64" json:"created_by"`
-	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UpdatedBy         *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
+	ID         string         `gorm:"column:id;primaryKey;size:64" json:"id"`
+	JobID      string         `gorm:"column:job_id;size:64;not null;index" json:"job_id"`
+	Params     datatypes.JSON `gorm:"column:params;type:json" json:"params"`
+	StartedAt  time.Time      `gorm:"column:started_at;not null" json:"started_at"`
+	DurationMs *int64         `gorm:"column:duration_ms" json:"duration_ms"`
+	Success    bool           `gorm:"column:success;not null" json:"success"`
+	Result     *string        `gorm:"column:result;type:text" json:"result"`
+	Executor   *string        `gorm:"column:executor;size:64" json:"executor"`
+	IP         *string        `gorm:"column:ip;size:64" json:"ip"`
+	ProcessID  *string        `gorm:"column:process_id;size:32" json:"process_id"`
+	AppDir     *string        `gorm:"column:app_dir;size:500" json:"app_dir"`
+	CreatedAt  time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	CreatedBy  *string        `gorm:"column:created_by;size:64" json:"created_by"`
+	UpdatedAt  time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UpdatedBy  *string        `gorm:"column:updated_by;size:64" json:"updated_by"`
 }
 
 // TableName 返回表名。
 func (SysJobLog) TableName() string { return "sys_job_log" }
 
-// HandlerFunc 任务处理器：paramJSON 为 execute_param 的 JSON 文本（可空），返回结果摘要。
+// HandlerFunc 任务处理器：paramJSON 为 params 的 JSON 文本（可空），返回结果摘要。
 //
 // Author: Charlie
 type HandlerFunc func(ctx context.Context, paramJSON string) (string, error)
@@ -168,7 +177,7 @@ func mustCwd() string {
 	return filepath.Clean(d)
 }
 
-// SetHandlers 填充/替换处理器表。
+// SetHandlers 填充/替换处理器表（同时注册 Boot FQCN 别名）。
 func (m *Manager) SetHandlers(handlers []HandlerDef) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -179,17 +188,28 @@ func (m *Manager) SetHandlers(handlers []HandlerDef) {
 		}
 		m.handlers[h.Key] = h
 	}
+	for fqcn, key := range handlerAliases {
+		if h, ok := m.handlers[key]; ok {
+			m.handlers[fqcn] = h
+		}
+	}
 }
 
-// Resolve 按 execute_class 解析处理器。
+// Resolve 按 handler（Boot FQCN 或 gin key）解析处理器。
 func (m *Manager) Resolve(key string) (HandlerDef, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	h, ok := m.handlers[key]
-	return h, ok
+	if h, ok := m.handlers[key]; ok {
+		return h, true
+	}
+	if alias, ok := handlerAliases[key]; ok {
+		h, ok := m.handlers[alias]
+		return h, ok
+	}
+	return HandlerDef{}, false
 }
 
-// HasHandler 是否已注册。
+// HasHandler 是否已注册（接受 Boot FQCN 或 gin key）。
 func (m *Manager) HasHandler(key string) bool {
 	_, ok := m.Resolve(key)
 	return ok
@@ -200,7 +220,15 @@ func (m *Manager) HandlerInfos() []HandlerInfo {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	out := make([]HandlerInfo, 0, len(m.handlers))
-	for _, h := range m.handlers {
+	seen := map[string]bool{}
+	for key, h := range m.handlers {
+		if _, isAlias := handlerAliases[key]; isAlias {
+			continue
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
 		name := h.Name
 		if name == "" {
 			name = h.Key
@@ -361,18 +389,18 @@ func (m *Manager) runLocked(ctx context.Context, jobID string, force bool, execu
 	}
 
 	executeTime := time.Now().UTC()
-	handler, ok := m.Resolve(job.ExecuteClass)
+	handler, ok := m.Resolve(job.Handler)
 	var (
 		result  string
 		success bool
 	)
 	if !ok {
-		result = "执行失败: 未找到任务处理器: " + job.ExecuteClass
+		result = "执行失败: 未找到任务处理器: " + job.Handler
 		success = false
 	} else {
 		paramJSON := ""
-		if len(job.ExecuteParam) > 0 && string(job.ExecuteParam) != "null" {
-			paramJSON = string(job.ExecuteParam)
+		if len(job.Params) > 0 && string(job.Params) != "null" {
+			paramJSON = string(job.Params)
 		}
 		out, err := handler.Run(ctx, paramJSON)
 		if err != nil {
@@ -391,16 +419,16 @@ func (m *Manager) runLocked(ctx context.Context, jobID string, force bool, execu
 }
 
 func (m *Manager) recordRun(ctx context.Context, job *SysJob, executor string, success bool, result string, executeTime time.Time, durMS int64) error {
-	next, err := ComputeNextRunTime(job.ExecuteType, job.TriggerConfig, executeTime)
+	next, err := ComputeNextRunTime(job.TriggerType, job.TriggerConfig, executeTime)
 	if err != nil {
 		next = executeTime.Add(time.Minute)
 	}
 	truncated := truncateResult(result)
 	lastRun := executeTime
 	updates := map[string]any{
-		"last_run_time":       lastRun,
-		"next_run_time":       next,
-		"last_execute_result": truncated,
+		"last_run_time": lastRun,
+		"next_run_time": next,
+		"last_result":   truncated,
 	}
 	if err := m.db.WithContext(ctx).Model(&SysJob{}).Where("id = ?", job.ID).Updates(updates).Error; err != nil {
 		return err
@@ -409,18 +437,17 @@ func (m *Manager) recordRun(ctx context.Context, job *SysJob, executor string, s
 	ip, pid, appDir := m.ip, m.pid, m.appDir
 	exec := executor
 	logRow := SysJobLog{
-		ID:                idgen.Next(),
-		JobID:             job.ID,
-		JobName:           job.JobName,
-		ExecuteParam:      job.ExecuteParam,
-		ExecuteTime:       executeTime,
-		ExecuteDurationMS: &durMS,
-		Success:           success,
-		ExecuteResult:     &truncated,
-		Executor:          &exec,
-		IP:                &ip,
-		ProcessID:         &pid,
-		AppDir:            &appDir,
+		ID:         idgen.Next(),
+		JobID:      job.ID,
+		Params:     job.Params,
+		StartedAt:  executeTime,
+		DurationMs: &durMS,
+		Success:    success,
+		Result:     &truncated,
+		Executor:   &exec,
+		IP:         &ip,
+		ProcessID:  &pid,
+		AppDir:     &appDir,
 	}
 	return m.db.WithContext(ctx).Create(&logRow).Error
 }
@@ -439,10 +466,10 @@ var cronParser = cron.NewParser(
 )
 
 // ValidateTrigger 校验触发配置。
-func ValidateTrigger(executeType, triggerConfig string) error {
-	executeType = strings.ToUpper(strings.TrimSpace(executeType))
+func ValidateTrigger(triggerType, triggerConfig string) error {
+	triggerType = strings.ToUpper(strings.TrimSpace(triggerType))
 	triggerConfig = strings.TrimSpace(triggerConfig)
-	switch executeType {
+	switch triggerType {
 	case TypeFIXED:
 		n, err := strconv.Atoi(triggerConfig)
 		if err != nil || n < 1 {
@@ -455,18 +482,18 @@ func ValidateTrigger(executeType, triggerConfig string) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("不支持的触发类型: %s", executeType)
+		return fmt.Errorf("不支持的触发类型: %s", triggerType)
 	}
 }
 
 // ComputeNextRunTime 计算下次执行时间（CRON 秒在首位，对齐 Spring/hei-boot）。
-func ComputeNextRunTime(executeType, triggerConfig string, from time.Time) (time.Time, error) {
-	executeType = strings.ToUpper(strings.TrimSpace(executeType))
+func ComputeNextRunTime(triggerType, triggerConfig string, from time.Time) (time.Time, error) {
+	triggerType = strings.ToUpper(strings.TrimSpace(triggerType))
 	triggerConfig = strings.TrimSpace(triggerConfig)
-	if err := ValidateTrigger(executeType, triggerConfig); err != nil {
+	if err := ValidateTrigger(triggerType, triggerConfig); err != nil {
 		return time.Time{}, err
 	}
-	if executeType == TypeFIXED {
+	if triggerType == TypeFIXED {
 		n, _ := strconv.Atoi(triggerConfig)
 		return from.Add(time.Duration(n) * time.Second), nil
 	}

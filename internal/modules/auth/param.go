@@ -67,3 +67,24 @@ type ResetPasswordParam struct {
 	CaptchaID     string `json:"captcha_id" binding:"required"`
 	CaptchaValue  string `json:"captcha_value" binding:"required"`
 }
+
+// ForgotPasswordByPhoneParam 通过手机找回密码。
+//
+// Author: Charlie
+type ForgotPasswordByPhoneParam struct {
+	Phone        string `json:"phone" binding:"required"`
+	CaptchaID    string `json:"captcha_id" binding:"required"`
+	CaptchaValue string `json:"captcha_value" binding:"required"`
+}
+
+// ResetPasswordByPhoneParam 通过手机 OTP 重置密码。
+//
+// Author: Charlie
+type ResetPasswordByPhoneParam struct {
+	Phone         string `json:"phone" binding:"required"`
+	OTPCode       string `json:"otp_code" binding:"required"`
+	Password      string `json:"password" binding:"required"`
+	PasswordKeyID string `json:"password_key_id" binding:"required"`
+	CaptchaID     string `json:"captcha_id" binding:"required"`
+	CaptchaValue  string `json:"captcha_value" binding:"required"`
+}

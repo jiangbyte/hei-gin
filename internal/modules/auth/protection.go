@@ -22,7 +22,8 @@ const (
 	lockAcctPrefix = "auth:lock:acct:"
 	lockIPPrefix   = "auth:lock:ip:"
 	otpLoginPrefix = "auth:otp:login:"
-	resetTokPrefix = "password:reset:"
+	resetTokPrefix     = "password:reset:"
+	resetPwdOtpPrefix  = "auth:otp:reset-password:"
 )
 
 // EnsureLoginAllowed 登录前检查账号/IP 是否锁定。
@@ -124,6 +125,26 @@ func (r *Repo) StoreResetToken(ctx context.Context, token, accountID string, ttl
 	return r.rdb.Set(ctx, resetTokPrefix+token, accountID, ttl).Err()
 }
 
+// StoreResetPasswordOTP 缓存手机重置密码 OTP。
+func (r *Repo) StoreResetPasswordOTP(ctx context.Context, accountType, phone, code string, ttl time.Duration) error {
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+	key := resetPwdOtpPrefix + accountType + ":PHONE:" + phone
+	return r.rdb.Set(ctx, key, code, ttl).Err()
+}
+
+// ConsumeResetPasswordOTP 校验并消费手机重置密码 OTP。
+func (r *Repo) ConsumeResetPasswordOTP(ctx context.Context, accountType, phone, code string) bool {
+	key := resetPwdOtpPrefix + accountType + ":PHONE:" + phone
+	stored, err := r.rdb.Get(ctx, key).Result()
+	_ = r.rdb.Del(ctx, key)
+	if err == redis.Nil || err != nil || stored == "" {
+		return false
+	}
+	return stored == strings.TrimSpace(code)
+}
+
 // ConsumeResetToken 消费重置令牌，返回账号 ID。
 func (r *Repo) ConsumeResetToken(ctx context.Context, token string) (string, error) {
 	key := resetTokPrefix + token
@@ -150,6 +171,10 @@ func sixDigitCode() (string, error) {
 
 func normalizeAccount(account string) string {
 	return strings.ToLower(strings.TrimSpace(account))
+}
+
+func normalizePhone(phone string) string {
+	return strings.TrimSpace(phone)
 }
 
 func newResetToken() (string, error) {

@@ -1,4 +1,4 @@
-// internal/modules/sys/job/param.go 入参定义（对齐 hei-boot / hei-fastapi）。
+// internal/modules/sys/job/param.go 入参定义（对齐 hei-boot / hei-admin）。
 //
 // Author: Charlie
 
@@ -10,11 +10,11 @@ import "hei-gin/internal/framework/core/schema"
 //
 // Author: Charlie
 type AddParam struct {
-	JobName       string         `json:"job_name" binding:"required"`
-	ExecuteClass  string         `json:"execute_class" binding:"required"`
-	ExecuteType   string         `json:"execute_type" binding:"required"`
+	Name          string         `json:"name" binding:"required"`
+	Handler       string         `json:"handler" binding:"required"`
+	TriggerType   string         `json:"trigger_type" binding:"required"`
 	TriggerConfig string         `json:"trigger_config" binding:"required"`
-	ExecuteParam  map[string]any `json:"execute_param"`
+	Params        map[string]any `json:"params"`
 	Description   *string        `json:"description"`
 	Sort          int            `json:"sort"`
 	Enabled       *bool          `json:"enabled"`
@@ -48,8 +48,8 @@ type RunParam struct {
 // Author: Charlie
 type PageParam struct {
 	schema.PageQuery
-	JobName     string `form:"job_name"`
-	ExecuteType string `form:"execute_type"`
+	Name        string `form:"name"`
+	TriggerType string `form:"trigger_type"`
 	Enabled     *bool  `form:"enabled"`
 }
 

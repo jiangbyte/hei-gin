@@ -218,7 +218,8 @@ func hardChecks() []hardCheck {
 	return []hardCheck{
 		{name: "health_live", method: "GET", path: "/api/v1/internal/health/live"},
 		{name: "health_ready", method: "GET", path: "/api/v1/internal/health/ready"},
-		{name: "dashboard_overview", method: "GET", path: "/api/v1/admin/dashboard/overview"},
+		{name: "workspace_overview", method: "GET", path: "/api/v1/admin/workspace/overview"},
+		{name: "public_site_footer", method: "GET", path: "/api/v1/public/site-footer"},
 		{name: "roles_page_ilike", method: "GET", path: "/api/v1/admin/sys/roles/page?current=1&size=5&name=admin"},
 		{name: "banners_page_json", method: "GET", path: "/api/v1/admin/sys/banners/page?current=1&size=5&title=a"},
 		{name: "banners_list", method: "GET", path: "/api/v1/admin/sys/banners/list?position=HOME_TOP"},
@@ -282,7 +283,7 @@ func pickToken(path, admin, portal string) string {
 
 func materializePath(p string) string {
 	// Gin param placeholders
-	p = strings.ReplaceAll(p, ":provider", "github")
+	p = strings.ReplaceAll(p, ":provider", "GITHUB")
 	p = strings.ReplaceAll(p, ":id", "0")
 	return p
 }

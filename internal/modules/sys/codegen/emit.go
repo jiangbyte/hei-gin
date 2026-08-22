@@ -16,6 +16,9 @@ import (
 	"unicode"
 )
 
+// frontendRoot 代码生成前端输出根目录（对齐 hei-boot：hei-admin/...）。
+const frontendRoot = "hei-admin"
+
 // Preview 按方案渲染预览文件。
 func (s *Service) Preview(ctx context.Context, id string) (*PreviewResult, error) {
 	plan, err := s.repo.GetByID(ctx, id)
@@ -133,43 +136,10 @@ func renderPlan(plan *Plan, mainFields, subFields []Field) ([]PreviewFileResult,
 		}
 	}
 
-	// 前端
-	files = append(files, struct {
-		path     string
-		language string
-		tmpl     string
-	}{ctx.ApiFile, "typescript", apiTsTmpl})
-	files = append(files, struct {
-		path     string
-		language string
-		tmpl     string
-	}{ctx.ApiIndexAppend, "typescript", apiIndexAppendTmpl})
-	files = append(files, struct {
-		path     string
-		language string
-		tmpl     string
-	}{ctx.ViewPath, "vue", indexVueTmpl})
-	files = append(files, struct {
-		path     string
-		language string
-		tmpl     string
-	}{ctx.ViewComponentDir + "/ModalForm.vue", "vue", modalFormTmpl})
-	files = append(files, struct {
-		path     string
-		language string
-		tmpl     string
-	}{ctx.ViewComponentDir + "/ModalDetail.vue", "vue", modalDetailTmpl})
-	if ctx.HasSub {
-		files = append(files, struct {
-			path     string
-			language string
-			tmpl     string
-		}{ctx.ViewComponentDir + "/children/ChildModalForm.vue", "vue", childModalFormTmpl})
-		files = append(files, struct {
-			path     string
-			language string
-			tmpl     string
-		}{ctx.ViewComponentDir + "/children/ChildModalDetail.vue", "vue", childModalDetailTmpl})
+	// 前端（对齐 hei-boot 模板）
+	frontendFiles, err := renderBootFrontend(plan, mainFields, subFields)
+	if err != nil {
+		return nil, err
 	}
 
 	// 菜单权限 SQL
@@ -179,13 +149,16 @@ func renderPlan(plan *Plan, mainFields, subFields []Field) ([]PreviewFileResult,
 		tmpl     string
 	}{"scripts/" + toSnake(ctx.Main.EntityName) + "_menu_permission.sql", "sql", menuPermissionSqlTmpl})
 
-	out := make([]PreviewFileResult, 0, len(files))
+	out := make([]PreviewFileResult, 0, len(files)+len(frontendFiles))
 	funcs := template.FuncMap{
 		"sq":           func(s string) string { return strings.ReplaceAll(s, "'", "''") },
 		"replaceColon": func(s string) string { return strings.ReplaceAll(s, ":", "_") },
 		"toSnake":      toSnake,
 	}
 	for _, f := range files {
+		if f.tmpl == "" {
+			continue
+		}
 		var b bytes.Buffer
 		t, err := template.New(f.path).Funcs(funcs).Parse(f.tmpl)
 		if err != nil {
@@ -200,6 +173,7 @@ func renderPlan(plan *Plan, mainFields, subFields []Field) ([]PreviewFileResult,
 		}
 		out = append(out, PreviewFileResult{Path: f.path, Language: f.language, Content: content})
 	}
+	out = append(out, frontendFiles...)
 	return out, nil
 }
 
@@ -227,6 +201,7 @@ type emitCtx struct {
 	ApiFile           string
 	ApiIndexAppend    string
 	ApiExportName     string
+	ApiExport         string
 	ViewPath          string
 	ViewComponentDir  string
 	Main              *entityCtx
@@ -318,13 +293,13 @@ func buildEmitContext(plan *Plan, mainFields, subFields []Field) *emitCtx {
 	apiPrefix := plan.APIPrefix
 	apiPrefix = strings.TrimPrefix(apiPrefix, "/api/v1/admin")
 	if apiPrefix == "" || apiPrefix == "/" {
-		apiPrefix = "/biz/" + toKebab(ctxVar(plan.MainBusinessName))
+		apiPrefix = "/biz/" + toKebab(ctxVar(plan.BusinessName))
 	}
 	if !strings.HasPrefix(apiPrefix, "/") {
 		apiPrefix = "/" + apiPrefix
 	}
 
-	main := buildEntityCtx(plan.MainEntityName, plan.MainTable, plan.MainPK, plan.MainBusinessName, mainFields, false, hasTree, plan.TreeParentField)
+	main := buildEntityCtx(plan.EntityName, plan.Table, plan.PKColumn, plan.BusinessName, mainFields, false, hasTree, plan.TreeParentField)
 	var sub *entityCtx
 	if hasSub && plan.SubEntityName != nil {
 		sub = buildEntityCtx(*plan.SubEntityName, *plan.SubTable, *plan.SubPK, *plan.SubBusinessName, subFields, true, false, nil)
@@ -333,21 +308,24 @@ func buildEmitContext(plan *Plan, mainFields, subFields []Field) *emitCtx {
 	hasTreeParentForm := hasTree && plan.TreeParentField != nil && fieldIn(main.FormFields, *plan.TreeParentField)
 
 	componentPath := strings.TrimSpace(plan.ComponentPath)
-	viewPath := "web/admin/src/views/" + strings.TrimPrefix(componentPath, "/")
+	viewPath := frontendRoot + "/src/views/" + strings.TrimPrefix(componentPath, "/")
 	viewDir := viewPath
 	if idx := strings.LastIndex(viewPath, "/"); idx > 0 {
 		viewDir = viewPath[:idx]
 	}
 	if viewDir == viewPath && strings.HasSuffix(viewPath, ".vue") {
-		viewDir = "web/admin/src/views"
+		viewDir = frontendRoot + "/src/views"
 	}
 	viewComponentDir := viewDir + "/components"
 	apiFile := resolveApiFile(plan, componentPath)
-	apiExportName := lowerFirst(plan.MainEntityName) + "Api"
+	apiExportName := lowerFirst(plan.EntityName) + "Api"
+	apiRel := strings.TrimPrefix(apiFile, frontendRoot+"/src/api/")
+	apiRel = strings.TrimSuffix(apiRel, ".ts")
+	apiExport := "export * as " + apiExportName + " from './" + apiRel + "'"
 
-	modPath := plan.MainModulePath
+	modPath := plan.ModulePath
 	if modPath == "" {
-		modPath = "biz/" + ctxVar(plan.MainBusinessName)
+		modPath = "biz/" + ctxVar(plan.BusinessName)
 	}
 	modPath = strings.Trim(modPath, "/")
 	moduleRoot := "internal/modules/" + firstSegment(modPath)
@@ -365,8 +343,9 @@ func buildEmitContext(plan *Plan, mainFields, subFields []Field) *emitCtx {
 		ModuleRoot:        moduleRoot,
 		BasePackage:       "hei-gin/" + moduleRoot + "/" + lastSegment(modPath),
 		ApiFile:           apiFile,
-		ApiIndexAppend:    "web/admin/src/api/index.ts.append",
+		ApiIndexAppend:    frontendRoot + "/src/api/index.ts.append",
 		ApiExportName:     apiExportName,
+		ApiExport:         apiExport,
 		ViewPath:          viewPath,
 		ViewComponentDir:  viewComponentDir,
 		Main:              main,
@@ -437,14 +416,14 @@ func buildEntityCtx(entityName, tableName, pkName, businessName string, fields [
 }
 
 func buildFieldCtx(f Field) fieldCtx {
-	py := def(f.PythonType, "str")
-	goType, base, ptr := semanticToGoType(py, f.IsNullable)
-	isDatetime := py == "datetime" || f.FormWidget == "datetime"
+	py := def(f.ValueType, "str")
+	goType, base, ptr := semanticToGoType(py, f.Nullable)
+	isDatetime := py == "datetime" || f.Widget == "datetime"
 	isJSON := py == "dict" || strings.Contains(strings.ToLower(f.DBType), "json")
 	isBool := py == "bool"
 	label := ""
-	if f.ColumnComment != nil {
-		label = *f.ColumnComment
+	if f.Label != nil {
+		label = *f.Label
 	}
 	if label == "" {
 		label = f.ColumnName
@@ -457,20 +436,20 @@ func buildFieldCtx(f Field) fieldCtx {
 		Comment:        label,
 		DBType:         f.DBType,
 		PythonType:     py,
-		TypescriptType: def(f.TypescriptType, "string"),
+		TypescriptType: def(f.UIType, "string"),
 		GoType:         goType,
 		GoTypeBase:     base,
 		IsPointer:      ptr,
-		FormWidget:     def(f.FormWidget, "input"),
+		FormWidget:     def(f.Widget, "input"),
 		DictCode:       deref(f.DictCode),
 		QueryOperator:  deref(f.QueryOperator),
-		ShowInTable:    f.ShowInTable,
-		ShowInForm:     f.ShowInForm,
-		ShowInDetail:   f.ShowInDetail,
-		ShowInQuery:    f.ShowInQuery,
-		IsPrimaryKey:   f.IsPrimaryKey,
-		IsRequired:     f.IsRequired,
-		IsNullable:     f.IsNullable,
+		ShowInTable:    f.InTable,
+		ShowInForm:     f.InForm,
+		ShowInDetail:   f.InDetail,
+		ShowInQuery:    f.InQuery,
+		IsPrimaryKey:   f.PrimaryKey,
+		IsRequired:     f.Required,
+		IsNullable:     f.Nullable,
 		MaxLength:      derefInt(f.MaxLength),
 		Sort:           f.Sort,
 		IsDatetime:     isDatetime,
@@ -647,14 +626,14 @@ func resolveApiFile(plan *Plan, componentPath string) string {
 	parts := strings.Split(cleaned, "/")
 	if len(parts) >= 2 && strings.HasSuffix(parts[len(parts)-1], ".vue") {
 		var b strings.Builder
-		b.WriteString("web/admin/src/api")
+		b.WriteString(frontendRoot + "/src/api")
 		for i := 0; i < len(parts)-1; i++ {
 			b.WriteString("/")
 			b.WriteString(parts[i])
 		}
 		return b.String() + ".ts"
 	}
-	return "web/admin/src/api/" + toSnake(plan.MainEntityName) + ".ts"
+	return frontendRoot + "/src/api/" + toSnake(plan.EntityName) + ".ts"
 }
 
 func snowflakeLikeID() string {
