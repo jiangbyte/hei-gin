@@ -6,6 +6,7 @@ package oauth
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -35,9 +36,13 @@ const (
 )
 
 // IssueSessionFunc 由 auth 注入，避免循环依赖。
-//
-// Author: Charlie
-type IssueSessionFunc func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (token string, err error)
+type IssueSessionFunc func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (LoginResult, error)
+
+// OAuthHooks 门户 OAuth 自动建号后置逻辑（由 auth 注入）。
+type OAuthHooks struct {
+	AssignRegisterDefaults func(ctx context.Context, accountID string) error
+	RecordPasswordHistory  func(ctx context.Context, accountID, rawPassword, changedBy, reason string) error
+}
 
 // Service OAuth 服务。
 //
@@ -49,10 +54,11 @@ type Service struct {
 	runtime *runtimecfg.Settings
 	audit   *audit.Queue
 	issue   IssueSessionFunc
+	hooks   OAuthHooks
 }
 
 // NewService 构造 OAuth 服务。
-func NewService(d *module.Deps, issue IssueSessionFunc) *Service {
+func NewService(d *module.Deps, issue IssueSessionFunc, hooks OAuthHooks) *Service {
 	return &Service{
 		cfg:     d.Cfg,
 		db:      d.DB,
@@ -60,6 +66,7 @@ func NewService(d *module.Deps, issue IssueSessionFunc) *Service {
 		runtime: d.Runtime,
 		audit:   d.Audit,
 		issue:   issue,
+		hooks:   hooks,
 	}
 }
 
@@ -131,10 +138,14 @@ type ExchangeParam struct {
 
 // LoginResult OAuth 登录结果（字段与 auth 对齐）。
 type LoginResult struct {
-	Token           string               `json:"token"`
-	AccountID       string               `json:"account_id"`
-	AccountType     security.AccountType `json:"account_type"`
-	PasswordExpired bool                 `json:"password_expired"`
+	Token                     string               `json:"token"`
+	AccountID                 string               `json:"account_id"`
+	AccountType               security.AccountType `json:"account_type"`
+	PasswordExpired           bool                 `json:"password_expired"`
+	ForceBindEmail            bool                 `json:"force_bind_email"`
+	ForceBindPhone            bool                 `json:"force_bind_phone"`
+	PasswordExpiryWarningDays int                  `json:"password_expiry_warning_days"`
+	ExpiresIn                 int                  `json:"expires_in"`
 }
 
 func (s *Service) authorize(accountType security.AccountType) gin.HandlerFunc {
@@ -228,40 +239,67 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 			return
 		}
 		var accountID string
+		action := "login"
 		if st["intent"] == "BIND" && st["account_id"] != "" {
 			if err := s.createBinding(c.Request.Context(), st["account_id"], string(provider), profile); err != nil {
-				response.Fail(c, http.StatusBadRequest, 400, err.Error())
+				s.redirectOAuth(c, st["redirect"], accountType, "", "", "error", err.Error())
 				return
 			}
 			accountID = st["account_id"]
-		} else {
-			accountID, err = s.resolveOrBindAccount(c.Request.Context(), accountType, provider, profile)
-			if err != nil {
-				response.Fail(c, http.StatusBadRequest, 400, err.Error())
-				return
-			}
+			action = "bound"
+			s.redirectOAuth(c, st["redirect"], accountType, "", action, "ok", "")
+			return
+		}
+		accountID, err = s.resolveOrBindAccount(c.Request.Context(), accountType, provider, profile)
+		if err != nil {
+			s.redirectOAuth(c, st["redirect"], accountType, "", "", "error", err.Error())
+			return
+		}
+		if s.issue == nil {
+			s.redirectOAuth(c, st["redirect"], accountType, "", "", "error", "session issuer not configured")
+			return
+		}
+		loginResult, err := s.issue(c.Request.Context(), accountType, accountID, c.ClientIP(), c.Request.UserAgent(), true)
+		if err != nil {
+			s.redirectOAuth(c, st["redirect"], accountType, "", "", "error", err.Error())
+			return
 		}
 		exCode, err := randomHex(16)
 		if err != nil {
-			response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+			s.redirectOAuth(c, st["redirect"], accountType, "", "", "error", err.Error())
 			return
 		}
-		exPayload, _ := json.Marshal(map[string]string{
-			"account_id":   accountID,
-			"account_type": string(accountType),
-		})
+		exPayload, _ := json.Marshal(loginResult)
 		_ = s.rdb.Set(c.Request.Context(), exchangeKeyPrefix+exCode, string(exPayload), 5*time.Minute).Err()
-		redirect := st["redirect"]
-		if redirect == "" {
-			response.OK(c, gin.H{"code": exCode})
+		if st["redirect"] == "" {
+			response.OK(c, gin.H{"oauth_code": exCode})
 			return
 		}
-		sep := "?"
-		if strings.Contains(redirect, "?") {
-			sep = "&"
-		}
-		c.Redirect(http.StatusFound, redirect+sep+"code="+url.QueryEscape(exCode))
+		s.redirectOAuth(c, st["redirect"], accountType, exCode, action, "ok", "")
 	}
+}
+
+func (s *Service) redirectOAuth(c *gin.Context, frontend string, accountType security.AccountType, oauthCode, action, status, message string) {
+	target := strings.TrimSpace(frontend)
+	if target == "" {
+		target = s.frontendCallback(c.Request.Context(), accountType)
+	}
+	params := url.Values{}
+	params.Set("oauth_status", status)
+	if action != "" {
+		params.Set("oauth_action", action)
+	}
+	if oauthCode != "" {
+		params.Set("oauth_code", oauthCode)
+	}
+	if message != "" {
+		params.Set("oauth_message", message)
+	}
+	sep := "?"
+	if strings.Contains(target, "?") {
+		sep = "&"
+	}
+	c.Redirect(http.StatusFound, target+sep+params.Encode())
 }
 
 func (s *Service) exchange(accountType security.AccountType) gin.HandlerFunc {
@@ -277,26 +315,23 @@ func (s *Service) exchange(accountType security.AccountType) gin.HandlerFunc {
 			response.Fail(c, http.StatusBadRequest, 400, "兑换码无效或已过期")
 			return
 		}
-		var payload map[string]string
-		_ = json.Unmarshal([]byte(raw), &payload)
-		if payload["account_type"] != string(accountType) {
-			response.Fail(c, http.StatusBadRequest, 400, "账号类型不匹配")
-			return
+		var loginResult LoginResult
+		if err := json.Unmarshal([]byte(raw), &loginResult); err != nil || loginResult.Token == "" {
+			// 兼容旧版仅存 account_id 的兑换载荷
+			var legacy map[string]string
+			_ = json.Unmarshal([]byte(raw), &legacy)
+			if legacy["account_type"] != string(accountType) || legacy["account_id"] == "" || s.issue == nil {
+				response.Fail(c, http.StatusBadRequest, 400, "兑换码无效或已过期")
+				return
+			}
+			var err error
+			loginResult, err = s.issue(c.Request.Context(), accountType, legacy["account_id"], c.ClientIP(), c.Request.UserAgent(), true)
+			if err != nil {
+				response.Fail(c, http.StatusBadRequest, 400, err.Error())
+				return
+			}
 		}
-		if s.issue == nil {
-			response.Fail(c, http.StatusInternalServerError, 500, "session issuer not configured")
-			return
-		}
-		token, err := s.issue(c.Request.Context(), accountType, payload["account_id"], c.ClientIP(), c.Request.UserAgent(), true)
-		if err != nil {
-			response.Fail(c, http.StatusBadRequest, 400, err.Error())
-			return
-		}
-		response.OK(c, LoginResult{
-			Token:       token,
-			AccountID:   payload["account_id"],
-			AccountType: accountType,
-		})
+		response.OK(c, loginResult)
 	}
 }
 
@@ -326,16 +361,12 @@ func (s *Service) wechatMpLogin(c *gin.Context) {
 		response.Fail(c, http.StatusInternalServerError, 500, "session issuer not configured")
 		return
 	}
-	token, err := s.issue(c.Request.Context(), security.AccountPortal, accountID, c.ClientIP(), c.Request.UserAgent(), true)
+	loginResult, err := s.issue(c.Request.Context(), security.AccountPortal, accountID, c.ClientIP(), c.Request.UserAgent(), true)
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	response.OK(c, LoginResult{
-		Token:       token,
-		AccountID:   accountID,
-		AccountType: security.AccountPortal,
-	})
+	response.OK(c, loginResult)
 }
 
 // frontendCallback 前端 OAuth 回调页：优先运行时 AUTH_OAUTH_FRONTEND_CALLBACK_{TYPE}，缺省同源路径（对齐 hei-boot）。
@@ -368,15 +399,11 @@ type oauthProfile struct {
 }
 
 func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security.AccountType, provider oauthProvider, profile *oauthProfile) (string, error) {
-	providerName := string(provider)
-	if profile.Provider != "" {
-		providerName = profile.Provider
+	binding, err := s.resolveBinding(ctx, provider, profile)
+	if err != nil {
+		return "", err
 	}
-	var binding AccountOAuthBinding
-	err := s.db.WithContext(ctx).
-		Where("provider = ? AND open_id = ?", providerName, profile.OpenID).
-		First(&binding).Error
-	if err == nil {
+	if binding != nil {
 		var acc struct {
 			ID            string
 			AccountType   string
@@ -390,17 +417,24 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		if acc.AccountType != string(accountType) || acc.AccountStatus != security.AccountStatusEnabled {
 			return "", fmt.Errorf("账号不可用")
 		}
+		if err := s.upsertBinding(ctx, acc.ID, provider, profile); err != nil {
+			return "", err
+		}
 		return acc.ID, nil
-	}
-	if err != gorm.ErrRecordNotFound {
-		return "", err
 	}
 	if accountType == security.AccountAdmin {
 		return "", fmt.Errorf("请先使用账号密码登录后再绑定该三方账号")
 	}
 	accountID := idgen.Next()
 	now := time.Now().UTC()
-	hash, _ := security.HashPassword(randomPassword())
+	rawPassword, err := oauthRandomPassword()
+	if err != nil {
+		return "", err
+	}
+	hash, err := security.HashPassword(rawPassword)
+	if err != nil {
+		return "", err
+	}
 	identifier := allocateOauthAccountName(profile.OpenID, provider)
 	for i := 0; ; i++ {
 		var cnt int64
@@ -414,6 +448,14 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		} else {
 			identifier = allocateOauthAccountName(profile.OpenID, provider) + fmt.Sprintf("%d", i)
 		}
+	}
+	nickname := strings.TrimSpace(profile.Nickname)
+	if nickname == "" {
+		suffix := accountID
+		if len(accountID) > 8 {
+			suffix = accountID[len(accountID)-8:]
+		}
+		nickname = "user-" + suffix
 	}
 	acc := map[string]any{
 		"id":             accountID,
@@ -434,37 +476,41 @@ func (s *Service) resolveOrBindAccount(ctx context.Context, accountType security
 		"created_at":    now,
 		"updated_at":    now,
 	}
-	bindRow := AccountOAuthBinding{
-		ID:         idgen.Next(),
-		AccountID:  accountID,
-		Provider:   providerName,
-		OpenID:     profile.OpenID,
-		Nickname:   strPtr(profile.Nickname),
-		Avatar:     strPtr(profile.Avatar),
-		RawProfile: profile.Raw,
-		BoundAt:    now,
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-	if bindRow.RawProfile == "" {
-		bindRow.RawProfile = "{}"
-	}
-	return accountID, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("sys_account").Create(acc).Error; err != nil {
 			return err
 		}
 		if err := tx.Table("sys_account_identity").Create(ident).Error; err != nil {
 			return err
 		}
-		_ = tx.Table("profile_user_portal").Create(map[string]any{
+		if err := tx.Table("profile_user_portal").Create(map[string]any{
 			"account_id": accountID,
-			"nickname":   profile.Nickname,
+			"nickname":   nickname,
 			"avatar":     profile.Avatar,
 			"created_at": now,
 			"updated_at": now,
-		}).Error
-		return tx.Create(&bindRow).Error
-	})
+		}).Error; err != nil {
+			return err
+		}
+		return s.upsertBindingDB(tx, accountID, provider, profile)
+	}); err != nil {
+		return "", err
+	}
+	if s.hooks.RecordPasswordHistory != nil {
+		_ = s.hooks.RecordPasswordHistory(ctx, accountID, rawPassword, accountID, "oauth_register")
+	}
+	if s.hooks.AssignRegisterDefaults != nil {
+		_ = s.hooks.AssignRegisterDefaults(ctx, accountID)
+	}
+	return accountID, nil
+}
+
+func oauthRandomPassword() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return "oauth:" + base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func randomHex(n int) (string, error) {
@@ -473,11 +519,6 @@ func randomHex(n int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
-}
-
-func randomPassword() string {
-	s, _ := randomHex(16)
-	return s
 }
 
 func strPtr(s string) *string {

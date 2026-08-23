@@ -34,6 +34,11 @@ func NewService(db *gorm.DB) *Service {
 	}
 }
 
+// ListGrantedResourceIDs 列出主体已授权资源 ID。
+func (s *Service) ListGrantedResourceIDs(ctx context.Context, accountID string, groupIDs, roleIDs []string, accountType string) ([]string, error) {
+	return s.repo.ListGrantedResourceIDs(ctx, accountID, groupIDs, roleIDs, accountType)
+}
+
 // New 构建 iam.resource 模块。
 func New(d *module.Deps) module.Module {
 	s := NewService(d.DB)

@@ -11,8 +11,10 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/modules/biz/scope"
 )
 
 // Service 目录服务。
@@ -35,11 +37,12 @@ func New(d *module.Deps) module.Module {
 }
 
 // Create 创建目录。
-func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
+func (s *Service) Create(ctx context.Context, accountID string, req AddParam, sess *security.SessionPayload) error {
 	row := Catalog{
 		ID: idgen.Next(), ParentID: req.ParentID, Code: req.Code, Name: req.Name, Category: req.Category,
 		Status: req.Status, Sort: req.Sort, IsVisible: req.IsVisible, Icon: req.Icon, Description: req.Description,
 		Extra: mustJSON(req.Extra), CreatedBy: &accountID, UpdatedBy: &accountID,
+		OwnerDeptID: scope.DefaultOwnerDeptID(sess),
 	}
 	return s.repo.Create(ctx, &row)
 }
@@ -64,15 +67,15 @@ func (s *Service) Detail(ctx context.Context, id string) (*Catalog, error) {
 }
 
 // Page 分页。
-func (s *Service) Page(ctx context.Context, p PageParam) (rows []Catalog, total int64, current, size int, err error) {
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Catalog, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err = s.repo.Page(ctx, p)
+	rows, total, err = s.repo.Page(ctx, p, sess)
 	return rows, total, current, size, err
 }
 
 // Tree 目录树。
-func (s *Service) Tree(ctx context.Context) ([]TreeNode, error) {
-	rows, err := s.repo.ListAll(ctx)
+func (s *Service) Tree(ctx context.Context, sess *security.SessionPayload) ([]TreeNode, error) {
+	rows, err := s.repo.ListAll(ctx, sess)
 	if err != nil {
 		return nil, err
 	}

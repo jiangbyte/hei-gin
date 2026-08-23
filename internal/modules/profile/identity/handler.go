@@ -37,12 +37,12 @@ func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 		portalUser.GET("/real-name/case/my-page", s.portalMyPage)
 
 		manage := api.Group("/v1/admin/sys", middleware.RequireAccountType(security.AccountAdmin))
-		manage.GET("/real-name-case/review-page", middleware.RequirePermission(d.Perms, "sys:realname:review:verify", "实名审核分页"), s.reviewPage)
-		manage.GET("/real-name-case/detail", middleware.RequirePermission(d.Perms, "sys:realname:review:verify", "实名工单详情"), s.detail)
-		manage.POST("/real-name-case/approve", middleware.RequirePermission(d.Perms, "sys:realname:review:verify", "实名审核通过"), middleware.OperationAudit(d.Audit, "real_name_case", "approve"), s.approve)
-		manage.POST("/real-name-case/reject", middleware.RequirePermission(d.Perms, "sys:realname:review:verify", "实名审核驳回"), middleware.OperationAudit(d.Audit, "real_name_case", "reject"), s.reject)
-		manage.GET("/identity/page", middleware.RequirePermission(d.Perms, "sys:realname:identity:revoke", "实名快照分页"), s.identityPage)
-		manage.POST("/identity/revoke", middleware.RequirePermission(d.Perms, "sys:realname:identity:revoke", "撤销实名"), middleware.OperationAudit(d.Audit, "profile_identity", "revoke"), s.revoke)
+		manage.GET("/real-name-case/review-page", middleware.RequirePermission(d.Perms, "sys:realname:verify", "实名审核分页"), s.reviewPage)
+		manage.GET("/real-name-case/detail", middleware.RequirePermission(d.Perms, "sys:realname:verify", "实名工单详情"), s.detail)
+		manage.POST("/real-name-case/approve", middleware.RequirePermission(d.Perms, "sys:realname:verify", "实名审核通过"), middleware.OperationAudit(d.Audit, "real_name_case", "approve"), s.approve)
+		manage.POST("/real-name-case/reject", middleware.RequirePermission(d.Perms, "sys:realname:verify", "实名审核驳回"), middleware.OperationAudit(d.Audit, "real_name_case", "reject"), s.reject)
+		manage.GET("/identity/page", middleware.RequirePermission(d.Perms, "sys:realnameidentity:revoke", "实名快照分页"), s.identityPage)
+		manage.POST("/identity/revoke", middleware.RequirePermission(d.Perms, "sys:realnameidentity:revoke", "撤销实名"), middleware.OperationAudit(d.Audit, "profile_identity", "revoke"), s.revoke)
 	}
 }
 

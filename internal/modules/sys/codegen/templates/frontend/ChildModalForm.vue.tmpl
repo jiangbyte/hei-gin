@@ -92,20 +92,20 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
   return {
     ...defaultFormData,
     ...data,
+{{if wireImports .Target}}
+    ...wireFields(data, {
 {{range $idx, $field := (index .Target "form_fields")}}
 {{if (index $field "is_bool")}}
-    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireBool(String(data.{{index $field "name"}})),
+      {{index $field "name"}}: 'bool',
 {{end}}
-{{end}}
-{{range $idx, $field := (index .Target "form_fields")}}
 {{if eq (index $field "value_type") "int"}}
-    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireInt(String(data.{{index $field "name"}})),
+      {{index $field "name"}}: 'int',
 {{end}}
-{{end}}
-{{range $idx, $field := (index .Target "form_fields")}}
 {{if eq (index $field "value_type") "float"}}
-    {{index $field "name"}}: data.{{index $field "name"}} == null || data.{{index $field "name"}} === '' ? defaultFormData.{{index $field "name"}} : wireFloat(String(data.{{index $field "name"}})),
+      {{index $field "name"}}: 'float',
 {{end}}
+{{end}}
+    }, defaultFormData),
 {{end}}
 {{range $idx, $field := (index .Target "form_fields")}}
 {{if (index $field "is_datetime")}}

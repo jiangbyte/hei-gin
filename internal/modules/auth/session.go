@@ -91,6 +91,22 @@ type SessionPageParam struct {
 	Keyword     string `form:"keyword"`
 }
 
+// Normalize 会话分页参数（size 上限 200，对齐 hei-boot AdminSessionController.page）。
+func (q SessionPageParam) Normalize() (current, size int) {
+	current = q.Current
+	size = q.Size
+	if current < 1 {
+		current = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	if size > 200 {
+		size = 200
+	}
+	return current, size
+}
+
 // SessionExitTarget 强制下线目标。
 //
 // Author: Charlie
@@ -347,7 +363,7 @@ func filterGroupedSessions(
 	if q.AccountID != "" {
 		filtered := make(map[sessionGroupKey][]*security.SessionPayload)
 		for k, sessions := range result {
-			if strings.Contains(k.AccountID, q.AccountID) {
+			if k.AccountID == q.AccountID {
 				filtered[k] = sessions
 			}
 		}
@@ -461,8 +477,6 @@ func filterProfileSessionItems(items []SessionAccount, q SessionPageParam) []Ses
 		filtered := make([]SessionAccount, 0, len(result))
 		for _, item := range result {
 			if containsFold(item.Account, keyword) ||
-				containsFold(deref(item.Name), keyword) ||
-				containsFold(deref(item.Nickname), keyword) ||
 				containsFold(item.AccountID, keyword) {
 				filtered = append(filtered, item)
 			}

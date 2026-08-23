@@ -67,7 +67,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Dept{})
 	if sess != nil {
-		db = datascope.Apply(db, sess, "id")
+		db = datascope.ApplyKey(db, sess, "iam:dept:page", "id", "created_by")
 	}
 	if p.Name != "" {
 		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
@@ -86,7 +86,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 func (r *Repo) ListAll(ctx context.Context, sess *security.SessionPayload) ([]Dept, error) {
 	db := r.with(ctx).Model(&Dept{})
 	if sess != nil {
-		db = datascope.Apply(db, sess, "id")
+		db = datascope.ApplyKey(db, sess, "iam:dept:page", "id", "created_by")
 	}
 	var rows []Dept
 	err := db.Order("sort asc, id asc").Find(&rows).Error

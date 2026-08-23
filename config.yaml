@@ -6,8 +6,8 @@ app:
   timezone: Asia/Shanghai
 
 db:
-  driver: postgres
-  url: postgres://postgres:123456@127.0.0.1:5432/hei_gin?sslmode=disable
+  driver: mysql
+  url: mysql://root:123456@127.0.0.1:3306/hei_gin?charset=utf8mb4&parseTime=true&loc=Local
   echo: false
   pool_size: 10
   max_overflow: 20

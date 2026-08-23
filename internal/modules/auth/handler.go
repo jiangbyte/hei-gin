@@ -22,8 +22,8 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 
 	api.GET("/v1/admin/captcha", middleware.RateLimit(rdb, "admin:captcha", 30, 60), s.captcha)
 	api.GET("/v1/portal/captcha", middleware.RateLimit(rdb, "portal:captcha", 30, 60), s.captcha)
-	api.GET("/v1/admin/password-key", s.passwordKey)
-	api.GET("/v1/portal/password-key", s.passwordKey)
+	api.GET("/v1/admin/password-key", middleware.RateLimit(rdb, "admin:password-key", 30, 60), s.passwordKey)
+	api.GET("/v1/portal/password-key", middleware.RateLimit(rdb, "portal:password-key", 30, 60), s.passwordKey)
 
 	api.POST("/v1/admin/login", middleware.RateLimit(rdb, "admin:login", 20, 60), middleware.OperationAudit(s.audit, "auth", "login"), s.login(security.AccountAdmin))
 	api.POST("/v1/portal/login", middleware.RateLimit(rdb, "portal:login", 20, 60), middleware.OperationAudit(s.audit, "auth", "login"), s.login(security.AccountPortal))
@@ -56,7 +56,7 @@ func (s *Service) registerRoutes(api *gin.RouterGroup) {
 
 	api.POST("/v1/portal/register/send-code", middleware.RateLimit(rdb, "portal:register-send-code", 10, 60), middleware.OperationAudit(s.audit, "auth", "send_register_code"), s.registerSendCode)
 
-	api.POST("/v1/portal/register", middleware.OperationAudit(s.audit, "auth", "register"), s.register)
+	api.POST("/v1/portal/register", middleware.RateLimit(rdb, "portal:register", 10, 60), middleware.OperationAudit(s.audit, "auth", "register"), s.register)
 
 	if s.oauth != nil {
 		s.oauth.RegisterRoutes(api)
@@ -102,14 +102,15 @@ func (s *Service) login(accountType security.AccountType) gin.HandlerFunc {
 			}
 			return
 		}
-		ttlSec := s.cfg.Auth.TokenTTLSeconds
-		if !req.RememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
-			ttlSec = s.cfg.Auth.TokenTTLShortSeconds
+		ttlSec := out.ExpiresIn
+		if ttlSec <= 0 {
+			ttlSec = s.cfg.Auth.TokenTTLSeconds
 		}
 		if ttlSec <= 0 {
 			ttlSec = 14400
 		}
-		s.SetSessionCookie(c, out.Token, accountType, time.Duration(ttlSec)*time.Second, req.RememberMe)
+		remember := rememberMeOrDefault(req.RememberMe)
+		s.SetSessionCookie(c, out.Token, accountType, time.Duration(ttlSec)*time.Second, remember)
 		response.OK(c, out)
 	}
 }
@@ -124,7 +125,7 @@ func (s *Service) logout(c *gin.Context) {
 	}
 	_ = s.Logout(c.Request.Context(), token, accountID, accountType, c.ClientIP(), c.Request.UserAgent())
 	s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
-	response.OK(c, LogoutResult{Success: true})
+	response.OK(c, nil)
 }
 
 func (s *Service) register(c *gin.Context) {
@@ -253,7 +254,7 @@ func (s *Service) cancel(accountType security.AccountType) gin.HandlerFunc {
 			return
 		}
 		s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
-		response.OK(c, LogoutResult{Success: true})
+		response.OK(c, nil)
 	}
 }
 

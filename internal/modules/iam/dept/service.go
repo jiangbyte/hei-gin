@@ -122,13 +122,23 @@ func (s *Service) assertScope(sess *security.SessionPayload, row *Dept) error {
 	if row.CreatedBy != nil {
 		ownerAccount = *row.CreatedBy
 	}
-	return datascope.Assert(sess, row.ID, ownerAccount)
+	return datascope.AssertKey(sess, "iam:dept:page", row.ID, ownerAccount)
 }
 
 func buildDeptTree(rows []Dept, parent *string) []TreeNode {
+	ids := make(map[string]struct{}, len(rows))
+	for _, r := range rows {
+		ids[r.ID] = struct{}{}
+	}
 	out := make([]TreeNode, 0)
 	for _, r := range rows {
-		if eqPtr(r.ParentID, parent) {
+		p := r.ParentID
+		if p != nil && *p != "" {
+			if _, ok := ids[*p]; !ok {
+				p = nil
+			}
+		}
+		if eqPtr(p, parent) {
 			n := TreeNode{Dept: r, Children: buildDeptTree(rows, &r.ID)}
 			out = append(out, n)
 		}

@@ -86,7 +86,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Role{})
 	if sess != nil {
-		db = datascope.Apply(db, sess, "owner_dept_id")
+		db = datascope.ApplyKey(db, sess, "iam:role:page", "owner_dept_id", "created_by")
 	}
 	if p.Code != "" {
 		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")

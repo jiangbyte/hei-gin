@@ -149,7 +149,7 @@ func crudSpecs(suffix string) map[string]crudSpec {
 		"/api/v1/admin/sys/jobs/create": {
 			findField: "name", findValue: "E2E Job " + suffix,
 			create: map[string]any{
-				"name": "E2E Job " + suffix, "handler": "github.jiangbyte.io.sys.modules.job.sample.SysJobSample",
+				"name": "E2E Job " + suffix, "handler": "sys_job_sample",
 				"trigger_type": "FIXED", "trigger_config": "3600",
 				"params": map[string]any{}, "sort": 99, "enabled": &enabled,
 			},

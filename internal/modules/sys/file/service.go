@@ -173,37 +173,30 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	})
 }
 
-// Detail 详情（重算访问 URL + 回填创建/更新人名）。
+// Detail 详情（重算访问 URL）。
 func (s *Service) Detail(ctx context.Context, id string) (*File, error) {
 	row, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	s.fillNames(ctx, []File{*row})
 	return s.withResolvedURL(ctx, row), nil
 }
 
-// Page 分页（重算访问 URL + 回填人名；支持 original_name/object_name/storage_provider/content_type 过滤）。
+// Page 分页（重算访问 URL；支持 original_name/object_name/storage_provider/content_type 过滤）。
 func (s *Service) Page(ctx context.Context, q PageParam) (rows []File, total int64, current, size int, err error) {
 	current, size = q.Normalize()
 	rows, total, err = s.repo.Page(ctx, q)
-	if len(rows) > 0 {
-		s.fillNames(ctx, rows)
-	}
 	for i := range rows {
 		s.withResolvedURL(ctx, &rows[i])
 	}
 	return rows, total, current, size, err
 }
 
-// ListByIDs 批量查询（重算访问 URL + 回填人名）。
+// ListByIDs 批量查询（重算访问 URL）。
 func (s *Service) ListByIDs(ctx context.Context, ids []string) ([]File, error) {
 	rows, err := s.repo.ListByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
-	}
-	if len(rows) > 0 {
-		s.fillNames(ctx, rows)
 	}
 	for i := range rows {
 		s.withResolvedURL(ctx, &rows[i])
@@ -293,40 +286,6 @@ func (s *Service) providerFor(ctx context.Context, row *File) storage.Provider {
 	}
 	return s.sto.Provider(ctx)
 }
-
-// fillNames 批量回填 created_name / updated_name（ACCOUNT 登录标识，对齐 hei-boot easy-trans）。
-func (s *Service) fillNames(ctx context.Context, rows []File) {
-	ids := make([]string, 0, len(rows)*2)
-	seen := map[string]struct{}{}
-	add := func(v *string) {
-		if v == nil || *v == "" {
-			return
-		}
-		if _, ok := seen[*v]; ok {
-			return
-		}
-		seen[*v] = struct{}{}
-		ids = append(ids, *v)
-	}
-	for i := range rows {
-		add(rows[i].CreatedBy)
-		add(rows[i].UpdatedBy)
-	}
-	names := s.repo.LoadAccountNames(ctx, ids)
-	for i := range rows {
-		if rows[i].CreatedBy != nil {
-			if n, ok := names[*rows[i].CreatedBy]; ok {
-				rows[i].CreatedName = &n
-			}
-		}
-		if rows[i].UpdatedBy != nil {
-			if n, ok := names[*rows[i].UpdatedBy]; ok {
-				rows[i].UpdatedName = &n
-			}
-		}
-	}
-}
-
 
 // validateUpload 按运行时上传限制校验（STORAGE_UPLOAD_*：JSON 数组或逗号分隔；缺省 10MB）。
 func (s *Service) validateUpload(ctx context.Context, fh *multipart.FileHeader) error {

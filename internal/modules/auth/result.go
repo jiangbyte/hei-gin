@@ -19,6 +19,7 @@ type LoginResult struct {
 	ForceBindEmail            bool                 `json:"force_bind_email"`
 	ForceBindPhone            bool                 `json:"force_bind_phone"`
 	PasswordExpiryWarningDays int                  `json:"password_expiry_warning_days"`
+	ExpiresIn                 int                  `json:"expires_in"`
 }
 
 // RegisterResult 注册结果。

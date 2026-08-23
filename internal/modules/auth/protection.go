@@ -21,7 +21,8 @@ const (
 	failIPPrefix   = "auth:fail:ip:"
 	lockAcctPrefix = "auth:lock:acct:"
 	lockIPPrefix   = "auth:lock:ip:"
-	otpLoginPrefix = "auth:otp:login:"
+	otpLoginPrefix     = "auth:otp:login:"
+	otpRegisterPrefix  = "auth:otp:register:"
 	resetTokPrefix     = "password:reset:"
 	resetPwdOtpPrefix  = "auth:otp:reset-password:"
 )
@@ -109,6 +110,26 @@ func (r *Repo) StoreLoginOTP(ctx context.Context, accountType, channel, target, 
 // ConsumeLoginOTP 校验并消费登录 OTP。
 func (r *Repo) ConsumeLoginOTP(ctx context.Context, accountType, channel, target, code string) bool {
 	key := otpLoginPrefix + accountType + ":" + channel + ":" + target
+	stored, err := r.rdb.Get(ctx, key).Result()
+	_ = r.rdb.Del(ctx, key)
+	if err == redis.Nil || err != nil || stored == "" {
+		return false
+	}
+	return stored == strings.TrimSpace(code)
+}
+
+// StoreRegisterOTP 缓存注册 OTP（对齐 hei-boot storeRegisterOtp）。
+func (r *Repo) StoreRegisterOTP(ctx context.Context, channel, target, code string, ttl time.Duration) error {
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+	key := otpRegisterPrefix + strings.ToUpper(channel) + ":" + target
+	return r.rdb.Set(ctx, key, code, ttl).Err()
+}
+
+// ConsumeRegisterOTP 校验并消费注册 OTP。
+func (r *Repo) ConsumeRegisterOTP(ctx context.Context, channel, target, code string) bool {
+	key := otpRegisterPrefix + strings.ToUpper(channel) + ":" + target
 	stored, err := r.rdb.Get(ctx, key).Result()
 	_ = r.rdb.Del(ctx, key)
 	if err == redis.Nil || err != nil || stored == "" {

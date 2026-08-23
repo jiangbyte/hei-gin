@@ -29,7 +29,7 @@ func New(d *module.Deps) module.Module {
 		Models: []any{&OperationLog{}},
 		Routes: []module.RouteRegistrar{s.registerRoutes(d)},
 	}
-	return s.withJobs(m, d.Notify)
+	return s.withJobs(m, d.Notify, d.Cfg)
 }
 
 // Page 分页查询。
@@ -39,6 +39,7 @@ func (s *Service) Page(ctx context.Context, q PageParam) (rows []OperationLog, t
 	for i := range rows {
 		enrichOperationLog(&rows[i])
 	}
+	enrichOperatorNames(ctx, s.repo.db, rows)
 	return rows, total, current, size, err
 }
 
@@ -49,6 +50,7 @@ func (s *Service) Detail(ctx context.Context, id string) (*OperationLog, error) 
 		return nil, err
 	}
 	enrichOperationLog(row)
+	enrichOperatorNames(ctx, s.repo.db, []OperationLog{*row})
 	return row, nil
 }
 

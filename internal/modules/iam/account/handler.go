@@ -23,6 +23,7 @@ func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 		admin := middleware.RequireAccountType(security.AccountAdmin)
 		api.POST("/v1/admin/sys/accounts/create", admin, middleware.RequirePermission(d.Perms, "iam:account:create", "账户创建"), middleware.OperationAudit(d.Audit, "iam_account", "create"), s.create)
 		api.POST("/v1/admin/sys/accounts/update", admin, middleware.RequirePermission(d.Perms, "iam:account:update", "账户更新"), middleware.OperationAudit(d.Audit, "iam_account", "update"), s.update)
+		api.POST("/v1/admin/sys/accounts/update-login-identity", admin, middleware.RequirePermission(d.Perms, "iam:account:update", "账户登录身份更新"), middleware.OperationAudit(d.Audit, "iam_account", "update_login_identity"), s.updateLoginIdentity)
 		api.POST("/v1/admin/sys/accounts/delete", admin, middleware.RequirePermission(d.Perms, "iam:account:delete", "账户删除"), middleware.OperationAudit(d.Audit, "iam_account", "delete"), s.delete)
 		api.GET("/v1/admin/sys/accounts/detail", admin, middleware.RequirePermission(d.Perms, "iam:account:detail", "账户详情"), s.detail)
 		api.GET("/v1/admin/sys/accounts/page", admin, middleware.RequirePermission(d.Perms, "iam:account:page", "账户分页"), s.page)
@@ -59,6 +60,19 @@ func (s *Service) update(c *gin.Context) {
 		return
 	}
 	if err := s.Update(c.Request.Context(), req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (s *Service) updateLoginIdentity(c *gin.Context) {
+	var req UpdateLoginIdentityParam
+	if err := bind.JSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, err.Error())
+		return
+	}
+	if err := s.UpdateLoginIdentity(c.Request.Context(), req); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}

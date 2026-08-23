@@ -284,7 +284,9 @@ func (r *Repo) ListGrantedResourceIDs(ctx context.Context, accountID string, gro
 	}
 	cond += ")"
 	fullArgs := make([]any, 0, len(args)+3)
-	fullArgs = append(fullArgs, []string{"ACCOUNT_RESOURCE", "GROUP_RESOURCE", "ROLE_RESOURCE"}, "RESOURCE", "ENABLED")
+	fullArgs = append(fullArgs, []string{
+		"SUBJECT_RESOURCE_GRANT", "ACCOUNT_RESOURCE", "GROUP_RESOURCE", "ROLE_RESOURCE",
+	}, "RESOURCE", "ENABLED")
 	fullArgs = append(fullArgs, args...)
 	q := r.with(ctx).Table("sys_iam_relation").
 		Select("DISTINCT target_id").

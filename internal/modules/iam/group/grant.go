@@ -18,7 +18,7 @@ func (s *Service) OwnUsers(ctx context.Context, id string) (*view.OwnUserResult,
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
-	accountIDs, err := s.rel.ListTargetIDs(ctx, relation.SubjectGroup, id, relation.RelGroupUser, "")
+	accountIDs, err := s.rel.ListSubjectIDsByTarget(ctx, relation.RelAccountGroup, relation.TargetGroup, id)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceSubjectAccounts(ctx, relation.SubjectGroup, req.ID, relation.RelGroupUser, req.AccountIDs, accountTypes); err != nil {
+	if err := s.rel.ReplaceGroupUsers(ctx, req.ID, req.AccountIDs, accountTypes); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, req.AccountIDs)
@@ -90,7 +90,7 @@ func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*Ow
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectGroup, id, relation.RelGroupResource, relation.TargetResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectGroup, id, relation.RelSubjectResourceGrant, relation.TargetResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupResource, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelSubjectResourceGrant, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, affected)
@@ -123,7 +123,7 @@ func (s *Service) OwnClientResources(ctx context.Context, id, accountType string
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectGroup, id, relation.RelGroupClientResource, relation.TargetClientResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectGroup, id, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) GrantClientResources(ctx context.Context, req GrantResourcePar
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelGroupClientResource, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectGroup, req.ID, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, affected)

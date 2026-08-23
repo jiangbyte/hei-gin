@@ -192,35 +192,105 @@ func (s *Service) listBindings(ctx context.Context, accountID string) ([]Binding
 	return out, nil
 }
 
-// createBinding 写入三方绑定关系（先删旧后插新）。
+// createBinding 写入三方绑定关系（对齐 hei-boot upsertBinding）。
 func (s *Service) createBinding(ctx context.Context, accountID, provider string, profile *oauthProfile) error {
-	now := time.Now().UTC()
-	providerName := provider
+	p, err := parseProvider(provider)
+	if err != nil {
+		return err
+	}
+	return s.upsertBinding(ctx, accountID, p, profile)
+}
+
+func isWechatFamily(provider string) bool {
+	switch strings.ToUpper(strings.TrimSpace(provider)) {
+	case "WECHAT", "WECHAT_OPEN", "WECHAT_MP":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Service) resolveBinding(ctx context.Context, provider oauthProvider, profile *oauthProfile) (*AccountOAuthBinding, error) {
+	providerName := string(provider)
 	if profile.Provider != "" {
 		providerName = profile.Provider
 	}
-	row := AccountOAuthBinding{
-		ID:         idgen.Next(),
-		AccountID:  accountID,
-		Provider:   providerName,
-		OpenID:     profile.OpenID,
-		Nickname:   strPtr(profile.Nickname),
-		Avatar:     strPtr(profile.Avatar),
-		RawProfile: profile.Raw,
-		BoundAt:    now,
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-	if row.RawProfile == "" {
-		row.RawProfile = "{}"
-	}
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("account_id = ? AND provider = ?", accountID, providerName).
-			Delete(&AccountOAuthBinding{}).Error; err != nil {
-			return err
+	if isWechatFamily(providerName) && strings.TrimSpace(profile.UnionID) != "" {
+		var byUnion AccountOAuthBinding
+		err := s.db.WithContext(ctx).Where("union_id = ?", strings.TrimSpace(profile.UnionID)).First(&byUnion).Error
+		if err == nil {
+			return &byUnion, nil
 		}
-		return tx.Create(&row).Error
-	})
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	}
+	var binding AccountOAuthBinding
+	err := s.db.WithContext(ctx).
+		Where("provider = ? AND open_id = ?", providerName, profile.OpenID).
+		First(&binding).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &binding, nil
+}
+
+func (s *Service) upsertBinding(ctx context.Context, accountID string, provider oauthProvider, profile *oauthProfile) error {
+	return s.upsertBindingDB(s.db.WithContext(ctx), accountID, provider, profile)
+}
+
+func (s *Service) upsertBindingDB(db *gorm.DB, accountID string, provider oauthProvider, profile *oauthProfile) error {
+	providerName := string(provider)
+	if profile.Provider != "" {
+		providerName = profile.Provider
+	}
+	now := time.Now().UTC()
+	raw := profile.Raw
+	if raw == "" {
+		raw = "{}"
+	}
+	var unionID *string
+	if strings.TrimSpace(profile.UnionID) != "" {
+		unionID = strPtr(strings.TrimSpace(profile.UnionID))
+	}
+	var existing AccountOAuthBinding
+	err := db.
+		Where("account_id = ? AND provider = ?", accountID, providerName).
+		First(&existing).Error
+	if err == gorm.ErrRecordNotFound {
+		row := AccountOAuthBinding{
+			ID:         idgen.Next(),
+			AccountID:  accountID,
+			Provider:   providerName,
+			OpenID:     profile.OpenID,
+			UnionID:    unionID,
+			Nickname:   strPtr(profile.Nickname),
+			Avatar:     strPtr(profile.Avatar),
+			RawProfile: raw,
+			BoundAt:    now,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+		}
+		return db.Create(&row).Error
+	}
+	if err != nil {
+		return err
+	}
+	updates := map[string]any{
+		"open_id":     profile.OpenID,
+		"nickname":    strPtr(profile.Nickname),
+		"avatar":      strPtr(profile.Avatar),
+		"raw_profile": raw,
+		"bound_at":    now,
+		"updated_at":  now,
+	}
+	if unionID != nil {
+		updates["union_id"] = *unionID
+	}
+	return db.Model(&existing).Updates(updates).Error
 }
 
 func (s *Service) assertCanUnbind(ctx context.Context, accountID, provider string) error {

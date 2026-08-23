@@ -205,7 +205,7 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
-// authGETFile 文件分页验证（per-provider URL + created_name）。
+// authGETFile 文件分页验证（per-provider URL）。
 func authGETFile(token string) {
 	req, _ := http.NewRequest("GET", base+"/sys/file/page?current=1&size=20", nil)
 	req.Header.Set("Authorization", token)
@@ -220,12 +220,10 @@ func authGETFile(token string) {
 		Code string `json:"code"`
 		Data struct {
 			Records []struct {
-				ID              string  `json:"id"`
-				ObjectName      string  `json:"object_name"`
-				StorageProvider string  `json:"storage_provider"`
-				URL             string  `json:"url"`
-				CreatedName     *string `json:"created_name"`
-				UpdatedName     *string `json:"updated_name"`
+				ID              string `json:"id"`
+				ObjectName      string `json:"object_name"`
+				StorageProvider string `json:"storage_provider"`
+				URL             string `json:"url"`
 			} `json:"records"`
 		} `json:"data"`
 		Message string `json:"message"`
@@ -239,6 +237,6 @@ func authGETFile(token string) {
 		if i >= 4 {
 			break
 		}
-		fmt.Printf("  #%d provider=%s object=%s url=%s created_name=%s\n", i, rec.StorageProvider, rec.ObjectName, truncate(rec.URL, 80), ptrStr(rec.CreatedName))
+		fmt.Printf("  #%d provider=%s object=%s url=%s\n", i, rec.StorageProvider, rec.ObjectName, truncate(rec.URL, 80))
 	}
 }

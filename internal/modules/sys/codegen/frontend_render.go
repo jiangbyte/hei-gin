@@ -132,17 +132,10 @@ func bootWireImports(target any) string {
 		return ""
 	}
 	fields, _ := m["form_fields"].([]map[string]any)
-	var parts []string
-	if bootAny(fields, "is_bool") {
-		parts = append(parts, "wireBool")
+	if bootAny(fields, "is_bool") || bootAnyValueType(fields, "int") || bootAnyValueType(fields, "float") {
+		return "wireFields"
 	}
-	if bootAnyValueType(fields, "int") {
-		parts = append(parts, "wireInt")
-	}
-	if bootAnyValueType(fields, "float") {
-		parts = append(parts, "wireFloat")
-	}
-	return strings.Join(parts, ", ")
+	return ""
 }
 
 func bootThen(val any, def string) string {

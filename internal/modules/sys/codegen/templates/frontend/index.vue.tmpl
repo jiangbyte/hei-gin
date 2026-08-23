@@ -12,7 +12,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { {{.APIExportName}} } from '@/api'
 {{if ne (deref (index .Plan "gen_type")) "TREE"}}
-import { readPageMeta } from '@/utils/wire'
+import { readPageMeta{{if or (index .Main "has_table_bool") (and $.HasSub (index .Sub "has_table_bool"))}}, wireBool{{end}} } from '@/utils/wire'
 {{end}}
 import { {{if or (index .Main "has_query_dict") (and $.HasSub (index .Sub "has_query_dict"))}}dictList, {{end}}{{if or (index .Main "has_table_dict") (and $.HasSub (index .Sub "has_table_dict"))}}createTagColor, dictTypeColor, dictTypeData, displayValue, {{end}}formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon{{if eq (deref (index .Plan "gen_type")) "LEFT_TREE_TABLE"}}, NInput, NInputGroup{{end}}{{if or (index .Main "has_table_tag") (and $.HasSub (index .Sub "has_table_tag"))}}, NTag{{end}} } from 'naive-ui'
@@ -219,8 +219,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: '{{index $field "name"}}',
     width: 120,
     render: row => (
-      <NTag type={row.{{index $field "name"}} === 'true' ? 'success' : 'default'} bordered={false}>
-        {row.{{index $field "name"}} === 'true' ? '是' : row.{{index $field "name"}} === 'false' ? '否' : '-'}
+      <NTag type={wireBool(row.{{index $field "name"}}) ? 'success' : 'default'} bordered={false}>
+        {wireBool(row.{{index $field "name"}}) ? '是' : '否'}
       </NTag>
     ),
   },
@@ -287,8 +287,8 @@ const childColumns = computed<ProDataTableColumns<any>>(() => [
     path: '{{index $field "name"}}',
     width: 120,
     render: row => (
-      <NTag type={row.{{index $field "name"}} === 'true' ? 'success' : 'default'} bordered={false}>
-        {row.{{index $field "name"}} === 'true' ? '是' : row.{{index $field "name"}} === 'false' ? '否' : '-'}
+      <NTag type={wireBool(row.{{index $field "name"}}) ? 'success' : 'default'} bordered={false}>
+        {wireBool(row.{{index $field "name"}}) ? '是' : '否'}
       </NTag>
     ),
   },

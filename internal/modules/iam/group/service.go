@@ -70,7 +70,7 @@ func (s *Service) invalidateAccounts(ctx context.Context, accountIDs []string) {
 
 // membersOf 列出用户组当前成员账号 ID。
 func (s *Service) membersOf(ctx context.Context, groupID string) ([]string, error) {
-	return s.rel.ListTargetIDs(ctx, relation.SubjectGroup, groupID, relation.RelGroupUser, "")
+	return s.rel.ListSubjectIDsByTarget(ctx, relation.RelAccountGroup, relation.TargetGroup, groupID)
 }
 
 // Create 创建用户组。
@@ -146,7 +146,7 @@ func (s *Service) assertScope(sess *security.SessionPayload, row *Group) error {
 	if row.CreatedBy != nil {
 		ownerAccount = *row.CreatedBy
 	}
-	return datascope.Assert(sess, ownerDept, ownerAccount)
+	return datascope.AssertKey(sess, "iam:group:page", ownerDept, ownerAccount)
 }
 
 func orStatus(st string) string {

@@ -322,6 +322,10 @@ func (q *Queue) persist(ctx context.Context, ev Event) error {
 	row.ModuleLabel = &moduleLabel
 	if op := operatorNameFromExtra(ev.Extra); op != "" {
 		row.OperatorName = &op
+	} else if ev.AccountID != "" {
+		if nick := q.resolveOperatorName(ctx, ev.AccountID, ev.AccountType); nick != "" {
+			row.OperatorName = &nick
+		}
 	}
 	if ms := durationFromExtra(ev.Extra); ms != nil {
 		row.DurationMs = ms
@@ -360,6 +364,22 @@ func (q *Queue) persist(ctx context.Context, ev Event) error {
 		row.AfterData = after
 	}
 	return q.db.WithContext(ctx).Create(&row).Error
+}
+
+func (q *Queue) resolveOperatorName(ctx context.Context, accountID, accountType string) string {
+	if q == nil || q.db == nil || accountID == "" {
+		return ""
+	}
+	table := "profile_user_admin"
+	if strings.EqualFold(accountType, "portal") {
+		table = "profile_user_portal"
+	}
+	var nick string
+	if err := q.db.WithContext(ctx).Table(table).Where("account_id = ?", accountID).
+		Select("nickname").Scan(&nick).Error; err != nil {
+		return ""
+	}
+	return strings.TrimSpace(nick)
 }
 
 func buildModule(resourceType, fallback string) string {

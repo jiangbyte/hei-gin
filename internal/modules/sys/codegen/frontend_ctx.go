@@ -175,6 +175,7 @@ func buildBootEntityContext(entityName, tableName, pkName string, fields []Field
 		"has_detail_icon":     bootAnyWidget(detailFields, "icon"),
 		"has_detail_editor":   bootAnyEditor(detailFields),
 		"has_detail_dict":     bootAnyDict(detailFields),
+		"has_detail_bool":     bootAny(detailFields, "is_bool"),
 		"has_query_dict":      bootAnyDict(queryFields),
 		"has_table_dict":      bootAnyDict(tableFields),
 		"has_table_bool":      bootAny(tableFields, "is_bool"),

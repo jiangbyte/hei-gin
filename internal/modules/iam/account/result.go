@@ -12,6 +12,7 @@ import (
 	"hei-gin/internal/modules/iam/relation"
 	"hei-gin/internal/modules/iam/resource"
 	"hei-gin/internal/modules/iam/role"
+	"hei-gin/internal/modules/profile/identity"
 )
 
 // IdentityResult 账号身份行（对齐 hei-boot AccountIdentityResult）。
@@ -44,7 +45,24 @@ type OAuthBindingResult struct {
 	BoundAt  *time.Time `json:"bound_at"`
 }
 
-// AccountResult 账号详情/分页行。
+// AccountListResult 账号分页列表行（仅 sys_account + profile 展示字段）。
+//
+// Author: Charlie
+type AccountListResult struct {
+	ID              string     `json:"id"`
+	Account         string     `json:"account"`
+	AccountType     string     `json:"account_type"`
+	AccountStatus   string     `json:"account_status"`
+	Nickname        *string    `json:"nickname"`
+	Avatar          *string    `json:"avatar"`
+	Phone           *string    `json:"phone"`
+	Email           *string    `json:"email"`
+	Remark          *string    `json:"remark"`
+	LatestLoginTime *time.Time `json:"latest_login_time"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// AccountResult 账号详情。
 //
 // Author: Charlie
 type AccountResult struct {
@@ -68,6 +86,7 @@ type AccountResult struct {
 	PhoneIdentityBindStatus *string              `json:"phone_identity_bind_status"`
 	Identities              []IdentityResult     `json:"identities"`
 	OAuthBindings           []OAuthBindingResult `json:"oauth_bindings"`
+	IdentityStatus          *identity.IdentityStatusResult `json:"identity_status"`
 	Remark                  *string              `json:"remark"`
 	CancelledAt             *time.Time           `json:"cancelled_at"`
 	CancelledBy             *string              `json:"cancelled_by"`

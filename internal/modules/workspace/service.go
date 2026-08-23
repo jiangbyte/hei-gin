@@ -7,7 +7,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 
 	contextx "hei-gin/internal/framework/core/context"
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/schema"
 	"hei-gin/internal/framework/platform/audit"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
@@ -189,6 +189,11 @@ func (s *Service) resolveGrantedResourceIDs(ctx context.Context, sess *security.
 	if isFullAccess(sess.PermissionKeys) {
 		return nil, true, nil
 	}
+	if ok, err := s.repo.HasSuperAdminRole(ctx, sess.RoleIDs); err != nil {
+		return nil, false, err
+	} else if ok {
+		return nil, true, nil
+	}
 	roleIDs, err := s.repo.ListRoleIDs(ctx, sess.AccountID)
 	if err != nil {
 		return nil, false, err
@@ -281,22 +286,14 @@ func toActivityItems(rows []AuditActivity) []ActivityItemResult {
 			ActionName:   actionName,
 			ActionType:   actionType,
 			Summary:      row.Summary,
-			Success:      row.Success,
+			Success:      schema.WireBoolValue(row.Success),
 			IP:           row.IP,
 			UserAgent:    row.UserAgent,
 			OperatorName: row.OperatorName,
-			DurationMs:   formatDurationMs(row.DurationMs),
-			ResourceID:   row.ResourceID,
+			DurationMs:   schema.IntStringPtr(row.DurationMs),
+			ResourceID:   schema.StringPtr(row.ResourceID),
 			CreatedAt:    row.CreatedAt,
 		})
 	}
 	return out
-}
-
-func formatDurationMs(v *int) *string {
-	if v == nil {
-		return nil
-	}
-	s := strconv.Itoa(*v)
-	return &s
 }

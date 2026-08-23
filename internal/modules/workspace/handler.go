@@ -22,7 +22,6 @@ func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 		api.GET(
 			"/v1/admin/workspace/overview",
 			admin,
-			middleware.RequirePermission(d.Perms, "workspace:overview:view", "工作台总览"),
 			s.overview,
 		)
 		api.GET("/v1/admin/workspace/shortcuts", admin, s.listShortcuts)

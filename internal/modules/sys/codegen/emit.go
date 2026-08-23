@@ -230,6 +230,7 @@ type entityCtx struct {
 	HasFloat     bool
 	HasDatetime  bool
 	HasDict      bool
+	HasOwnerDept bool
 	IsSub        bool
 }
 
@@ -407,6 +408,9 @@ func buildEntityCtx(entityName, tableName, pkName, businessName string, fields [
 		}
 		if fc.IsDatetime {
 			ctx.HasDatetime = true
+		}
+		if fc.Name == "owner_dept_id" {
+			ctx.HasOwnerDept = true
 		}
 		if fc.DictCode != "" {
 			ctx.HasDict = true

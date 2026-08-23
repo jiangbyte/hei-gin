@@ -6,57 +6,50 @@ package account
 
 import "hei-gin/internal/modules/iam/relation"
 
+// UpdateLoginIdentityParam 管理端更新邮箱/手机号登录身份入参。
+//
+// Author: Charlie
+type UpdateLoginIdentityParam struct {
+	ID                string  `json:"id" binding:"required"`
+	EmailLoginEnabled *bool   `json:"email_login_enabled"`
+	Email             *string `json:"email"`
+	PhoneLoginEnabled *bool   `json:"phone_login_enabled"`
+	Phone             *string `json:"phone"`
+}
+
 // AddParam 管理端创建账号入参。
 //
 // Author: Charlie
 type AddParam struct {
-	Account                 string  `json:"account" binding:"required"`
-	Password                string  `json:"password"`
-	PasswordKeyID           string  `json:"password_key_id"`
-	AccountType             string  `json:"account_type" binding:"required"`
-	AccountStatus           string  `json:"account_status"`
-	Name                    *string `json:"name"`
-	Nickname                *string `json:"nickname"`
-	Avatar                  *string `json:"avatar"`
-	Signature               *string `json:"signature"`
-	Phone                   *string `json:"phone"`
-	Email                   *string `json:"email"`
-	EmailLoginEnabled       *bool   `json:"email_login_enabled"`
-	PhoneLoginEnabled       *bool   `json:"phone_login_enabled"`
-	EmailIdentity           *string `json:"email_identity"`
-	PhoneIdentity           *string `json:"phone_identity"`
-	EmailIdentityVerified   *bool   `json:"email_identity_verified"`
-	PhoneIdentityVerified   *bool   `json:"phone_identity_verified"`
-	EmailIdentityBindStatus *string `json:"email_identity_bind_status"`
-	PhoneIdentityBindStatus *string `json:"phone_identity_bind_status"`
-	Remark                  *string `json:"remark"`
+	Account       string  `json:"account" binding:"required"`
+	Password      string  `json:"password"`
+	PasswordKeyID string  `json:"password_key_id"`
+	AccountType   string  `json:"account_type" binding:"required"`
+	AccountStatus string  `json:"account_status"`
+	Nickname      *string `json:"nickname"`
+	Avatar        *string `json:"avatar"`
+	Signature     *string `json:"signature"`
+	Phone         *string `json:"phone"`
+	Email         *string `json:"email"`
+	Remark        *string `json:"remark"`
 }
 
 // EditParam 管理端更新账号入参。
 //
 // Author: Charlie
 type EditParam struct {
-	ID                      string  `json:"id" binding:"required"`
-	Account                 string  `json:"account" binding:"required"`
-	Password                *string `json:"password"`
-	PasswordKeyID           string  `json:"password_key_id"`
-	AccountType             string  `json:"account_type" binding:"required"`
-	AccountStatus           string  `json:"account_status"`
-	Name                    *string `json:"name"`
-	Nickname                *string `json:"nickname"`
-	Avatar                  *string `json:"avatar"`
-	Signature               *string `json:"signature"`
-	Phone                   *string `json:"phone"`
-	Email                   *string `json:"email"`
-	EmailLoginEnabled       *bool   `json:"email_login_enabled"`
-	PhoneLoginEnabled       *bool   `json:"phone_login_enabled"`
-	EmailIdentity           *string `json:"email_identity"`
-	PhoneIdentity           *string `json:"phone_identity"`
-	EmailIdentityVerified   *bool   `json:"email_identity_verified"`
-	PhoneIdentityVerified   *bool   `json:"phone_identity_verified"`
-	EmailIdentityBindStatus *string `json:"email_identity_bind_status"`
-	PhoneIdentityBindStatus *string `json:"phone_identity_bind_status"`
-	Remark                  *string `json:"remark"`
+	ID            string  `json:"id" binding:"required"`
+	Account       string  `json:"account" binding:"required"`
+	Password      *string `json:"password"`
+	PasswordKeyID string  `json:"password_key_id"`
+	AccountType   string  `json:"account_type" binding:"required"`
+	AccountStatus string  `json:"account_status"`
+	Nickname      *string `json:"nickname"`
+	Avatar        *string `json:"avatar"`
+	Signature     *string `json:"signature"`
+	Phone         *string `json:"phone"`
+	Email         *string `json:"email"`
+	Remark        *string `json:"remark"`
 }
 
 // PageParam 账号分页查询。

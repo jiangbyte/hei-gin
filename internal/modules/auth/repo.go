@@ -151,3 +151,13 @@ func (r *Repo) DecryptPassword(ctx context.Context, keyID, encryptedValue string
 	}
 	return string(plain), nil
 }
+
+// TryMarkPasswordExpiryNotified 24h 内仅通知一次密码即将过期（对齐 hei-boot tryMarkPasswordExpiryNotified）。
+func (r *Repo) TryMarkPasswordExpiryNotified(ctx context.Context, accountID string) bool {
+	if r == nil || r.rdb == nil || accountID == "" {
+		return false
+	}
+	key := "auth:notify:password-expiring:" + accountID
+	ok, err := r.rdb.SetNX(ctx, key, "1", 24*time.Hour).Result()
+	return err == nil && ok
+}

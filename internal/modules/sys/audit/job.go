@@ -15,6 +15,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/config"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/notify"
@@ -49,7 +50,7 @@ const (
 var sensitiveActions = []string{"role_create", "role_grant", "permission_change", "permission_grant"}
 
 // withJobs 附加任务处理器（gojob 调度器收集）。
-func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
+func (s *Service) withJobs(m module.Module, nf *notify.Facade, cfg *config.Config) module.Module {
 	m.Jobs = append(m.Jobs, module.Job{
 		Name: "sys_audit_alert",
 		Run: func(ctx context.Context, _ string) (string, error) {
@@ -59,8 +60,81 @@ func (s *Service) withJobs(m module.Module, nf *notify.Facade) module.Module {
 			return "done", nil
 		},
 	})
+	m.Jobs = append(m.Jobs, module.Job{
+		Name: "sys_audit_log_cleanup",
+		Run: func(ctx context.Context, paramJSON string) (string, error) {
+			return s.runAuditLogCleanupJob(ctx, paramJSON, cfg)
+		},
+	})
 	m.Models = append(m.Models, &AlertLog{})
 	return m
+}
+
+// runAuditLogCleanupJob 按保留天数批量清理过期审计日志（对齐 hei-boot AuditLogCleanupJob）。
+func (s *Service) runAuditLogCleanupJob(ctx context.Context, paramJSON string, cfg *config.Config) (string, error) {
+	loginRetention := 180
+	operationRetention := 365
+	batchSize := 1000
+	if cfg != nil {
+		loginRetention = cfg.Audit.LoginRetentionDays
+		operationRetention = cfg.Audit.OperationRetentionDays
+		if cfg.Audit.CleanupBatchSize > 0 {
+			batchSize = cfg.Audit.CleanupBatchSize
+		}
+	}
+	if strings.TrimSpace(paramJSON) != "" && paramJSON != "null" {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(paramJSON), &m); err == nil {
+			if v, ok := asInt(m["loginRetentionDays"]); ok {
+				loginRetention = v
+			}
+			if v, ok := asInt(m["operationRetentionDays"]); ok {
+				operationRetention = v
+			}
+			if v, ok := asInt(m["batchSize"]); ok && v > 0 {
+				batchSize = v
+			}
+		}
+	}
+
+	deletedLogin := 0
+	if loginRetention > 0 {
+		n, err := s.repo.CleanupExpiredLoginLogs(ctx, loginRetention, batchSize)
+		if err != nil {
+			return "", err
+		}
+		deletedLogin = n
+	}
+
+	deletedOperation := 0
+	if operationRetention > 0 {
+		n, err := s.repo.CleanupExpiredOperationLogs(ctx, operationRetention, batchSize)
+		if err != nil {
+			return "", err
+		}
+		deletedOperation = n
+	}
+
+	return fmt.Sprintf(
+		"deletedLogin=%d,deletedOperation=%d,loginRetentionDays=%d,operationRetentionDays=%d,batchSize=%d",
+		deletedLogin, deletedOperation, loginRetention, operationRetention, batchSize,
+	), nil
+}
+
+func asInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case int:
+		return n, true
+	case int64:
+		return int(n), true
+	case json.Number:
+		i, err := n.Int64()
+		return int(i), err == nil
+	default:
+		return 0, false
+	}
 }
 
 // runAuditAlertJob 按配置规则扫描并发送告警（对齐 hei-boot AuditAlertJob 五项规则）。

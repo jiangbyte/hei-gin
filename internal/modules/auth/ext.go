@@ -49,16 +49,17 @@ type CancelParam struct {
 // AuthOptions 读取登录页公开配置。
 func (s *Service) AuthOptions(ctx context.Context, accountType security.AccountType) *AuthOptions {
 	typeName := strings.ToUpper(string(accountType))
+	defaultRegister := accountType == security.AccountPortal
 	o := &AuthOptions{
 		AccountType:                string(accountType),
 		AllowAccount:               true,
-		AllowEmail:                 true,
-		AllowPhone:                 true,
-		AllowOTP:                   true,
-		RegisterEnabled:            s.registerEnabled(ctx) && accountType == security.AccountPortal,
-		RegisterAllowAccount:       accountType == security.AccountPortal,
-		RegisterAllowEmail:         accountType == security.AccountPortal,
-		RegisterAllowPhone:         accountType == security.AccountPortal,
+		AllowEmail:                 s.runtimeBool(ctx, "AUTH_LOGIN_"+typeName+"_ALLOW_EMAIL", true),
+		AllowPhone:                 s.runtimeBool(ctx, "AUTH_LOGIN_"+typeName+"_ALLOW_PHONE", true),
+		AllowOTP:                   s.runtimeBool(ctx, "AUTH_LOGIN_"+typeName+"_ALLOW_OTP", true),
+		RegisterEnabled:            s.runtimeBool(ctx, "AUTH_REGISTER_"+typeName+"_ENABLED", defaultRegister),
+		RegisterAllowAccount:       accountType == security.AccountPortal && s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT", true),
+		RegisterAllowEmail:         accountType == security.AccountPortal && s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_EMAIL", true),
+		RegisterAllowPhone:         accountType == security.AccountPortal && s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_PHONE", false),
 		RegisterRequireEmail:       s.runtimeBool(ctx, "AUTH_REGISTER_"+typeName+"_REQUIRE_EMAIL", accountType == security.AccountPortal),
 		RegisterRequirePhone:       s.runtimeBool(ctx, "AUTH_REGISTER_"+typeName+"_REQUIRE_PHONE", false),
 		ForceBindEmail:             s.runtimeBool(ctx, "AUTH_FORCE_BIND_"+typeName+"_EMAIL", false),
@@ -89,10 +90,7 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 		return nil, err
 	}
 	now := time.Now().UTC()
-	ttlSec := s.cfg.Auth.TokenTTLSeconds
-	if !sess.RememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
-		ttlSec = s.cfg.Auth.TokenTTLShortSeconds
-	}
+	ttlSec := s.runtimeInt(ctx, "AUTH_TOKEN_TTL_SECONDS", s.cfg.Auth.TokenTTLSeconds)
 	if ttlSec <= 0 {
 		ttlSec = 14400
 	}
@@ -106,13 +104,14 @@ func (s *Service) RefreshSession(ctx context.Context, accountType security.Accou
 	}
 	passwordExpired, warningDays := s.passwordPolicy.PasswordExpired(ctx, sess.AccountID)
 	sess.PasswordExpired = passwordExpired
+	forceEmail, forcePhone := s.forceBindFlags(ctx, sess.AccountType, sess.AccountID)
 	return &LoginResult{
 		Token:                     sess.Token,
 		AccountID:                 sess.AccountID,
 		AccountType:               sess.AccountType,
 		PasswordExpired:           passwordExpired,
-		ForceBindEmail:            s.forceBind(ctx, sess.AccountType, "EMAIL"),
-		ForceBindPhone:            s.forceBind(ctx, sess.AccountType, "PHONE"),
+		ForceBindEmail:            forceEmail,
+		ForceBindPhone:            forcePhone,
 		PasswordExpiryWarningDays: warningDays,
 	}, nil
 }
@@ -144,7 +143,7 @@ func (s *Service) CancelAccount(ctx context.Context, accountType security.Accoun
 	return nil
 }
 
-// sendRegisterCode 门户注册发送验证码。
+// sendRegisterCode 门户注册发送验证码（EMAIL/PHONE 通道）。
 func (s *Service) sendRegisterCode(ctx context.Context, req SendLoginCodeParam) error {
 	if !s.registerEnabled(ctx) {
 		return errRegisterDisabled
@@ -152,24 +151,53 @@ func (s *Service) sendRegisterCode(ctx context.Context, req SendLoginCodeParam) 
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return err
 	}
-	channel, target := resolveOTPTarget(req)
+	channel := strings.ToUpper(strings.TrimSpace(req.Channel))
+	if channel == "" {
+		channel, _ = resolveOTPTarget(req)
+	}
+	if channel != "EMAIL" && channel != "PHONE" {
+		return fmt.Errorf("不支持的注册通道")
+	}
+	target := strings.TrimSpace(req.Target)
+	if target == "" {
+		if channel == "EMAIL" {
+			target = strings.TrimSpace(req.Email)
+		} else {
+			target = strings.TrimSpace(req.Phone)
+		}
+	}
 	if target == "" {
 		return errOTPTargetRequired
+	}
+	if err := s.ensureRegisterChannelAllowed(ctx, channel); err != nil {
+		return err
+	}
+	normTarget := normalizeRegisterTarget(channel, target)
+	identityType := IdentityEmailConst
+	if channel == "PHONE" {
+		identityType = IdentityPhoneConst
+	}
+	if s.identityExists(ctx, identityType, normTarget) {
+		if channel == "EMAIL" {
+			return fmt.Errorf("邮箱已被使用")
+		}
+		return fmt.Errorf("手机号已被使用")
 	}
 	code, err := sixDigitCode()
 	if err != nil {
 		return err
 	}
-	ttl := 5 * time.Minute
-	if err := s.repo.StoreLoginOTP(ctx, string(security.AccountPortal), channel, target, code, ttl); err != nil {
+	ttl := s.otpTTL(ctx)
+	if err := s.repo.StoreRegisterOTP(ctx, channel, normTarget, code, ttl); err != nil {
 		return err
 	}
 	if s.notify != nil {
-		vars := map[string]any{"app_name": s.cfg.App.Name, "code": code, "expire_minutes": 5}
+		expireMin := max(1, int(ttl/time.Minute))
+		vars := map[string]any{"app_name": s.cfg.App.Name, "code": code, "expire_minutes": expireMin}
 		if channel == "PHONE" {
-			_ = s.notify.SendTemplated(ctx, "LOGIN_CODE", target, vars)
+			_ = s.notify.SendTemplated(ctx, "LOGIN_CODE", normTarget, vars)
 		} else {
-			_ = s.notify.SendTemplated(ctx, "LOGIN_CODE_MAIL", target, vars)
+			_ = s.notify.SendTemplated(ctx, "LOGIN_CODE_MAIL", normTarget, vars)
 		}
 	}
 	return nil

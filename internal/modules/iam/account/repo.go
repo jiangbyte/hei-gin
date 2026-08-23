@@ -230,40 +230,11 @@ func (r *Repo) ListRoleIDs(ctx context.Context, accountID string) ([]string, err
 }
 
 type permRow struct {
-	TargetKey string `gorm:"column:target_key"`
-	DataScope string `gorm:"column:data_scope"`
-	SourceID  string `gorm:"column:subject_id"`
-}
-
-// ListGrantedResourcePermissionKeys 展开资源授权（ACCOUNT/GROUP/ROLE 主体）中的权限键。
-func (r *Repo) ListGrantedResourcePermissionKeys(ctx context.Context, accountID string, roleIDs, groupIDs []string) ([]string, error) {
-	var keys []string
-	q := r.with(ctx).Table("sys_iam_relation").
-		Select("DISTINCT target_key").
-		Where("target_key <> '' AND status = ?", "ENABLED").
-		Where("relation_type IN ?", []string{
-			"ACCOUNT_RESOURCE", "ACCOUNT_CLIENT_RESOURCE",
-			"ROLE_RESOURCE", "ROLE_CLIENT_RESOURCE",
-			"GROUP_RESOURCE", "GROUP_CLIENT_RESOURCE",
-		})
-	cond := "((subject_type = ? AND subject_id = ?)"
-	args := []any{"ACCOUNT", accountID}
-	if len(groupIDs) > 0 {
-		cond += " OR (subject_type = ? AND subject_id IN ?)"
-		args = append(args, "GROUP", groupIDs)
-	}
-	if len(roleIDs) > 0 {
-		cond += " OR (subject_type = ? AND subject_id IN ?)"
-		args = append(args, "ROLE", roleIDs)
-	}
-	cond += ")"
-	if err := q.Where(cond, args...).Scan(&keys).Error; err != nil {
-		return nil, err
-	}
-	if keys == nil {
-		keys = []string{}
-	}
-	return keys, nil
+	TargetKey          string   `gorm:"column:target_key"`
+	DataScope          string   `gorm:"column:data_scope"`
+	SourceID           string   `gorm:"column:subject_id"`
+	SourceType         string   `gorm:"-"`
+	CustomScopeDeptIDs []string `gorm:"-"`
 }
 
 // ListRolePermissions 按角色列出权限键。
@@ -321,7 +292,7 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Account{})
 	if sess != nil {
-		db = datascope.Apply(db, sess, "")
+		db = datascope.ApplyAccountScope(db, sess, "iam:account:page")
 	}
 	if p.AccountType != "" {
 		db = db.Where("account_type = ?", p.AccountType)
@@ -359,4 +330,123 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 	}
 	err = db.Order("id desc").Offset((cur - 1) * size).Limit(size).Find(&rows).Error
 	return rows, total, err
+}
+
+// ListDeptIDs 查账号已关联部门 ID。
+func (r *Repo) ListDeptIDs(ctx context.Context, accountID, accountType string) ([]string, error) {
+	var ids []string
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("target_id").
+		Where("subject_type = ? AND subject_id = ? AND relation_type = ? AND target_type = ? AND status = ?",
+			"ACCOUNT", accountID, "ACCOUNT_DEPT", "DEPT", "ENABLED")
+	if accountType != "" {
+		q = q.Where("account_type = ?", accountType)
+	}
+	if err := q.Scan(&ids).Error; err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+// ListRoleCodes 按角色 ID 查编码。
+func (r *Repo) ListRoleCodes(ctx context.Context, roleIDs []string) ([]string, error) {
+	if len(roleIDs) == 0 {
+		return []string{}, nil
+	}
+	var codes []string
+	if err := r.with(ctx).Table("sys_role").
+		Select("code").Where("id IN ?", roleIDs).Scan(&codes).Error; err != nil {
+		return nil, err
+	}
+	if codes == nil {
+		codes = []string{}
+	}
+	return codes, nil
+}
+
+// ListRoleIDsByGroups 查用户组拥有的角色 ID。
+func (r *Repo) ListRoleIDsByGroups(ctx context.Context, groupIDs []string, accountType string) ([]string, error) {
+	if len(groupIDs) == 0 {
+		return []string{}, nil
+	}
+	var ids []string
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("target_id").
+		Where("subject_type = ? AND subject_id IN ? AND relation_type = ? AND target_type = ? AND status = ?",
+			"GROUP", groupIDs, "GROUP_ROLE", "ROLE", "ENABLED")
+	if accountType != "" {
+		q = q.Where("account_type = ?", accountType)
+	}
+	if err := q.Scan(&ids).Error; err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+// ListClientPermissionKeys 查客户端权限键。
+func (r *Repo) ListClientPermissionKeys(ctx context.Context, accountID string, roleIDs, groupIDs []string, accountType string) ([]string, error) {
+	cond := "(subject_type = ? AND subject_id = ?"
+	args := []any{"ACCOUNT", accountID}
+	if len(groupIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "GROUP", groupIDs)
+	}
+	if len(roleIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "ROLE", roleIDs)
+	}
+	cond += ")"
+	fullArgs := append([]any{[]string{
+		"SUBJECT_CLIENT_RESOURCE_GRANT", "ACCOUNT_CLIENT_RESOURCE", "GROUP_CLIENT_RESOURCE", "ROLE_CLIENT_RESOURCE",
+	}, "CLIENT_RESOURCE", "ENABLED"}, args...)
+	var keys []string
+	err := r.with(ctx).Table("sys_iam_relation").
+		Select("DISTINCT target_key").
+		Where("relation_type IN ? AND target_type = ? AND status = ? AND target_key <> '' AND "+cond, fullArgs...).
+		Scan(&keys).Error
+	if err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		keys = []string{}
+	}
+	return keys, nil
+}
+
+// ListGrantedClientResourceIDs 查已授权客户端资源 ID。
+func (r *Repo) ListGrantedClientResourceIDs(ctx context.Context, accountID string, groupIDs, roleIDs []string, accountType string) ([]string, error) {
+	cond := "(subject_type = ? AND subject_id = ?"
+	args := []any{"ACCOUNT", accountID}
+	if len(groupIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "GROUP", groupIDs)
+	}
+	if len(roleIDs) > 0 {
+		cond += " OR (subject_type = ? AND subject_id IN ?)"
+		args = append(args, "ROLE", roleIDs)
+	}
+	cond += ")"
+	fullArgs := append([]any{[]string{
+		"SUBJECT_CLIENT_RESOURCE_GRANT", "ACCOUNT_CLIENT_RESOURCE", "GROUP_CLIENT_RESOURCE", "ROLE_CLIENT_RESOURCE",
+	}, "CLIENT_RESOURCE", "ENABLED"}, args...)
+	var ids []string
+	q := r.with(ctx).Table("sys_iam_relation").
+		Select("DISTINCT target_id").
+		Where("relation_type IN ? AND target_type = ? AND status = ? AND "+cond, fullArgs...)
+	if accountType != "" {
+		q = q.Where("account_type = ?", accountType)
+	}
+	if err := q.Scan(&ids).Error; err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
 }

@@ -107,7 +107,7 @@ func (s *Service) assertScope(sess *security.SessionPayload, row *Position) erro
 	if row.CreatedBy != nil {
 		ownerAccount = *row.CreatedBy
 	}
-	return datascope.Assert(sess, ownerDept, ownerAccount)
+	return datascope.AssertKey(sess, "iam:position:page", ownerDept, ownerAccount)
 }
 
 func orStatus(st string) string {

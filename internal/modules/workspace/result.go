@@ -4,7 +4,11 @@
 
 package workspace
 
-import "time"
+import (
+	"time"
+
+	"hei-gin/internal/framework/core/schema"
+)
 
 // OverviewResult 工作台总览：快捷应用 + 本人近期操作/登录日志。
 //
@@ -41,7 +45,7 @@ type ActivityItemResult struct {
 	ActionName   *string   `json:"action_name"`
 	ActionType   *string   `json:"action_type"`
 	Summary      *string   `json:"summary"`
-	Success      bool      `json:"success"`
+	Success      schema.WireBool `json:"success"`
 	IP           *string   `json:"ip"`
 	UserAgent    *string   `json:"user_agent"`
 	OperatorName *string   `json:"operator_name"`

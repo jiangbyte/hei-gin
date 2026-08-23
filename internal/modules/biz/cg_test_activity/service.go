@@ -14,6 +14,7 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/modules/biz/scope"
 )
 
 // Service 活动服务。
@@ -38,11 +39,12 @@ func New(d *module.Deps) module.Module {
 }
 
 // Create 创建活动。
-func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
+func (s *Service) Create(ctx context.Context, accountID string, req AddParam, sess *security.SessionPayload) error {
 	row := fromAddParam(req)
 	row.ID = idgen.Next()
 	row.CreatedBy = &accountID
 	row.UpdatedBy = &accountID
+	row.OwnerDeptID = scope.DefaultOwnerDeptID(sess)
 	return s.repo.Create(ctx, &row)
 }
 

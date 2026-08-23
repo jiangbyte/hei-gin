@@ -17,7 +17,7 @@ func (s *Service) OwnUsers(ctx context.Context, id string) (*view.OwnUserResult,
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
-	accountIDs, err := s.rel.ListTargetIDs(ctx, relation.SubjectRole, id, relation.RelRoleUser, "")
+	accountIDs, err := s.rel.ListSubjectIDsByTarget(ctx, relation.RelAccountRole, relation.TargetRole, id)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (s *Service) GrantUsers(ctx context.Context, req GrantUserParam) error {
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceSubjectAccounts(ctx, relation.SubjectRole, req.ID, relation.RelRoleUser, req.AccountIDs, accountTypes); err != nil {
+	if err := s.rel.ReplaceRoleUsers(ctx, req.ID, req.AccountIDs, accountTypes); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, req.AccountIDs)
@@ -54,7 +54,7 @@ func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*Ow
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectRole, id, relation.RelRoleResource, relation.TargetResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectRole, id, relation.RelSubjectResourceGrant, relation.TargetResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectRole, req.ID, relation.RelRoleResource, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectRole, req.ID, relation.RelSubjectResourceGrant, relation.TargetResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, affected)
@@ -80,7 +80,7 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 
 // membersOf 列出角色当前成员账号 ID。
 func (s *Service) membersOf(ctx context.Context, roleID string) ([]string, error) {
-	return s.rel.ListTargetIDs(ctx, relation.SubjectRole, roleID, relation.RelRoleUser, "")
+	return s.rel.ListSubjectIDsByTarget(ctx, relation.RelAccountRole, relation.TargetRole, roleID)
 }
 
 // OwnClientResources 角色已拥有客户端资源授权。
@@ -93,7 +93,7 @@ func (s *Service) OwnClientResources(ctx context.Context, id, accountType string
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectRole, id, relation.RelRoleClientResource, relation.TargetClientResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectRole, id, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *Service) GrantClientResources(ctx context.Context, req GrantResourcePar
 	if err != nil {
 		return err
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectRole, req.ID, relation.RelRoleClientResource, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectRole, req.ID, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, orAdmin(req.AccountType), req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateAccounts(ctx, affected)

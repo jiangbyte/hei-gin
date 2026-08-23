@@ -35,16 +35,6 @@ const (
 	maxResultLength    = 500
 )
 
-// handlerAliases Boot JobHandler 全限定类名 → hei-gin 注册 key。
-var handlerAliases = map[string]string{
-	"github.jiangbyte.io.sys.modules.job.sample.SysJobSample":                 "sys_job_sample",
-	"github.jiangbyte.io.sys.modules.banner.job.BannerStatusJob":              "sys_banner_status_sync",
-	"github.jiangbyte.io.sys.modules.banner.job.BannerFlushInteractionsJob":   "sys_banner_flush_interactions",
-	"github.jiangbyte.io.sys.modules.audit.job.AuditAlertJob":                 "sys_audit_alert",
-	"github.jiangbyte.io.iam.modules.account.job.AccountPurgeCancelledJob":  "iam_account_purge_cancelled",
-	"github.jiangbyte.io.sys.modules.job.cleanup.SysJobLogCleanupJob":         "sys_job_log_cleanup",
-}
-
 // SysJob 任务定义（sys_job，对齐 hei-boot SysJob）。
 //
 // Author: Charlie
@@ -177,7 +167,7 @@ func mustCwd() string {
 	return filepath.Clean(d)
 }
 
-// SetHandlers 填充/替换处理器表（同时注册 Boot FQCN 别名）。
+// SetHandlers 填充/替换处理器表。
 func (m *Manager) SetHandlers(handlers []HandlerDef) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -188,28 +178,17 @@ func (m *Manager) SetHandlers(handlers []HandlerDef) {
 		}
 		m.handlers[h.Key] = h
 	}
-	for fqcn, key := range handlerAliases {
-		if h, ok := m.handlers[key]; ok {
-			m.handlers[fqcn] = h
-		}
-	}
 }
 
-// Resolve 按 handler（Boot FQCN 或 gin key）解析处理器。
+// Resolve 按 handler key 解析处理器。
 func (m *Manager) Resolve(key string) (HandlerDef, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if h, ok := m.handlers[key]; ok {
-		return h, true
-	}
-	if alias, ok := handlerAliases[key]; ok {
-		h, ok := m.handlers[alias]
-		return h, ok
-	}
-	return HandlerDef{}, false
+	h, ok := m.handlers[key]
+	return h, ok
 }
 
-// HasHandler 是否已注册（接受 Boot FQCN 或 gin key）。
+// HasHandler 是否已注册。
 func (m *Manager) HasHandler(key string) bool {
 	_, ok := m.Resolve(key)
 	return ok
@@ -220,15 +199,7 @@ func (m *Manager) HandlerInfos() []HandlerInfo {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	out := make([]HandlerInfo, 0, len(m.handlers))
-	seen := map[string]bool{}
-	for key, h := range m.handlers {
-		if _, isAlias := handlerAliases[key]; isAlias {
-			continue
-		}
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
+	for _, h := range m.handlers {
 		name := h.Name
 		if name == "" {
 			name = h.Key

@@ -23,14 +23,14 @@ import (
 func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 	return func(api *gin.RouterGroup) {
 		admin := api.Group("/v1/admin/sys/notices", middleware.RequireAccountType(security.AccountAdmin))
-		admin.POST("/create", middleware.RequirePermission(d.Perms, "sys:notice:create", "创建 notice"), s.create)
-		admin.POST("/update", middleware.RequirePermission(d.Perms, "sys:notice:update", "Update notice"), s.update)
-		admin.POST("/delete", middleware.RequirePermission(d.Perms, "sys:notice:delete", "Delete notice"), s.delete)
+		admin.POST("/create", middleware.RequirePermission(d.Perms, "sys:notice:create", "创建 notice"), middleware.OperationAudit(d.Audit, "sys_notice", "create"), s.create)
+		admin.POST("/update", middleware.RequirePermission(d.Perms, "sys:notice:update", "Update notice"), middleware.OperationAudit(d.Audit, "sys_notice", "update"), s.update)
+		admin.POST("/delete", middleware.RequirePermission(d.Perms, "sys:notice:delete", "Delete notice"), middleware.OperationAudit(d.Audit, "sys_notice", "delete"), s.delete)
 		admin.GET("/detail", middleware.RequirePermission(d.Perms, "sys:notice:detail", "Notice detail"), s.detail)
 		admin.GET("/page", middleware.RequirePermission(d.Perms, "sys:notice:page", "Notice page"), s.pageAdmin)
-		admin.POST("/publish", middleware.RequirePermission(d.Perms, "sys:notice:publish", "Publish notice"), s.publish)
-		admin.POST("/revoke", middleware.RequirePermission(d.Perms, "sys:notice:revoke", "Revoke notice"), s.revoke)
-		admin.POST("/pin", middleware.RequirePermission(d.Perms, "sys:notice:pin", "Pin notice"), s.pin)
+		admin.POST("/publish", middleware.RequirePermission(d.Perms, "sys:notice:publish", "Publish notice"), middleware.OperationAudit(d.Audit, "sys_notice", "publish"), s.publish)
+		admin.POST("/revoke", middleware.RequirePermission(d.Perms, "sys:notice:revoke", "Revoke notice"), middleware.OperationAudit(d.Audit, "sys_notice", "revoke"), s.revoke)
+		admin.POST("/pin", middleware.RequirePermission(d.Perms, "sys:notice:pin", "Pin notice"), middleware.OperationAudit(d.Audit, "sys_notice", "pin"), s.pin)
 		s.registerMyRoutes(admin)
 
 		portal := api.Group("/v1/portal/sys/notices")

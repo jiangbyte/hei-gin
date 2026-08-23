@@ -7,6 +7,8 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/redis/go-redis/v9"
@@ -65,6 +67,20 @@ func (r *PermissionRegistry) Sync(ctx context.Context) error {
 		return err
 	}
 	return r.rdb.Set(ctx, r.redisKey, raw, 0).Err()
+}
+
+// EnsureRegistered 校验权限键已在注册表中登记（对齐 hei-boot PermissionRegistryServiceImpl.ensureRegistered）。
+func (r *PermissionRegistry) EnsureRegistered(key string) error {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.items[key]; ok {
+		return nil
+	}
+	return fmt.Errorf("permission key not registered: %s", key)
 }
 
 // HasPermission 判断权限键集合是否满足 need（空 need 或含 *:*:* 视为通过）。

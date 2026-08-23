@@ -9,6 +9,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 	"hei-gin/internal/framework/platform/db/dialect"
 )
 
@@ -48,10 +50,13 @@ func (r *Repo) GetCategoryByID(ctx context.Context, id string) (*Category, error
 	return &row, nil
 }
 
-// PageCategories 分页查分类。
-func (r *Repo) PageCategories(ctx context.Context, p PageParam) (rows []Category, total int64, err error) {
+// PageCategories 分页查分类；sess 非空时按 owner_dept_id 数据范围过滤。
+func (r *Repo) PageCategories(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Category, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Category{})
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "biz:cgtestknowledgecategory:page", "owner_dept_id", "created_by")
+	}
 	if p.Code != "" {
 		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
 	}
@@ -71,10 +76,14 @@ func (r *Repo) PageCategories(ctx context.Context, p PageParam) (rows []Category
 	return rows, total, err
 }
 
-// ListAllCategories 列出全部分类。
-func (r *Repo) ListAllCategories(ctx context.Context) ([]Category, error) {
+// ListAllCategories 列出全部分类；sess 非空时按数据范围过滤。
+func (r *Repo) ListAllCategories(ctx context.Context, sess *security.SessionPayload) ([]Category, error) {
 	var rows []Category
-	err := r.with(ctx).Order("sort ASC").Find(&rows).Error
+	db := r.with(ctx)
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "biz:cgtestknowledgecategory:list", "owner_dept_id", "created_by")
+	}
+	err := db.Order("sort ASC").Find(&rows).Error
 	return rows, err
 }
 

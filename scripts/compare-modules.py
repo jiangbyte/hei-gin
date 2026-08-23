@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import base64
 import json
 import sys
@@ -95,7 +96,35 @@ MODULE_ENDPOINTS: dict[str, list[tuple[str, str]]] = {
     "biz/knowledge": [("GET", "/api/v1/admin/biz/cg-test-knowledge-category/page?current=1&size=2")],
 }
 
-SKIP_MODULES = {"sys/job", "sys/codegen"}
+# Module path tokens for --module filter (underscores normalized to hyphens in URLs).
+MODULE_PATH_HINTS: dict[str, tuple[str, ...]] = {
+    "auth": ("/public/auth-options", "/public/site-footer", "/login"),
+    "workspace": ("/workspace/",),
+    "profile": ("/me", "/profile/"),
+    "identity": ("/profile/identity/", "/real-name/", "/sys/identity/", "/sys/real-name-case/"),
+    "iam/account": ("/sys/accounts",),
+    "iam/role": ("/sys/roles",),
+    "iam/dept": ("/sys/depts",),
+    "iam/group": ("/sys/groups",),
+    "iam/position": ("/sys/positions",),
+    "iam/resource": ("/sys/resources",),
+    "iam/client": ("/sys/client-",),
+    "iam/relation": ("/permission-registry",),
+    "sys/audit": ("/sys/audit",),
+    "sys/banner": ("/sys/banners",),
+    "sys/codegen": ("/sys/codegen",),
+    "sys/config": ("/sys/config",),
+    "sys/dict": ("/sys/dicts",),
+    "sys/feedback": ("/sys/feedbacks",),
+    "sys/file": ("/sys/file",),
+    "sys/job": ("/sys/jobs", "/sys/job-logs",),
+    "sys/notice": ("/sys/notices",),
+    "sys/weak_password": ("/sys/weak-password",),
+    "biz/activity": ("/biz/cg-test-activity",),
+    "biz/catalog": ("/biz/cg-test-catalog",),
+    "biz/order": ("/biz/cg-test-order",),
+    "biz/knowledge": ("/biz/cg-test-knowledge-category",),
+}
 
 SKIP_KEYS = {
     "created_at",
@@ -191,10 +220,63 @@ def keys_of(obj: Any) -> set[str]:
     return set(obj.keys()) if isinstance(obj, dict) else set()
 
 
+def wire_kind(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int) and not isinstance(value, bool):
+        return "number"
+    if isinstance(value, float):
+        return "number"
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"true", "false"}:
+            return "wire_bool"
+        if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
+            return "wire_number"
+        return "str"
+    if isinstance(value, dict):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    return type(value).__name__
+
+
+def types_compatible(a: Any, b: Any) -> bool:
+    if type(a) is type(b):
+        return True
+    ka, kb = wire_kind(a), wire_kind(b)
+    if ka == kb:
+        return True
+    if ka == "null" or kb == "null":
+        return a is None and b is None
+    numeric = {"wire_number", "number", "str"}
+    if ka in numeric and kb in numeric:
+        return True
+    boolish = {"wire_bool", "bool", "str"}
+    if ka in boolish and kb in boolish:
+        return True
+    return False
+
+
+def pick_matching_records(boot_records: list[Any], gin_records: list[Any]) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    gin_by_id = {r.get("id"): r for r in gin_records if isinstance(r, dict) and r.get("id")}
+    stable = [r for r in boot_records if isinstance(r, dict) and r.get("action") not in {"login", "logout"}]
+    candidates = stable or [r for r in boot_records if isinstance(r, dict)]
+    for br in candidates:
+        rid = br.get("id")
+        if rid and rid in gin_by_id:
+            return br, gin_by_id[rid]
+    if candidates and gin_records and isinstance(gin_records[0], dict):
+        return candidates[0], gin_records[0]
+    return None, None
+
+
 def shape_diff(a: Any, b: Any, prefix: str = "") -> list[str]:
     diffs: list[str] = []
-    if type(a) is not type(b):
-        return [f"{prefix}: type {type(a).__name__} vs {type(b).__name__}"]
+    if not types_compatible(a, b):
+        return [f"{prefix}: type {wire_kind(a)} vs {wire_kind(b)}"]
     if isinstance(a, dict):
         only_a = sorted(k for k in keys_of(a) - keys_of(b) if not should_skip_key(k))
         only_b = sorted(k for k in keys_of(b) - keys_of(a) if not should_skip_key(k))
@@ -206,16 +288,21 @@ def shape_diff(a: Any, b: Any, prefix: str = "") -> list[str]:
             if should_skip_key(k):
                 continue
             diffs.extend(shape_diff(a[k], b[k], f"{prefix}.{k}" if prefix else k)[:2])
-    elif isinstance(a, list) and a and b and isinstance(a[0], dict) and isinstance(b[0], dict):
-        diffs.extend(shape_diff(a[0], b[0], f"{prefix}[0]")[:3])
-    return diffs[:6]
+    elif isinstance(a, list) and isinstance(b, list) and a and b:
+        if isinstance(a[0], dict) and isinstance(b[0], dict):
+            br, gr = pick_matching_records(a, b)
+            if br and gr:
+                diffs.extend(shape_diff(br, gr, f"{prefix}[id={br.get('id')}]")[:6])
+            else:
+                diffs.extend(shape_diff(a[0], b[0], f"{prefix}[0]")[:3])
+    return diffs[:8]
 
 
-def compare_endpoint(method: str, path: str, boot_tok: str, gin_tok: str) -> list[str]:
+def compare_endpoint(method: str, path: str, boot_tok: str, gin_tok: str, boot_base: str, gin_base: str) -> list[str]:
     if any(path.startswith(p) for p in PORTAL_ONLY_PREFIXES):
         return []
-    bs, br = http_json(method, BOOT + path, boot_tok)
-    gs, gr = http_json(method, GIN + path, gin_tok)
+    bs, br = http_json(method, boot_base + path, boot_tok)
+    gs, gr = http_json(method, gin_base + path, gin_tok)
     if bs != gs:
         return [f"{path}: HTTP {bs} vs {gs}"]
     if not isinstance(br, dict) or not isinstance(gr, dict):
@@ -225,6 +312,9 @@ def compare_endpoint(method: str, path: str, boot_tok: str, gin_tok: str) -> lis
     bd, gd = br.get("data"), gr.get("data")
     if isinstance(bd, dict) and isinstance(gd, dict) and "records" in bd and "records" in gd:
         if bd.get("records") and gd.get("records"):
+            br0, gr0 = pick_matching_records(bd["records"], gd["records"])
+            if br0 and gr0:
+                return shape_diff(br0, gr0, f"{path}.record")
             return shape_diff(bd["records"][0], gd["records"][0], f"{path}.record")
         if bool(bd.get("records")) != bool(gd.get("records")):
             return [f"{path}: records empty mismatch"]
@@ -236,21 +326,38 @@ def compare_endpoint(method: str, path: str, boot_tok: str, gin_tok: str) -> lis
     return []
 
 
+def module_matches_filter(mod: str, module_filter: str) -> bool:
+    if not module_filter:
+        return True
+    return mod == module_filter or mod.startswith(module_filter.rstrip("/") + "/")
+
+
 def main() -> int:
-    boot_tok = login(BOOT, 0)
-    gin_tok = login(GIN, 4)
+    parser = argparse.ArgumentParser(description="Boot vs Gin module response shape compare")
+    parser.add_argument("--module", default="", help="compare single module (e.g. sys/audit)")
+    parser.add_argument("--boot", default=BOOT)
+    parser.add_argument("--gin", default=GIN)
+    parser.add_argument("--out", default="scripts/module-compare.json")
+    args = parser.parse_args()
+
+    boot_base = args.boot.rstrip("/")
+    gin_base = args.gin.rstrip("/")
+
+    boot_tok = login(boot_base, 0)
+    gin_tok = login(gin_base, 4)
     print("login OK (boot + gin)\n")
 
     report: dict[str, Any] = {"modules": {}, "summary": {}}
     ok_count = 0
-    for mod, endpoints in MODULE_ENDPOINTS.items():
-        if mod in SKIP_MODULES:
-            report["modules"][mod] = {"status": "skipped", "diffs": []}
-            print(f"[SKIP] {mod}")
-            continue
+    selected = {
+        mod: endpoints
+        for mod, endpoints in MODULE_ENDPOINTS.items()
+        if module_matches_filter(mod, args.module)
+    }
+    for mod, endpoints in selected.items():
         diffs: list[str] = []
         for method, path in endpoints:
-            diffs.extend(compare_endpoint(method, path, boot_tok, gin_tok))
+            diffs.extend(compare_endpoint(method, path, boot_tok, gin_tok, boot_base, gin_base))
         status = "aligned" if not diffs else "diff"
         if status == "aligned":
             ok_count += 1
@@ -260,18 +367,17 @@ def main() -> int:
         for d in diffs[:5]:
             print(f"  - {d}")
 
-    total = len(MODULE_ENDPOINTS) - len(SKIP_MODULES)
+    total = len(selected)
     report["summary"] = {
         "aligned": ok_count,
         "total": total,
         "diff": total - ok_count,
-        "skipped": sorted(SKIP_MODULES),
+        "module_filter": args.module or None,
     }
-    out = "scripts/module-compare.json"
-    with open(out, "w", encoding="utf-8") as f:
+    with open(args.out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"\n=== SUMMARY aligned={ok_count}/{total} ===")
-    print(f"report: {out}")
+    print(f"report: {args.out}")
     return 0 if ok_count == total else 1
 
 

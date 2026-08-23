@@ -14,6 +14,9 @@ import (
 
 // OwnRoles 账号已拥有角色。
 func (s *Service) OwnRoles(ctx context.Context, id string) (*OwnRoleResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	acc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -31,6 +34,9 @@ func (s *Service) OwnRoles(ctx context.Context, id string) (*OwnRoleResult, erro
 
 // GrantRoles 全量替换账号角色授权。
 func (s *Service) GrantRoles(ctx context.Context, req GrantRoleParam) error {
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
@@ -44,6 +50,9 @@ func (s *Service) GrantRoles(ctx context.Context, req GrantRoleParam) error {
 
 // OwnGroups 账号已拥有用户组。
 func (s *Service) OwnGroups(ctx context.Context, id string) (*OwnGroupResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	acc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -61,6 +70,9 @@ func (s *Service) OwnGroups(ctx context.Context, id string) (*OwnGroupResult, er
 
 // GrantGroups 全量替换账号用户组授权。
 func (s *Service) GrantGroups(ctx context.Context, req GrantGroupParam) error {
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
@@ -74,6 +86,9 @@ func (s *Service) GrantGroups(ctx context.Context, req GrantGroupParam) error {
 
 // OwnDepts 账号已拥有部门授权。
 func (s *Service) OwnDepts(ctx context.Context, id string) (*OwnDeptResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	acc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -87,6 +102,9 @@ func (s *Service) OwnDepts(ctx context.Context, id string) (*OwnDeptResult, erro
 
 // GrantDepts 全量替换账号部门授权。
 func (s *Service) GrantDepts(ctx context.Context, req GrantDeptParam) error {
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
@@ -100,6 +118,9 @@ func (s *Service) GrantDepts(ctx context.Context, req GrantDeptParam) error {
 
 // OwnResources 账号已拥有管理端资源授权。
 func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*OwnResourceResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	acc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -112,7 +133,7 @@ func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*Ow
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectAccount, id, relation.RelAccountResource, relation.TargetResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectAccount, id, relation.RelSubjectResourceGrant, relation.TargetResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +142,9 @@ func (s *Service) OwnResources(ctx context.Context, id, accountType string) (*Ow
 
 // GrantResources 全量替换账号管理端资源授权。
 func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) error {
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
@@ -129,7 +153,7 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 	if typ == "" {
 		typ = acc.AccountType
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountResource, relation.TargetResource, typ, req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelSubjectResourceGrant, relation.TargetResource, typ, req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateSessions(ctx, req.ID)
@@ -138,6 +162,9 @@ func (s *Service) GrantResources(ctx context.Context, req GrantResourceParam) er
 
 // OwnClientResources 账号已拥有客户端资源授权。
 func (s *Service) OwnClientResources(ctx context.Context, id, accountType string) (*OwnClientResourceResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	acc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -150,7 +177,7 @@ func (s *Service) OwnClientResources(ctx context.Context, id, accountType string
 	if err != nil {
 		return nil, err
 	}
-	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectAccount, id, relation.RelAccountClientResource, relation.TargetClientResource, typ)
+	grants, err := s.rel.ListResourceGrants(ctx, relation.SubjectAccount, id, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +186,9 @@ func (s *Service) OwnClientResources(ctx context.Context, id, accountType string
 
 // GrantClientResources 全量替换账号客户端资源授权。
 func (s *Service) GrantClientResources(ctx context.Context, req GrantResourceParam) error {
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
@@ -167,7 +197,7 @@ func (s *Service) GrantClientResources(ctx context.Context, req GrantResourcePar
 	if typ == "" {
 		typ = acc.AccountType
 	}
-	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelAccountClientResource, relation.TargetClientResource, typ, req.GrantInfoList); err != nil {
+	if err := s.rel.ReplaceResourceGrants(ctx, relation.SubjectAccount, req.ID, relation.RelSubjectClientResourceGrant, relation.TargetClientResource, typ, req.GrantInfoList); err != nil {
 		return err
 	}
 	s.invalidateSessions(ctx, req.ID)

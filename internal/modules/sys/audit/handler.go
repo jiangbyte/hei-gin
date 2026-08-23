@@ -39,7 +39,7 @@ func (s *Service) page(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	response.Page(c, int64(cur), int64(size), total, rows)
+	response.Page(c, int64(cur), int64(size), total, toOperationLogResults(rows))
 }
 
 func (s *Service) detail(c *gin.Context) {
@@ -53,7 +53,7 @@ func (s *Service) detail(c *gin.Context) {
 		response.Fail(c, http.StatusNotFound, 404, "not found")
 		return
 	}
-	response.OK(c, row)
+	response.OK(c, toOperationLogResult(*row))
 }
 
 func (s *Service) myPage(c *gin.Context) {
@@ -69,7 +69,7 @@ func (s *Service) myPage(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	response.Page(c, int64(cur), int64(size), total, rows)
+	response.Page(c, int64(cur), int64(size), total, toOperationLogResults(rows))
 }
 
 func (s *Service) myDetail(c *gin.Context) {
@@ -88,5 +88,5 @@ func (s *Service) myDetail(c *gin.Context) {
 		response.Fail(c, http.StatusNotFound, 404, "not found")
 		return
 	}
-	response.OK(c, row)
+	response.OK(c, toOperationLogResult(*row))
 }

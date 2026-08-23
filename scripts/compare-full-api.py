@@ -22,10 +22,8 @@ SKIP_BOOT_PREFIXES = (
     "/swagger-ui",
     "/v3/api-docs",
     "/webjars/",
+    "/easyTrans/",
 )
-SKIP_BOOT_PATHS = {
-    "/api/v1/admin/dashboard/overview",  # removed, replaced by workspace
-}
 GIN_ONLY_OK = {
     "/api/v1/internal/debug/routes",
     "/metrics",
@@ -79,8 +77,6 @@ def boot_routes(oa: dict) -> set[tuple[str, str]]:
     out: set[tuple[str, str]] = set()
     for path, methods in (oa.get("paths") or {}).items():
         if any(path.startswith(p) for p in SKIP_BOOT_PREFIXES):
-            continue
-        if path in SKIP_BOOT_PATHS:
             continue
         for m in methods:
             if m.upper() in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}:

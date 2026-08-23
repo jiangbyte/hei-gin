@@ -35,7 +35,7 @@ func (s *Service) create(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.Create(c.Request.Context(), contextx.AccountID(c.Request.Context()), req); err != nil {
+	if err := s.Create(c.Request.Context(), contextx.AccountID(c.Request.Context()), req, contextx.Session(c.Request.Context())); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}

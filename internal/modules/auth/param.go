@@ -14,24 +14,24 @@ type LoginParam struct {
 	IdentityType  string `json:"identity_type"`
 	LoginMode     string `json:"login_mode"`
 	OTPCode       string `json:"otp_code"`
-	RememberMe    bool   `json:"remember_me"`
+	RememberMe    *bool  `json:"remember_me"`
 	CaptchaID     string `json:"captcha_id" binding:"required"`
 	CaptchaValue  string `json:"captcha_value" binding:"required"`
 }
 
-// RegisterParam 门户注册入参。
-//
-// Author: Charlie
+// RegisterParam 门户注册入参（对齐 hei-boot RegisterParam）。
 type RegisterParam struct {
-	Account       string `json:"account" binding:"required,min=3,max=64"`
-	Password      string `json:"password" binding:"required"`
-	PasswordKeyID string `json:"password_key_id" binding:"required"`
-	Name          string `json:"name"`
-	Nickname      string `json:"nickname"`
-	Email         string `json:"email"`
-	Phone         string `json:"phone"`
-	CaptchaID     string `json:"captcha_id" binding:"required"`
-	CaptchaValue  string `json:"captcha_value" binding:"required"`
+	RegisterChannel string `json:"register_channel"`
+	Account         string `json:"account"`
+	Password        string `json:"password" binding:"required"`
+	PasswordKeyID   string `json:"password_key_id" binding:"required"`
+	Name            string `json:"name"`
+	Nickname        string `json:"nickname"`
+	Email           string `json:"email"`
+	Phone           string `json:"phone"`
+	OTPCode         string `json:"otp_code"`
+	CaptchaID       string `json:"captcha_id" binding:"required"`
+	CaptchaValue    string `json:"captcha_value" binding:"required"`
 }
 
 // SendLoginCodeParam 发送登录 OTP。

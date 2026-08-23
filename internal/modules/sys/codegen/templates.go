@@ -101,7 +101,10 @@ import (
 	"context"
 
 	"gorm.io/gorm"
-
+{{if .Main.HasOwnerDept}}
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
+{{end}}
 	"hei-gin/internal/framework/platform/db/dialect"
 )
 
@@ -142,9 +145,14 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*{{.Main.EntityName}}, e
 }
 
 // Page 分页查询。
-func (r *Repo) Page(ctx context.Context, p PageParam) (rows []{{.Main.EntityName}}, total int64, err error) {
+func (r *Repo) Page(ctx context.Context, p PageParam{{if .Main.HasOwnerDept}}, sess *security.SessionPayload{{end}}) (rows []{{.Main.EntityName}}, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&{{.Main.EntityName}}{})
+{{if .Main.HasOwnerDept}}
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "{{.PermissionPrefix}}:page", "owner_dept_id", "created_by")
+	}
+{{end}}
 {{- range .Main.QueryFields }}
 {{- if eq .PythonType "str" }}
 	if p.{{.GoName}} != "" {
@@ -173,6 +181,9 @@ import (
 	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+{{if .Main.HasOwnerDept}}
+	"hei-gin/internal/modules/biz/scope"
+{{end}}
 )
 
 // Service {{.Main.BusinessName}}服务。
@@ -196,11 +207,14 @@ func New(d *module.Deps) module.Module {
 }
 
 // Create 创建{{.Main.BusinessName}}。
-func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
+func (s *Service) Create(ctx context.Context, accountID string, req AddParam{{if .Main.HasOwnerDept}}, sess *security.SessionPayload{{end}}) error {
 	row := fromAddParam(req)
 	row.ID = idgen.Next()
 	row.CreatedBy = &accountID
 	row.UpdatedBy = &accountID
+{{if .Main.HasOwnerDept}}
+	row.OwnerDeptID = scope.DefaultOwnerDeptID(sess)
+{{end}}
 	return s.repo.Create(ctx, &row)
 }
 
@@ -228,7 +242,7 @@ func (s *Service) Detail(ctx context.Context, id string) (*{{.Main.EntityName}},
 // Page 分页。
 func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []{{.Main.EntityName}}, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err = s.repo.Page(ctx, p)
+	rows, total, err = s.repo.Page(ctx, p{{if .Main.HasOwnerDept}}, sess{{end}})
 	return rows, total, current, size, err
 }
 
@@ -287,7 +301,7 @@ func (s *Service) create(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}
-	if err := s.Create(c.Request.Context(), contextx.AccountID(c.Request.Context()), req); err != nil {
+	if err := s.Create(c.Request.Context(), contextx.AccountID(c.Request.Context()), req{{if .Main.HasOwnerDept}}, contextx.Session(c.Request.Context()){{end}}); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, err.Error())
 		return
 	}

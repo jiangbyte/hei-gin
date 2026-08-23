@@ -23,14 +23,14 @@ func (s *Service) registerRoutes(d *module.Deps) module.RouteRegistrar {
 		admin := api.Group("/v1/admin/sys/feedbacks", middleware.RequireAccountType(security.AccountAdmin))
 		admin.GET("/page", middleware.RequirePermission(d.Perms, "sys:feedback:page", "Feedback page"), s.pageAdmin)
 		admin.GET("/detail", middleware.RequirePermission(d.Perms, "sys:feedback:detail", "Feedback detail"), s.detail)
-		admin.POST("/update", middleware.RequirePermission(d.Perms, "sys:feedback:update", "Reply feedback"), s.update)
-		admin.POST("/delete", middleware.RequirePermission(d.Perms, "sys:feedback:delete", "Delete feedback"), s.delete)
-		admin.POST("/submit", s.submit)
+		admin.POST("/update", middleware.RequirePermission(d.Perms, "sys:feedback:update", "Reply feedback"), middleware.OperationAudit(d.Audit, "sys_feedback", "update"), s.update)
+		admin.POST("/delete", middleware.RequirePermission(d.Perms, "sys:feedback:delete", "Delete feedback"), middleware.OperationAudit(d.Audit, "sys_feedback", "delete"), s.delete)
+		admin.POST("/submit", middleware.OperationAudit(d.Audit, "sys_feedback", "submit"), s.submit)
 		admin.GET("/my-page", s.myPage)
 		admin.GET("/my-detail", s.myDetail)
 
 		portal := api.Group("/v1/portal/sys/feedbacks", middleware.RequireAccountType(security.AccountPortal))
-		portal.POST("/submit", s.submit)
+		portal.POST("/submit", middleware.OperationAudit(d.Audit, "sys_feedback", "submit"), s.submit)
 		portal.GET("/my-page", s.myPage)
 		portal.GET("/my-detail", s.myDetail)
 	}

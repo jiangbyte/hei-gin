@@ -24,6 +24,7 @@ import (
 	"hei-gin/internal/modules/iam/resource"
 	"hei-gin/internal/modules/iam/role"
 	"hei-gin/internal/modules/profile"
+	"hei-gin/internal/modules/profile/identity"
 )
 
 // Service 账号服务（资料经 user 模块 Repo，授权经 relation 模块）。
@@ -41,10 +42,11 @@ type Service struct {
 	runtime   *runtimecfg.Settings
 	sessions  *security.SessionStore
 	storage   *storage.Manager
+	identity  *identity.Service
 }
 
 // NewService 构造账号服务。
-func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings, sto *storage.Manager) *Service {
+func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings, sto *storage.Manager, idSvc *identity.Service) *Service {
 	return &Service{
 		repo:      NewRepo(db, rdb),
 		admin:     profile.AdminRepo(db),
@@ -56,12 +58,13 @@ func NewService(db *gorm.DB, rdb *redis.Client, rt *runtimecfg.Settings, sto *st
 		clients:   client.NewService(db),
 		runtime:   rt,
 		storage:   sto,
+		identity:  idSvc,
 	}
 }
 
 // New 构建 iam.account 模块。
 func New(d *module.Deps) module.Module {
-	s := NewService(d.DB, d.Redis, d.Runtime, d.Storage)
+	s := NewService(d.DB, d.Redis, d.Runtime, d.Storage, identity.FromDeps(d))
 	s.sessions = d.Sessions
 	d.Provide(AccountFinderKey, s)
 	return s.withJobs(module.Module{
@@ -138,19 +141,26 @@ func (s *Service) EnsureSuperPermissions(ctx context.Context, accountID string) 
 			SourceID:      r.SourceID,
 		})
 	}
-	// 展开资源授权（角色/用户组/账号直接授权的按钮权限键）。
-	grantKeys, _ := s.repo.ListGrantedResourcePermissionKeys(ctx, accountID, roleIDs, groupIDs)
-	for _, k := range grantKeys {
-		if _, ok := seen[k]; ok {
+	acc, err := s.repo.GetByID(ctx, accountID)
+	if err != nil {
+		return nil, nil, err
+	}
+	expanded, err := s.repo.ListExpandedPermissionGrants(ctx, accountID, roleIDs, groupIDs, acc.AccountType)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, r := range expanded {
+		if _, ok := seen[r.TargetKey]; ok {
 			continue
 		}
-		seen[k] = struct{}{}
-		keys = append(keys, k)
+		seen[r.TargetKey] = struct{}{}
+		keys = append(keys, r.TargetKey)
 		grants = append(grants, security.PermissionGrant{
-			PermissionKey: k,
-			DataScope:     security.DataScopeAll,
-			SourceType:    "RESOURCE_GRANT",
-			SourceID:      accountID,
+			PermissionKey:      r.TargetKey,
+			DataScope:          security.DataScope(r.DataScope),
+			CustomScopeDeptIDs: r.CustomScopeDeptIDs,
+			SourceType:         r.SourceType,
+			SourceID:           r.SourceID,
 		})
 	}
 	if s.isSuperAdmin(ctx, accountID, roleIDs) {
@@ -207,6 +217,20 @@ func (s *Service) UpdatePasswordHash(ctx context.Context, accountID, passwordHas
 	return s.repo.UpdatePasswordHash(ctx, accountID, passwordHash)
 }
 
+// HasBoundIdentity 是否已绑定 EMAIL/PHONE 身份。
+func (s *Service) HasBoundIdentity(ctx context.Context, accountID, identityType string) bool {
+	idents, err := s.repo.FindIdentities(ctx, accountID)
+	if err != nil {
+		return false
+	}
+	for _, id := range idents {
+		if id.IdentityType == identityType && id.BindStatus == BindBound && strings.TrimSpace(id.Identifier) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 // Create 创建账号（对齐 hei-boot AccountServiceImpl.create：RSA 解密密码、校验、全量身份）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
 	accountLogin, err := security.RequireAccountLogin(req.Account)
@@ -220,12 +244,6 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	accountType := strings.ToUpper(strings.TrimSpace(req.AccountType))
 	if accountType != "ADMIN" && accountType != "PORTAL" {
 		return fmt.Errorf("unsupported account type: %s", req.AccountType)
-	}
-	if boolOf(req.EmailLoginEnabled) && !hasText(firstNonNil(req.EmailIdentity, req.Email)) {
-		return fmt.Errorf("email login requires an email")
-	}
-	if boolOf(req.PhoneLoginEnabled) && !hasText(firstNonNil(req.PhoneIdentity, req.Phone)) {
-		return fmt.Errorf("phone login requires a phone")
 	}
 	if _, err := s.repo.FindIdentity(ctx, IdentityAccount, req.Account); err == nil {
 		return fmt.Errorf("account identifier already exists")
@@ -249,13 +267,6 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 		Verified: true, IsPrimary: true, BindStatus: BindBound,
 	}
 	if err := s.repo.CreateAccount(ctx, acc, ident); err != nil {
-		return err
-	}
-	if err := s.replaceAccountIdentities(ctx, accID,
-		boolOf(req.EmailLoginEnabled), req.EmailIdentity, req.Email,
-		boolOf(req.EmailIdentityVerified), strOr(req.EmailIdentityBindStatus, BindBound),
-		boolOf(req.PhoneLoginEnabled), req.PhoneIdentity, req.Phone,
-		boolOf(req.PhoneIdentityVerified), strOr(req.PhoneIdentityBindStatus, BindBound)); err != nil {
 		return err
 	}
 	_ = s.recordHistory(ctx, accID, rawPassword, accID, "admin_reset")
@@ -282,6 +293,9 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	if err != nil {
 		return fmt.Errorf("account not found")
 	}
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
 	if strings.EqualFold(acc.AccountStatus, "CANCELLED") {
 		return fmt.Errorf("已注销账号不允许通过管理端修改")
 	}
@@ -291,12 +305,6 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	accountType := strings.ToUpper(strings.TrimSpace(req.AccountType))
 	if accountType != "ADMIN" && accountType != "PORTAL" {
 		return fmt.Errorf("unsupported account type: %s", req.AccountType)
-	}
-	if boolOf(req.EmailLoginEnabled) && !hasText(firstNonNil(req.EmailIdentity, req.Email)) {
-		return fmt.Errorf("email login requires an email")
-	}
-	if boolOf(req.PhoneLoginEnabled) && !hasText(firstNonNil(req.PhoneIdentity, req.Phone)) {
-		return fmt.Errorf("phone login requires a phone")
 	}
 	if existing, err := s.repo.FindIdentity(ctx, IdentityAccount, req.Account); err == nil && existing.AccountID != req.ID {
 		return fmt.Errorf("account identifier already exists")
@@ -321,13 +329,6 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	if err := s.repo.UpdateAccount(ctx, req.ID, updates, req.Account); err != nil {
 		return err
 	}
-	if err := s.replaceAccountIdentities(ctx, req.ID,
-		boolOf(req.EmailLoginEnabled), req.EmailIdentity, req.Email,
-		boolOf(req.EmailIdentityVerified), strOr(req.EmailIdentityBindStatus, BindBound),
-		boolOf(req.PhoneLoginEnabled), req.PhoneIdentity, req.Phone,
-		boolOf(req.PhoneIdentityVerified), strOr(req.PhoneIdentityBindStatus, BindBound)); err != nil {
-		return err
-	}
 	if accountType == string(security.AccountAdmin) {
 		return s.admin.UpsertProfile(ctx, &profile.Profile{
 			AccountID: req.ID, Nickname: req.Nickname, Avatar: req.Avatar,
@@ -338,6 +339,31 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 		AccountID: req.ID, Nickname: req.Nickname, Avatar: req.Avatar,
 		Signature: req.Signature, Phone: req.Phone, Email: req.Email,
 	})
+}
+
+// UpdateLoginIdentity 更新邮箱/手机号登录身份。
+func (s *Service) UpdateLoginIdentity(ctx context.Context, req UpdateLoginIdentityParam) error {
+	acc, err := s.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return fmt.Errorf("account not found")
+	}
+	if err := s.assertAccountAccessible(ctx, req.ID); err != nil {
+		return err
+	}
+	if strings.EqualFold(acc.AccountStatus, "CANCELLED") {
+		return fmt.Errorf("已注销账号不允许通过管理端修改")
+	}
+	if boolOf(req.EmailLoginEnabled) && !hasText(req.Email) {
+		return fmt.Errorf("email login requires an email")
+	}
+	if boolOf(req.PhoneLoginEnabled) && !hasText(req.Phone) {
+		return fmt.Errorf("phone login requires a phone")
+	}
+	return s.replaceAccountIdentities(ctx, req.ID,
+		boolOf(req.EmailLoginEnabled), req.Email, req.Email,
+		true, BindBound,
+		boolOf(req.PhoneLoginEnabled), req.Phone, req.Phone,
+		true, BindBound)
 }
 
 // resolveCreatePassword 管理端建号密码：RSA 解密，空则回退 AUTH_DEFAULT_PASSWORD（对齐 hei-boot resolveCreatePassword）。
@@ -419,6 +445,11 @@ func hasText(p *string) bool { return p != nil && strings.TrimSpace(*p) != "" }
 
 // Delete 先删关联授权关系，再删双端资料与身份、账号（对齐 hei-boot cleanupAccountSideData）。
 func (s *Service) Delete(ctx context.Context, ids []string) error {
+	for _, id := range ids {
+		if err := s.assertAccountAccessible(ctx, id); err != nil {
+			return err
+		}
+	}
 	_ = s.rel.DeleteBySubjectIDs(ctx, "ACCOUNT", ids, "")
 	if err := s.admin.DeleteByAccountIDs(ctx, ids); err != nil {
 		return err
@@ -431,18 +462,21 @@ func (s *Service) Delete(ctx context.Context, ids []string) error {
 
 // Detail 账号详情。
 func (s *Service) Detail(ctx context.Context, id string) (*AccountResult, error) {
+	if err := s.assertAccountAccessible(ctx, id); err != nil {
+		return nil, err
+	}
 	return s.loadDetail(ctx, id)
 }
 
 // Page 分页；sess 可选，传入时按数据范围过滤。批量加载身份与资料，避免 N+1。
-func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (records []AccountResult, total int64, current, size int, err error) {
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (records []AccountListResult, total int64, current, size int, err error) {
 	current, size = p.Normalize()
 	rows, total, err := s.repo.PageAccounts(ctx, p, sess)
 	if err != nil {
 		return nil, 0, current, size, err
 	}
 	if len(rows) == 0 {
-		return []AccountResult{}, total, current, size, nil
+		return []AccountListResult{}, total, current, size, nil
 	}
 	ids := make([]string, 0, len(rows))
 	for _, a := range rows {
@@ -451,25 +485,26 @@ func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionP
 	idents, _ := s.repo.FindAccountIdentities(ctx, ids)
 	adminProfiles, _ := s.admin.ListByAccountIDs(ctx, ids)
 	portalProfiles, _ := s.portal.ListByAccountIDs(ctx, ids)
-	allIdents, _ := s.repo.FindIdentitiesByAccountIDs(ctx, ids)
-	allOAuth, _ := s.repo.FindOAuthBindingsByAccountIDs(ctx, ids)
 
-	records = make([]AccountResult, 0, len(rows))
+	records = make([]AccountListResult, 0, len(rows))
 	for i := range rows {
 		a := &rows[i]
-		vo := AccountResult{
+		vo := AccountListResult{
 			ID: a.ID, AccountType: a.AccountType, AccountStatus: a.AccountStatus,
-			CancelledAt: a.CancelledAt, CancelledBy: a.CancelledBy, CancelReason: a.CancelReason,
-			LastLoginIP: a.LastLoginIP, LastLoginAddress: a.LastLoginAddress, LastLoginTime: a.LastLoginTime,
-			LastLoginDevice: a.LastLoginDevice, LatestLoginIP: a.LatestLoginIP, LatestLoginAddress: a.LatestLoginAddress,
-			LatestLoginTime: a.LatestLoginTime, LatestLoginDevice: a.LatestLoginDevice,
-			CreatedAt: a.CreatedAt, CreatedBy: a.CreatedBy, UpdatedAt: a.UpdatedAt, UpdatedBy: a.UpdatedBy,
+			LatestLoginTime: a.LatestLoginTime, UpdatedAt: a.UpdatedAt,
 		}
 		vo.Account = idents[a.ID]
-		s.applyProfiles(&vo, a.AccountType, adminProfiles[a.ID], portalProfiles[a.ID])
-		s.applyIdentities(&vo, allIdents[a.ID])
-		s.applyOAuthBindings(&vo, allOAuth[a.ID])
-		vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
+		var avatar *string
+		if a.AccountType == string(security.AccountAdmin) {
+			if adminP := adminProfiles[a.ID]; adminP != nil {
+				vo.Nickname, avatar, vo.Phone, vo.Email, vo.Remark =
+					adminP.Nickname, adminP.Avatar, adminP.Phone, adminP.Email, adminP.Remark
+			}
+		} else if portalP := portalProfiles[a.ID]; portalP != nil {
+			vo.Nickname, avatar, vo.Phone, vo.Email =
+				portalP.Nickname, portalP.Avatar, portalP.Phone, portalP.Email
+		}
+		vo.Avatar = s.resolveAvatar(ctx, avatar)
 		records = append(records, vo)
 	}
 	return records, total, current, size, nil
@@ -553,6 +588,15 @@ func (s *Service) loadDetail(ctx context.Context, id string) (*AccountResult, er
 		s.applyProfiles(vo, acc.AccountType, nil, p)
 	}
 	vo.Avatar = s.resolveAvatar(ctx, vo.Avatar)
+	if s.identity != nil {
+		if status, err := s.identity.GetStatus(ctx, id); err == nil {
+			vo.IdentityStatus = status
+			if status != nil && status.RealNameMasked != "" {
+				name := status.RealNameMasked
+				vo.Name = &name
+			}
+		}
+	}
 	return vo, nil
 }
 

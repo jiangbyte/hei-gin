@@ -9,6 +9,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 	"hei-gin/internal/framework/platform/db/dialect"
 )
 
@@ -48,10 +50,13 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*Catalog, error) {
 	return &row, nil
 }
 
-// Page 分页查询。
-func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Catalog, total int64, err error) {
+// Page 分页查询；sess 非空时按 owner_dept_id 数据范围过滤。
+func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Catalog, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Catalog{})
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "biz:cgtestcatalog:page", "owner_dept_id", "created_by")
+	}
 	if p.Code != "" {
 		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
 	}
@@ -74,9 +79,13 @@ func (r *Repo) Page(ctx context.Context, p PageParam) (rows []Catalog, total int
 	return rows, total, err
 }
 
-// ListAll 列出全部（树形）。
-func (r *Repo) ListAll(ctx context.Context) ([]Catalog, error) {
+// ListAll 列出全部（树形）；sess 非空时按数据范围过滤。
+func (r *Repo) ListAll(ctx context.Context, sess *security.SessionPayload) ([]Catalog, error) {
 	var rows []Catalog
-	err := r.with(ctx).Order("sort ASC").Find(&rows).Error
+	db := r.with(ctx)
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "biz:cgtestcatalog:list", "owner_dept_id", "created_by")
+	}
+	err := db.Order("sort ASC").Find(&rows).Error
 	return rows, err
 }

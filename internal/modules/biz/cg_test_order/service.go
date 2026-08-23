@@ -11,8 +11,10 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
+	"hei-gin/internal/modules/biz/scope"
 )
 
 // Service 订单服务。
@@ -35,13 +37,13 @@ func New(d *module.Deps) module.Module {
 }
 
 // Create 创建订单。
-func (s *Service) Create(ctx context.Context, accountID string, req AddParam) error {
+func (s *Service) Create(ctx context.Context, accountID string, req AddParam, sess *security.SessionPayload) error {
 	row := Order{
 		ID: idgen.Next(), OrderNo: req.OrderNo, Name: req.Name, CustomerName: req.CustomerName,
 		CustomerPhone: req.CustomerPhone, Status: req.Status, Type: req.Type, OrderedAt: req.OrderedAt,
 		PaidAt: req.PaidAt, TotalAmount: req.TotalAmount, ItemCount: req.ItemCount, NeedInvoice: req.NeedInvoice,
 		InvoiceConfig: mustJSON(req.InvoiceConfig), Remark: req.Remark, Extra: mustJSON(req.Extra),
-		CreatedBy: &accountID, UpdatedBy: &accountID,
+		CreatedBy: &accountID, UpdatedBy: &accountID, OwnerDeptID: scope.DefaultOwnerDeptID(sess),
 	}
 	return s.repo.CreateOrder(ctx, &row)
 }
@@ -67,9 +69,9 @@ func (s *Service) Detail(ctx context.Context, id string) (*Order, error) {
 }
 
 // Page 分页。
-func (s *Service) Page(ctx context.Context, p PageParam) (rows []Order, total int64, current, size int, err error) {
+func (s *Service) Page(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Order, total int64, current, size int, err error) {
 	current, size = p.Normalize()
-	rows, total, err = s.repo.PageOrders(ctx, p)
+	rows, total, err = s.repo.PageOrders(ctx, p, sess)
 	return rows, total, current, size, err
 }
 

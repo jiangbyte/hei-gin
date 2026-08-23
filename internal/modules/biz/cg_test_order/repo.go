@@ -9,6 +9,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/datascope"
 	"hei-gin/internal/framework/platform/db/dialect"
 )
 
@@ -53,10 +55,13 @@ func (r *Repo) GetOrderByID(ctx context.Context, id string) (*Order, error) {
 	return &row, nil
 }
 
-// PageOrders 分页查订单。
-func (r *Repo) PageOrders(ctx context.Context, p PageParam) (rows []Order, total int64, err error) {
+// PageOrders 分页查订单；sess 非空时按 owner_dept_id 数据范围过滤。
+func (r *Repo) PageOrders(ctx context.Context, p PageParam, sess *security.SessionPayload) (rows []Order, total int64, err error) {
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Order{})
+	if sess != nil {
+		db = datascope.ApplyKey(db, sess, "biz:cgtestorder:page", "owner_dept_id", "created_by")
+	}
 	if p.OrderNo != "" {
 		db = db.Where(dialect.ILike(db, "order_no"), "%"+p.OrderNo+"%")
 	}

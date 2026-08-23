@@ -63,7 +63,7 @@ func TestOperationAuditPublishOnSuccess(t *testing.T) {
 	}
 }
 
-func TestOperationAuditSkipsFailure(t *testing.T) {
+func TestOperationAuditRecordsFailure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	pub := &fakePublisher{}
 
@@ -74,8 +74,11 @@ func TestOperationAuditSkipsFailure(t *testing.T) {
 	})
 
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/admin/sys/banners/create", nil))
-	if len(pub.events) != 0 {
-		t.Fatalf("published %d events for failed request, want 0", len(pub.events))
+	if len(pub.events) != 1 {
+		t.Fatalf("published %d events for failed request, want 1 (boot 对齐：失败也记审计)", len(pub.events))
+	}
+	if pub.events[0].Success {
+		t.Fatalf("success = true, want false for 4xx")
 	}
 }
 

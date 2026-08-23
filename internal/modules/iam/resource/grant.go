@@ -55,6 +55,9 @@ func (s *Service) BindResourcePermissions(ctx context.Context, req ResourcePermi
 	}
 	keys := []string{}
 	if req.PermissionKey != "" {
+		if err := s.perms.EnsureRegistered(req.PermissionKey); err != nil {
+			return err
+		}
 		keys = append(keys, req.PermissionKey)
 	}
 	return s.rel.BindResourcePermissionDetail(ctx, relation.SubjectResource, req.ResourceID, relation.RelResourcePermission,
@@ -65,6 +68,9 @@ func (s *Service) BindResourcePermissions(ctx context.Context, req ResourcePermi
 func (s *Service) BindClientResourcePermissions(ctx context.Context, req ResourcePermissionBindParam) error {
 	keys := []string{}
 	if req.PermissionKey != "" {
+		if err := s.perms.EnsureRegistered(req.PermissionKey); err != nil {
+			return err
+		}
 		keys = append(keys, req.PermissionKey)
 	}
 	return s.rel.BindResourcePermissionDetail(ctx, relation.SubjectClientResource, req.ResourceID, relation.RelClientResourcePermission,
@@ -85,6 +91,11 @@ func (s *Service) CreateButton(ctx context.Context, req ButtonAddParam) error {
 	}
 	if err := s.repo.CreateResource(ctx, &row); err != nil {
 		return err
+	}
+	if req.PermissionKey != "" {
+		if err := s.perms.EnsureRegistered(req.PermissionKey); err != nil {
+			return err
+		}
 	}
 	return s.rel.BindResourcePermissionDetail(ctx, relation.SubjectResource, row.ID, relation.RelResourcePermission,
 		string(security.AccountAdmin), strSlice(req.PermissionKey), req.DataScope, req.CustomScopeDeptIDs, req.Sort, req.Description)
@@ -110,6 +121,11 @@ func (s *Service) UpdateButton(ctx context.Context, req ButtonEditParam) error {
 	}
 	if err := s.repo.UpdateResource(ctx, req.ID, updates); err != nil {
 		return err
+	}
+	if req.PermissionKey != "" {
+		if err := s.perms.EnsureRegistered(req.PermissionKey); err != nil {
+			return err
+		}
 	}
 	return s.rel.BindResourcePermissionDetail(ctx, relation.SubjectResource, req.ID, relation.RelResourcePermission,
 		string(security.AccountAdmin), strSlice(req.PermissionKey), req.DataScope, req.CustomScopeDeptIDs, req.Sort, req.Description)

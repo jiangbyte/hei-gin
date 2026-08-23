@@ -7,6 +7,8 @@ package audit
 import (
 	"context"
 
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -58,3 +60,55 @@ func (r *Repo) GetByID(ctx context.Context, id string) (*OperationLog, error) {
 
 // DB 返回底层 *gorm.DB（供 Job 直查）。
 func (r *Repo) DB() *gorm.DB { return r.db }
+
+const maxAuditCleanupRounds = 100
+
+// CleanupExpiredLoginLogs 按保留天数分批删除 login/logout 审计日志。
+func (r *Repo) CleanupExpiredLoginLogs(ctx context.Context, retentionDays, batchSize int) (int, error) {
+	return r.cleanupExpired(ctx, retentionDays, batchSize, true)
+}
+
+// CleanupExpiredOperationLogs 按保留天数分批删除非 login/logout 操作审计日志。
+func (r *Repo) CleanupExpiredOperationLogs(ctx context.Context, retentionDays, batchSize int) (int, error) {
+	return r.cleanupExpired(ctx, retentionDays, batchSize, false)
+}
+
+func (r *Repo) cleanupExpired(ctx context.Context, retentionDays, batchSize int, loginLogs bool) (int, error) {
+	if retentionDays <= 0 {
+		return 0, nil
+	}
+	limit := batchSize
+	if limit <= 0 {
+		limit = 1000
+	}
+	cutoff := time.Now().UTC().AddDate(0, 0, -retentionDays)
+	total := 0
+	for round := 0; round < maxAuditCleanupRounds; round++ {
+		var ids []string
+		q := r.with(ctx).Model(&OperationLog{}).
+			Select("id").
+			Where("created_at < ?", cutoff).
+			Order("created_at ASC").
+			Limit(limit)
+		if loginLogs {
+			q = q.Where("action IN ?", []string{"login", "logout"})
+		} else {
+			q = q.Where("action IS NULL OR action NOT IN ?", []string{"login", "logout"})
+		}
+		if err := q.Pluck("id", &ids).Error; err != nil {
+			return total, err
+		}
+		if len(ids) == 0 {
+			break
+		}
+		res := r.with(ctx).Where("id IN ?", ids).Delete(&OperationLog{})
+		if res.Error != nil {
+			return total, res.Error
+		}
+		total += int(res.RowsAffected)
+		if len(ids) < limit {
+			break
+		}
+	}
+	return total, nil
+}

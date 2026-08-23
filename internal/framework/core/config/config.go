@@ -198,10 +198,13 @@ type ModulesConfig struct {
 //
 // Author: Charlie
 type AuditConfig struct {
-	OperationQueueSize int    `mapstructure:"operation_queue_size"`
-	StreamKey          string `mapstructure:"stream_key"`
-	ConsumerGroup      string `mapstructure:"consumer_group"`
-	UseStream          bool   `mapstructure:"use_stream"`
+	OperationQueueSize      int `mapstructure:"operation_queue_size"`
+	StreamKey               string `mapstructure:"stream_key"`
+	ConsumerGroup           string `mapstructure:"consumer_group"`
+	UseStream               bool   `mapstructure:"use_stream"`
+	LoginRetentionDays      int    `mapstructure:"login_retention_days"`
+	OperationRetentionDays  int    `mapstructure:"operation_retention_days"`
+	CleanupBatchSize        int    `mapstructure:"cleanup_batch_size"`
 }
 
 // JobConfig 内嵌任务调度（对齐 hei-boot hei.job / hei-fastapi JobSettings）。
@@ -239,7 +242,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.port", 8000)
 	v.SetDefault("app.debug", true)
 	v.SetDefault("app.timezone", "Asia/Shanghai")
-	v.SetDefault("db.url", "postgres://postgres:123456@127.0.0.1:5432/hei_gin?sslmode=disable")
+	v.SetDefault("db.url", "mysql://root:123456@127.0.0.1:3306/hei_gin?charset=utf8mb4&parseTime=true&loc=Local")
+	v.SetDefault("db.driver", "mysql")
 	v.SetDefault("db.pool_size", 10)
 	v.SetDefault("db.max_overflow", 20)
 	v.SetDefault("redis.url", "redis://:123456@127.0.0.1:6379/4")
@@ -289,6 +293,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("audit.stream_key", "hei:audit:ops")
 	v.SetDefault("audit.consumer_group", "hei-gin-audit")
 	v.SetDefault("audit.use_stream", true)
+	v.SetDefault("audit.login_retention_days", 180)
+	v.SetDefault("audit.operation_retention_days", 365)
+	v.SetDefault("audit.cleanup_batch_size", 1000)
 	v.SetDefault("job.scan_interval_ms", 1000)
 	v.SetDefault("job.pool_size", 4)
 	v.SetDefault("job.log_retention_days", 30)

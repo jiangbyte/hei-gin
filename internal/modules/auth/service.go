@@ -57,12 +57,30 @@ func NewService(d *module.Deps, accounts AccountFinder) *Service {
 		passwordPolicy: security.NewPasswordPolicy(d.DB, d.Runtime),
 		perms:          d.Perms,
 	}
-	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (string, error) {
+	s.oauth = oauth.NewService(d, func(ctx context.Context, accountType security.AccountType, accountID, clientIP, userAgent string, rememberMe bool) (oauth.LoginResult, error) {
 		out, err := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, rememberMe)
 		if err != nil {
-			return "", err
+			return oauth.LoginResult{}, err
 		}
-		return out.Token, nil
+		return oauth.LoginResult{
+			Token: out.Token, AccountID: out.AccountID, AccountType: out.AccountType,
+			PasswordExpired: out.PasswordExpired, ForceBindEmail: out.ForceBindEmail,
+			ForceBindPhone: out.ForceBindPhone, PasswordExpiryWarningDays: out.PasswordExpiryWarningDays,
+			ExpiresIn: out.ExpiresIn,
+		}, nil
+	}, oauth.OAuthHooks{
+		AssignRegisterDefaults: func(ctx context.Context, accountID string) error {
+			type defaults interface {
+				AssignRegisterDefaults(ctx context.Context, accountID string, accountType security.AccountType) error
+			}
+			if reg, ok := accounts.(defaults); ok {
+				return reg.AssignRegisterDefaults(ctx, accountID, security.AccountPortal)
+			}
+			return nil
+		},
+		RecordPasswordHistory: func(ctx context.Context, accountID, rawPassword, changedBy, reason string) error {
+			return s.passwordPolicy.RecordHistory(ctx, accountID, rawPassword, changedBy, reason)
+		},
 	})
 	return s
 }
@@ -181,7 +199,7 @@ func (s *Service) Login(ctx context.Context, accountType security.AccountType, r
 		}
 	}
 
-	out, serr := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, req.RememberMe)
+	out, serr := s.issueSession(ctx, accountType, accountID, clientIP, userAgent, rememberMeOrDefault(req.RememberMe))
 	if serr != nil {
 		err = serr
 		return nil, err
@@ -195,7 +213,7 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 	if s.accounts == nil {
 		return nil, errAccountFinder
 	}
-	keys, grants, err := s.accounts.EnsureSuperPermissions(ctx, accountID)
+	authz, err := s.accounts.GetSessionAuthorization(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,41 +223,111 @@ func (s *Service) issueSession(ctx context.Context, accountType security.Account
 	}
 	now := time.Now().UTC()
 	ttlSec := s.runtimeInt(ctx, "AUTH_TOKEN_TTL_SECONDS", s.cfg.Auth.TokenTTLSeconds)
-	if !rememberMe && s.cfg.Auth.TokenTTLShortSeconds > 0 {
-		ttlSec = s.cfg.Auth.TokenTTLShortSeconds
-	}
 	if ttlSec <= 0 {
 		ttlSec = 14400
 	}
 	ttl := time.Duration(ttlSec) * time.Second
 	passwordExpired, warningDays := s.passwordPolicy.PasswordExpired(ctx, accountID)
+	forceEmail, forcePhone := s.forceBindFlags(ctx, accountType, accountID)
 	payload := &security.SessionPayload{
-		Token:            token,
-		AccountID:        accountID,
-		AccountType:      accountType,
-		PermissionKeys:   keys,
-		PermissionGrants: grants,
-		ClientIP:         &clientIP,
-		UserAgent:        &userAgent,
-		DeviceLabel:      security.DeviceLabelFromUserAgent(userAgent),
-		RememberMe:       rememberMe,
-		PasswordExpired:  passwordExpired,
-		LoginAt:          now,
-		LastActiveAt:     now,
-		ExpiresAt:        now.Add(ttl),
+		Token:                token,
+		AccountID:            accountID,
+		AccountType:          accountType,
+		RoleIDs:              authz.RoleIDs,
+		DeptIDs:              authz.DeptIDs,
+		GroupIDs:             authz.GroupIDs,
+		ResourceIDs:          nil, // 菜单/按钮资源不进会话（对齐 hei-boot issueSession）
+		PermissionKeys:       authz.PermissionKeys,
+		PermissionGrants:     authz.PermissionGrants,
+		ClientResourceIDs:    authz.ClientResourceIDs,
+		ClientPermissionKeys: authz.ClientPermissionKeys,
+		ClientIP:             &clientIP,
+		UserAgent:            &userAgent,
+		DeviceLabel:          security.DeviceLabelFromUserAgent(userAgent),
+		RememberMe:           rememberMe,
+		PasswordExpired:      passwordExpired,
+		LoginAt:              now,
+		LastActiveAt:         now,
+		ExpiresAt:            now.Add(ttl),
 	}
 	if err := s.sessions.Save(ctx, payload, ttl); err != nil {
 		return nil, err
 	}
+	s.updateLoginMeta(ctx, accountID, clientIP, userAgent)
+	s.maybeNotifyPasswordExpiring(ctx, accountID)
 	return &LoginResult{
 		Token:                     token,
 		AccountID:                 accountID,
 		AccountType:               accountType,
 		PasswordExpired:           passwordExpired,
-		ForceBindEmail:            s.forceBind(ctx, accountType, "EMAIL"),
-		ForceBindPhone:            s.forceBind(ctx, accountType, "PHONE"),
+		ForceBindEmail:            forceEmail,
+		ForceBindPhone:            forcePhone,
 		PasswordExpiryWarningDays: warningDays,
+		ExpiresIn:                 ttlSec,
 	}, nil
+}
+
+func (s *Service) updateLoginMeta(ctx context.Context, accountID, clientIP, userAgent string) {
+	device := security.DeviceLabelFromUserAgent(userAgent)
+	now := time.Now().UTC()
+	_ = s.db.WithContext(ctx).Table("sys_account").Where("id = ?", accountID).Updates(map[string]any{
+		"latest_login_ip":     clientIP,
+		"latest_login_time":   now,
+		"latest_login_device": device,
+	}).Error
+}
+
+func (s *Service) maybeNotifyPasswordExpiring(ctx context.Context, accountID string) {
+	if s.notify == nil || s.accounts == nil {
+		return
+	}
+	_, warningDays := s.passwordPolicy.PasswordExpired(ctx, accountID)
+	if warningDays <= 0 {
+		return
+	}
+	if !s.repo.TryMarkPasswordExpiryNotified(ctx, accountID) {
+		return
+	}
+	accountName := accountID
+	var emailIdent, phoneIdent string
+	_ = s.db.WithContext(ctx).Table("sys_account_identity").
+		Where("account_id = ? AND identity_type = ? AND bind_status = ?", accountID, "EMAIL", "BOUND").
+		Select("identifier").Scan(&emailIdent)
+	_ = s.db.WithContext(ctx).Table("sys_account_identity").
+		Where("account_id = ? AND identity_type = ? AND bind_status = ?", accountID, "ACCOUNT", "BOUND").
+		Select("identifier").Scan(&accountName)
+	_ = s.db.WithContext(ctx).Table("sys_account_identity").
+		Where("account_id = ? AND identity_type = ? AND bind_status = ?", accountID, "PHONE", "BOUND").
+		Select("identifier").Scan(&phoneIdent)
+	vars := map[string]any{
+		"app_name":       s.cfg.App.Name,
+		"account":        accountName,
+		"remaining_days": fmt.Sprintf("%d", warningDays),
+	}
+	if emailIdent != "" {
+		_ = s.notify.SendTemplated(ctx, "PASSWORD_EXPIRING", emailIdent, vars)
+	}
+	if phoneIdent != "" {
+		_ = s.notify.SendTemplated(ctx, "PASSWORD_EXPIRING", phoneIdent, vars)
+	}
+}
+
+func rememberMeOrDefault(v *bool) bool {
+	if v == nil {
+		return true
+	}
+	return *v
+}
+
+func (s *Service) forceBindFlags(ctx context.Context, accountType security.AccountType, accountID string) (email, phone bool) {
+	if !s.forceBind(ctx, accountType, "EMAIL") && !s.forceBind(ctx, accountType, "PHONE") {
+		return false, false
+	}
+	if s.accounts == nil {
+		return s.forceBind(ctx, accountType, "EMAIL"), s.forceBind(ctx, accountType, "PHONE")
+	}
+	hasEmail, hasPhone := s.accounts.HasBoundIdentity(ctx, accountID, "EMAIL"), s.accounts.HasBoundIdentity(ctx, accountID, "PHONE")
+	return s.forceBind(ctx, accountType, "EMAIL") && !hasEmail, s.forceBind(ctx, accountType, "PHONE") && !hasPhone
 }
 
 // registerEnabled 门户注册开关：优先运行时配置 AUTH_REGISTER_PORTAL_ENABLED，回退 yaml。
@@ -487,7 +575,7 @@ func (s *Service) otpTTL(ctx context.Context) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-// Register 门户注册。
+// Register 门户注册（ACCOUNT / EMAIL / PHONE 三通道，对齐 hei-boot registerPortal）。
 func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterResult, error) {
 	if !s.registerEnabled(ctx) {
 		return nil, errRegisterDisabled
@@ -495,16 +583,93 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return nil, err
 	}
-	accountLogin, err := security.RequireAccountLogin(req.Account)
-	if err != nil {
+	channel := strings.ToUpper(strings.TrimSpace(req.RegisterChannel))
+	if channel == "" {
+		return nil, fmt.Errorf("请选择注册通道")
+	}
+	if channel != "ACCOUNT" && channel != "EMAIL" && channel != "PHONE" {
+		return nil, fmt.Errorf("不支持的注册通道")
+	}
+	if err := s.ensureRegisterChannelAllowed(ctx, channel); err != nil {
 		return nil, err
 	}
-	req.Account = accountLogin
+
+	var accountLogin string
+	var email, phone *string
+	switch channel {
+	case "ACCOUNT":
+		login, err := security.RequireAccountLogin(req.Account)
+		if err != nil {
+			return nil, err
+		}
+		accountLogin = login
+		if s.identityExists(ctx, IdentityAccountConst, accountLogin) {
+			return nil, fmt.Errorf("账号已存在")
+		}
+		if strings.TrimSpace(req.Email) != "" {
+			e := strings.ToLower(strings.TrimSpace(req.Email))
+			email = &e
+		}
+		if strings.TrimSpace(req.Phone) != "" {
+			p := strings.TrimSpace(req.Phone)
+			phone = &p
+		}
+		if s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_REQUIRE_EMAIL", true) && email == nil {
+			return nil, fmt.Errorf("注册必填邮箱")
+		}
+		if s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_REQUIRE_PHONE", false) && phone == nil {
+			return nil, fmt.Errorf("注册必填手机号")
+		}
+	case "EMAIL":
+		e := strings.ToLower(strings.TrimSpace(req.Email))
+		if e == "" || !strings.Contains(e, "@") {
+			return nil, fmt.Errorf("邮箱格式不正确")
+		}
+		if err := s.consumeRegisterCode(ctx, channel, e, req.OTPCode); err != nil {
+			return nil, err
+		}
+		if s.identityExists(ctx, IdentityEmailConst, e) {
+			return nil, fmt.Errorf("邮箱已被使用")
+		}
+		email = &e
+		base := allocateBaseFromEmail(e)
+		allocated, err := s.allocateAccountLogin(ctx, base)
+		if err != nil {
+			return nil, err
+		}
+		accountLogin = allocated
+	case "PHONE":
+		p := strings.TrimSpace(req.Phone)
+		if p == "" {
+			return nil, fmt.Errorf("手机号不能为空")
+		}
+		if err := s.consumeRegisterCode(ctx, channel, p, req.OTPCode); err != nil {
+			return nil, err
+		}
+		if s.identityExists(ctx, IdentityPhoneConst, p) {
+			return nil, fmt.Errorf("手机号已被使用")
+		}
+		phone = &p
+		base := allocateBaseFromPhone(p)
+		allocated, err := s.allocateAccountLogin(ctx, base)
+		if err != nil {
+			return nil, err
+		}
+		accountLogin = allocated
+	}
+
 	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.passwordPolicy.Validate(ctx, password, "", req.Account, req.Email, req.Phone); err != nil {
+	emailStr, phoneStr := "", ""
+	if email != nil {
+		emailStr = *email
+	}
+	if phone != nil {
+		phoneStr = *phone
+	}
+	if err := s.passwordPolicy.Validate(ctx, password, "", accountLogin, emailStr, phoneStr); err != nil {
 		return nil, err
 	}
 	hash, err := security.HashPassword(password)
@@ -515,29 +680,60 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	if !ok || reg == nil {
 		return nil, errPortalRegistrar
 	}
-	var name, nickname, email, phone *string
-	if req.Name != "" {
-		name = &req.Name
+	var nickname *string
+	if strings.TrimSpace(req.Nickname) != "" {
+		n := strings.TrimSpace(req.Nickname)
+		nickname = &n
 	}
-	if req.Nickname != "" {
-		nickname = &req.Nickname
-	}
-	if req.Email != "" {
-		email = &req.Email
-	}
-	if req.Phone != "" {
-		phone = &req.Phone
-	}
-	accountID, err := reg.RegisterPortal(ctx, req.Account, hash, name, nickname, email, phone)
+	in := registerPortalInput(accountLogin, hash, email, phone, nickname)
+	accountID, registeredLogin, err := reg.RegisterPortal(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	_ = s.passwordPolicy.RecordHistory(ctx, accountID, password, accountID, "register")
+	s.sendRegisterSuccessNotify(ctx, registeredLogin, email, phone)
 	return &RegisterResult{
 		AccountID:   accountID,
-		Account:     req.Account,
+		Account:     registeredLogin,
 		AccountType: security.AccountPortal,
 	}, nil
+}
+
+func (s *Service) sendRegisterSuccessNotify(ctx context.Context, accountLogin string, email, phone *string) {
+	if s.notify == nil {
+		return
+	}
+	vars := map[string]any{"app_name": s.cfg.App.Name, "account": accountLogin}
+	if email != nil && strings.TrimSpace(*email) != "" {
+		_ = s.notify.SendTemplated(ctx, "REGISTER_SUCCESS", strings.TrimSpace(*email), vars)
+	}
+	if phone != nil && strings.TrimSpace(*phone) != "" {
+		_ = s.notify.SendTemplated(ctx, "REGISTER_SUCCESS", strings.TrimSpace(*phone), vars)
+	}
+}
+
+const (
+	IdentityAccountConst = "ACCOUNT"
+	IdentityEmailConst   = "EMAIL"
+	IdentityPhoneConst   = "PHONE"
+)
+
+func (s *Service) ensureRegisterChannelAllowed(ctx context.Context, channel string) error {
+	switch channel {
+	case "ACCOUNT":
+		if !s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT", true) {
+			return fmt.Errorf("用户名注册已关闭")
+		}
+	case "EMAIL":
+		if !s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_EMAIL", true) {
+			return fmt.Errorf("邮箱注册已关闭")
+		}
+	case "PHONE":
+		if !s.runtimeBool(ctx, "AUTH_REGISTER_PORTAL_ALLOW_PHONE", false) {
+			return fmt.Errorf("手机注册已关闭")
+		}
+	}
+	return nil
 }
 
 // ResolveLogoutToken 解析登出 token。

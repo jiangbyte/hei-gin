@@ -32,6 +32,69 @@ type Service struct{ repo *Repo }
 // NewService 构造关系服务。
 func NewService(db *gorm.DB) *Service { return &Service{repo: NewRepo(db)} }
 
+// ListSubjectIDsByTarget 按目标反查主体 ID（如组/角色成员账号）。
+func (s *Service) ListSubjectIDsByTarget(ctx context.Context, relationType, targetType, targetID string) ([]string, error) {
+	return s.repo.ListSubjectIDsByTarget(ctx, relationType, targetType, targetID)
+}
+
+// ReplaceGroupUsers 全量替换用户组成员（对齐 hei-boot replaceGroupUsers：ACCOUNT_GROUP + SUBJECT_ACCOUNT）。
+func (s *Service) ReplaceGroupUsers(ctx context.Context, groupID string, accountIDs []string, accountTypes map[string]string) error {
+	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := s.repo.deleteByTarget(tx, RelAccountGroup, TargetGroup, groupID); err != nil {
+			return err
+		}
+		rows := make([]Relation, 0, len(accountIDs))
+		seen := map[string]struct{}{}
+		for _, id := range accountIDs {
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			accType := accountTypes[id]
+			if accType == "" {
+				return gorm.ErrRecordNotFound
+			}
+			rows = append(rows, newRelation(SubjectAccount, id, accType, RelAccountGroup, TargetGroup, groupID))
+		}
+		if len(rows) == 0 {
+			return nil
+		}
+		return s.repo.CreateInBatches(tx, rows)
+	})
+}
+
+// ReplaceRoleUsers 全量替换角色成员（对齐 hei-boot replaceRoleUsers：ACCOUNT_ROLE + SUBJECT_ACCOUNT）。
+func (s *Service) ReplaceRoleUsers(ctx context.Context, roleID string, accountIDs []string, accountTypes map[string]string) error {
+	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := s.repo.deleteByTarget(tx, RelAccountRole, TargetRole, roleID); err != nil {
+			return err
+		}
+		rows := make([]Relation, 0, len(accountIDs))
+		seen := map[string]struct{}{}
+		for _, id := range accountIDs {
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			accType := accountTypes[id]
+			if accType == "" {
+				return gorm.ErrRecordNotFound
+			}
+			rows = append(rows, newRelation(SubjectAccount, id, accType, RelAccountRole, TargetRole, roleID))
+		}
+		if len(rows) == 0 {
+			return nil
+		}
+		return s.repo.CreateInBatches(tx, rows)
+	})
+}
+
 // ListTargetIDs 列出主体已关联目标 ID（accountType 为空不过滤）。
 func (s *Service) ListTargetIDs(ctx context.Context, subjectType, subjectID, relationType, accountType string) ([]string, error) {
 	rows, err := s.repo.ListRelations(ctx, subjectType, subjectID, relationType, accountType)
@@ -100,47 +163,54 @@ func (s *Service) ReplaceDeptGrants(ctx context.Context, accountID, accountType 
 	})
 }
 
-// ReplaceResourceGrants 先删后插全量替换主体-资源授予（permission_keys 逐键落库，DIRECT；整菜单授权落 CASCADE 空键；校验资源存在，对齐 hei-boot replaceSubjectResourceGrants）。
+// ReplaceResourceGrants 先删后插全量替换主体-资源授予（权限键展开为按钮资源，对齐 hei-boot replaceSubjectResourceGrants）。
 func (s *Service) ReplaceResourceGrants(ctx context.Context, subjectType, subjectID, relationType, targetType, accountType string, grants []ResourceGrantInfo) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
 			return err
 		}
-		// 校验勾选资源存在，避免产生悬空授权
-		resourceIDs := make([]string, 0, len(grants))
+		originalIDs := make([]string, 0, len(grants))
+		permissionKeys := make([]string, 0)
 		for _, g := range grants {
-			if g.ResourceID == "" {
-				continue
+			if g.ResourceID != "" {
+				originalIDs = append(originalIDs, g.ResourceID)
 			}
-			resourceIDs = append(resourceIDs, g.ResourceID)
+			for _, key := range g.PermissionKeys {
+				if key != "" {
+					permissionKeys = append(permissionKeys, key)
+				}
+			}
 		}
-		if len(resourceIDs) > 0 {
-			if err := s.repo.AssertResourcesExist(tx, targetType, resourceIDs); err != nil {
+		originalIDs = uniqueStrings(originalIDs)
+		permissionKeys = uniqueStrings(permissionKeys)
+		if len(originalIDs) > 0 {
+			if err := s.repo.AssertResourcesExist(tx, targetType, originalIDs); err != nil {
 				return err
 			}
 		}
-		rows := make([]Relation, 0, len(grants)*3)
-		for _, g := range grants {
-			if g.ResourceID == "" {
-				continue
+		resourceIDs := append([]string{}, originalIDs...)
+		if len(permissionKeys) > 0 {
+			expanded, err := s.repo.ResolvePermissionResourceIDs(tx, targetType, accountType, permissionKeys)
+			if err != nil {
+				return err
 			}
-			if len(g.PermissionKeys) == 0 {
-				rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, g.ResourceID)
-				rel.GrantMode = GrantCascade
-				rel.DataScope = string(security.DataScopeAll)
-				rows = append(rows, rel)
-				continue
-			}
-			for _, key := range g.PermissionKeys {
-				if key == "" {
-					continue
-				}
-				rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, g.ResourceID)
-				rel.TargetKey = key
+			resourceIDs = append(resourceIDs, expanded...)
+		}
+		resourceIDs = uniqueStrings(resourceIDs)
+		rows := make([]Relation, 0, len(resourceIDs))
+		origSet := map[string]struct{}{}
+		for _, id := range originalIDs {
+			origSet[id] = struct{}{}
+		}
+		for _, id := range resourceIDs {
+			rel := newRelation(subjectType, subjectID, accountType, relationType, targetType, id)
+			if _, direct := origSet[id]; direct {
 				rel.GrantMode = GrantDirect
-				rel.DataScope = string(security.DataScopeAll)
-				rows = append(rows, rel)
+			} else {
+				rel.GrantMode = GrantCascade
 			}
+			rel.DataScope = string(security.DataScopeAll)
+			rows = append(rows, rel)
 		}
 		if len(rows) == 0 {
 			return nil
@@ -226,7 +296,8 @@ func (s *Service) BindResourcePermissions(ctx context.Context, subjectType, subj
 func (s *Service) BindResourcePermissionDetail(ctx context.Context, subjectType, subjectID, relationType, accountType string,
 	permissionKeys []string, dataScope string, customScopeDeptIDs []string, sort int, description *string) error {
 	return s.repo.with(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := s.repo.deleteSubjectRelations(tx, subjectType, subjectID, relationType, accountType); err != nil {
+		keys := uniqueStrings(permissionKeys)
+		if err := s.repo.deleteSubjectRelationsByKeys(tx, subjectType, subjectID, relationType, accountType, keys); err != nil {
 			return err
 		}
 		rows := make([]Relation, 0, len(permissionKeys))

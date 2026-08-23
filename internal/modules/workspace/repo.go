@@ -118,6 +118,18 @@ func (r *Repo) ListRecentLogins(ctx context.Context, accountID string) ([]AuditA
 	return rows, nil
 }
 
+// HasSuperAdminRole 判定是否持有 SUPER_ADMIN 角色（对齐 hei-boot WorkspaceShortcutServiceImpl.isFullAccess）。
+func (r *Repo) HasSuperAdminRole(ctx context.Context, roleIDs []string) (bool, error) {
+	if len(roleIDs) == 0 {
+		return false, nil
+	}
+	var count int64
+	err := r.with(ctx).Table("sys_role").
+		Where("id IN ? AND code = ?", roleIDs, "SUPER_ADMIN").
+		Count(&count).Error
+	return count > 0, err
+}
+
 // ListRoleIDs 查账号已启用角色 ID。
 func (r *Repo) ListRoleIDs(ctx context.Context, accountID string) ([]string, error) {
 	var ids []string
@@ -166,7 +178,9 @@ func (r *Repo) ListGrantedResourceIDs(ctx context.Context, accountID string, gro
 	}
 	cond += ")"
 	fullArgs := make([]any, 0, len(args)+3)
-	fullArgs = append(fullArgs, []string{"ACCOUNT_RESOURCE", "GROUP_RESOURCE", "ROLE_RESOURCE"}, "RESOURCE", security.StatusEnabled)
+	fullArgs = append(fullArgs, []string{
+		"SUBJECT_RESOURCE_GRANT", "ACCOUNT_RESOURCE", "GROUP_RESOURCE", "ROLE_RESOURCE",
+	}, "RESOURCE", security.StatusEnabled)
 	fullArgs = append(fullArgs, args...)
 	q := r.with(ctx).Table("sys_iam_relation").
 		Select("DISTINCT target_id").

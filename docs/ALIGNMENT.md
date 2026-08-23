@@ -13,6 +13,18 @@
 | sys/audit | 已对齐 | admin + portal my-page/my-detail |
 | iam/* | 基本对齐 | 账号/RBAC/组织/资源 |
 | sys/* | 基本对齐 | 字典/配置/文件/任务/代码生成等 |
+| easyTrans | 排除 | boot 生态依赖，gin/fastapi 不实现 |
+
+## 验收脚本
+
+```bash
+# 三栈统一入口（仓库根目录）
+python scripts/compare_stacks.py
+
+# 单栈
+python hei-gin/scripts/compare-modules.py
+python hei-fastapi/scripts/e2e/compare_modules.py --boot http://127.0.0.1:8000 --fastapi http://127.0.0.1:8100
+```
 
 ## API 路径（新增/变更）
 
@@ -32,7 +44,8 @@
 
 ## 数据库
 
-- 全量脚本与 hei-boot 同步：`scripts/db.sql`、`scripts/db.mysql.sql`
+- 全量脚本与 hei-boot 同步：`scripts/db.mysql.sql`（MySQL 主库）；`scripts/db.sql` 为 PostgreSQL 方言 CI
+- 活库导出：`hei-boot/scripts/export-db-mysql.sh` → `sync-db-mysql-to-stacks.py`
 - 增量迁移：`scripts/migration/20260822_real_name_identity.*.sql`
 - 新增表：`profile_identity`、`real_name_case`、`real_name_case_record`、`sys_workspace_shortcut`
 - `profile_user_*.name` 列已移除
@@ -48,8 +61,17 @@
 ## 验收
 
 ```bash
+# 模块运行时 shape 对比（Boot:8000 vs Gin:8001）
+python scripts/compare-modules.py
+python scripts/compare-modules.py --module sys/audit
+
+# OpenAPI 全量契约
+python scripts/compare-contract-full.py --output scripts/reports/boot_gin_full_diff.json
+
 go run ./scripts/e2e --base http://127.0.0.1:8000
 go run ./scripts/smoke
 ```
+
+模块状态看板：`docs/alignment-status.json`
 
 前端联调：hei-admin 指向 `http://127.0.0.1:8000`。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare PostgreSQL column sets: hei_boot (source) vs hei_gin (gin copy)."""
+"""Compare MySQL column sets: hei_boot (source) vs target copy."""
 
 import json
 import subprocess
@@ -10,14 +10,28 @@ TABLES = [
     "iam_account", "sys_audit_log", "profile_user_admin",
 ]
 
+TARGET_DB = "hei_gin"
+SOURCE_DB = "hei_boot"
+
 
 def cols(db: str, table: str) -> set[str]:
     sql = (
         "SELECT column_name FROM information_schema.columns "
-        f"WHERE table_schema='public' AND table_name='{table}' ORDER BY 1"
+        f"WHERE table_schema='{db}' AND table_name='{table}' ORDER BY 1"
     )
     out = subprocess.check_output(
-        ["wsl", "-e", "bash", "-lc", f"docker exec dev-postgres psql -U postgres -d {db} -t -A -c \"{sql}\""],
+        [
+            "wsl",
+            "docker",
+            "exec",
+            "dev-mysql",
+            "mysql",
+            "-uroot",
+            "-p123456",
+            "-N",
+            "-e",
+            sql,
+        ],
         text=True,
     )
     return {line.strip() for line in out.splitlines() if line.strip()}
@@ -26,8 +40,8 @@ def cols(db: str, table: str) -> set[str]:
 def main():
     report = {}
     for t in TABLES:
-        boot = cols("hei_boot", t)
-        gin = cols("hei_gin", t)
+        boot = cols(SOURCE_DB, t)
+        gin = cols(TARGET_DB, t)
         report[t] = {
             "boot_only": sorted(boot - gin),
             "gin_only": sorted(gin - boot),
