@@ -209,6 +209,11 @@ func (s *Service) UpdatePasswordHash(ctx context.Context, accountID, passwordHas
 
 // Create 创建账号（对齐 hei-boot AccountServiceImpl.create：RSA 解密密码、校验、全量身份）。
 func (s *Service) Create(ctx context.Context, req AddParam) error {
+	accountLogin, err := security.RequireAccountLogin(req.Account)
+	if err != nil {
+		return err
+	}
+	req.Account = accountLogin
 	if strings.EqualFold(req.AccountStatus, "CANCELLED") {
 		return fmt.Errorf("注销状态不允许通过管理端设置")
 	}
@@ -268,6 +273,11 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 
 // Update 更新账号与资料（对齐 hei-boot AccountServiceImpl.update：可选改密 + 全量替换身份）。
 func (s *Service) Update(ctx context.Context, req EditParam) error {
+	accountLogin, err := security.RequireAccountLogin(req.Account)
+	if err != nil {
+		return err
+	}
+	req.Account = accountLogin
 	acc, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return fmt.Errorf("account not found")

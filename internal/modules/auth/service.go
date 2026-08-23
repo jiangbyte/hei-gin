@@ -495,6 +495,11 @@ func (s *Service) Register(ctx context.Context, req RegisterParam) (*RegisterRes
 	if err := s.repo.VerifyCaptcha(ctx, req.CaptchaID, req.CaptchaValue); err != nil {
 		return nil, err
 	}
+	accountLogin, err := security.RequireAccountLogin(req.Account)
+	if err != nil {
+		return nil, err
+	}
+	req.Account = accountLogin
 	password, err := s.repo.DecryptPassword(ctx, req.PasswordKeyID, req.Password)
 	if err != nil {
 		return nil, err
