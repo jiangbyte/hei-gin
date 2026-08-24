@@ -6,11 +6,11 @@
 ![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
-![Version](https://img.shields.io/badge/version-1.0.0--beta-orange)
+![Version](https://img.shields.io/badge/version-1.1.0--beta-orange)
 
 **HEI Gin** 是一套面向中后台场景的 Go / Gin 工程化脚手架：单个进程同时提供 **Admin** 与 **Portal** 双端 API，统一认证、权限、运维与消息能力，并与 [hei-boot](https://github.com/jiangbyte/hei-boot)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 等姊妹后端保持契约一致。
 
-> 当前版本：`1.0.0-beta` · 协议：[Apache License 2.0](LICENSE)
+> 当前版本：`1.1.0-beta` · 协议：[Apache License 2.0](LICENSE)
 
 ## 目录
 
