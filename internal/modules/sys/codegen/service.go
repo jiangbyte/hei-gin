@@ -13,6 +13,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 )
@@ -202,20 +203,49 @@ func (s *Service) UpdateFieldsBatch(ctx context.Context, req FieldsUpdateBatchPa
 	return s.repo.ReplaceFields(ctx, req.PlanID, fields)
 }
 
-// ParentResources 父级资源树（CATALOG 类型，可选模块过滤）。
+// ParentResources 父级资源树（对齐 hei-boot ResourceMenuApi.listParentMenus + parentResources）。
 func (s *Service) ParentResources(ctx context.Context, moduleID string) ([]ResourceNode, error) {
 	db := s.repo.db.WithContext(ctx)
-	q := db.Table("sys_resource").
-		Select("id, parent_id, name, resource_type, sort, status").
-		Where("resource_type IN ?", []string{"CATALOG", "MENU"})
-	if moduleID != "" {
-		q = q.Where("module_id = ?", moduleID)
-	}
-	var rows []ResourceNode
-	if err := q.Order("sort asc, id asc").Find(&rows).Error; err != nil {
+	moduleIDs, err := s.adminModuleIDs(ctx, moduleID)
+	if err != nil {
 		return nil, err
 	}
+	if len(moduleIDs) == 0 {
+		return []ResourceNode{}, nil
+	}
+	var rows []ResourceNode
+	err = db.Table("sys_resource").
+		Select("id, parent_id, name, resource_type, sort, status").
+		Where("status = ? AND resource_type IN ? AND module_id IN ?",
+			security.StatusEnabled, []string{"CATALOG", "MENU", "PAGE"}, moduleIDs).
+		Order("sort asc, id asc").
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	normalizeResourceParents(rows)
 	return buildResourceTree(rows, nil), nil
+}
+
+func (s *Service) adminModuleIDs(ctx context.Context, moduleID string) ([]string, error) {
+	db := s.repo.db.WithContext(ctx)
+	if moduleID != "" {
+		var cnt int64
+		if err := db.Table("sys_resource_module").
+			Where("id = ? AND client = ? AND status = ?", moduleID, "ADMIN", security.StatusEnabled).
+			Count(&cnt).Error; err != nil {
+			return nil, err
+		}
+		if cnt == 0 {
+			return nil, nil
+		}
+		return []string{moduleID}, nil
+	}
+	var ids []string
+	err := db.Table("sys_resource_module").
+		Where("client = ? AND status = ?", "ADMIN", security.StatusEnabled).
+		Pluck("id", &ids).Error
+	return ids, err
 }
 
 // 生成类型常量（对齐 hei-boot CodegenServiceImpl TREE_TYPES / RELATION_TYPES）。
@@ -390,13 +420,29 @@ func planUpdates(p *Plan) map[string]any {
 //
 // Author: Charlie
 type ResourceNode struct {
-	ID           string         `json:"id"`
-	ParentID     *string        `json:"parent_id"`
-	Name         string         `json:"name"`
-	ResourceType string         `json:"resource_type"`
-	Sort         int            `json:"sort"`
-	Status       string         `json:"status"`
-	Children     []ResourceNode `json:"children"`
+	ID           string         `json:"id" gorm:"column:id"`
+	ParentID     *string        `json:"parent_id" gorm:"column:parent_id"`
+	Name         string         `json:"name" gorm:"column:name"`
+	ResourceType string         `json:"resource_type" gorm:"column:resource_type"`
+	Sort         int            `json:"sort" gorm:"column:sort"`
+	Status       string         `json:"status" gorm:"column:status"`
+	Children     []ResourceNode `json:"children" gorm:"-"`
+}
+
+func normalizeResourceParents(rows []ResourceNode) {
+	ids := make(map[string]struct{}, len(rows))
+	for _, r := range rows {
+		ids[r.ID] = struct{}{}
+	}
+	for i := range rows {
+		if rows[i].ParentID == nil || strings.TrimSpace(*rows[i].ParentID) == "" {
+			rows[i].ParentID = nil
+			continue
+		}
+		if _, ok := ids[*rows[i].ParentID]; !ok {
+			rows[i].ParentID = nil
+		}
+	}
 }
 
 func buildResourceTree(rows []ResourceNode, parent *string) []ResourceNode {

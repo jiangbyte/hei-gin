@@ -17,9 +17,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/logger"
 	"hei-gin/internal/framework/platform/idgen"
 )
 
@@ -290,6 +292,7 @@ func (m *Manager) scanOnce(ctx context.Context) {
 		Limit(maxScanLimit).
 		Find(&jobs).Error
 	if err != nil {
+		logger.L.Warn("job scan failed", zap.Error(err))
 		return
 	}
 	for _, j := range jobs {
@@ -297,18 +300,14 @@ func (m *Manager) scanOnce(ctx context.Context) {
 	}
 }
 
-// SubmitRun 有界并发提交执行（立即返回）。
-func (m *Manager) SubmitRun(ctx context.Context, jobID string, force bool, executor string) {
+// SubmitRun 有界并发提交执行（立即返回；执行与写库使用独立 context，避免 HTTP 请求结束导致 cancel）。
+func (m *Manager) SubmitRun(_ context.Context, jobID string, force bool, executor string) {
 	m.wg.Add(1)
 	go func() {
 		defer m.wg.Done()
-		select {
-		case m.sem <- struct{}{}:
-			defer func() { <-m.sem }()
-		case <-ctx.Done():
-			return
-		}
-		_ = m.RunJob(ctx, jobID, force, executor)
+		m.sem <- struct{}{}
+		defer func() { <-m.sem }()
+		_ = m.RunJob(context.Background(), jobID, force, executor)
 	}()
 }
 
@@ -368,6 +367,11 @@ func (m *Manager) runLocked(ctx context.Context, jobID string, force bool, execu
 	if !ok {
 		result = "执行失败: 未找到任务处理器: " + job.Handler
 		success = false
+		logger.L.Error("Job execute failed, handler not found",
+			zap.String("id", job.ID),
+			zap.String("name", job.Name),
+			zap.String("handler", job.Handler),
+		)
 	} else {
 		paramJSON := ""
 		if len(job.Params) > 0 && string(job.Params) != "null" {
@@ -377,6 +381,11 @@ func (m *Manager) runLocked(ctx context.Context, jobID string, force bool, execu
 		if err != nil {
 			result = "执行失败: " + err.Error()
 			success = false
+			logger.L.Error("Job execute failed",
+				zap.String("id", job.ID),
+				zap.String("name", job.Name),
+				zap.Error(err),
+			)
 		} else {
 			result = out
 			success = true
@@ -386,7 +395,23 @@ func (m *Manager) runLocked(ctx context.Context, jobID string, force bool, execu
 	if dur < 0 {
 		dur = 0
 	}
-	return m.recordRun(ctx, &job, executor, success, result, executeTime, dur)
+	if err := m.recordRun(ctx, &job, executor, success, result, executeTime, dur); err != nil {
+		logger.L.Error("Job record run failed",
+			zap.String("id", job.ID),
+			zap.String("name", job.Name),
+			zap.Error(err),
+		)
+		return err
+	}
+	logger.L.Info("Job done",
+		zap.String("id", job.ID),
+		zap.String("name", job.Name),
+		zap.Bool("success", success),
+		zap.String("result", truncateResult(result)),
+		zap.Int64("duration_ms", dur),
+		zap.String("executor", executor),
+	)
+	return nil
 }
 
 func (m *Manager) recordRun(ctx context.Context, job *SysJob, executor string, success bool, result string, executeTime time.Time, durMS int64) error {
