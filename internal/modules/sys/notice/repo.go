@@ -78,7 +78,7 @@ func (r *Repo) PageAdmin(ctx context.Context, q PageParam) (rows []Notice, total
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Notice{})
 	if q.Title != "" {
-		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), dialect.Contains(q.Title))
 	}
 	if q.Status != "" {
 		db = db.Where("status = ?", q.Status)

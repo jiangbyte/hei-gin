@@ -280,10 +280,9 @@ func (s *Service) callback(accountType security.AccountType) gin.HandlerFunc {
 }
 
 func (s *Service) redirectOAuth(c *gin.Context, frontend string, accountType security.AccountType, oauthCode, action, status, message string) {
-	target := strings.TrimSpace(frontend)
-	if target == "" {
-		target = s.frontendCallback(c.Request.Context(), accountType)
-	}
+	// 始终跳转到配置的前端回调，用户传入的 redirect 仅作为查询参数（防开放重定向）。
+	target := s.frontendCallback(c.Request.Context(), accountType)
+	userRedirect := strings.TrimSpace(frontend)
 	params := url.Values{}
 	params.Set("oauth_status", status)
 	if action != "" {
@@ -294,6 +293,9 @@ func (s *Service) redirectOAuth(c *gin.Context, frontend string, accountType sec
 	}
 	if message != "" {
 		params.Set("oauth_message", message)
+	}
+	if userRedirect != "" && userRedirect != target {
+		params.Set("redirect", userRedirect)
 	}
 	sep := "?"
 	if strings.Contains(target, "?") {

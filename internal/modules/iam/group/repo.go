@@ -80,7 +80,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 		db = datascope.ApplyKey(db, sess, "iam:group:page", "owner_dept_id", "created_by")
 	}
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

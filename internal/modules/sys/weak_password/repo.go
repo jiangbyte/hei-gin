@@ -64,7 +64,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []WeakPassword, tota
 	db := r.with(ctx).Model(&WeakPassword{})
 	kw := firstText(q.Password, q.Keyword)
 	if kw != "" {
-		db = db.Where(dialect.ILike(db, "password"), "%"+kw+"%")
+		db = db.Where(dialect.ILike(db, "password"), dialect.Contains(kw))
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -78,7 +78,7 @@ func (r *Repo) List(ctx context.Context, q ListParam) ([]WeakPassword, error) {
 	db := r.with(ctx).Model(&WeakPassword{})
 	kw := firstText(q.Password, q.Keyword)
 	if kw != "" {
-		db = db.Where(dialect.ILike(db, "password"), "%"+kw+"%")
+		db = db.Where(dialect.ILike(db, "password"), dialect.Contains(kw))
 	}
 	var rows []WeakPassword
 	err := db.Order("id desc").Find(&rows).Error

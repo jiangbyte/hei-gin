@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/internal/framework/core/security"
+	"hei-gin/internal/framework/core/security/safelink"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 	"hei-gin/internal/framework/platform/storage"
@@ -66,6 +67,13 @@ func (s *Service) Create(ctx context.Context, req AddParam) error {
 	if lt == "" {
 		lt = "URL"
 	}
+	urlVal := ""
+	if req.URL != nil {
+		urlVal = *req.URL
+	}
+	if err := safelink.ValidateBannerLink(lt, urlVal); err != nil {
+		return err
+	}
 	targets := req.TargetAccountTypes
 	if len(targets) == 0 {
 		targets = datatypes.JSON([]byte("[]"))
@@ -92,6 +100,13 @@ func (s *Service) Update(ctx context.Context, req EditParam) error {
 	lt := req.LinkType
 	if lt == "" {
 		lt = "URL"
+	}
+	urlVal := ""
+	if req.URL != nil {
+		urlVal = *req.URL
+	}
+	if err := safelink.ValidateBannerLink(lt, urlVal); err != nil {
+		return err
 	}
 	updates := map[string]any{
 		"title": req.Title, "image": s.normalizeImage(req.Image), "url": req.URL, "link_type": lt,

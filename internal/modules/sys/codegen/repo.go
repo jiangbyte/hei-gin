@@ -69,13 +69,13 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Plan, total int64,
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Plan{})
 	if q.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+q.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(q.Name))
 	}
 	if q.GenType != "" {
 		db = db.Where("gen_type = ?", q.GenType)
 	}
 	if q.Table != "" {
-		db = db.Where(dialect.ILike(db, "table_name"), "%"+q.Table+"%")
+		db = db.Where(dialect.ILike(db, "table_name"), dialect.Contains(q.Table))
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -167,6 +167,7 @@ ORDER BY TABLE_NAME`).Scan(&rows).Error
 
 // ListColumns 列出表列元数据（含主键标记）。
 func (r *Repo) ListColumns(ctx context.Context, tableName string) ([]ColumnRow, error) {
+	_ = dialect.MustIdent(tableName)
 	if dialect.IsMySQL(r.db) {
 		return r.listColumnsMySQL(ctx, tableName)
 	}

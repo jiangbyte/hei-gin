@@ -54,7 +54,7 @@ func (r *Repo) PageModules(ctx context.Context, p ModulePageParam) (rows []Clien
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientModule{})
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.AccountType != "" {
 		db = db.Where("account_type = ?", p.AccountType)
@@ -109,7 +109,7 @@ func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []C
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ClientResource{})
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.ModuleID != "" {
 		db = db.Where("module_id = ?", p.ModuleID)

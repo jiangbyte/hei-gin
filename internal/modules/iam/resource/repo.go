@@ -56,10 +56,10 @@ func (r *Repo) PageResources(ctx context.Context, p ResourcePageParam) (rows []R
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&Resource{})
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(p.Code))
 	}
 	if p.ModuleID != "" {
 		db = db.Where("module_id = ?", p.ModuleID)
@@ -179,10 +179,10 @@ func (r *Repo) PageButtons(ctx context.Context, p ButtonPageParam) (rows []Resou
 		db = db.Where("parent_id = ?", p.ParentID)
 	}
 	if p.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(p.Code))
 	}
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)
@@ -244,7 +244,7 @@ func (r *Repo) PageModules(ctx context.Context, p ModulePageParam) (rows []Resou
 	cur, size := p.Normalize()
 	db := r.with(ctx).Model(&ResourceModule{})
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Client != "" {
 		db = db.Where("client = ?", p.Client)

@@ -58,10 +58,10 @@ func (r *Repo) Page(ctx context.Context, p PageParam, sess *security.SessionPayl
 		db = datascope.ApplyKey(db, sess, "biz:cgtestactivity:page", "owner_dept_id", "created_by")
 	}
 	if p.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(p.Code))
 	}
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Category != "" {
 		db = db.Where("category = ?", p.Category)

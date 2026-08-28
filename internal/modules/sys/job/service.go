@@ -138,7 +138,7 @@ func (s *Service) Page(ctx context.Context, q PageParam) ([]gojob.SysJob, int64,
 	cur, size := q.Normalize()
 	tx := s.db.WithContext(ctx).Model(&gojob.SysJob{})
 	if n := strings.TrimSpace(q.Name); n != "" {
-		tx = tx.Where(dialect.ILike(tx, "name"), "%"+n+"%")
+		tx = tx.Where(dialect.ILike(tx, "name"), dialect.Contains(n))
 	}
 	if t := strings.TrimSpace(q.TriggerType); t != "" {
 		tx = tx.Where("trigger_type = ?", strings.ToUpper(t))

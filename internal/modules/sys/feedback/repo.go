@@ -67,7 +67,7 @@ func (r *Repo) PageAdmin(ctx context.Context, q PageParam) (rows []Feedback, tot
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Feedback{})
 	if q.Title != "" {
-		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), dialect.Contains(q.Title))
 	}
 	if q.Category != "" {
 		db = db.Where("category = ?", q.Category)

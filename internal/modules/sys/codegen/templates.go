@@ -156,7 +156,7 @@ func (r *Repo) Page(ctx context.Context, p PageParam{{if .Main.HasOwnerDept}}, s
 {{- range .Main.QueryFields }}
 {{- if eq .PythonType "str" }}
 	if p.{{.GoName}} != "" {
-		db = db.Where(dialect.ILike(db, "{{.Name}}"), "%"+p.{{.GoName}}+"%")
+		db = db.Where(dialect.ILike(db, "{{.Name}}"), dialect.Contains(p.{{.GoName}}))
 	}
 {{- end }}
 {{- end }}

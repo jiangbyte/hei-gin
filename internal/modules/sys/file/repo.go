@@ -85,16 +85,16 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []File, total int64,
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&File{})
 	if q.OriginalName != "" {
-		db = db.Where(dialect.ILike(db, "original_name"), "%"+q.OriginalName+"%")
+		db = db.Where(dialect.ILike(db, "original_name"), dialect.Contains(q.OriginalName))
 	}
 	if q.ObjectName != "" {
-		db = db.Where(dialect.ILike(db, "object_name"), "%"+q.ObjectName+"%")
+		db = db.Where(dialect.ILike(db, "object_name"), dialect.Contains(q.ObjectName))
 	}
 	if q.StorageProvider != "" {
 		db = db.Where("storage_provider = ?", q.StorageProvider)
 	}
 	if q.ContentType != "" {
-		db = db.Where(dialect.ILike(db, "content_type"), "%"+q.ContentType+"%")
+		db = db.Where(dialect.ILike(db, "content_type"), dialect.Contains(q.ContentType))
 	}
 	if err = db.Count(&total).Error; err != nil {
 		return nil, 0, err

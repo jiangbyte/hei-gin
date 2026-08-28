@@ -62,7 +62,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Dict, total int64,
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Dict{})
 	if q.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+q.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(q.Code))
 	}
 	if q.Category != "" {
 		db = db.Where("category = ?", q.Category)

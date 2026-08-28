@@ -111,6 +111,11 @@ func (s *Service) login(accountType security.AccountType) gin.HandlerFunc {
 		}
 		remember := rememberMeOrDefault(req.RememberMe)
 		s.SetSessionCookie(c, out.Token, accountType, time.Duration(ttlSec)*time.Second, remember)
+		maxAge := ttlSec
+		if !remember {
+			maxAge = 0
+		}
+		middleware.IssueCSRFCookie(c, s.cfg.Auth, maxAge)
 		response.OK(c, out)
 	}
 }
@@ -125,6 +130,7 @@ func (s *Service) logout(c *gin.Context) {
 	}
 	_ = s.Logout(c.Request.Context(), token, accountID, accountType, c.ClientIP(), c.Request.UserAgent())
 	s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
+	middleware.ClearCSRFCookie(c)
 	response.OK(c, nil)
 }
 
@@ -254,6 +260,7 @@ func (s *Service) cancel(accountType security.AccountType) gin.HandlerFunc {
 			return
 		}
 		s.ClearSessionCookie(c, contextx.AccountType(c.Request.Context()))
+		middleware.ClearCSRFCookie(c)
 		response.OK(c, nil)
 	}
 }

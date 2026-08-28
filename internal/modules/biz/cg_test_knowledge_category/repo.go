@@ -58,10 +58,10 @@ func (r *Repo) PageCategories(ctx context.Context, p PageParam, sess *security.S
 		db = datascope.ApplyKey(db, sess, "biz:cgtestknowledgecategory:page", "owner_dept_id", "created_by")
 	}
 	if p.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(p.Code))
 	}
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)
@@ -119,10 +119,10 @@ func (r *Repo) PageDocs(ctx context.Context, p DocPageParam) (rows []Doc, total 
 		db = db.Where("category_id = ?", p.CategoryID)
 	}
 	if p.Code != "" {
-		db = db.Where(dialect.ILike(db, "code"), "%"+p.Code+"%")
+		db = db.Where(dialect.ILike(db, "code"), dialect.Contains(p.Code))
 	}
 	if p.Title != "" {
-		db = db.Where(dialect.ILike(db, "title"), "%"+p.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), dialect.Contains(p.Title))
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

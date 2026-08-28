@@ -302,27 +302,27 @@ func (r *Repo) PageAccounts(ctx context.Context, p PageParam, sess *security.Ses
 	}
 	if p.Account != "" {
 		db = db.Where("id IN (SELECT account_id FROM sys_account_identity WHERE identity_type = ? AND "+dialect.ILike(db, "identifier")+")",
-			IdentityAccount, "%"+p.Account+"%")
+			IdentityAccount, dialect.Contains(p.Account))
 	}
 	if p.Name != "" {
 		db = db.Where(
 			`(account_type = ? AND id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "nickname")+`))
 			 OR (account_type = ? AND id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "nickname")+`))`,
-			string(security.AccountAdmin), "%"+p.Name+"%", string(security.AccountPortal), "%"+p.Name+"%",
+			string(security.AccountAdmin), dialect.Contains(p.Name), string(security.AccountPortal), dialect.Contains(p.Name),
 		)
 	}
 	if p.Phone != "" {
 		db = db.Where(
 			`id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "phone")+`)
 			 OR id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "phone")+`)`,
-			"%"+p.Phone+"%", "%"+p.Phone+"%",
+			dialect.Contains(p.Phone), dialect.Contains(p.Phone),
 		)
 	}
 	if p.Email != "" {
 		db = db.Where(
 			`id IN (SELECT account_id FROM profile_user_admin WHERE `+dialect.ILike(db, "email")+`)
 			 OR id IN (SELECT account_id FROM profile_user_portal WHERE `+dialect.ILike(db, "email")+`)`,
-			"%"+p.Email+"%", "%"+p.Email+"%",
+			dialect.Contains(p.Email), dialect.Contains(p.Email),
 		)
 	}
 	if err = db.Count(&total).Error; err != nil {

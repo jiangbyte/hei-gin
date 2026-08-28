@@ -26,6 +26,7 @@ import (
 
 	"hei-gin/internal/framework/core/config"
 	"hei-gin/internal/framework/core/logger"
+	"hei-gin/internal/framework/core/security/safeurl"
 )
 
 // Facade 通知发送门面（运行时配置以 sys_config 为权威，回退 yaml）。
@@ -42,7 +43,13 @@ func NewFacade(cfg config.NotifyConfig, db *gorm.DB) *Facade {
 	return &Facade{
 		cfg: cfg,
 		db:  db,
-		hc:  &http.Client{Timeout: 10 * time.Second},
+		hc: &http.Client{
+			Timeout: 10 * time.Second,
+			// 禁止跟随重定向，避免 SSRF 绕过校验后跳到内网。
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 }
 
@@ -343,6 +350,9 @@ func (f *Facade) SendWebhook(ctx context.Context, webhookURL, secret, payload st
 	if strings.TrimSpace(webhookURL) == "" {
 		return fmt.Errorf("notify: empty webhook url")
 	}
+	if err := safeurl.Validate(webhookURL, safeurl.Options{}); err != nil {
+		return fmt.Errorf("notify: unsafe webhook url: %w", err)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, strings.NewReader(payload))
 	if err != nil {
 		return err
@@ -365,6 +375,9 @@ func (f *Facade) SendWebhook(ctx context.Context, webhookURL, secret, payload st
 }
 
 func (f *Facade) postJSON(ctx context.Context, u string, payload map[string]any, label string) error {
+	if err := safeurl.Validate(u, safeurl.Options{}); err != nil {
+		return fmt.Errorf("%s: unsafe url: %w", label, err)
+	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return err

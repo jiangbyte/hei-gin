@@ -57,7 +57,7 @@ func (r *Repo) Page(ctx context.Context, q PageParam) (rows []Banner, total int6
 	cur, size := q.Normalize()
 	db := r.with(ctx).Model(&Banner{})
 	if q.Title != "" {
-		db = db.Where(dialect.ILike(db, "title"), "%"+q.Title+"%")
+		db = db.Where(dialect.ILike(db, "title"), dialect.Contains(q.Title))
 	}
 	if q.Position != "" {
 		db = db.Where("position = ?", q.Position)

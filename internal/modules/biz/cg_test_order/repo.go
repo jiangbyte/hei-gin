@@ -63,13 +63,13 @@ func (r *Repo) PageOrders(ctx context.Context, p PageParam, sess *security.Sessi
 		db = datascope.ApplyKey(db, sess, "biz:cgtestorder:page", "owner_dept_id", "created_by")
 	}
 	if p.OrderNo != "" {
-		db = db.Where(dialect.ILike(db, "order_no"), "%"+p.OrderNo+"%")
+		db = db.Where(dialect.ILike(db, "order_no"), dialect.Contains(p.OrderNo))
 	}
 	if p.Name != "" {
-		db = db.Where(dialect.ILike(db, "name"), "%"+p.Name+"%")
+		db = db.Where(dialect.ILike(db, "name"), dialect.Contains(p.Name))
 	}
 	if p.CustomerName != "" {
-		db = db.Where(dialect.ILike(db, "customer_name"), "%"+p.CustomerName+"%")
+		db = db.Where(dialect.ILike(db, "customer_name"), dialect.Contains(p.CustomerName))
 	}
 	if p.Status != "" {
 		db = db.Where("status = ?", p.Status)

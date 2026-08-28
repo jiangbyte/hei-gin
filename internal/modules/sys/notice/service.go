@@ -12,6 +12,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"hei-gin/internal/framework/core/security/htmlsafe"
 	"hei-gin/internal/framework/platform/idgen"
 	"hei-gin/internal/framework/platform/module"
 )
@@ -275,6 +276,7 @@ func (s *Service) normalizeAndValidate(req *CreateParam) error {
 		now := time.Now().UTC()
 		req.PublishAt = &now
 	}
+	req.Content = htmlsafe.Sanitize(req.ContentType, req.Content)
 	return nil
 }
 

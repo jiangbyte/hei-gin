@@ -120,6 +120,7 @@ func NewAPI(d *Deps) *API {
 	r.Use(middleware.SecurityHeaders(d.Cfg.Security))
 	r.Use(middleware.AccessLog())
 	r.Use(middleware.AuthContext(d.Cfg.Auth, d.Sessions))
+	r.Use(middleware.CSRFProtect(d.Cfg.Auth))
 	r.Use(middleware.AuthWhitelist(d.Cfg.Auth.AuthWhitelist))
 	r.Use(middleware.Trace())
 	r.Use(middleware.CORS(d.Cfg.CORS))
@@ -140,20 +141,6 @@ func NewAPI(d *Deps) *API {
 	api := r.Group("/api")
 	// 操作审计由各路由挂载 middleware.OperationAudit(d.Audit, resourceType, action)
 	d.Modules.MountRoutes(api)
-
-	if d.Cfg.App.Debug {
-		r.GET("/api/v1/internal/debug/routes", func(c *gin.Context) {
-			type routeInfo struct {
-				Method string `json:"method"`
-				Path   string `json:"path"`
-			}
-			out := make([]routeInfo, 0, len(r.Routes()))
-			for _, rt := range r.Routes() {
-				out = append(out, routeInfo{Method: rt.Method, Path: rt.Path})
-			}
-			response.OK(c, out)
-		})
-	}
 
 	srv := &http.Server{
 		Addr:              d.Cfg.Addr(),

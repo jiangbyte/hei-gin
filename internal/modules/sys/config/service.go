@@ -130,22 +130,26 @@ func (s *Service) reveal(row *Config) {
 	if row == nil {
 		return
 	}
-	row.ConfigValue = s.maybeDecrypt(row.ConfigKey, row.Category, row.ConfigValue)
-	// 敏感键已配置时置 ext_json.is_set=true（web loadByCategory「已配置」标记契约）。
-	if row.ConfigValue != nil && *row.ConfigValue != "" && isSensitive(row.ConfigKey, row.Category) {
-		var ext map[string]any
-		if len(row.ExtJSON) > 0 {
-			_ = json.Unmarshal(row.ExtJSON, &ext)
-		}
-		if ext == nil {
-			ext = map[string]any{}
-		}
-		if _, ok := ext["is_set"]; !ok {
+	plain := s.maybeDecrypt(row.ConfigKey, row.Category, row.ConfigValue)
+	// 敏感键对外不回显明文，仅置 ext_json.is_set（对齐 hei-boot toPublicResult）。
+	if isSensitive(row.ConfigKey, row.Category) {
+		if plain != nil && strings.TrimSpace(*plain) != "" {
+			var ext map[string]any
+			if len(row.ExtJSON) > 0 {
+				_ = json.Unmarshal(row.ExtJSON, &ext)
+			}
+			if ext == nil {
+				ext = map[string]any{}
+			}
 			ext["is_set"] = true
 			b, _ := json.Marshal(ext)
 			row.ExtJSON = b
 		}
+		empty := ""
+		row.ConfigValue = &empty
+		return
 	}
+	row.ConfigValue = plain
 }
 
 // Create 创建配置（config_key 唯一校验；对齐 hei-boot ConfigServiceImpl.create）。

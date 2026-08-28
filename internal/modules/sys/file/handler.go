@@ -132,8 +132,9 @@ func (s *Service) download(c *gin.Context) {
 		return
 	}
 	defer rc.Close()
-	c.Header("Content-Disposition", `attachment; filename="`+row.OriginalName+`"`)
-	c.DataFromReader(http.StatusOK, row.Size, row.ContentType, rc, nil)
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Header("Content-Disposition", contentDispositionAttachment(row.OriginalName))
+	c.DataFromReader(http.StatusOK, row.Size, "application/octet-stream", rc, nil)
 }
 
 func (s *Service) url(c *gin.Context) {
@@ -240,8 +241,9 @@ func (s *Service) portalDownload(c *gin.Context) {
 		return
 	}
 	defer rc.Close()
-	c.Header("Content-Disposition", `attachment; filename="`+row.OriginalName+`"`)
-	c.DataFromReader(http.StatusOK, row.Size, row.ContentType, rc, nil)
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Header("Content-Disposition", contentDispositionAttachment(row.OriginalName))
+	c.DataFromReader(http.StatusOK, row.Size, "application/octet-stream", rc, nil)
 }
 
 func (s *Service) portalURL(c *gin.Context) {
